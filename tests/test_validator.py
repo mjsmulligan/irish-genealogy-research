@@ -1,5 +1,5 @@
 """
-Irish Genealogy Research — Validator Test Suite 
+Irish Genealogy Research — Validator Test Suite
 Schema version: 1.2
 Tests all 10 validation rules from Section 5 of genealogy_schema_v1.md
 
@@ -7,6 +7,7 @@ Run with:
     pytest tests/test_validator.py -v
 """
 
+import copy
 import pytest
 from validator import DataStore
 
@@ -31,20 +32,28 @@ def make_ds(
     """
     ds = DataStore()
     for src in sources or []:
+        src = copy.deepcopy(src)
         ds.sources[src["source_id"]] = src
     for rec in records or []:
+        rec = copy.deepcopy(rec)
         ds.records[rec["record_id"]] = rec
     for pl in places or []:
+        pl = copy.deepcopy(pl)
         ds.places[pl["place_id"]] = pl
     for ni in named_individuals or []:
+        ni = copy.deepcopy(ni)
         ds.named_individuals[ni["named_individual_id"]] = ni
     for p in persons or []:
+        p = copy.deepcopy(p)
         ds.persons[p["person_id"]] = p
     for rel in relationships or []:
+        rel = copy.deepcopy(rel)
         ds.relationships[rel["relationship_id"]] = rel
     for f in facts or []:
+        f = copy.deepcopy(f)
         ds.facts[f["fact_id"]] = f
     for ev in events or []:
+        ev = copy.deepcopy(ev)
         ds.events[ev["event_id"]] = ev
     return ds
 
