@@ -1,5 +1,5 @@
 """
-Irish Genealogy Research — Validator Test Suite
+Irish Genealogy Research — Validator Test Suite 
 Schema version: 1.2
 Tests all 10 validation rules from Section 5 of genealogy_schema_v1.md
 
