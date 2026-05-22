@@ -1,0 +1,623 @@
+# Irish Genealogy Research — Database Schema
+
+*Version 2.3 — May 2026*
+*Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
+
+---
+
+## 1. Design Decisions
+
+### SQLite
+
+The database engine is **SQLite**. Rationale:
+
+- The project is a two-collaborator model (Python + Claude). No concurrent write access, no server process required, no configuration overhead.
+- The dataset is bounded — Irish townland-scale research, not a national index. SQLite handles tens of millions of rows without difficulty.
+- A single `.db` file is portable, trivially backed up with `cp`, and opens directly in DB Browser for SQLite for ad-hoc inspection.
+- Python's `sqlite3` module is in the standard library. No additional database dependency.
+
+**SQLite version requirement:** 3.35.0 or later (released 2021-03-12). This version introduced `RETURNING` clauses and fixes for `CHECK` constraint reporting. macOS ships 3.43+; Ubuntu 22.04 ships 3.37+; the dev container (Python 3.12 image) ships a compatible version.
+
+### Array fields → junction tables
+
+The data dictionary defines several `array[integer]` fields representing many-to-many relationships (e.g. `Person.record_ids`, `Event.person_ids`, `Relationship.record_ids`). SQLite has no native array type. These fields are implemented as **junction tables** — one row per relationship, with a compound primary key.
+
+Junction tables follow a consistent naming convention: `{owner}_{target}` in singular form, e.g. `person_record` for `Person.record_ids`.
+
+### Person names → junction table
+
+`Person.names` is an array of `{value, type}` objects. This is implemented as a dedicated `person_name` table rather than a JSON column. Rationale:
+
+- Name search is a primary use case: finding all Persons with a given name or name variant requires an indexed column, not JSON parsing.
+- A junction table gives a standard index on `value`, consistent vocabulary enforcement via `CHECK`, and `NOT NULL` constraints on both fields — none of which are available on a JSON TEXT column.
+- The join cost on person fetch is negligible for the dataset sizes involved.
+
+### URL parameter fields → JSON TEXT columns
+
+`Source.source_parameters` and `Record.record_parameters` are both stored as JSON TEXT columns. Rationale:
+
+- Parameter keys and values are heterogeneous across sources — there is no fixed schema to normalise into typed columns.
+- These fields are read as a unit by the deep link builder, not queried individually. There is no use case requiring an index on a specific parameter key.
+- JSON TEXT is consistent with `Source.column_schema`, which uses the same approach.
+
+The Python layer is responsible for serialising these fields to JSON on write and deserialising on read. The DB layer applies no structural constraint beyond `TEXT` — validation that parameter keys match `record_parameter_names` is enforced by Python.
+
+### Enforcing evidence-layer isolation at the DB level
+
+Rule R26 (evidence-layer objects must not contain conclusion-layer foreign keys) is enforced architecturally: the `recorded_event` and `recorded_person` tables simply do not have columns for `person_id`, `event_id`, `relationship_id`, or `place_id`. The schema makes the violation structurally impossible.
+
+### Foreign key enforcement
+
+SQLite does not enable foreign key enforcement by default. Every connection must execute `PRAGMA foreign_keys = ON` before performing any write operation. This is the responsibility of the Python layer — see §8.
+
+### Integer primary keys and ROWID
+
+All primary keys are declared `INTEGER PRIMARY KEY`. In SQLite this is an alias for the internal ROWID, making inserts and lookups by primary key O(log n) without a secondary index. IDs are assigned by the Python layer before insert (not auto-incremented by SQLite) to maintain determinism across sessions.
+
+---
+
+## 2. Schema Overview
+
+```
+FOUNDATIONAL
+  repository
+  source
+
+EVIDENCE
+  record
+  recorded_event          — 1:1 with record (enforced by UNIQUE on record_id)
+  recorded_person         — N:1 with record
+
+CONCLUSION
+  person
+  person_name             — one row per name; replaces JSON column; indexed for search
+  relationship
+  event
+  place
+
+JUNCTION TABLES (many-to-many)
+  person_record           — Person.record_ids
+  person_event            — Person.event_ids
+  person_relationship     — Person.relationship_ids
+  relationship_record     — Relationship.record_ids
+  relationship_event      — Relationship.event_ids
+  event_record            — Event.record_ids
+  event_recorded_event    — Event.recorded_event_ids
+  event_person            — Event.person_ids
+  place_record            — Place.record_ids
+```
+
+---
+
+## 3. DDL
+
+### Foundational Layer
+
+```sql
+CREATE TABLE repository (
+    repository_id   INTEGER PRIMARY KEY,
+    name            TEXT    NOT NULL CHECK (trim(name) != ''),
+    url             TEXT    NOT NULL CHECK (trim(url) != ''),
+    notes           TEXT
+);
+
+CREATE TABLE source (
+    source_id               INTEGER PRIMARY KEY,
+    repository_id           INTEGER NOT NULL REFERENCES repository (repository_id),
+    title                   TEXT    NOT NULL CHECK (trim(title) != ''),
+    type                    TEXT    NOT NULL,
+    coverage_from           INTEGER,
+    coverage_to             INTEGER,
+    source_url              TEXT,
+    record_url_template     TEXT,   -- URL template with {placeholder} tokens; null for sources without direct linking
+    source_parameters       TEXT,   -- JSON object of Source-level URL parameter constants; null when all parameters are Record-level
+    record_parameter_names  TEXT,   -- JSON array of parameter name strings expected from Record.record_parameters; null when source has no direct linking
+    column_schema           TEXT,   -- JSON array of column name strings; null for narrative sources
+    citation                TEXT,
+    notes                   TEXT,
+
+    CHECK (type IN (
+        'valuation', 'tithe', 'census',
+        'birth_registration', 'marriage_registration', 'death_registration',
+        'parish_register', 'military', 'folklore'
+    ))
+);
+```
+
+---
+
+### Evidence Layer
+
+```sql
+CREATE TABLE record (
+    record_id           INTEGER PRIMARY KEY,
+    source_id           INTEGER NOT NULL REFERENCES source (source_id),
+    record_parameters   TEXT,   -- JSON object of Record-level URL parameter values; keys must match Source.record_parameter_names
+    raw_text            TEXT    NOT NULL CHECK (trim(raw_text) != ''),
+    notes               TEXT
+);
+
+CREATE TABLE recorded_event (
+    recorded_event_id   INTEGER PRIMARY KEY,
+    record_id           INTEGER NOT NULL UNIQUE REFERENCES record (record_id),
+    -- UNIQUE enforces Rule R18: exactly one RecordedEvent per Record.
+    type                TEXT    NOT NULL,
+    date_as_recorded    TEXT,   -- verbatim; no format constraint (Rule R35 exempts this field)
+    date                TEXT,   -- normalised ISO 8601; validated by Python (Rule R35)
+    date_qualifier      TEXT,
+    place_as_recorded   TEXT,
+    notes               TEXT,
+
+    CHECK (type IN (
+        'birth', 'baptism', 'marriage', 'death', 'burial',
+        'census', 'residence', 'emigration',
+        'valuation', 'tithe', 'military_service', 'pension', 'folklore'
+    )),
+    CHECK (date_qualifier IS NULL OR date_qualifier IN (
+        'exact', 'about', 'before', 'after', 'between', 'estimated', 'calculated'
+    ))
+);
+
+CREATE TABLE recorded_person (
+    recorded_person_id      INTEGER PRIMARY KEY,
+    record_id               INTEGER NOT NULL REFERENCES record (record_id),
+    name_as_recorded        TEXT    NOT NULL CHECK (trim(name_as_recorded) != ''),
+    role                    TEXT    NOT NULL,
+    age_as_recorded         TEXT,   -- verbatim; may be "about 30", "inf", etc.
+    age                     INTEGER,
+    sex_as_recorded         TEXT,
+    occupation_as_recorded  TEXT,
+    place_as_recorded       TEXT,
+    notes                   TEXT,
+
+    CHECK (role IN (
+        'principal', 'head', 'spouse', 'child',
+        'groom', 'bride', 'father', 'mother',
+        'father_of_groom', 'father_of_bride',
+        'godfather', 'godmother',
+        'witness', 'informant', 'officiator',
+        'occupier', 'lessor', 'deceased'
+    ))
+);
+```
+
+---
+
+### Conclusion Layer
+
+```sql
+CREATE TABLE person (
+    person_id   INTEGER PRIMARY KEY,
+    label       TEXT    NOT NULL CHECK (trim(label) != ''),
+    gender      TEXT,
+    private     INTEGER NOT NULL DEFAULT 0 CHECK (private IN (0, 1)),
+    notes       TEXT,
+
+    CHECK (gender IS NULL OR gender IN ('male', 'female', 'unknown'))
+);
+
+CREATE TABLE person_name (
+    person_name_id  INTEGER PRIMARY KEY,
+    person_id       INTEGER NOT NULL REFERENCES person (person_id),
+    value           TEXT    NOT NULL CHECK (trim(value) != ''),
+    type            TEXT    NOT NULL,
+
+    CHECK (type IN ('birth_name', 'married_name', 'also_known_as', 'nickname'))
+);
+
+CREATE TABLE relationship (
+    relationship_id INTEGER PRIMARY KEY,
+    type            TEXT    NOT NULL,
+    person_id_1     INTEGER NOT NULL REFERENCES person (person_id),
+    person_id_2     INTEGER NOT NULL REFERENCES person (person_id),
+    confidence      TEXT,
+    notes           TEXT,
+
+    CHECK (person_id_1 != person_id_2),
+    -- Rule R21: self-reference prohibition enforced at DB level.
+
+    CHECK (type IN ('couple', 'parent_child', 'sibling')),
+    CHECK (confidence IS NULL OR confidence IN ('high', 'medium', 'low'))
+);
+
+CREATE TABLE event (
+    event_id        INTEGER PRIMARY KEY,
+    type            TEXT    NOT NULL,
+    date            TEXT,   -- normalised ISO 8601; validated by Python (Rule R35)
+    date_qualifier  TEXT,
+    place_id        INTEGER REFERENCES place (place_id),
+    relationship_id INTEGER REFERENCES relationship (relationship_id),
+    confidence      TEXT,
+    notes           TEXT,
+
+    CHECK (type IN (
+        'birth', 'baptism', 'marriage', 'death', 'burial',
+        'census', 'residence', 'emigration',
+        'valuation', 'tithe', 'military_service', 'pension', 'folklore'
+    )),
+    CHECK (date_qualifier IS NULL OR date_qualifier IN (
+        'exact', 'about', 'before', 'after', 'between', 'estimated', 'calculated'
+    )),
+    CHECK (confidence IS NULL OR confidence IN ('high', 'medium', 'low'))
+);
+
+CREATE TABLE place (
+    place_id        INTEGER PRIMARY KEY,
+    name            TEXT    NOT NULL CHECK (trim(name) != ''),
+    townland_ie_url TEXT,
+    logainm_id      INTEGER,
+    logainm_url     TEXT,
+    notes           TEXT
+);
+```
+
+---
+
+### Junction Tables
+
+All junction tables use a compound primary key on both columns. The ordering convention is `(owner_id, target_id)`.
+
+```sql
+-- Person.record_ids
+CREATE TABLE person_record (
+    person_id   INTEGER NOT NULL REFERENCES person (person_id),
+    record_id   INTEGER NOT NULL REFERENCES record (record_id),
+    PRIMARY KEY (person_id, record_id)
+);
+
+-- Person.event_ids
+CREATE TABLE person_event (
+    person_id   INTEGER NOT NULL REFERENCES person (person_id),
+    event_id    INTEGER NOT NULL REFERENCES event (event_id),
+    PRIMARY KEY (person_id, event_id)
+);
+
+-- Person.relationship_ids
+CREATE TABLE person_relationship (
+    person_id       INTEGER NOT NULL REFERENCES person (person_id),
+    relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
+    PRIMARY KEY (person_id, relationship_id)
+);
+
+-- Relationship.record_ids
+CREATE TABLE relationship_record (
+    relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
+    record_id       INTEGER NOT NULL REFERENCES record (record_id),
+    PRIMARY KEY (relationship_id, record_id)
+);
+
+-- Relationship.event_ids
+CREATE TABLE relationship_event (
+    relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
+    event_id        INTEGER NOT NULL REFERENCES event (event_id),
+    PRIMARY KEY (relationship_id, event_id)
+);
+
+-- Event.record_ids
+CREATE TABLE event_record (
+    event_id    INTEGER NOT NULL REFERENCES event (event_id),
+    record_id   INTEGER NOT NULL REFERENCES record (record_id),
+    PRIMARY KEY (event_id, record_id)
+);
+
+-- Event.recorded_event_ids
+CREATE TABLE event_recorded_event (
+    event_id            INTEGER NOT NULL REFERENCES event (event_id),
+    recorded_event_id   INTEGER NOT NULL REFERENCES recorded_event (recorded_event_id),
+    PRIMARY KEY (event_id, recorded_event_id)
+);
+
+-- Event.person_ids
+CREATE TABLE event_person (
+    event_id    INTEGER NOT NULL REFERENCES event (event_id),
+    person_id   INTEGER NOT NULL REFERENCES person (person_id),
+    PRIMARY KEY (event_id, person_id)
+);
+
+-- Place.record_ids
+CREATE TABLE place_record (
+    place_id    INTEGER NOT NULL REFERENCES place (place_id),
+    record_id   INTEGER NOT NULL REFERENCES record (record_id),
+    PRIMARY KEY (place_id, record_id)
+);
+```
+
+---
+
+## 4. Indexes
+
+The primary key indexes (via `INTEGER PRIMARY KEY`) cover all single-object lookups. The following secondary indexes cover the most frequent query patterns: ingest traversal (all children of a parent), linkage scoring (all RecordedPersons for a source batch), and conclusion reconstruction (all Records for a Person).
+
+```sql
+-- Ingest traversal: find all Records for a Source
+CREATE INDEX idx_record_source
+    ON record (source_id);
+
+-- Ingest traversal: find all RecordedPersons for a Record
+CREATE INDEX idx_recorded_person_record
+    ON recorded_person (record_id);
+
+-- Linkage scoring: find all RecordedPersons with a given name
+-- (Jaro-Winkler scoring loads a batch; this index supports exact and prefix lookups)
+CREATE INDEX idx_recorded_person_name
+    ON recorded_person (name_as_recorded);
+
+-- Name search: find all Persons with a given concluded name value
+CREATE INDEX idx_person_name_value
+    ON person_name (value);
+
+-- Name fetch: find all names for a Person
+CREATE INDEX idx_person_name_person
+    ON person_name (person_id);
+
+-- Reconstruction: find all Records for a Person (via junction table)
+CREATE INDEX idx_person_record_record
+    ON person_record (record_id);
+
+-- Reconstruction: find all Persons in a Relationship
+CREATE INDEX idx_relationship_person1
+    ON relationship (person_id_1);
+CREATE INDEX idx_relationship_person2
+    ON relationship (person_id_2);
+
+-- Reconstruction: find all Events for a Place
+CREATE INDEX idx_event_place
+    ON event (place_id);
+
+-- Reconstruction: find all Events for a Relationship
+CREATE INDEX idx_event_relationship
+    ON event (relationship_id);
+```
+
+---
+
+## 5. Validation Rule Mapping
+
+This table documents which validation rules (from `validation_rules.md`) are enforced by the database schema itself versus which must be enforced by the Python layer. Rules enforced by both are noted.
+
+| Rule | Description | DB enforcement | Python enforcement |
+|---|---|---|---|
+| R01 | Required fields on Repository | `NOT NULL` + `CHECK` on name, url | Yes |
+| R02 | Required fields on Source | `NOT NULL` + `CHECK (trim(...) != '')` on title | Yes |
+| R03 | raw_text required on Record | `NOT NULL` + `CHECK (trim(raw_text) != '')` | Yes |
+| R04 | Required fields on RecordedEvent | `NOT NULL` on type; `UNIQUE` on record_id | Yes |
+| R05 | Required fields on RecordedPerson | `NOT NULL` + `CHECK` on name_as_recorded, role | Yes |
+| R06 | Required fields on Person | `NOT NULL` + `CHECK` on label | Yes |
+| R07 | Required fields on Relationship | `NOT NULL` on type, person_id_1, person_id_2 | Yes |
+| R08 | Required fields on Event | `NOT NULL` on type | Yes |
+| R09 | Required fields on Place | `NOT NULL` + `CHECK` on name | Yes |
+| R10 | Name object completeness | `NOT NULL` + `CHECK` on person_name table | Yes |
+| R12 | Source → Repository FK | `REFERENCES repository` | Yes |
+| R13 | Record → Source FK | `REFERENCES source` | Yes |
+| R14 | RecordedEvent → Record FK | `REFERENCES record` | Yes |
+| R15 | RecordedPerson → Record FK | `REFERENCES record` | Yes |
+| R16 | Person FK arrays | Junction table FKs | Yes |
+| R17 | Relationship FK arrays | `REFERENCES person`; junction table FKs | Yes |
+| R18 | Event FK arrays | `REFERENCES place`, `REFERENCES relationship`; junction table FKs | Yes |
+| R19 | Place FK arrays | Junction table FKs | Yes |
+| R20 | Exactly one RecordedEvent per Record | `UNIQUE (record_id)` on recorded_event (upper); Python (lower) | Yes (lower bound only) |
+| R21 | At least one RecordedPerson per Record | Not enforceable declaratively | **Python only** |
+| R22 | Relationship self-reference | `CHECK (person_id_1 != person_id_2)` | No |
+| R23 | Person ↔ Relationship bidirectionality | Retired — junction table is single source of truth | N/A |
+| R24 | Person ↔ Event bidirectionality | Retired — junction table is single source of truth | N/A |
+| R25 | Relationship ↔ Event bidirectionality | Retired — junction table is single source of truth | N/A |
+| R26 | RecordedEvent ↔ Event Record consistency | Not enforceable declaratively | **Python only** |
+| R27 | Evidence layer isolation | Retired — columns absent from schema | N/A |
+| R28 | Source type vocabulary | `CHECK (type IN (...))` | Yes |
+| R29 | Event type vocabulary | `CHECK (type IN (...))` on both tables | Yes |
+| R30 | Date qualifier vocabulary | `CHECK (date_qualifier IN (...))` | Yes |
+| R31 | RecordedPerson role vocabulary | `CHECK (role IN (...))` | Yes |
+| R32 | Person gender vocabulary | `CHECK (gender IN (...))` | Yes |
+| R33 | Name type vocabulary | `CHECK (type IN (...))` on person_name table | Yes |
+| R34 | Relationship type vocabulary | `CHECK (type IN (...))` | Yes |
+| R35 | Confidence vocabulary | `CHECK (confidence IN (...))` | Yes |
+| R36 | Date format | Not enforceable declaratively in SQLite | **Python only** |
+| R37 | record_parameters keys match record_parameter_names | Not enforceable declaratively | **Python only** |
+
+**Rules requiring Python-only enforcement:** R20 (lower bound), R21, R26, R36, R37.
+
+---
+
+## 6. Python DataStore Mapping
+
+The Python `DataStore` class maps the ten first-class objects to dictionaries keyed by primary key. This table shows how each DataStore collection maps to the database.
+
+| DataStore attribute | DB table(s) | Notes |
+|---|---|---|
+| `ds.repositories` | `repository` | Simple 1:1 |
+| `ds.sources` | `source` | `column_schema`, `source_parameters`, and `record_parameter_names` stored as JSON strings |
+| `ds.records` | `record` | `record_parameters` stored as JSON string |
+| `ds.recorded_events` | `recorded_event` | Simple 1:1 |
+| `ds.recorded_persons` | `recorded_person` | Simple 1:1 |
+| `ds.persons` | `person` + `person_name` + junction tables | `names` assembled from `person_name` rows; `record_ids`, `event_ids`, `relationship_ids` from junction tables |
+| `ds.relationships` | `relationship` + junction tables | `record_ids`, `event_ids` from junctions |
+| `ds.events` | `event` + junction tables | `record_ids`, `recorded_event_ids`, `person_ids` from junctions |
+| `ds.places` | `place` + junction tables | `record_ids` from junction |
+
+On **read**, the Python layer assembles each Person object by joining `person` with `person_name` (for names) and the relevant junction tables (for ID arrays). On **write**, it inserts the main `person` row then inserts one `person_name` row per name entry.
+
+The deep link builder is a utility function in `db.py` with the signature `build_record_url(source: dict, record: dict) -> str | None`. It merges `source["source_parameters"]` (deserialised from JSON) with `record["record_parameters"]` (deserialised from JSON) and substitutes each `{placeholder}` in `source["record_url_template"]`. Returns `None` if `record_url_template` is null.
+
+---
+
+## 7. Worked Example — Marriage Record
+
+The following shows how the worked example from `conceptual_model.md` §7 maps to database rows.
+
+**Foundational layer**
+
+```sql
+INSERT INTO repository VALUES (1, 'General Register Office, Ireland', 'https://www.irishgenealogy.ie', NULL);
+
+INSERT INTO source VALUES (
+    1, 1,
+    'Civil Marriage Registrations, Boyle District, 1890',
+    'marriage_registration',
+    1890, 1890,
+    'https://www.irishgenealogy.ie',
+    'https://civilrecords.irishgenealogy.ie/churchrecords/images/marriage_returns/marriages_{year}/{folder_id}/{image_id}.pdf',
+    NULL,                                                        -- source_parameters: all parameters are Record-level
+    '["year", "folder_id", "image_id"]',                         -- record_parameter_names
+    '["date","place","groom_name","groom_age","groom_occupation","bride_name","bride_age","father_of_groom","father_of_bride"]',
+    'Civil Marriage Registrations, Boyle District, 1890. General Register Office, Ireland. irishgenealogy.ie, accessed May 2026.',
+    NULL
+);
+```
+
+**Evidence layer**
+
+```sql
+INSERT INTO record VALUES (
+    1, 1,
+    '{"year": 1890, "folder_id": "marriages_1890_001", "image_id": "0042"}',  -- record_parameters
+    '1890-01-10,Straness,John Mulligan,28,farmer,Mary Brennan,24,Patrick Mulligan,Thomas Brennan',
+    NULL
+);
+-- Deep link resolves to:
+-- https://civilrecords.irishgenealogy.ie/churchrecords/images/marriage_returns/marriages_1890/marriages_1890_001/0042.pdf
+
+INSERT INTO recorded_event VALUES (
+    1, 1, 'marriage',
+    '10th Jany 1890', '1890-01-10', 'exact',
+    'Straness', NULL
+);
+
+INSERT INTO recorded_person VALUES (1, 1, 'John Mulligan',   'groom',           '28', 28, NULL, 'farmer', NULL, NULL);
+INSERT INTO recorded_person VALUES (2, 1, 'Mary Brennan',    'bride',           '24', 24, NULL, NULL,     NULL, NULL);
+INSERT INTO recorded_person VALUES (3, 1, 'Patrick Mulligan','father_of_groom', NULL, NULL, NULL, NULL,   NULL, NULL);
+INSERT INTO recorded_person VALUES (4, 1, 'Thomas Brennan',  'father_of_bride', NULL, NULL, NULL, NULL,   NULL, NULL);
+```
+
+**Conclusion layer**
+
+```sql
+INSERT INTO place VALUES (1, 'Straness', 'https://www.townlands.ie/roscommon/.../straness/', 12345, 'https://www.logainm.ie/en/12345', NULL);
+
+INSERT INTO person VALUES (1, 'John Mulligan (Boyle 1890)', 'male',  0, NULL);
+INSERT INTO person VALUES (2, 'Mary Brennan (Boyle 1890)',  'female', 0, NULL);
+INSERT INTO person VALUES (3, 'Patrick Mulligan',           'male',  0, NULL);
+INSERT INTO person VALUES (4, 'Thomas Brennan',             'male',  0, NULL);
+
+-- Person names
+INSERT INTO person_name VALUES (1, 1, 'John Mulligan', 'birth_name');
+INSERT INTO person_name VALUES (2, 2, 'Mary Brennan',  'birth_name');
+
+INSERT INTO relationship VALUES (1, 'couple', 1, 2, 'medium', 'Single civil registration record.');
+
+INSERT INTO event VALUES (1, 'marriage', '1890-01-10', 'exact', 1, 1, 'medium', NULL);
+
+-- Junction rows: Person.record_ids
+INSERT INTO person_record VALUES (1, 1);
+INSERT INTO person_record VALUES (2, 1);
+INSERT INTO person_record VALUES (3, 1);
+INSERT INTO person_record VALUES (4, 1);
+
+-- Junction rows: Person.relationship_ids
+INSERT INTO person_relationship VALUES (1, 1);
+INSERT INTO person_relationship VALUES (2, 1);
+
+-- Junction rows: Person.event_ids
+INSERT INTO person_event VALUES (1, 1);
+INSERT INTO person_event VALUES (2, 1);
+INSERT INTO person_event VALUES (3, 1);
+INSERT INTO person_event VALUES (4, 1);
+
+-- Junction rows: Relationship.record_ids
+INSERT INTO relationship_record VALUES (1, 1);
+
+-- Junction rows: Relationship.event_ids
+INSERT INTO relationship_event VALUES (1, 1);
+
+-- Junction rows: Event.record_ids
+INSERT INTO event_record VALUES (1, 1);
+
+-- Junction rows: Event.recorded_event_ids
+INSERT INTO event_recorded_event VALUES (1, 1);
+
+-- Junction rows: Event.person_ids
+INSERT INTO event_person VALUES (1, 1);
+INSERT INTO event_person VALUES (1, 2);
+INSERT INTO event_person VALUES (1, 3);
+INSERT INTO event_person VALUES (1, 4);
+
+-- Junction rows: Place.record_ids
+INSERT INTO place_record VALUES (1, 1);
+```
+
+---
+
+## 8. Connection Setup
+
+Every Python connection must execute the following PRAGMAs immediately after opening. These are non-negotiable — foreign key enforcement is off by default in SQLite and PRAGMA settings do not persist across connections.
+
+```python
+import sqlite3
+
+def open_db(path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row  # access columns by name
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")   # concurrent reads during writes
+    conn.execute("PRAGMA synchronous = NORMAL")  # safe with WAL; faster than FULL
+    conn.execute("PRAGMA temp_store = MEMORY")
+    return conn
+```
+
+`journal_mode = WAL` is strongly recommended. It allows reads while a write transaction is open, which matters during ingestion sessions where validation queries run concurrently with batch inserts.
+
+---
+
+## 9. Schema Initialisation
+
+The complete schema is maintained in a single file `schema.sql`. The Python layer initialises a new database with:
+
+```python
+def init_db(path: str) -> sqlite3.Connection:
+    conn = open_db(path)
+    with open("schema.sql") as f:
+        conn.executescript(f.read())
+    conn.commit()
+    return conn
+```
+
+`executescript()` implicitly commits any pending transaction before executing — call it only on a fresh database. For migrations, use explicit `ALTER TABLE` statements with a `schema_version` user-version pragma:
+
+```python
+# Record schema version on init
+conn.execute("PRAGMA user_version = 23")  # version 2.3
+
+# Check version on open
+version = conn.execute("PRAGMA user_version").fetchone()[0]
+if version != 23:
+    raise RuntimeError(f"Schema version mismatch: expected 23, got {version}")
+```
+
+---
+
+## 10. File Locations
+
+```
+/
+  schema.sql              — complete DDL (CREATE TABLE + CREATE INDEX statements)
+  irish_genealogy.db      — SQLite database file (gitignored)
+  src/
+    db.py                 — open_db(), init_db(), build_record_url(), DataStore read/write methods
+```
+
+`irish_genealogy.db` must be added to `.gitignore`. The database is a build artefact derived from `schema.sql` plus ingested data. The source of truth for schema structure is `schema.sql`; the source of truth for data is the raw ingest files plus the session logs.
+
+---
+
+## 11. Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| 2.1 | May 2026 | Initial SQLite schema document |
+| 2.2 | May 2026 | Replaced `person.names` JSON TEXT column with `person_name` table. Added `idx_person_name_value` and `idx_person_name_person` indexes. Updated schema overview, DDL, validation rule mapping, DataStore mapping, and worked example accordingly. R10 and R33 reclassified from Python-only to DB+Python. |
+| 2.3 | May 2026 | Replaced `record.source_identifier TEXT` with `record.record_parameters TEXT` (JSON). Added `source.source_parameters TEXT` (JSON) and `source.record_parameter_names TEXT` (JSON array) to the source table. Added §1 design decision explaining JSON TEXT choice for parameter fields. Added R37 (record_parameters key validation, Python-only) to validation rule mapping. Updated DataStore mapping to note JSON serialisation for new fields. Added `build_record_url()` utility to DataStore mapping and file locations. Updated worked example INSERT statements to reflect new column structure and show a resolved deep link URL. Schema user_version bumped to 23. |
+
+---
+
+*Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
+
+*Schema version: 2.3 — May 2026*
