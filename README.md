@@ -15,7 +15,7 @@ Schema version: **2.1** (May 2026) — Docs version: **2.3**
 | `docs/repositories.md` | ✅ v1.2 | 12 pre-populated sources across 7 repositories with deep link templates |
 | `docs/validation_rules.md` | ✅ v2.3 | 36 rules (R01–R37) across four categories with enforcement locus and error codes |
 | `docs/database_schema.md` | ✅ v2.3 | SQLite DDL, junction table design, index strategy, worked example |
-| `docs/reconstruction_algorithms.md` | 🔜 Pending | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler |
+| `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
 | `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, and reasoning sessions |
 
 ---
@@ -31,7 +31,7 @@ irish-genealogy-research/
 │   ├── repositories.md                # Source and repository catalogue
 │   ├── validation_rules.md            # Rules R01–R37 with error codes
 │   ├── database_schema.md             # SQLite DDL, indexes, worked example
-│   ├── reconstruction_algorithms.md   # (pending) Record linkage, Fellegi-Sunter
+│   ├── reconstruction_algorithms.md   # Record linkage, Fellegi-Sunter, place resolution
 │   └── session_bootstrap.md           # (pending) Context-loading guidance
 │
 ├── src/                               # Python source
@@ -88,7 +88,7 @@ Key design principles:
 - **[Python]** — Python validator only
 - **[DB + Python]** — DB enforces what it can; Python validates before write
 
-Python-only rules (active enforcement required): **R20** (lower bound: exactly one RecordedEvent per Record), **R21** (at least one RecordedPerson per Record), **R26** (RecordedEvent ↔ Event Record consistency), **R36** (ISO 8601 date format), **R37** (record_parameters keys match record_parameter_names).
+Python-only rules (active enforcement required): **R20** (lower bound: exactly one RecordedEvent per Record), **R21** (at least one RecordedPerson per Record), **R26** (RecordedEvent ↔ Event Rec[...]
 
 Two entry points: `DataStore.validate()` for full dataset checks; `DataStore.validate_object()` for pre-write single-object checks.
 
