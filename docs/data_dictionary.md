@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.2 — May 2026*
+*Version 2.3 — May 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object. It defines field names, types, constraints, and controlled vocabulary values with GEDCOMx alignment notes.*
 
 ---
@@ -140,6 +140,19 @@ An individual documented within a parent Record, captured verbatim without inter
 | place_as_recorded | string | NO | Place of origin or residence exactly as recorded |
 | notes | string | NO | Transcription observations |
 
+### 3.4 NameVariant — Evidence (derived)
+
+A normalised name variant derived from a `RecordedPerson.name_as_recorded` value by the reconstruction algorithm. Variants are computed once and persisted to avoid redundant calculation across scoring passes. They are derived data and must never be treated as source evidence.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| name_variant_id | integer | YES | Primary key |
+| recorded_person_id | integer | YES | Foreign key to RecordedPerson |
+| variant_value | string | YES | The normalised name string |
+| variant_type | string | YES | How the variant was produced — see §6.9 |
+| algorithm_version | string | YES | Version string of the algorithm that produced this variant. Used to detect stale variants after algorithm updates. |
+| notes | string | NO | Free text notes |
+
 ---
 
 ## 4. Conclusion Layer
@@ -179,9 +192,8 @@ A concluded assertion about a connection between two specific Persons. Independe
 | type | string | YES | Relationship type — see §6.7 |
 | person_id_1 | integer | YES | Foreign key to Person. For ParentChild: the parent. For Couple: either person. |
 | person_id_2 | integer | YES | Foreign key to Person. For ParentChild: the child. For Couple: either person. |
-| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Relationship. Confidence grows as independent Records converge. |
+| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Relationship. Aggregate confidence is derived at query time from the `score` values on the `relationship_record` junction rows. |
 | event_ids | array[integer] | NO | Foreign keys to Events associated with this Relationship |
-| confidence | string | NO | Confidence level — see §6.8 |
 | notes | string | NO | Researcher reasoning supporting this Relationship conclusion |
 
 ---
@@ -199,9 +211,8 @@ A concluded assertion about a discrete real-world occurrence, synthesised from o
 | place_id | integer | NO | Foreign key to Place — concluded place for this Event |
 | person_ids | array[integer] | NO | Foreign keys to Persons who participated in this Event |
 | relationship_id | integer | NO | Foreign key to Relationship — identifies the principal connection within the Event (e.g. the Couple in a marriage Event) |
-| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event. Confidence grows as independent Records converge. |
+| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event. Aggregate confidence is derived at query time from the `score` values on the `event_record` junction rows. |
 | recorded_event_ids | array[integer] | NO | Foreign keys to RecordedEvents that this Event is concluded from |
-| confidence | string | NO | Confidence level — see §6.8 |
 | notes | string | NO | Researcher reasoning supporting this Event conclusion |
 
 ---
@@ -237,6 +248,18 @@ The following table summarises all linkage assertions connecting the conclusion 
 | Place.record_ids | → Record | Records containing place strings concluded to refer to this Place |
 
 RecordedPerson and RecordedEvent are not direct linkage targets for conclusion-layer objects. They are the structured attributes the reconstruction algorithm reads when scoring record-to-person, record-to-event, and record-to-place linkage candidates.
+
+### Scoring columns on linkage junction tables
+
+The four primary linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) carry three additional fields beyond their foreign key pair:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| score | real | YES | Similarity score in [0.0, 1.0] assigned by the reconstruction algorithm when this linkage was asserted. Default 0.0. |
+| score_version | string | YES | Algorithm version string that produced the score. Used to detect stale scores after algorithm updates. Default empty string. |
+| verified | boolean | YES | Researcher override: 0 = algorithm assertion, 1 = researcher-verified. A verified row is never automatically overwritten by a re-scoring pass. Default 0. |
+
+Aggregate confidence for display purposes (where the old `Relationship.confidence` or `Event.confidence` would have been used) is derived at query time as a function of the score distribution across the linked Records.
 
 ---
 
@@ -340,13 +363,26 @@ Roles are verbatim-adjacent — they normalise the raw role text from the source
 
 ### 6.8 Confidence Levels
 
-Confidence is a qualitative assessment of the convergent evidence supporting a conclusion. The mechanics of confidence scoring are defined in the reconstruction algorithms document.
+**Retired as a stored field.** `Relationship.confidence` and `Event.confidence` have been removed from the schema. The `confidence` vocabulary is preserved here for reference only. Aggregate confidence for display, where required, is derived at query time from the distribution of `score` values on the relevant linkage junction rows.
 
 | Code | GEDCOMx URI | Description |
 |---|---|---|
 | `high` | gedcomx:High | Strong convergent evidence across multiple independent Records |
 | `medium` | gedcomx:Medium | Some evidence — reasonable but not yet corroborated |
 | `low` | gedcomx:Low | Weak or single-source evidence — provisional |
+
+---
+
+### 6.9 Name Variant Types
+
+Applies to `NameVariant.variant_type`.
+
+| Code | Description |
+|---|---|
+| `anglicised` | Anglicised form derived from an Irish-language name (e.g. "Seán" → "John") |
+| `irish` | Irish-language form derived from an Anglicised name (e.g. "John" → "Seán") |
+| `phonetic` | Phonetic encoding (e.g. Soundex or Metaphone) used for fuzzy matching |
+| `normalised` | Lowercased, stripped of diacritics and punctuation, whitespace-collapsed |
 
 ---
 
@@ -362,3 +398,4 @@ Confidence is a qualitative assessment of the convergent evidence supporting a c
 |---|---|---|
 | 2.1 | May 2026 | Initial v2.1 data dictionary |
 | 2.2 | May 2026 | Replaced `Source.record_url_template` single-parameter model with a two-level parameter system. Added `Source.source_parameters` (Source-level URL constants), `Source.record_parameter_names` (names of Record-level placeholders), and `Record.record_parameters` (per-Record placeholder values). Removed `Record.source_identifier`. Added deep link construction note to §2.2. |
+| 2.3 | May 2026 | Removed `confidence` from Relationship (§4.2) and Event (§4.3) field tables — field retired from schema; aggregate confidence is now query-derived from junction scores. Added §3.4 NameVariant object with `variant_type`, `variant_value`, and `algorithm_version` fields. Added scoring column documentation (`score`, `score_version`, `verified`) to §5 cross-layer linkage summary. Updated §6.8 (Confidence) to note retirement as a stored field. Added §6.9 (Name Variant Types) vocabulary table. |
