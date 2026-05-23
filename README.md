@@ -2,7 +2,7 @@
 
 GEDCOMx-lite schema for personal Irish genealogy research — SQLite-backed, evidence/conclusion separated, Python + Claude two-collaborator model.
 
-Schema version: **2.1** (May 2026) — Docs version: **2.3**
+Schema version: **2.1** (May 2026) — Docs version: **2.4**
 
 ---
 
@@ -11,10 +11,10 @@ Schema version: **2.1** (May 2026) — Docs version: **2.3**
 | File | Status | Description |
 |---|---|---|
 | `docs/conceptual_model.md` | ✅ v2.2 | Three-layer architecture, ten first-class objects, data flow, worked example |
-| `docs/data_dictionary.md` | ✅ v2.2 | Field-level definitions for all objects, types, constraints, controlled vocabularies |
+| `docs/data_dictionary.md` | ✅ v2.3 | Field-level definitions for all objects, types, constraints, controlled vocabularies |
 | `docs/repositories.md` | ✅ v1.2 | 12 pre-populated sources across 7 repositories with deep link templates |
-| `docs/validation_rules.md` | ✅ v2.3 | 36 rules (R01–R37) across four categories with enforcement locus and error codes |
-| `docs/database_schema.md` | ✅ v2.3 | SQLite DDL, junction table design, index strategy, worked example |
+| `docs/validation_rules.md` | ✅ v2.4 | 39 rules (R01–R39) across four categories with enforcement locus and error codes |
+| `docs/database_schema.md` | ✅ v2.4 | SQLite DDL, junction table design, index strategy, worked example |
 | `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
 | `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, and reasoning sessions |
 
@@ -29,7 +29,7 @@ irish-genealogy-research/
 │   ├── conceptual_model.md            # Architecture, data flow, ER diagram
 │   ├── data_dictionary.md             # Object and field definitions
 │   ├── repositories.md                # Source and repository catalogue
-│   ├── validation_rules.md            # Rules R01–R37 with error codes
+│   ├── validation_rules.md            # Rules R01–R39 with error codes
 │   ├── database_schema.md             # SQLite DDL, indexes, worked example
 │   ├── reconstruction_algorithms.md   # Record linkage, Fellegi-Sunter, place resolution
 │   └── session_bootstrap.md           # (pending) Context-loading guidance
@@ -40,7 +40,7 @@ irish-genealogy-research/
 │   │   ├── migrations/                # Versioned migration scripts
 │   │   └── seed.sql                   # Repositories + sources from repositories.md
 │   ├── db.py                          # open_db(), init_db(), build_record_url(), DataStore read/write
-│   ├── validator.py                   # DataStore.validate() and validate_object(), rules R01–R37
+│   ├── validator.py                   # DataStore.validate() and validate_object(), rules R01–R39
 │   ├── linkage/                       # Record linkage scoring
 │   └── utils/                         # Shared helpers
 │
@@ -82,7 +82,7 @@ Key design principles:
 
 ## Validation
 
-36 rules across four categories, annotated with enforcement locus:
+39 rules across four categories, annotated with enforcement locus:
 
 - **[DB]** — SQLite constraint (`NOT NULL`, `CHECK`, `UNIQUE`, `REFERENCES`)
 - **[Python]** — Python validator only
