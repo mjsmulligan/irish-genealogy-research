@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Validation Rules
 
-*Version 2.3 — May 2026*
+*Version 2.4 — May 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, and `database_schema.md`.*
 
 ---
@@ -448,18 +448,9 @@ DB enforcement: `CHECK (type IN (...))` on the `relationship` table.
 
 ---
 
-### R35 — Confidence controlled vocabulary `[DB + Python]`
+### R35 — Confidence controlled vocabulary `[Retired]`
 
-`Relationship.confidence` and `Event.confidence`, when present, must each be one of the values defined in §6.8 of the data dictionary.
-
-Valid values: `high`, `medium`, `low`.
-
-DB enforcement: `CHECK (confidence IS NULL OR confidence IN (...))` on both `relationship` and `event` tables.
-
-```
-[R35] Relationship {id}: confidence='{val}' is not a valid confidence value
-[R35] Event {id}: confidence='{val}' is not a valid confidence value
-```
+**Retired.** `Relationship.confidence` and `Event.confidence` have been removed from the schema. Confidence was a static scalar that could not capture the per-linkage granularity required by the reconstruction algorithm. Aggregate confidence, where needed for display, is derived at query time from the `score` values across all linked Records in the relevant junction table. The `CHECK` constraints on both tables have been dropped.
 
 ---
 
@@ -480,6 +471,38 @@ Text dates, circa prefixes, non-ISO separators, two-digit years, and day or mont
 ```
 [R36] RecordedEvent {id}: date='{val}' is not a valid ISO 8601 partial date
 [R36] Event {id}: date='{val}' is not a valid ISO 8601 partial date
+```
+
+---
+
+### R38 — Linkage score range `[DB + Python]`
+
+The `score` column on all four linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) must be a real number in the closed interval [0.0, 1.0].
+
+DB enforcement: `CHECK (score >= 0.0 AND score <= 1.0)` on all four tables.
+Python enforcement: pre-write validation via `validate_object()`.
+
+```
+[R38] person_record (person_id={pid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
+[R38] event_record (event_id={eid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
+[R38] relationship_record (relationship_id={rid}, record_id={rec}): score={val} is outside valid range [0.0, 1.0]
+[R38] place_record (place_id={pid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
+```
+
+---
+
+### R39 — Verified flag values `[DB + Python]`
+
+The `verified` column on all four linkage junction tables must be either 0 (algorithm assertion) or 1 (researcher-verified). A verified row is never automatically overwritten by a re-scoring pass.
+
+DB enforcement: `CHECK (verified IN (0, 1))` on all four tables.
+Python enforcement: pre-write validation via `validate_object()`.
+
+```
+[R39] person_record (person_id={pid}, record_id={rid}): verified={val} must be 0 or 1
+[R39] event_record (event_id={eid}, record_id={rid}): verified={val} must be 0 or 1
+[R39] relationship_record (relationship_id={rid}, record_id={rec}): verified={val} must be 0 or 1
+[R39] place_record (place_id={pid}, record_id={rid}): verified={val} must be 0 or 1
 ```
 
 ---
@@ -522,11 +545,14 @@ Text dates, circa prefixes, non-ISO separators, two-digit years, and day or mont
 | R32 | Person gender vocabulary | DB + Python |
 | R33 | Name type vocabulary | **Retired** |
 | R34 | Relationship type vocabulary | DB + Python |
-| R35 | Confidence vocabulary | DB + Python |
+| R35 | Confidence vocabulary | **Retired** |
 | R36 | Date format | Python only |
+| R37 | record_parameters keys match record_parameter_names | Python only |
+| R38 | Linkage score range [0.0–1.0] | DB + Python |
+| R39 | Verified flag values {0, 1} | DB + Python |
 
-**Python-only rules** (require active Python enforcement): R20, R21, R26, R36.
-**Retired rules** (no longer meaningful in the relational model): R10, R23, R24, R25, R27, R33.
+**Python-only rules** (require active Python enforcement): R20, R21, R26, R36, R37.
+**Retired rules** (no longer meaningful in the relational model): R10, R23, R24, R25, R27, R33, R35.
 **DB-only rule** (no Python action needed): R22.
 
 ---
@@ -538,7 +564,7 @@ Rules are executed in the following order. Later rules depend on earlier ones ha
 1. **Structural rules (R01–R09)** — object well-formedness. No cross-object lookups. Safe to run in isolation via `validate_object()`.
 2. **Referential integrity rules (R12–R19)** — pre-write checks that referenced IDs exist. In normal operation the DB enforces these; Python checks them to produce actionable error messages before attempting an insert.
 3. **Consistency rules (R20–R26)** — cross-object invariants. Depend on referential integrity holding.
-4. **Vocabulary and format rules (R28–R36)** — controlled values and date formats. Run last to separate structural problems from vocabulary problems in the error output.
+4. **Vocabulary and format rules (R28–R39)** — controlled values, date formats, and scoring column constraints. Run last to separate structural problems from vocabulary problems in the error output.
 
 When a referential integrity error is present, downstream consistency rules that would traverse the broken reference are skipped for the affected object:
 
@@ -585,6 +611,7 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 | 2.1 | May 2026 | Initial version for v2.1 schema |
 | 2.2 | May 2026 | Revised for SQLite. Added enforcement locus annotations. Added Repository structural rule (R01). Renumbered rules throughout. Retired R23 (Person↔Relationship bidirectionality), R24 (Person↔Event bidirectionality), R25 (Relationship↔Event bidirectionality), R27 (evidence-layer isolation) — all superseded by junction table architecture. R22 (self-reference) reclassified as DB-only. Corrected erroneous reference to Place.date_qualifier in date qualifier rule. Added rule summary table. |
 | 2.3 | May 2026 | Retired R10 (name object completeness) and R33 (name type vocabulary) — both superseded by `person_name` table constraints. Python-only rules reduced from 6 to 4: R20, R21, R26, R36. |
+| 2.4 | May 2026 | Retired R35 (confidence vocabulary) — `confidence` removed from `relationship` and `event` tables. Added R38 (linkage score range, DB + Python) and R39 (verified flag values, DB + Python) covering the new scoring columns on `person_record`, `event_record`, `relationship_record`, `place_record`. Updated rule summary table and execution order. |
 
 ---
 
