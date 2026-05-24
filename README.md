@@ -1,6 +1,6 @@
 # Irish Genealogy Research
 
-Irish genealogy research service — SQLite-backed, evidence/conclusion separated, Python + Claude two-collaborator model.
+A probabilistic genealogy research system combining record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale with Python + Claude two-collaborator model.
 
 Schema version: **2.1** (May 2026) — Docs version: **2.5**
 
@@ -13,11 +13,11 @@ Schema version: **2.1** (May 2026) — Docs version: **2.5**
 | `docs/conceptual_model.md` | ✅ v2.2 | Three-layer architecture, ten first-class objects, data flow, worked example |
 | `docs/data_dictionary.md` | ✅ v2.3 | Field-level definitions for all objects, types, constraints, controlled vocabularies |
 | `docs/repositories.md` | ✅ v1.2 | 12 pre-populated sources across 7 repositories with deep link templates |
-| `docs/validation_rules.md` | ✅ v2.4 | 39 rules (R01–R39) across four categories with enforcement locus and error codes |
-| `docs/database_schema.md` | ✅ v2.4 | SQLite DDL, junction table design, index strategy, worked example |
+| `docs/validation_rules.md` | ✅ v2.5 | 46 rules (R01–R46) across five categories: structural, referential, consistency, vocabulary, genealogical constraints |
+| `docs/database_schema.md` | ✅ v2.4 | SQLite DDL, junction table design, index strategy, scoring and verification tracking |
 | `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
-| `docs/genealogical_constraints.md` | ✅ v1.1 | Genealogical domain constraints, probabilistic reasoning, source eligibility, biological plausibility |
-| `docs/service_api.md` | ✅ v1.0 | Service layer API, research operations, session bootstrap, researcher signals |
+| `docs/genealogical_constraints.md` | ✅ v1.1 | 22 domain constraints: chronological, singularity, source eligibility, biological plausibility, co-residency, community patterns |
+| `docs/service_api.md` | ✅ v1.0 | Service layer API, research scope, knowledge retrieval, evidence queries, pipeline state, researcher signals |
 | `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, and reasoning sessions |
 
 ---
@@ -27,29 +27,30 @@ Schema version: **2.1** (May 2026) — Docs version: **2.5**
 ```
 irish-genealogy-research/
 │
-├── docs/                              # Schema documentation
-│   ├── conceptual_model.md            # Architecture, data flow, ER diagram
-│   ├── data_dictionary.md             # Object and field definitions
-│   ├── repositories.md                # Source and repository catalogue
-│   ├── validation_rules.md            # Rules R01–R39 with error codes
-│   ├── database_schema.md             # SQLite DDL, indexes, worked example
-│   ├── reconstruction_algorithms.md   # Record linkage, Fellegi-Sunter, place resolution
-│   ├── genealogical_constraints.md    # Domain constraints, source eligibility, reasoning framework
-│   ├── service_api.md                 # Service layer, research operations, Claude session bootstrap
-│   └── session_bootstrap.md           # (pending) Context-loading guidance
+├── docs/                              # Schema and system documentation
+│   ├── conceptual_model.md            # Three-layer architecture and design principles
+│   ├── data_dictionary.md             # Object definitions and controlled vocabularies
+│   ├── repositories.md                # Source catalogue with deep link templates
+│   ├── validation_rules.md            # 46 validation rules (structural, referential, consistency, vocabulary, genealogical)
+│   ├── database_schema.md             # SQLite DDL, indexes, scoring, verification tracking
+│   ├── reconstruction_algorithms.md   # Probabilistic record linkage, Fellegi-Sunter, Jaro-Winkler
+│   ├── genealogical_constraints.md    # 22 genealogical constraints driving scoring and reasoning
+│   ├── service_api.md                 # Service layer for research operations and Claude sessions
+│   └── session_bootstrap.md           # (pending) Session context loading
 │
 ├── src/                               # Python source
 │   ├── db/
-│   │   ├── schema.sql                 # Canonical CREATE TABLE + CREATE INDEX statements
+│   │   ├── schema.sql                 # Complete DDL (CREATE TABLE + CREATE INDEX)
 │   │   ├── migrations/                # Versioned migration scripts
-│   │   └── seed.sql                   # Repositories + sources from repositories.md
-│   ├── db.py                          # open_db(), init_db(), build_record_url(), DataStore read/write
-│   ├── validator.py                   # DataStore.validate() and validate_object(), rules R01–R39
-│   ├── service.py                     # ResearchService class: API for Claude and UI consumers
-│   ├── linkage/                       # Record linkage scoring
-│   └── utils/                         # Shared helpers
+│   │   └── seed.sql                   # Source and repository seed data
+│   ├── db.py                          # Database layer: open_db(), init_db(), DataStore, build_record_url()
+│   ├── validator.py                   # Validation framework: 46 rules across all categories
+│   ├── service.py                     # Service layer: ResearchService API for Claude and UI consumers
+│   ├── reconstruction.py              # Linkage scoring: Fellegi-Sunter, Jaro-Winkler, genealogical constraints
+│   ├── linkage/                       # Record linkage algorithms and candidate generation
+│   └── utils/                         # Shared utilities
 │
-├── tests/                             # Pytest test suite (pending rewrite for v2.1)
+├── tests/                             # Pytest test suite
 │
 ├── requirements.txt                   # jellyfish, jsonschema, pytest, black
 ├── .gitignore                         # genealogy.db gitignored
@@ -60,69 +61,81 @@ irish-genealogy-research/
 
 ---
 
-## Schema Overview
+## System Architecture
 
-The v2.1 schema uses a **three-layer architecture** with ten first-class objects:
+### Three-Layer Data Model
 
-**Foundational** — Repository, Source
+The system uses a strict evidence/conclusion separation:
 
-**Evidence** — Record, RecordedEvent, RecordedPerson
+**Foundational Layer** — Repository, Source  
+Institutional and bibliographic context, shared across the entire dataset.
 
-**Conclusion** — Person, Relationship, Event, Place
+**Evidence Layer** — Record, RecordedEvent, RecordedPerson  
+Verbatim assertions extracted directly from historical sources. Never points to conclusions.
 
-Key design principles:
+**Conclusion Layer** — Person, Relationship, Event, Place  
+Researcher assertions, mutable and supported by evidence. All linkages to evidence are reversible.
 
-- Evidence and conclusion layers are strictly separated — evidence never points to conclusions
-- Exactly one `RecordedEvent` per `Record`; enforced by `UNIQUE (record_id)` in the DB
-- `Person.record_ids` is the primary linkage assertion — not `RecordedPerson`
-- `Relationship` is independent of `Event` and carries its own `event_ids`
-- Many-to-many relationships implemented as junction tables (`person_record`, `event_person` etc.)
-- `Person.names` stored in a dedicated `person_name` table for indexed name search
-- Deep links constructed at runtime by merging `source_parameters` (Source-level constants) with `record_parameters` (Record-level values)
-- Controlled vocabulary uses short codes as stored values (`"high"/"medium"/"low"`, `"couple"/"parent_child"` etc.)
-- GEDCOMx URIs (`http://gedcomx.org/`) are reference metadata only, not stored values
-- Irish-specific extensions use the `http://irishgenealogy.local/gedcomx/` namespace
+### Validation Framework
 
----
+**46 rules** across five categories, executed in order:
 
-## Validation
+1. **Structural** (R01–R09) — required fields, non-empty constraints
+2. **Referential Integrity** (R12–R19) — foreign key resolution
+3. **Consistency** (R20–R26) — cross-object invariants (e.g., exactly one RecordedEvent per Record)
+4. **Vocabulary and Format** (R28–R39) — controlled values, date formats, score ranges
+5. **Genealogical Constraints** (R40–R46) — domain knowledge checks:
+   - Birth/death/census singularity
+   - Life event sequence and chronological ordering
+   - Parent age and marriage age plausibility
+   - Lifespan boundaries for record-person linkage
 
-39 rules across four categories, annotated with enforcement locus:
+Enforcement is distributed: SQLite constraints enforce what they can (NOT NULL, CHECK, UNIQUE, REFERENCES), Python validation runs before writes and for cross-object checks.
 
-- **[DB]** — SQLite constraint (`NOT NULL`, `CHECK`, `UNIQUE`, `REFERENCES`)
-- **[Python]** — Python validator only
-- **[DB + Python]** — DB enforces what it can; Python validates before write
+### Probabilistic Reasoning Framework
 
-Python-only rules (active enforcement required): **R20** (lower bound: exactly one RecordedEvent per Record), **R21** (at least one RecordedPerson per Record), **R26** (RecordedEvent ↔ Event Record consistency), **R36** (date format), **R37** (record_parameters validation).
+**22 genealogical constraints** (GC01–GC22) layer domain knowledge onto record linkage scoring:
 
-Two entry points: `DataStore.validate()` for full dataset checks; `DataStore.validate_object()` for pre-write single-object checks.
+- **Chronological** — lifespan boundaries, event sequencing, census age drift
+- **Singularity** — birth, death, marriage, census uniqueness per person
+- **Source Eligibility** — which sources to search given person's profile (birth year, gender, role)
+- **Biological Plausibility** — parent age (15–70 year gaps), marriage age (15+ years), sibling spacing
+- **Co-residency** — household membership expectations (household head + spouse + children)
+- **Community Patterns** — naming conventions, witness/godparent networks, occupational consistency
+- **Record-Specific** — death registration informant as relationship signal, geographical coherence
 
----
+All constraints are probabilistic weightings, not hard filters. Violations adjust linkage scores or surface as researcher flags.
 
-## Genealogical Reasoning Framework
+### Service API
 
-22 genealogical constraints (GC01–GC22) layer domain knowledge onto the validation rules:
+The service layer (`service.py`) is the single interface for all consumers:
 
-- **Chronological constraints** — lifespan boundaries, event sequencing, age consistency
-- **Singularity constraints** — birth, death, marriage, census singularity
-- **Source eligibility** — which sources to search given a Person's profile; based on birth year, gender, role
-- **Biological plausibility** — parent age, marriage age, sibling spacing
-- **Co-residency** — household membership expectations
-- **Community patterns** — naming conventions, witness networks, occupational consistency
-
-These constraints drive both automatic linkage scoring (probabilistic penalties) and researcher recommendations (Person Browser, leads, proposals). All constraints are probabilistic weightings rather than hard filters — a conclusion that violates a constraint is surfaced to the researcher for review.
-
-See `genealogical_constraints.md` for the complete framework, `service_api.md` for how the service layer exposes findings to Claude and UI consumers.
+- **Research scope definition** — filter by surname, townland, date range, sources
+- **Knowledge retrieval** — person, relationship, event, place queries with full provenance
+- **Evidence queries** — search records, find unlinked records, browse by source
+- **Pipeline state** — proposals, flags, leads, auto-committed linkages
+- **Researcher signals** — verify, reject, annotate linkages; create/assert conclusions; resolve flags
+- **Session bootstrap** — context loading for Claude sessions
 
 ---
 
 ## The Two-Collaborator Model
 
-**Python handles:** schema validation and referential integrity, SQLite I/O and batch ingestion, record linkage scoring (Fellegi-Sunter, Jaro-Winkler), deterministic deduplication.
+**Python handles:**
+- Schema validation and referential integrity
+- SQLite I/O and batch ingestion
+- Probabilistic record linkage (Fellegi-Sunter, Jaro-Winkler, constraint penalties)
+- Genealogical constraint evaluation
+- Pipeline execution and proposal generation
 
-**Claude handles:** verbatim transcription of source images, ambiguous record interpretation, reasoning about conflicting evidence, hypothesis generation and narrative synthesis.
+**Claude handles:**
+- Verbatim transcription of source images
+- Ambiguous record interpretation and structured data extraction
+- Reasoning about conflicting evidence
+- Hypothesis generation and narrative synthesis
+- Validation of system proposals and researcher feedback
 
-**Service API (`service.py`)** provides the operational interface: research scope definition, knowledge retrieval, evidence queries, pipeline state inspection, researcher signals (verify, reject, annotate, assert), and session bootstrap for Claude.
+**Service API bridges both:** Python provides the knowledge base; Claude accesses it through the service layer to assist with research sessions.
 
 ---
 
@@ -136,8 +149,8 @@ pip install -r requirements.txt
 python -c "from src.db import init_db; init_db('genealogy.db')"
 ```
 
-> **Tests:** The v1 test suite (`test_validator.py`) is retired. A v2.1 test suite covering the five Python-only rules and all ten object types is a pending work item.
+> **Tests:** The v1 test suite is retired. A v2.1+ test suite covering all validation categories and object types is a pending work item.
 
 ---
 
-*Based on the [GEDCOMx Conceptual Model](http://gedcomx.org/conceptual-model/v1)*
+*Designed for Irish genealogy research at townland scale. Evidence from civil registrations (1864+), census returns (1901, 1911, 1926), land records (Griffith's Valuation, Tithe Applotment), parish registers, and military/folklore sources.*
