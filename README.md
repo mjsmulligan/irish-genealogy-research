@@ -1,6 +1,6 @@
 # Irish Genealogy Research
 
-GEDCOMx-lite schema for personal Irish genealogy research — SQLite-backed, evidence/conclusion separated, Python + Claude two-collaborator model.
+Irish genealogy research service — SQLite-backed, evidence/conclusion separated, Python + Claude two-collaborator model.
 
 Schema version: **2.1** (May 2026) — Docs version: **2.5**
 
