@@ -1,7 +1,7 @@
 # Irish Genealogy Research — Reconstruction Algorithms
 
-*Version 1.0 — May 2026*
-*Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `validation_rules.md` first.*
+*Version 1.1 — May 2026*
+*Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, and `genealogical_constraints.md` first.*
 
 ---
 
@@ -101,6 +101,8 @@ The reconstruction pipeline is built on three components:
 
 **Irish-specific logic** — custom Python code implementing the domain knowledge that general-purpose libraries cannot provide: the name variant table, the townland normalisation pipeline, the source-specific feature extractors, the patronymic signal, and the role-pair relationship inference rules. This layer runs as pre-processing before Splink and as post-processing after it.
 
+**Genealogical constraints** — the domain rules defined in `genealogical_constraints.md` that govern score adjustment, merge error flagging, and researcher recommendations. Constraints interact with the pipeline at two points: as post-scoring penalties applied to candidate linkages before the threshold band decision (see §1.7), and as the input to the Person Browser source coverage and completeness computation (see `genealogical_constraints.md` §9).
+
 **Installation:**
 
 ```
@@ -148,6 +150,59 @@ CREATE TABLE name_variant (
 CREATE INDEX idx_name_variant_variant ON name_variant (variant);
 CREATE INDEX idx_name_variant_canonical ON name_variant (canonical);
 ```
+
+---
+
+### 1.7 Constraint application and score adjustment
+
+Genealogical constraints (defined in full in `genealogical_constraints.md`) are applied to candidate linkages after Splink produces its raw match probability score and before the threshold band decision is made. The adjusted score — not the raw Splink score — determines whether a linkage is auto-committed, proposed, or auto-rejected.
+
+**Application order:**
+
+1. Splink produces a raw match probability score for a candidate Record-to-conclusion linkage.
+2. The constraint engine evaluates all applicable GC-coded constraints against the candidate.
+3. Each violated constraint applies a penalty multiplier to the raw score. Multiple violations compound.
+4. The adjusted score is compared against the threshold bands (§1.3) to determine the automated action.
+5. Where a constraint flags a near-zero probability violation, the adjusted score is clamped below the auto-reject floor regardless of the raw Splink score — the linkage is suppressed and a flag is written to the researcher recommendation queue.
+
+**Constraint penalty magnitudes:**
+
+| Probability language | Adjusted score behaviour |
+|---|---|
+| Near-zero probability | Score clamped to 0.0; linkage suppressed; strong flag written |
+| Significantly reduced probability | Score multiplied by 0.4; most candidates move to propose band |
+| Reduced probability | Score multiplied by 0.7; linkage remains reviewable |
+
+These multipliers are starting points and should be tuned alongside the Splink threshold bands once real data from the Tullynaught test case is available.
+
+**Verified flag override:** A linkage row with `verified = 1` is never re-scored or penalised by the constraint engine. Researcher judgment takes absolute precedence. The constraint engine does however write an advisory flag to the researcher recommendation queue for any verified linkage that violates a near-zero probability constraint, so the researcher is aware the conclusion is anomalous even if they have explicitly confirmed it.
+
+**Constraint-to-GC mapping:** The following table summarises which constraints in `genealogical_constraints.md` interact directly with the scoring pipeline versus which operate only as researcher recommendations:
+
+| GC | Constraint | Scoring interaction | Recommendation only |
+|---|---|---|---|
+| GC01 | Lifespan boundary | ✓ | |
+| GC02 | Life event sequence | ✓ | |
+| GC03 | Census age drift | ✓ | |
+| GC04 | Birth singularity | ✓ (merge error flag) | |
+| GC05 | Death singularity | ✓ (merge error flag) | |
+| GC06 | Marriage per couple Relationship | ✓ | |
+| GC07 | Census singularity | ✓ | |
+| GC08 | Source eligibility by birth year | | ✓ |
+| GC09 | Land record occupier age | ✓ | |
+| GC10 | Female occupier inference | | ✓ |
+| GC11 | Civil registration completeness | | ✓ |
+| GC12 | Minimum and maximum parent age | ✓ | |
+| GC13 | Minimum marriage age | ✓ | |
+| GC14 | Sibling birth spacing | ✓ | |
+| GC15 | Parent-child co-residency | | ✓ |
+| GC16 | Couple co-residency | | ✓ |
+| GC17 | Household membership consistency | | ✓ |
+| GC18 | Naming pattern consistency | ✓ (positive signal) | ✓ |
+| GC19 | Witness and godparent network | | ✓ |
+| GC20 | Occupation consistency | ✓ (weak penalty) | ✓ |
+| GC21 | Death registration informant | ✓ (positive signal) | ✓ |
+| GC22 | Geographical coherence | ✓ (context note) | ✓ |
 
 ---
 
@@ -293,6 +348,8 @@ If Person conclusion P1 ("Patrick Mulligan, b. ~1820") already exists with a `pa
 
 This logic requires the existing relationship graph to be populated. It therefore only applies in incremental linkage mode, not in initial construction.
 
+The naming pattern also functions as a **positive inference tool** in incremental linkage mode — where a child's name matches the expected generational pattern relative to a concluded grandparent, this is an increased probability signal supporting the parent-child Relationship and can surface as a researcher recommendation. See `genealogical_constraints.md` GC18 for the full specification of both the negative disambiguation and positive inference directions.
+
 ### 4.4 Surname frequency weighting
 
 In a small closed community, certain surnames dominate — many Mulligans, Brennans, or Kellys in the same townland across generations. A surname match in a high-frequency community contributes less discriminating information than the same match in a low-frequency community.
@@ -384,6 +441,8 @@ For the three census years available:
 
 A candidate pair whose age delta falls within tolerance receives full credit on the birth year comparison feature. A delta outside tolerance is a strong negative signal but not an automatic disqualification — informant errors on age are common enough that the other features can compensate if they score strongly.
 
+*Cross-reference: this constraint is also specified as GC03 in `genealogical_constraints.md`, which is the authoritative source for the genealogical rationale. This section is the authoritative source for the implementation. The tolerance values in both documents must be kept in sync.*
+
 ---
 
 ## 6. Relationship Inference
@@ -402,12 +461,16 @@ Relationship assertions are derived from the roles of RecordedPersons within a R
 | `mother` | `principal` | `parent_child` | mother=parent | 0.90 |
 | `father_of_groom` | `groom` | `parent_child` | father=parent | 0.90 |
 | `father_of_bride` | `bride` | `parent_child` | father=parent | 0.90 |
-| `principal` | `godfather` | — | (no Relationship; noted in Event only) | — |
-| `principal` | `witness` | — | (no Relationship; noted in Event only) | — |
+| `principal` | `godfather` | — | (no automatic Relationship; linkage candidate surfaced — see GC19) | — |
+| `principal` | `godmother` | — | (no automatic Relationship; linkage candidate surfaced — see GC19) | — |
+| `principal` | `witness` | — | (no automatic Relationship; linkage candidate surfaced — see GC19) | — |
+| `deceased` | `informant` | — | (no automatic Relationship; relationship candidate derived from informant_qualification — see GC21) | — |
 
 Roles not listed in this table do not generate automatic Relationship assertions. Occupier/lessor pairs in Griffith's or Tithe records describe a land tenure relationship, not a personal relationship, and are not modelled as Relationships.
 
 Prior scores reflect the strength of the role-pair evidence alone. These scores are stored on the `relationship_record` junction table and contribute to derived confidence.
+
+**Witness, godparent, and informant roles** do not generate automatic Relationship conclusions because the nature of the relationship cannot be determined from the role alone. However, unresolved RecordedPersons in these roles are high-value linkage targets and are surfaced as recommendations to the researcher. See `genealogical_constraints.md` GC19 (witness and godparent network) and GC21 (death registration informant) for the full inference specifications.
 
 ### 6.2 Relationship deduplication
 
@@ -579,6 +642,22 @@ def compute_derived_confidence(ds: DataStore, obj_type: str, obj_id: int) -> str
     """Compute provisional confidence band for a conclusion object
     from its junction table scores. Returns 'high', 'medium', or 'low'."""
 
+def apply_constraints(
+    ds: DataStore, candidate: LinkageCandidate
+) -> tuple[float, list[ConstraintFlag]]:
+    """Apply all applicable GC-coded constraints from genealogical_constraints.md
+    to a candidate linkage. Returns the adjusted score and a list of flags.
+    Flags carry the GC code, probability language, and a human-readable message
+    for surfacing to the researcher."""
+
+def compute_source_coverage(ds: DataStore, person_id: int) -> SourceCoverageResult:
+    """Compute the source eligibility state (attached / eligible / possible /
+    ineligible) for all 12 sources for a given Person, based on their concluded
+    birth year, death year, gender, and currently attached Records.
+    Returns a SourceCoverageResult containing the coverage score, completeness
+    signal, and ranked list of incompleteness recommendations.
+    See genealogical_constraints.md §9 for the full specification."""
+
 def export_gedcom(ds: DataStore, output_path: str) -> None:
     """Export the full conclusion layer as a GEDCOM 5.5.1 file."""
 ```
@@ -646,9 +725,10 @@ The following entries seed the `name_variant` table for common Irish names encou
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | May 2026 | Initial version |
+| 1.1 | May 2026 | Added `genealogical_constraints.md` to preamble reading list. Added genealogical constraints as a fourth component in §1.5 library stack. Added §1.7 (constraint application and score adjustment) with penalty magnitude table and full GC-to-pipeline mapping. Updated §4.3 (patronymic naming pattern) to add positive inference direction and cross-reference GC18. Updated §5.6 (census age drift) to add cross-reference note to GC03. Updated §6.1 role-pair rules table to add godmother row, expand witness/godparent/informant notes, and cross-reference GC19 and GC21. Added `apply_constraints()` and `compute_source_coverage()` entry points to §9.2. |
 
 ---
 
-*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, `session_bootstrap.md`*
+*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, `genealogical_constraints.md`, `session_bootstrap.md`*
 
-*Schema version: 2.1 (pending v2.4 updates specified in §1.6) — May 2026*
+*Schema version: 2.4 — May 2026*
