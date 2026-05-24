@@ -2,7 +2,7 @@
 
 GEDCOMx-lite schema for personal Irish genealogy research — SQLite-backed, evidence/conclusion separated, Python + Claude two-collaborator model.
 
-Schema version: **2.1** (May 2026) — Docs version: **2.4**
+Schema version: **2.1** (May 2026) — Docs version: **2.5**
 
 ---
 
@@ -16,6 +16,8 @@ Schema version: **2.1** (May 2026) — Docs version: **2.4**
 | `docs/validation_rules.md` | ✅ v2.4 | 39 rules (R01–R39) across four categories with enforcement locus and error codes |
 | `docs/database_schema.md` | ✅ v2.4 | SQLite DDL, junction table design, index strategy, worked example |
 | `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
+| `docs/genealogical_constraints.md` | ✅ v1.1 | Genealogical domain constraints, probabilistic reasoning, source eligibility, biological plausibility |
+| `docs/service_api.md` | ✅ v1.0 | Service layer API, research operations, session bootstrap, researcher signals |
 | `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, and reasoning sessions |
 
 ---
@@ -32,6 +34,8 @@ irish-genealogy-research/
 │   ├── validation_rules.md            # Rules R01–R39 with error codes
 │   ├── database_schema.md             # SQLite DDL, indexes, worked example
 │   ├── reconstruction_algorithms.md   # Record linkage, Fellegi-Sunter, place resolution
+│   ├── genealogical_constraints.md    # Domain constraints, source eligibility, reasoning framework
+│   ├── service_api.md                 # Service layer, research operations, Claude session bootstrap
 │   └── session_bootstrap.md           # (pending) Context-loading guidance
 │
 ├── src/                               # Python source
@@ -41,6 +45,7 @@ irish-genealogy-research/
 │   │   └── seed.sql                   # Repositories + sources from repositories.md
 │   ├── db.py                          # open_db(), init_db(), build_record_url(), DataStore read/write
 │   ├── validator.py                   # DataStore.validate() and validate_object(), rules R01–R39
+│   ├── service.py                     # ResearchService class: API for Claude and UI consumers
 │   ├── linkage/                       # Record linkage scoring
 │   └── utils/                         # Shared helpers
 │
@@ -88,9 +93,26 @@ Key design principles:
 - **[Python]** — Python validator only
 - **[DB + Python]** — DB enforces what it can; Python validates before write
 
-Python-only rules (active enforcement required): **R20** (lower bound: exactly one RecordedEvent per Record), **R21** (at least one RecordedPerson per Record), **R26** (RecordedEvent ↔ Event Rec[...]
+Python-only rules (active enforcement required): **R20** (lower bound: exactly one RecordedEvent per Record), **R21** (at least one RecordedPerson per Record), **R26** (RecordedEvent ↔ Event Record consistency), **R36** (date format), **R37** (record_parameters validation).
 
 Two entry points: `DataStore.validate()` for full dataset checks; `DataStore.validate_object()` for pre-write single-object checks.
+
+---
+
+## Genealogical Reasoning Framework
+
+22 genealogical constraints (GC01–GC22) layer domain knowledge onto the validation rules:
+
+- **Chronological constraints** — lifespan boundaries, event sequencing, age consistency
+- **Singularity constraints** — birth, death, marriage, census singularity
+- **Source eligibility** — which sources to search given a Person's profile; based on birth year, gender, role
+- **Biological plausibility** — parent age, marriage age, sibling spacing
+- **Co-residency** — household membership expectations
+- **Community patterns** — naming conventions, witness networks, occupational consistency
+
+These constraints drive both automatic linkage scoring (probabilistic penalties) and researcher recommendations (Person Browser, leads, proposals). All constraints are probabilistic weightings rather than hard filters — a conclusion that violates a constraint is surfaced to the researcher for review.
+
+See `genealogical_constraints.md` for the complete framework, `service_api.md` for how the service layer exposes findings to Claude and UI consumers.
 
 ---
 
@@ -99,6 +121,8 @@ Two entry points: `DataStore.validate()` for full dataset checks; `DataStore.val
 **Python handles:** schema validation and referential integrity, SQLite I/O and batch ingestion, record linkage scoring (Fellegi-Sunter, Jaro-Winkler), deterministic deduplication.
 
 **Claude handles:** verbatim transcription of source images, ambiguous record interpretation, reasoning about conflicting evidence, hypothesis generation and narrative synthesis.
+
+**Service API (`service.py`)** provides the operational interface: research scope definition, knowledge retrieval, evidence queries, pipeline state inspection, researcher signals (verify, reject, annotate, assert), and session bootstrap for Claude.
 
 ---
 
