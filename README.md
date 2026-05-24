@@ -1,6 +1,6 @@
 # Irish Genealogy Research
 
-A probabilistic genealogy research system combining record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale with Python + Claude two-collaborator model.
+A probabilistic genealogy research assistant with a knowledge base combining record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
 Schema version: **2.1** (May 2026) — Docs version: **2.5**
 
@@ -35,24 +35,24 @@ irish-genealogy-research/
 │   ├── database_schema.md             # SQLite DDL, indexes, scoring, verification tracking
 │   ├── reconstruction_algorithms.md   # Probabilistic record linkage, Fellegi-Sunter, Jaro-Winkler
 │   ├── genealogical_constraints.md    # 22 genealogical constraints driving scoring and reasoning
-│   ├── service_api.md                 # Service layer for research operations and Claude sessions
+│   ├── service_api.md                 # Service layer for research operations and client sessions
 │   └── session_bootstrap.md           # (pending) Session context loading
 │
-├── src/                               # Python source
+├── src/                               # Implementation
 │   ├── db/
 │   │   ├── schema.sql                 # Complete DDL (CREATE TABLE + CREATE INDEX)
 │   │   ├── migrations/                # Versioned migration scripts
 │   │   └── seed.sql                   # Source and repository seed data
 │   ├── db.py                          # Database layer: open_db(), init_db(), DataStore, build_record_url()
 │   ├── validator.py                   # Validation framework: 46 rules across all categories
-│   ├── service.py                     # Service layer: ResearchService API for Claude and UI consumers
+│   ├── service.py                     # Service layer: API for research clients
 │   ├── reconstruction.py              # Linkage scoring: Fellegi-Sunter, Jaro-Winkler, genealogical constraints
 │   ├── linkage/                       # Record linkage algorithms and candidate generation
 │   └── utils/                         # Shared utilities
 │
-├── tests/                             # Pytest test suite
+├── tests/                             # Test suite
 │
-├── requirements.txt                   # jellyfish, jsonschema, pytest, black
+├── requirements.txt                   # Dependencies
 ├── .gitignore                         # genealogy.db gitignored
 └── README.md
 ```
@@ -90,7 +90,7 @@ Researcher assertions, mutable and supported by evidence. All linkages to eviden
    - Parent age and marriage age plausibility
    - Lifespan boundaries for record-person linkage
 
-Enforcement is distributed: SQLite constraints enforce what they can (NOT NULL, CHECK, UNIQUE, REFERENCES), Python validation runs before writes and for cross-object checks.
+Enforcement is distributed: the database enforces what it can (NOT NULL, CHECK, UNIQUE, REFERENCES), while validation runs before writes and for cross-object checks.
 
 ### Probabilistic Reasoning Framework
 
@@ -108,34 +108,29 @@ All constraints are probabilistic weightings, not hard filters. Violations adjus
 
 ### Service API
 
-The service layer (`service.py`) is the single interface for all consumers:
+The service layer is the research interface:
 
 - **Research scope definition** — filter by surname, townland, date range, sources
 - **Knowledge retrieval** — person, relationship, event, place queries with full provenance
 - **Evidence queries** — search records, find unlinked records, browse by source
 - **Pipeline state** — proposals, flags, leads, auto-committed linkages
 - **Researcher signals** — verify, reject, annotate linkages; create/assert conclusions; resolve flags
-- **Session bootstrap** — context loading for Claude sessions
+- **Session context** — context loading for research sessions
+
+Clients access the knowledge base through this API. Multiple client types are supported.
 
 ---
 
-## The Two-Collaborator Model
+## Knowledge Base
 
-**Python handles:**
-- Schema validation and referential integrity
-- SQLite I/O and batch ingestion
-- Probabilistic record linkage (Fellegi-Sunter, Jaro-Winkler, constraint penalties)
-- Genealogical constraint evaluation
-- Pipeline execution and proposal generation
+The knowledge base combines:
 
-**Claude handles:**
-- Verbatim transcription of source images
-- Ambiguous record interpretation and structured data extraction
-- Reasoning about conflicting evidence
-- Hypothesis generation and narrative synthesis
-- Validation of system proposals and researcher feedback
+- **Evidence** — 12 sources across 7 repositories (civil registrations, census returns, land records, parish registers, military records, folklore collections)
+- **Conclusions** — persons, relationships, events, places asserted by researchers and validated by the system
+- **Linkages** — scored and verified connections between records and conclusions, with confidence tracking
+- **Reasoning** — 22 genealogical constraints applied to score linkages and flag anomalies
 
-**Service API bridges both:** Python provides the knowledge base; Claude accesses it through the service layer to assist with research sessions.
+All data is stored in SQLite with strict schema validation.
 
 ---
 
