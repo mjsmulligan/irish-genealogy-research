@@ -1,7 +1,7 @@
 # Irish Genealogy Research — Validation Rules
 
-*Version 2.4 — May 2026*
-*Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, and `database_schema.md`.*
+*Version 2.5 — May 2026*
+*Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, `database_schema.md`, and `genealogical_constraints.md`.*
 
 ---
 
@@ -22,12 +22,13 @@ The Python validator's role has shifted from *checking a loaded dataset for cons
 
 ### Rule categories
 
-Rules are grouped into four categories, executed in order:
+Rules are grouped into five categories, executed in order:
 
 1. **Structural rules** — well-formedness of individual objects
 2. **Referential integrity rules** — foreign keys resolve to existing objects
 3. **Consistency rules** — cross-object invariants
 4. **Vocabulary and format rules** — controlled values and date formats
+5. **Genealogical constraint rules** — domain knowledge checks derived from `genealogical_constraints.md`; near-zero probability violations flagged as merge error candidates
 
 Each rule carries a code in the form `[Rnn]`. Error messages always include the rule code and the primary key of the offending object. The validator returns a flat list of error strings. A dataset is considered valid when the list is empty.
 
@@ -507,7 +508,134 @@ Python enforcement: pre-write validation via `validate_object()`.
 
 ---
 
-## 6. Rule Summary Table
+---
+
+## 6. Genealogical Constraint Rules
+
+These rules formalise the hardest constraints from `genealogical_constraints.md` — those flagged as near-zero probability violations — as Python validation rules. They are the counterpart to the probabilistic scoring constraints: where the constraint engine adjusts scores and queues recommendations, these rules generate explicit error-level flags for violations that are strong enough to be treated as merge error candidates regardless of Splink scores.
+
+All rules in this section are **[Python]** only. They require cross-object lookups against the existing conclusion layer and cannot be expressed as SQLite constraints. They run as part of `DataStore.validate()` and are also callable individually for targeted post-linkage checks.
+
+**Relationship to `genealogical_constraints.md`:** Each rule cites the GC code of the constraint it formalises. The GC document is the authoritative source for the genealogical rationale; this document is the authoritative source for the validation implementation.
+
+**Error severity:** Rules in this section produce warnings rather than hard errors by default. A warning is a flag surfaced to the researcher for review — it does not prevent a linkage from being committed. The researcher's `verified = 1` on the relevant junction row is the mechanism for acknowledging and overriding a warning. This is consistent with the probabilistic framing of the overall system.
+
+---
+
+### R40 — Birth Event singularity `[Python]` *(GC04)*
+
+A concluded `Person` may not be linked to more than one birth `Event` via `person_event`. Multiple birth Events on the same Person indicate a conclusion-layer merge error — most commonly two Records from different sources (e.g. a civil birth registration and a baptism) have been incorrectly concluded as separate birth Events rather than synthesised into one.
+
+This rule queries `person_event` joined to `event` to count birth-type Events per Person. A count greater than one triggers the warning.
+
+```
+[R40] Person {id}: has {n} birth Events — maximum 1 permitted; probable merge error
+```
+
+---
+
+### R41 — Death Event singularity `[Python]` *(GC05)*
+
+A concluded `Person` may not be linked to more than one death `Event` via `person_event`. A burial Event linked to the same Person is permitted and expected — this rule checks only Events of type `death`.
+
+```
+[R41] Person {id}: has {n} death Events — maximum 1 permitted; probable merge error
+```
+
+---
+
+### R42 — Census Record singularity per source `[Python]` *(GC07)*
+
+A concluded `Person` may not be linked to more than one `Record` from the same census source (source_ids 3, 4, or 5) via `person_record` where `verified = 0`. Multiple unverified census linkages for the same source and Person indicate a high probability of a merge error.
+
+Linkages where `verified = 1` are excluded from this check — the researcher has explicitly confirmed the double enumeration exception.
+
+This rule queries `person_record` joined to `record` and `source` to count unverified Records per census source per Person. A count greater than one triggers the warning.
+
+```
+[R42] Person {id}: has {n} unverified Records from census source {source_id} ('{source_title}') — maximum 1 expected; probable merge error or double enumeration
+```
+
+---
+
+### R43 — Life event sequence `[Python]` *(GC02)*
+
+For any concluded `Person`, the dates of their concluded life Events must follow chronological order where those dates are non-null and their uncertainty ranges do not overlap. Confirmed sequence violations indicate a merge error.
+
+**Checks performed:**
+
+| Check | Condition flagged |
+|---|---|
+| Birth before baptism | Baptism date is more than 2 years before birth date (excluding adult baptism — see below) |
+| Birth before all other events | Any non-birth, non-baptism Event date precedes birth date (net of tolerance) |
+| Marriage before death | Death date precedes any marriage Event date the Person participated in (net of tolerance) |
+| Death before burial | Burial date precedes death date (net of tolerance) |
+| Events after death | Any census, residence, valuation, tithe, or military Event date follows death date (net of tolerance) |
+
+**Tolerance:** Where an event date carries a qualifier of `about`, `estimated`, or `calculated`, a tolerance of ±2 years is applied before flagging. A sequence violation is only confirmed if the uncertainty ranges of the two dates do not overlap.
+
+**Adult baptism exception:** Where the baptism RecordedEvent's linked RecordedPerson has a recorded age greater than 1 year, the birth-before-baptism interval check is suppressed for that Event pair.
+
+**Date qualifier precedence:** `exact` dates are compared directly. All other qualifiers trigger the ±2 year tolerance.
+
+```
+[R43] Person {id}: sequence violation — {event_type_1} date {date_1} precedes {event_type_2} date {date_2} (net of tolerance)
+```
+
+---
+
+### R44 — Minimum parent age `[Python]` *(GC12)*
+
+For any `parent_child` Relationship, the gap between the parent's concluded birth year and the child's concluded birth year must be at least 15 years, net of age tolerances on both. A gap below 15 years is a near-zero probability biological violation and is flagged as a merge error candidate.
+
+Additionally, for a female parent (where `Person.gender = 'female'`), a gap greater than 50 years is also flagged.
+
+This rule requires both Persons in the Relationship to have a concluded birth Event or an estimated birth year derivable from their linked Records. Where neither Person has a birth year, the rule is skipped and noted as unevaluated.
+
+**Tolerance:** ±2 years applied to both parent and child birth year estimates before computing the gap.
+
+```
+[R44] Relationship {id} (parent_child): parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years is below minimum of 15; probable merge error
+[R44] Relationship {id} (parent_child): female parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years exceeds maternal maximum of 50; probable merge error
+```
+
+---
+
+### R45 — Minimum marriage age `[Python]` *(GC13)*
+
+For any Person linked to a marriage `Event` via `person_event`, the gap between the Person's concluded birth year and the marriage Event date must be at least 15 years, net of age tolerance. A gap below 15 years is flagged as a merge error candidate.
+
+Where the Person has no concluded birth year derivable from their linked Records, the rule is skipped and noted as unevaluated.
+
+**Tolerance:** ±2 years applied to birth year estimate before computing the gap.
+
+```
+[R45] Person {id}: marriage Event {eid} dated {marriage_date} — concluded birth year {by} places Person at age {age} at marriage; minimum age is 15; probable merge error
+```
+
+---
+
+### R46 — Lifespan boundary `[Python]` *(GC01)*
+
+For any Person linked to a Record via `person_record`, the RecordedEvent date of that Record must fall within the Person's concluded lifespan. A RecordedEvent date more than 5 years outside the lifespan bounds is flagged regardless of the linkage score.
+
+**Lifespan bounds:**
+- Lower bound: concluded birth Event date, or baptism Event date where no birth Event exists, or estimated birth year derived from linked Records.
+- Upper bound: concluded death Event date where known; otherwise unbounded.
+
+**Tolerance:** ±5 years applied to both bounds before flagging.
+
+Where neither a lower nor upper bound can be established from the Person's concluded Events, the rule is skipped and noted as unevaluated.
+
+```
+[R46] person_record (person_id={pid}, record_id={rid}): RecordedEvent date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}]; probable merge error
+```
+
+---
+
+## 7. Rule Summary Table
+
+The following table summarises all rules, their description, and their enforcement locus.
 
 | Rule | Description | Enforcement |
 |---|---|---|
@@ -550,21 +678,29 @@ Python enforcement: pre-write validation via `validate_object()`.
 | R37 | record_parameters keys match record_parameter_names | Python only |
 | R38 | Linkage score range [0.0–1.0] | DB + Python |
 | R39 | Verified flag values {0, 1} | DB + Python |
+| R40 | Birth Event singularity | Python only (GC04) |
+| R41 | Death Event singularity | Python only (GC05) |
+| R42 | Census Record singularity per source | Python only (GC07) |
+| R43 | Life event sequence | Python only (GC02) |
+| R44 | Minimum and maximum parent age | Python only (GC12) |
+| R45 | Minimum marriage age | Python only (GC13) |
+| R46 | Lifespan boundary | Python only (GC01) |
 
-**Python-only rules** (require active Python enforcement): R20, R21, R26, R36, R37.
+**Python-only rules** (require active Python enforcement): R20, R21, R26, R36, R37, R40, R41, R42, R43, R44, R45, R46.
 **Retired rules** (no longer meaningful in the relational model): R10, R23, R24, R25, R27, R33, R35.
 **DB-only rule** (no Python action needed): R22.
 
 ---
 
-## 7. Execution Order and Dependency
+## 8. Execution Order and Dependency
 
 Rules are executed in the following order. Later rules depend on earlier ones having passed.
 
 1. **Structural rules (R01–R09)** — object well-formedness. No cross-object lookups. Safe to run in isolation via `validate_object()`.
 2. **Referential integrity rules (R12–R19)** — pre-write checks that referenced IDs exist. In normal operation the DB enforces these; Python checks them to produce actionable error messages before attempting an insert.
 3. **Consistency rules (R20–R26)** — cross-object invariants. Depend on referential integrity holding.
-4. **Vocabulary and format rules (R28–R39)** — controlled values, date formats, and scoring column constraints. Run last to separate structural problems from vocabulary problems in the error output.
+4. **Vocabulary and format rules (R28–R39)** — controlled values, date formats, and scoring column constraints. Run last among the schema rules to separate structural problems from vocabulary problems in the error output.
+5. **Genealogical constraint rules (R40–R46)** — domain knowledge checks. Run after all schema rules are clean. Depend on the conclusion layer being populated; skipped for objects with unresolved birth year or lifespan bounds. Produce warnings rather than hard errors.
 
 When a referential integrity error is present, downstream consistency rules that would traverse the broken reference are skipped for the affected object:
 
@@ -572,17 +708,25 @@ When a referential integrity error is present, downstream consistency rules that
 [SKIP] Consistency checks for {ObjectType} {id} skipped: unresolved foreign key(s) from R12–R19
 ```
 
+When a birth year or lifespan bound cannot be established for a Person, genealogical constraint rules that require it are skipped and noted:
+
+```
+[SKIP] R{nn} for Person {id} skipped: birth year not determinable from concluded Events or linked Records
+```
+
 ---
 
-## 8. Validation Entry Points
+## 9. Validation Entry Points
 
 **`DataStore.validate() -> list[str]`** — full validation of all Python-only rules against the current database state. Queries the database directly. Returns a flat list of error strings. An empty list means the dataset is valid with respect to all Python-enforced rules. (DB-enforced rules are assumed to hold if the database was written through the normal Python layer with `PRAGMA foreign_keys = ON`.)
 
-**`DataStore.validate_object(obj_type: str, obj: dict) -> list[str]`** — structural and vocabulary validation of a single object in isolation, without referential integrity or consistency checks. Used during interactive ingestion to give immediate feedback before a new object is committed to the store.
+**`DataStore.validate_object(obj_type: str, obj: dict) -> list[str]`** — structural and vocabulary validation of a single object in isolation, without referential integrity, consistency, or genealogical constraint checks. Used during interactive ingestion to give immediate feedback before a new object is committed to the store.
+
+**`DataStore.validate_genealogical(person_id: int) -> list[str]`** — runs all genealogical constraint rules (R40–R46) for a single Person and their associated Events, Relationships, and linked Records. Returns a flat list of warning strings. Called by the Person Browser to surface merge error candidates and anomalies alongside the source coverage display. Can also be run in batch across all Persons via `DataStore.validate()`.
 
 ---
 
-## 9. Validation Error Format
+## 10. Validation Error Format
 
 Every error string follows a fixed format:
 
@@ -598,9 +742,12 @@ Examples:
 [R20] Record 47: has 0 RecordedEvents — exactly 1 required
 [R29] RecordedEvent 88: type='occupation' is not a valid event type
 [R36] Event 12: date='April 1890' is not a valid ISO 8601 partial date
+[R40] Person 23: has 2 birth Events — maximum 1 permitted; probable merge error
+[R43] Person 23: sequence violation — marriage date 1878 precedes birth date 1880 (net of tolerance)
+[R44] Relationship 7 (parent_child): parent Person 12 birth year 1870 — child Person 23 birth year 1858 — gap of -12 years is below minimum of 15; probable merge error
 ```
 
-The `[Rnn]` prefix is machine-parseable. The object type and id are always present so errors can be correlated back to database rows.
+The `[Rnn]` prefix is machine-parseable. The object type and id are always present so errors can be correlated back to database rows. Genealogical constraint warnings (R40–R46) are distinguishable from schema errors by their rule code range.
 
 ---
 
@@ -612,9 +759,10 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 | 2.2 | May 2026 | Revised for SQLite. Added enforcement locus annotations. Added Repository structural rule (R01). Renumbered rules throughout. Retired R23 (Person↔Relationship bidirectionality), R24 (Person↔Event bidirectionality), R25 (Relationship↔Event bidirectionality), R27 (evidence-layer isolation) — all superseded by junction table architecture. R22 (self-reference) reclassified as DB-only. Corrected erroneous reference to Place.date_qualifier in date qualifier rule. Added rule summary table. |
 | 2.3 | May 2026 | Retired R10 (name object completeness) and R33 (name type vocabulary) — both superseded by `person_name` table constraints. Python-only rules reduced from 6 to 4: R20, R21, R26, R36. |
 | 2.4 | May 2026 | Retired R35 (confidence vocabulary) — `confidence` removed from `relationship` and `event` tables. Added R38 (linkage score range, DB + Python) and R39 (verified flag values, DB + Python) covering the new scoring columns on `person_record`, `event_record`, `relationship_record`, `place_record`. Updated rule summary table and execution order. |
+| 2.5 | May 2026 | Added `genealogical_constraints.md` to preamble. Added fifth rule category — genealogical constraint rules. Added §6 (Genealogical Constraint Rules) with R40 (birth Event singularity, GC04), R41 (death Event singularity, GC05), R42 (census Record singularity per source, GC07), R43 (life event sequence, GC02), R44 (minimum and maximum parent age, GC12), R45 (minimum marriage age, GC13), R46 (lifespan boundary, GC01). Added `validate_genealogical()` entry point to §9. Extended execution order in §8 to include genealogical constraint category and added SKIP message for unevaluable persons. Renumbered §§6–9 to §§7–10. Updated rule summary table. Added R40–R46 examples to §10 error format. |
 
 ---
 
-*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `reconstruction_algorithms.md`*
+*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `reconstruction_algorithms.md`, `genealogical_constraints.md`*
 
-*Schema version: 2.1 — May 2026*
+*Schema version: 2.4 — May 2026*
