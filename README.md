@@ -1,8 +1,18 @@
-# Irish Genealogy Research
+# Genealogy Research Assistant (GRA)
 
-A probabilistic genealogy research assistant with a knowledge base combining record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
+*grá — Irish for love*
+
+A probabilistic genealogy research platform combining a SQLite knowledge base, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale, with an expanding vision for narrative output and multi-consumer access.
 
 Schema version: **2.1** (May 2026) — Docs version: **2.5**
+
+---
+
+## Project Status
+
+> **→ See [`ROADMAP.md`](ROADMAP.md) for current work queue, open decisions, and what to focus on next.**
+
+The ROADMAP is the primary orchestration document for GRA. It tracks implementation status across all modules, open design decisions that block downstream work, and the near/medium/long-term roadmap including the narrative output use case. Start there at the beginning of each working session.
 
 ---
 
@@ -18,7 +28,8 @@ Schema version: **2.1** (May 2026) — Docs version: **2.5**
 | `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
 | `docs/genealogical_constraints.md` | ✅ v1.1 | 22 domain constraints: chronological, singularity, source eligibility, biological plausibility, co-residency, community patterns |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API, research scope, knowledge retrieval, evidence queries, pipeline state, researcher signals |
-| `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, and reasoning sessions |
+| `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, reasoning, and narrative sessions |
+| `ROADMAP.md` | ✅ v1.0 | Work queue, implementation status, open decisions, project roadmap |
 
 ---
 
@@ -36,7 +47,7 @@ irish-genealogy-research/
 │   ├── reconstruction_algorithms.md   # Probabilistic record linkage, Fellegi-Sunter, Jaro-Winkler
 │   ├── genealogical_constraints.md    # 22 genealogical constraints driving scoring and reasoning
 │   ├── service_api.md                 # Service layer for research operations and client sessions
-│   └── session_bootstrap.md           # (pending) Session context loading
+│   └── session_bootstrap.md           # (pending) Session context loading — transcription, linkage, reasoning, narrative
 │
 ├── src/                               # Implementation
 │   ├── db/
@@ -54,6 +65,7 @@ irish-genealogy-research/
 │
 ├── requirements.txt                   # Dependencies
 ├── .gitignore                         # genealogy.db gitignored
+├── ROADMAP.md                         # Work queue, open decisions, project roadmap
 └── README.md
 ```
 
