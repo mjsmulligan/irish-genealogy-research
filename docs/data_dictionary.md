@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.3 — May 2026*
+*Version 2.4 — May 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object. It defines field names, types, constraints, and controlled vocabulary values with GEDCOMx alignment notes.*
 
 ---
@@ -315,16 +315,35 @@ Applies to both RecordedEvent.type and Event.type.
 
 Roles are verbatim-adjacent — they normalise the raw role text from the source into a controlled value while remaining faithful to the source's meaning.
 
+The role vocabulary covers two distinct source contexts. **Census roles** map directly from the NAI download `relation_to_head_updated` field; the mapping is applied by Python at ingest with no manual intervention required. **Event roles** appear in civil registration, parish register, and other documentary sources.
+
+**Census roles** (NAI relation_to_head mapping):
+
+| Code | NAI value(s) | GEDCOMx URI | Description |
+|---|---|---|---|
+| `head` | Head of Family | local:Head | Head of household |
+| `spouse` | Wife | local:Spouse | Spouse of head |
+| `son` | Son | local:Son | Son of head or spouse |
+| `daughter` | Daughter | local:Daughter | Daughter of head or spouse |
+| `sibling` | Brother, Sister | local:Sibling | Sibling of head |
+| `grandchild` | Grand Son, Grand Daughter | local:Grandchild | Grandchild of head or spouse |
+| `in_law` | Son in Law, Daughter in Law, Mother in Law, Father in Law, Brother In Law, Sister In Law, Niece in Law | local:InLaw | Relation by marriage |
+| `niece_nephew` | Niece, Nephew, Nice | local:NieceNephew | Niece or nephew of head or spouse |
+| `aunt_uncle` | Aunt, Uncle | local:AuntUncle | Aunt or uncle of head or spouse |
+| `cousin` | Cousin | local:Cousin | Cousin of head or spouse |
+| `mother` | Mother | local:Mother | Mother of head |
+| `father` | Father | local:Father | Father of head |
+| `servant` | Servant | local:Servant | Domestic servant in household |
+| `visitor` | Visitor | local:Visitor | Visitor to household on census night |
+| `boarder` | Boarder, Lodger | local:Boarder | Paying lodger or boarder |
+
+**Event roles** (civil registration, parish register, and other documentary sources):
+
 | Code | GEDCOMx URI | Description |
 |---|---|---|
 | `principal` | gedcomx:Principal | Primary subject of the record (general) |
-| `head` | local:Head | Head of household |
-| `spouse` | local:Spouse | Spouse of head (census) |
-| `child` | local:Child | Child in household or baptism record |
 | `groom` | local:Groom | Groom in marriage record |
 | `bride` | local:Bride | Bride in marriage record |
-| `father` | local:Father | Father named in record |
-| `mother` | local:Mother | Mother named in record |
 | `father_of_groom` | local:FatherOfGroom | Father of groom in marriage record |
 | `father_of_bride` | local:FatherOfBride | Father of bride in marriage record |
 | `godfather` | local:Godfather | Godfather in baptism record |
@@ -335,6 +354,8 @@ Roles are verbatim-adjacent — they normalise the raw role text from the source
 | `occupier` | local:Occupier | Land occupier in valuation or tithe record |
 | `lessor` | local:Lessor | Lessor in valuation record |
 | `deceased` | local:Deceased | Deceased person in death or burial record |
+
+**NAI ingest mapping notes:** Python applies the census role mapping automatically from `relation_to_head_updated` (preferred) falling back to `relation_to_head`. The value `Nice` is treated as `niece_nephew` (transcription error for Niece). A blank `relation_to_head_updated` with no fallback maps to `principal` with a parse note. All mappings are deterministic — no Claude involvement required for role assignment during census ingest.
 
 ### 6.5 Gender Values
 
@@ -359,7 +380,9 @@ Roles are verbatim-adjacent — they normalise the raw role text from the source
 |---|---|---|---|
 | `couple` | gedcomx:Couple | Symmetric | Married or partnered pair |
 | `parent_child` | gedcomx:ParentChild | person_id_1 = parent, person_id_2 = child | Parent to child |
-| `sibling` | local:Sibling | Symmetric | Sibling pair — reserved for future use |
+| `sibling` | local:Sibling | Symmetric | Sibling pair |
+
+**Inference notes:** `sibling` relationships are inferred from census records when two persons share the same `head` and both carry a `son`, `daughter`, or `sibling` role (see `reconstruction_algorithms.md` §6.1). A `grandchild` role implies a two-hop `parent_child` chain (head → child → grandchild) but does not directly generate a grandparent Relationship — the intermediate parent Person must be resolved first. `in_law`, `niece_nephew`, `aunt_uncle`, and `cousin` roles do not generate automatic Relationship assertions; they are retained as role evidence for researcher-led reasoning.
 
 ### 6.8 Confidence Levels
 
@@ -399,3 +422,4 @@ Applies to `NameVariant.variant_type`.
 | 2.1 | May 2026 | Initial v2.1 data dictionary |
 | 2.2 | May 2026 | Replaced `Source.record_url_template` single-parameter model with a two-level parameter system. Added `Source.source_parameters` (Source-level URL constants), `Source.record_parameter_names` (names of Record-level placeholders), and `Record.record_parameters` (per-Record placeholder values). Removed `Record.source_identifier`. Added deep link construction note to §2.2. |
 | 2.3 | May 2026 | Removed `confidence` from Relationship (§4.2) and Event (§4.3) field tables — field retired from schema; aggregate confidence is now query-derived from junction scores. Added §3.4 NameVariant object with `variant_type`, `variant_value`, and `algorithm_version` fields. Added scoring column documentation (`score`, `score_version`, `verified`) to §5 cross-layer linkage summary. Updated §6.8 (Confidence) to note retirement as a stored field. Added §6.9 (Name Variant Types) vocabulary table. |
+| 2.4 | May 2026 | Expanded §6.4 RecordedPerson Roles to cover full NAI census download vocabulary. Added census roles: `son`, `daughter`, `sibling`, `grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`. Retired generic `child` role (replaced by `son`/`daughter`). Split role table into census roles and event roles with NAI mapping notes. Activated `sibling` Relationship type in §6.7 (previously reserved). Added inference notes for `grandchild`, `in_law`, and extended-family roles. |

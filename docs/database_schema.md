@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Database Schema
 
-*Version 2.4 — May 2026*
+*Version 2.5 — May 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ---
@@ -192,8 +192,14 @@ CREATE TABLE recorded_person (
     notes                   TEXT,
 
     CHECK (role IN (
-        'principal', 'head', 'spouse', 'child',
-        'groom', 'bride', 'father', 'mother',
+        -- Census roles (NAI download mapping)
+        'head', 'spouse', 'son', 'daughter',
+        'sibling', 'grandchild', 'in_law',
+        'niece_nephew', 'aunt_uncle', 'cousin',
+        'mother', 'father',
+        'servant', 'visitor', 'boarder',
+        -- Event roles (civil registration, parish register, other)
+        'principal', 'groom', 'bride',
         'father_of_groom', 'father_of_bride',
         'godfather', 'godmother',
         'witness', 'informant', 'officiator',
@@ -475,7 +481,7 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R28 | Source type vocabulary | `CHECK (type IN (...))` | Yes |
 | R29 | Event type vocabulary | `CHECK (type IN (...))` on both tables | Yes |
 | R30 | Date qualifier vocabulary | `CHECK (date_qualifier IN (...))` | Yes |
-| R31 | RecordedPerson role vocabulary | `CHECK (role IN (...))` | Yes |
+| R31 | RecordedPerson role vocabulary | `CHECK (role IN (...))` — see DDL for full list | Yes |
 | R32 | Person gender vocabulary | `CHECK (gender IN (...))` | Yes |
 | R33 | Name type vocabulary | `CHECK (type IN (...))` on person_name table | Yes |
 | R34 | Relationship type vocabulary | `CHECK (type IN (...))` | Yes |
@@ -657,12 +663,12 @@ def init_db(path: str) -> sqlite3.Connection:
 
 ```python
 # Record schema version on init
-conn.execute("PRAGMA user_version = 24")  # version 2.4
+conn.execute("PRAGMA user_version = 25")  # version 2.5
 
 # Check version on open
 version = conn.execute("PRAGMA user_version").fetchone()[0]
-if version != 24:
-    raise RuntimeError(f"Schema version mismatch: expected 24, got {version}")
+if version != 25:
+    raise RuntimeError(f"Schema version mismatch: expected 25, got {version}")
 ```
 
 ---
@@ -689,9 +695,10 @@ if version != 24:
 | 2.2 | May 2026 | Replaced `person.names` JSON TEXT column with `person_name` table. Added `idx_person_name_value` and `idx_person_name_person` indexes. Updated schema overview, DDL, validation rule mapping, DataStore mapping, and worked example accordingly. R10 and R33 reclassified from Python-only to DB+Python. |
 | 2.3 | May 2026 | Replaced `record.source_identifier TEXT` with `record.record_parameters TEXT` (JSON). Added `source.source_parameters TEXT` (JSON) and `source.record_parameter_names TEXT` (JSON array) to the source table. Added §1 design decision explaining JSON TEXT choice for parameter fields. Added R37 (record_parameters key validation, Python-only) to validation rule mapping. Updated DataStore mapping to note JSON serialisation for new fields. Added `build_record_url()` utility to DataStore mapping and file locations. Updated worked example INSERT statements to reflect new column structure and show a resolved deep link URL. Schema user_version bumped to 23. |
 | 2.4 | May 2026 | Removed `confidence TEXT` from `relationship` and `event` tables; retired R35. Added `score REAL`, `score_version TEXT`, `verified INTEGER` scoring columns to `person_record`, `event_record`, `relationship_record`, `place_record`; added R38 and R39. Added `name_variant` table with `variant_type` vocabulary `CHECK` and `algorithm_version`. Added `idx_name_variant_value`, `idx_name_variant_recorded_person`, and partial indexes on score for unverified linkage rows. Added §1 design decisions for name variants and scoring junction columns. Updated schema overview, validation rule mapping, DataStore mapping, and worked example. Schema user_version bumped to 24. |
+| 2.5 | May 2026 | Expanded `recorded_person.role` CHECK constraint to cover full NAI census download vocabulary. Added census roles: `son`, `daughter`, `sibling`, `grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`. Removed `child` (replaced by `son`/`daughter`). Grouped CHECK values into census roles and event roles with inline comments. Updated R31 note in validation rule mapping. Schema user_version bumped to 25. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 
-*Schema version: 2.4 — May 2026*
+*Schema version: 2.5 — May 2026*
