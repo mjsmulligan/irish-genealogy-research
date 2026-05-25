@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Repositories and Sources
 
-*Version 1.2 — May 2026*
+*Version 1.3 — May 2026*
 *Audience: All roles. This document is a practical reference for transcription and ingestion sessions. It defines the pre-populated global repository and source set available to all projects without setup.*
 
 ---
@@ -99,9 +99,10 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | record_url_template | https://nationalarchives.ie/collections/search-the-census/view-pdf/?doc={document_id} |
 | source_parameters | null |
 | record_parameter_names | document_id |
-| column_schema | document_id, household_id, line_number, surname, forename, relation_to_head, religion, literacy, age, sex, occupation, marriage_status, years_married, children_born, children_living, birthplace, irish_language, medical_disability, county, ded, townland, house_number |
+| column_schema | id, census_year, county, surname, firstname, townland, townland_clean, ded, age, sex, house_number, relation_to_head, religion, education, occupation, marriage_status, marriage_years, children_born, children_living, birthplace, language, deafdumb, image_group, religion_updated, occupation_updated, relation_to_head_updated, language_updated, images, ded_clean |
+| nai_ingest_mapping | document_id ← first image id extracted from `images` field; household_id ← `image_group`; role ← `relation_to_head_updated` (fallback: `relation_to_head`) via census role mapping table in `data_dictionary.md` §6.4 |
 
-**Notes:** The 1911 census layout adds critical marital history elements (years married, total children born alive, and children surviving) that enable precise family reconstruction modelling. As with the 1901 census, `document_id` is the sole Record-level parameter and `source_parameters` is null.
+**Notes:** The column_schema reflects the NAI census download CSV format exactly as published. This is the gold standard input format for census ingest — no column transformation is required. The `images` field contains a JSON-serialised list of image objects; Python extracts the first Form A image ID as `document_id` for `record_parameters` and for the deep link. The `image_group` field is the NAI's household grouping identifier and serves as `household_id` for grouping persons into Records. One Record is created per household (one Form A page); all persons in the household share that Record. Role assignment is fully automated via the `relation_to_head_updated` mapping — no Claude involvement required. The `_updated` suffix fields (`religion_updated`, `occupation_updated`, `relation_to_head_updated`, `language_updated`) contain NAI-normalised values and are preferred over their raw counterparts for all structured fields. The 1911 census adds marital history fields (`marriage_years`, `children_born`, `children_living`) that enable precise family reconstruction modelling.
 
 ---
 
@@ -259,4 +260,5 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 |---|---|---|
 | 1.0 | May 2026 | Initial repositories document — 7 repositories, 12 sources |
 | 1.1 | May 2026 | Minor corrections |
-| 1.2 | May 2026 | Replaced single `record_url_template` parameter model with two-level parameter system. Added `source_parameters` and `record_parameter_names` fields to all Source entries. Sources 9 (NLI Parish Registers) and 11 (Military Service Pensions) identified as requiring Source-level parameters (`vtls_id` and `release_id` respectively). Updated §1 overview to explain deep link construction. Updated §3 section intro.
+| 1.2 | May 2026 | Replaced single `record_url_template` parameter model with two-level parameter system. Added `source_parameters` and `record_parameter_names` fields to all Source entries. Sources 9 (NLI Parish Registers) and 11 (Military Service Pensions) identified as requiring Source-level parameters (`vtls_id` and `release_id` respectively). Updated §1 overview to explain deep link construction. Updated §3 section intro. |
+| 1.3 | May 2026 | Updated Source 4 (Census 1911) column_schema to match NAI census download CSV format exactly. Added `nai_ingest_mapping` field documenting `document_id`, `household_id`, and role extraction from the download format. Updated notes to describe NAI download as gold standard input, explain `_updated` field preference, image extraction for `document_id`, and `image_group` as `household_id`. |

@@ -4,7 +4,7 @@
 
 A probabilistic genealogy research platform combining a SQLite knowledge base, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale, with an expanding vision for narrative output and multi-consumer access.
 
-Schema version: **2.1** (May 2026) — Docs version: **2.5**
+Schema version: **2.5** (May 2026) — Docs version: **2.5**
 
 ---
 
@@ -21,14 +21,14 @@ The ROADMAP is the primary orchestration document for GRA. It tracks implementat
 | File | Status | Description |
 |---|---|---|
 | `docs/conceptual_model.md` | ✅ v2.2 | Three-layer architecture, ten first-class objects, data flow, worked example |
-| `docs/data_dictionary.md` | ✅ v2.3 | Field-level definitions for all objects, types, constraints, controlled vocabularies |
-| `docs/repositories.md` | ✅ v1.2 | 12 pre-populated sources across 7 repositories with deep link templates |
-| `docs/validation_rules.md` | ✅ v2.5 | 46 rules (R01–R46) across five categories: structural, referential, consistency, vocabulary, genealogical constraints |
-| `docs/database_schema.md` | ✅ v2.4 | SQLite DDL, junction table design, index strategy, scoring and verification tracking |
-| `docs/reconstruction_algorithms.md` | ✅ v1.0 | Record linkage scoring, Fellegi-Sunter, Jaro-Winkler, place resolution, Person/Event linkage |
+| `docs/data_dictionary.md` | ✅ v2.4 | Field-level definitions for all objects; full NAI census role mapping; sibling relationship activated |
+| `docs/repositories.md` | ✅ v1.3 | 12 pre-populated sources across 7 repositories; Source 4 updated to NAI download format |
+| `docs/validation_rules.md` | ✅ v2.5 | 46 rules (R01–R46) across five categories |
+| `docs/database_schema.md` | ✅ v2.5 | SQLite DDL; role vocabulary expanded for NAI census format; schema v2.5 |
+| `docs/reconstruction_algorithms.md` | ✅ v1.1 | Record linkage scoring; expanded role-pair rules; sibling inference |
 | `docs/genealogical_constraints.md` | ✅ v1.1 | 22 domain constraints: chronological, singularity, source eligibility, biological plausibility, co-residency, community patterns |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API, research scope, knowledge retrieval, evidence queries, pipeline state, researcher signals |
-| `docs/session_bootstrap.md` | 🔜 Pending | Context-loading guidance for transcription, linkage, reasoning, and narrative sessions |
+| `docs/session_bootstrap.md` | ✅ v1.0 | Ingest and update knowledge session protocols |
 | `ROADMAP.md` | ✅ v1.0 | Work queue, implementation status, open decisions, project roadmap |
 
 ---
@@ -152,9 +152,20 @@ All data is stored in SQLite with strict schema validation.
 # Requires Python 3.12, SQLite 3.35.0+
 pip install -r requirements.txt
 
-# Initialise the database
-python -c "from src.db import init_db; init_db('genealogy.db')"
+# Initialise a fresh database (creates genealogy.db)
+python -m src.db init
+
+# Ingest a Census 1911 NAI download CSV
+python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
+
+# Print knowledge base summary
+python -m src.db summary
+
+# Use a non-default database path with any command
+python -m src.db --db path/to/custom.db summary
 ```
+
+**Supported ingest sources:** Census 1911 (source 4) and Census 1901 (source 3) using the NAI download CSV format. Additional source handlers are pending implementation — see `ROADMAP.md`.
 
 > **Tests:** The v1 test suite is retired. A v2.1+ test suite covering all validation categories and object types is a pending work item.
 

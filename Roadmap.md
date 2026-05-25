@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*May 2026*
+*May 2026 — v1.1*
 
 ---
 
@@ -25,17 +25,17 @@
 
 | Module | File | Status | Notes |
 |---|---|---|---|
-| Database layer | `src/db.py` | 🔶 Partial | `open_db()`, `init_db()`, `build_record_url()` specified; DataStore read/write methods pending implementation |
-| Schema DDL | `src/db/schema.sql` | 🔶 Partial | DDL specified in `database_schema.md`; canonical `.sql` file may not yet match v2.4 |
-| Seed data | `src/db/seed.sql` | 🔶 Partial | 12 sources and 7 repositories defined in `repositories.md`; SQL seed file pending |
-| Migrations | `src/db/migrations/` | 🔜 Pending | Migration scripts for v2.1→v2.2→v2.3→v2.4 not yet written |
+| Database layer | `src/db.py` | ✅ Complete | `open_db()`, `init_db()`, `build_record_url()`, Census 1901/1911 NAI ingest, `print_summary()`, CLI |
+| Schema DDL | `src/db/schema.sql` | ✅ Complete | DDL at v2.5 — all tables, indexes, constraints |
+| Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources and 7 repositories |
+| Migrations | `src/db/migrations/` | 🔜 Pending | Migration scripts not yet written |
 | Validator | `src/validator.py` | 🔜 Pending | All 46 rules specified; implementation pending |
 | Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; implementation pending |
 | Reconstruction | `src/reconstruction.py` | 🔜 Pending | Algorithms fully specified; implementation pending |
 | Linkage | `src/linkage/` | 🔜 Pending | Splink integration, feature extractors, candidate generation |
 | Test suite | `tests/` | 🔜 Pending | v1 suite retired; v2.1+ suite not yet written |
 
-**Implementation status summary:** The project is documentation-complete for its core data model, validation, reconstruction, and service layers. Implementation is at an early stage — the gap between specification and working code is the primary execution risk.
+**Verified against real data:** Census 1911 NAI download for Tullynaught DED (1,080 persons, 240 households, 31 townlands) ingested cleanly. One parse note (blank relation_to_head mapped to `principal`). Evidence layer populated; conclusion layer awaiting reconstruction pipeline.
 
 ---
 
@@ -43,21 +43,17 @@
 
 Ordered by dependency. Items within a tier can proceed in parallel.
 
-### Tier 1 — Complete the specification layer
+### Tier 1 — Specification layer ✅ Complete
 
-**session_bootstrap.md** *(next session)*
-The final pending document. Defines how Claude loads context at the start of a research session. Must account for four session types: transcription, linkage, reasoning, and narrative (new). The narrative session type — producing family histories and place histories — is a first-class use case as of May 2026.
+All specification documents are complete. `session_bootstrap.md` v1.0 defines ingest and update knowledge session protocols. Scope narrowed from original design: GRA is a knowledge base platform; research and narrative are future consumer applications.
 
-**database_schema.md v2.5**
-Required to support `service_api.md` v1.0. Flags and leads (surfaced by the pipeline, reviewed by the researcher) require new DB tables not yet specified. The `score` column nullability issue (manual assertions have no algorithm score) is an open design question that must be resolved before this version can be written — see §3.
+### Tier 2 — Foundation implementation ✅ Complete
 
-### Tier 2 — Foundation implementation
+**`src/db/schema.sql`** ✅ — canonical DDL at schema v2.5.
 
-**`src/db/schema.sql`** — canonical DDL matching `database_schema.md` v2.4 exactly. The reference implementation all other modules depend on.
+**`src/db/seed.sql`** ✅ — INSERT statements for 12 sources and 7 repositories.
 
-**`src/db/seed.sql`** — INSERT statements for the 12 sources and 7 repositories defined in `repositories.md` v1.2.
-
-**`src/db.py`** — `open_db()`, `init_db()`, `build_record_url()`, and the full DataStore read/write methods for all ten first-class objects.
+**`src/db.py`** ✅ — `open_db()`, `init_db()`, `build_record_url()`, Census 1901/1911 NAI ingest, `print_summary()`, and CLI entry points (`init`, `ingest`, `summary`). Verified against Tullynaught 1911 dataset.
 
 ### Tier 3 — Validation and testing
 
@@ -113,15 +109,9 @@ The current implementation uses a provisional placeholder (confidence = `low` / 
 ---
 
 ### OD-03 — Narrative output architecture
-*Blocks: narrative session type in `session_bootstrap.md`, future narrative pipeline*
+*Resolved: out of scope for GRA platform.*
 
-The narrative output use case (family histories, place histories, and longer-form research documents) is a confirmed use case as of May 2026. The architecture is not yet designed. Key questions:
-
-- Does narrative generation go through the service API (Claude calls `ResearchService` methods and synthesises prose), or does it require a separate narrative pipeline with its own document model?
-- What is the output format? Markdown for research documents; structured script format for video-style output?
-- How does the researcher review and annotate a narrative output? Is it a separate workflow from the evidence/conclusion review cycle?
-
-**Status:** Use case confirmed; architecture not designed. Must be resolved before `session_bootstrap.md` can fully specify the narrative session type.
+Narrative output (family histories, place histories, video-style scripts) is confirmed as a future consumer application built on top of the GRA service layer, not a platform concern. GRA's focus is ingest, linkage, validation, and conclusions. The narrative session type has been removed from `session_bootstrap.md`. Narrative architecture will be designed when that consumer application is specified.
 
 ---
 
@@ -136,19 +126,20 @@ The narrative output use case (family histories, place histories, and longer-for
 
 ## 4. Roadmap
 
-### Near term — complete the platform core
+### Near term — validation and reconstruction
 
-1. Resolve OD-01 (score nullability) → write `database_schema.md` v2.5
-2. Write `session_bootstrap.md` with four session types including narrative
-3. Implement Tier 2 (database foundation)
-4. Implement Tier 3 (validation + test suite)
+1. Resolve OD-01 (score nullability) → write `database_schema.md` v2.6 with flags/leads tables
+2. Implement `src/validator.py` — all 46 rules, three entry points
+3. Implement `src/reconstruction.py` — place resolution and household structure inference (the two stages that don't require Splink)
+4. Write test suite covering all five Python-only rules and the three reconstruction entry points
+5. Resolve OD-04 (Splink backend) → implement Splink-based person linkage
 
 ### Medium term — reconstruction and service
 
-5. Resolve OD-04 (Splink backend) → implement Tier 4 (reconstruction pipeline)
-6. Seed name variant table from `reconstruction_algorithms.md` Appendix A
-7. Implement Tier 5 (service layer)
-8. First research session on Tullynaught test data → calibrate derived confidence (resolve OD-02)
+6. First update knowledge session on Tullynaught — place resolution and household conclusions committed
+7. Implement `src/service.py` — ResearchService API
+8. Ingest 1901 census for Tullynaught → first cross-source update knowledge session
+9. Calibrate derived confidence function (resolve OD-02) using real Tullynaught data
 
 ### Longer term — consumers and narrative
 
@@ -168,6 +159,7 @@ The narrative output use case (family histories, place histories, and longer-for
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | May 2026 | Initial ROADMAP — current state, work queue, open decisions, roadmap. Reflects GRA rename and narrative output use case. |
+| 1.1 | May 2026 | Tier 1 and Tier 2 marked complete. Updated implementation status table with verified results from Tullynaught 1911 ingest. Updated near/medium-term roadmap. Removed OD-03 (narrative architecture) from active decisions — narrative is a future consumer application, not a platform concern. |
 
 ---
 
