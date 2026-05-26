@@ -465,6 +465,29 @@ def _cmd_summary(args: argparse.Namespace) -> None:
     print_summary(conn)
 
 
+def _cmd_reconstruct(args: argparse.Namespace) -> None:
+    from src.reconstruction import (
+        run_place_resolution, print_place_resolution_report,
+        run_household_inference, print_household_inference_report,
+    )
+    conn = open_db(args.db)
+    check_version(conn)
+
+    print("\nRunning reconstruction pipeline...")
+
+    print("\n[1/2] Place resolution")
+    place_result = run_place_resolution(conn)
+    print_place_resolution_report(place_result)
+
+    print("\n[2/2] Household structure inference")
+    source_id = int(args.source)
+    inference_result = run_household_inference(conn, source_id)
+    print_household_inference_report(inference_result)
+
+    print("\nReconstruction complete. Running summary...\n")
+    print_summary(conn)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="python -m src.db",
@@ -481,12 +504,16 @@ def main() -> None:
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
+    p_recon = sub.add_parser("reconstruct", help="Run place resolution and household inference")
+    p_recon.add_argument("--source", required=True, help="Census source ID (e.g. 4 for Census 1911)")
+
     args = parser.parse_args()
 
     dispatch = {
-        "init":    _cmd_init,
-        "ingest":  _cmd_ingest,
-        "summary": _cmd_summary,
+        "init":        _cmd_init,
+        "ingest":      _cmd_ingest,
+        "summary":     _cmd_summary,
+        "reconstruct": _cmd_reconstruct,
     }
     dispatch[args.command](args)
 
