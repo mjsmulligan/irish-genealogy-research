@@ -355,7 +355,7 @@ The role vocabulary covers two distinct source contexts. **Census roles** map di
 | `lessor` | local:Lessor | Lessor in valuation record |
 | `deceased` | local:Deceased | Deceased person in death or burial record |
 
-**NAI ingest mapping notes:** Python applies the census role mapping automatically from `relation_to_head_updated` (preferred) falling back to `relation_to_head`. The value `Nice` is treated as `niece_nephew` (transcription error for Niece). A blank `relation_to_head_updated` with no fallback maps to `principal` with a parse note. All mappings are deterministic — no Claude involvement required for role assignment during census ingest.
+**NAI ingest mapping notes:** Python applies the census role mapping automatically from `relation_to_head_updated` (preferred) falling back to `relation_to_head`. For Census 1926, the source uses `updated_relationship_to_head`; ingest normalization maps this field into the internal `relation_to_head_updated` canonical key before role inference. The value `Nice` is treated as `niece_nephew` (transcription error for Niece). A blank `relation_to_head_updated` with no fallback maps to `principal` with a parse note. All mappings are deterministic — no Claude involvement required for role assignment during census ingest.
 
 ### 6.5 Gender Values
 

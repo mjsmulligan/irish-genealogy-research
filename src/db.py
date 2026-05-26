@@ -170,6 +170,56 @@ def _extract_document_id(images_str: str) -> str | None:
         return None
 
 
+def _get_document_id(person: dict) -> str | None:
+    """Get an internal document identifier for the census household."""
+    doc_id = None
+    if person.get("images"):
+        doc_id = _extract_document_id(person.get("images", ""))
+    if not doc_id:
+        doc_id = person.get("aform_name")
+    return doc_id
+
+
+def _normalize_census_1926_row(row: dict) -> dict:
+    """Normalize 1926 census rows into the same ingest schema used for 1901/1911."""
+    normalized = {
+        "id": row.get("aform_name", ""),
+        "census_year": "1926",
+        "county": row.get("county", ""),
+        "surname": row.get("surname", ""),
+        "firstname": row.get("first_name", ""),
+        "townland": row.get("townland", ""),
+        "townland_clean": row.get("townland", ""),
+        "ded": row.get("ded", ""),
+        "age": row.get("updated_age", ""),
+        "sex": row.get("updated_sex", ""),
+        "house_number": row.get("house_number", ""),
+        "relation_to_head": row.get("relationship_to_head", ""),
+        "religion": row.get("religion", ""),
+        "education": "",
+        "occupation": row.get("personal_occupation", ""),
+        "marriage_status": row.get("updated_marriage", ""),
+        "marriage_years": row.get("years_married", ""),
+        "children_born": row.get("children_born_alive", ""),
+        "children_living": row.get("children_living", ""),
+        "birthplace": row.get("birthplace_county", ""),
+        "language": row.get("irish_or_english", ""),
+        "deafdumb": "",
+        "image_group": row.get("image_group", ""),
+        "religion_updated": row.get("religion", ""),
+        "occupation_updated": row.get("personal_occupation", ""),
+        "relation_to_head_updated": row.get("updated_relationship_to_head", ""),
+        "language_updated": row.get("irish_or_english", ""),
+        "images": "",
+        "geocode": row.get("geocode", ""),
+        "institution_name": row.get("institution_name", ""),
+        "institution_type": row.get("institution_type", ""),
+        "a_id": row.get("a_id", ""),
+        "ded_clean": row.get("ded", ""),
+    }
+    return normalized
+
+
 def _map_role(relation: str) -> tuple[str, str | None]:
     """
     Map NAI relation_to_head value to a GRA role code.
@@ -209,6 +259,9 @@ def ingest_census_1911(
     if not rows:
         raise ValueError("CSV file is empty.")
 
+    if source_id == 5:
+        rows = [_normalize_census_1926_row(row) for row in rows]
+
     # Verify source exists
     source_row = conn.execute(
         "SELECT * FROM source WHERE source_id = ?", (source_id,)
@@ -237,21 +290,32 @@ def ingest_census_1911(
     with conn:
         for image_group, persons in households.items():
 
-            # Extract document_id from the first person's images field
-            document_id = _extract_document_id(persons[0].get("images", ""))
+            # Extract document_id from the first person's images field or 1926 aform_name
+            document_id = _get_document_id(persons[0])
 
             # raw_text: all person rows for this household as CSV lines
+            if source_id == 5:
+                raw_columns = [
+                    "id", "census_year", "county", "surname", "firstname",
+                    "townland", "townland_clean", "ded", "ded_clean", "age", "sex",
+                    "house_number", "relation_to_head", "relation_to_head_updated",
+                    "religion", "religion_updated", "occupation", "occupation_updated",
+                    "marriage_status", "marriage_years", "children_born", "children_living",
+                    "birthplace", "language", "language_updated", "deafdumb",
+                    "image_group", "geocode", "institution_name", "institution_type",
+                    "a_id",
+                ]
+            else:
+                raw_columns = [
+                    "id", "census_year", "county", "surname", "firstname",
+                    "townland_clean", "ded_clean", "age", "sex", "house_number",
+                    "relation_to_head_updated", "religion_updated",
+                    "occupation_updated", "marriage_status", "marriage_years",
+                    "children_born", "children_living", "birthplace",
+                    "language_updated", "deafdumb",
+                ]
             raw_lines = [
-                ",".join(
-                    str(p.get(col, "")) for col in [
-                        "id", "census_year", "county", "surname", "firstname",
-                        "townland_clean", "ded_clean", "age", "sex", "house_number",
-                        "relation_to_head_updated", "religion_updated",
-                        "occupation_updated", "marriage_status", "marriage_years",
-                        "children_born", "children_living", "birthplace",
-                        "language_updated", "deafdumb",
-                    ]
-                )
+                ",".join(str(p.get(col, "")) for col in raw_columns)
                 for p in persons
             ]
             raw_text = "\n".join(raw_lines)
@@ -338,9 +402,15 @@ def ingest_census_1911(
     townlands = sorted({p.get("townland_clean") or p.get("townland", "") for p in rows if p.get("townland_clean") or p.get("townland")})
     deds = sorted({p.get("ded_clean") or p.get("ded", "") for p in rows if p.get("ded_clean") or p.get("ded")})
 
+    source_titles = {
+        3: "Census 1901",
+        4: "Census 1911",
+        5: "Census 1926",
+    }
+
     return {
         "source_id": source_id,
-        "source_title": "Census 1911",
+        "source_title": source_titles.get(source_id, "Census"),
         "csv_path": str(path),
         "rows_in_csv": len(rows),
         "households": len(households),
@@ -434,10 +504,8 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
     source_id = int(args.source)
 
     # Route to the correct ingest function by source
-    if source_id == 4:
-        result = ingest_census_1911(conn, args.file, source_id=source_id)
-    elif source_id == 3:
-        # Census 1901 uses the same NAI format; reuse with source_id=3
+    if source_id in (3, 4, 5):
+        # Census 1901, 1911, and 1926 all use the same NAI CSV format.
         result = ingest_census_1911(conn, args.file, source_id=source_id)
     else:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)

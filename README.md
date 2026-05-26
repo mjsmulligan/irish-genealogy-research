@@ -173,8 +173,14 @@ pip install -r requirements.txt
 # Initialise a fresh database (creates genealogy.db)
 python -m src.db init
 
+# Ingest a Census 1901 NAI download CSV
+python -m src.db ingest --source 3 --file tests/1901_Tullynaught.csv
+
 # Ingest a Census 1911 NAI download CSV
-python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
+python -m src.db ingest --source 4 --file tests/1911_Tullynaught.csv
+
+# Ingest a Census 1926 NAI download CSV
+python -m src.db ingest --source 5 --file tests/1926_Tullynaught.csv
 
 # Print knowledge base summary
 python -m src.db summary
@@ -186,7 +192,7 @@ python -m src.db reconstruct --source 4
 python -m src.db --db path/to/custom.db summary
 ```
 
-**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), and Census 1926 (source 5) using the NAI download CSV format. Additional source handlers (civil registration, parish registers) are planned for Release 2 — see `ROADMAP.md`.
+**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), and Census 1926 (source 5) using the NAI download CSV format. The 1926 importer preserves QA-clean fields from the source, including `aform_name` as the canonical document identifier and `updated_relationship_to_head` as the cleaned relationship field for household inference. Additional source handlers (civil registration, parish registers) are planned for Release 2 — see `ROADMAP.md`.
 
 > **Tests:** The v1 test suite is retired. A v2.5+ test suite covering all validation categories and object types is a pending work item.
 
