@@ -12,7 +12,7 @@ Schema version: **2.5** (May 2026) — Docs version: **2.5**
 
 > **→ See [`ROADMAP.md`](ROADMAP.md) for current work queue, open decisions, and what to focus on next.**
 
-The ROADMAP is the primary orchestration document for GRA. It tracks implementation status across all modules, open design decisions that block downstream work, and the near/medium/long-term roadmap including the narrative output use case. Start there at the beginning of each working session.
+The ROADMAP is the primary orchestration document for GRA. It tracks implementation status across all modules, open design decisions that block downstream work, and the near/medium/long-term roadmap. Start there at the beginning of each working session.
 
 ---
 
@@ -29,7 +29,7 @@ The ROADMAP is the primary orchestration document for GRA. It tracks implementat
 | `docs/genealogical_constraints.md` | ✅ v1.1 | 22 domain constraints: chronological, singularity, source eligibility, biological plausibility, co-residency, community patterns |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API, research scope, knowledge retrieval, evidence queries, pipeline state, researcher signals |
 | `docs/session_bootstrap.md` | ✅ v1.0 | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | ✅ v1.0 | Work queue, implementation status, open decisions, project roadmap |
+| `ROADMAP.md` | ✅ v1.2 | Work queue, implementation status, open decisions, project roadmap |
 
 ---
 
@@ -47,21 +47,23 @@ irish-genealogy-research/
 │   ├── reconstruction_algorithms.md   # Probabilistic record linkage, Fellegi-Sunter, Jaro-Winkler
 │   ├── genealogical_constraints.md    # 22 genealogical constraints driving scoring and reasoning
 │   ├── service_api.md                 # Service layer for research operations and client sessions
-│   └── session_bootstrap.md           # (pending) Session context loading — transcription, linkage, reasoning, narrative
+│   └── session_bootstrap.md           # Session context loading — ingest and update knowledge protocols
 │
 ├── src/                               # Implementation
 │   ├── db/
 │   │   ├── schema.sql                 # Complete DDL (CREATE TABLE + CREATE INDEX)
 │   │   ├── migrations/                # Versioned migration scripts
 │   │   └── seed.sql                   # Source and repository seed data
-│   ├── db.py                          # Database layer: open_db(), init_db(), DataStore, build_record_url()
-│   ├── validator.py                   # Validation framework: 46 rules across all categories
-│   ├── service.py                     # Service layer: API for research clients
-│   ├── reconstruction.py              # Linkage scoring: Fellegi-Sunter, Jaro-Winkler, genealogical constraints
-│   ├── linkage/                       # Record linkage algorithms and candidate generation
+│   ├── reconstruction/
+│   │   ├── __init__.py                # Package entry points
+│   │   ├── place_resolution.py        # Stage 2: townland normalisation and Place conclusion creation
+│   │   └── household_inference.py     # Stage 3: census household structure → Person/Relationship/Event conclusions
+│   ├── db.py                          # Database layer: open_db(), init_db(), DataStore, build_record_url(), CLI
+│   ├── validator.py                   # Validation framework: 46 rules across all categories (pending)
+│   ├── service.py                     # Service layer: API for research clients (pending)
 │   └── utils/                         # Shared utilities
 │
-├── tests/                             # Test suite
+├── tests/                             # Test suite (pending)
 │
 ├── requirements.txt                   # Dependencies
 ├── .gitignore                         # genealogy.db gitignored
@@ -88,6 +90,22 @@ Verbatim assertions extracted directly from historical sources. Never points to 
 **Conclusion Layer** — Person, Relationship, Event, Place  
 Researcher assertions, mutable and supported by evidence. All linkages to evidence are reversible.
 
+### Reconstruction Pipeline
+
+The pipeline constructs conclusion-layer objects from evidence in five ordered stages:
+
+```
+1. Ingest       → Evidence layer populated (Records, RecordedEvents, RecordedPersons)
+2. Place        → Townland variants normalised; Place conclusions auto-committed     ✅ implemented
+3. Person       → Household structure inferred; Person/Relationship/Event conclusions created   ✅ implemented
+4. Linkage      → Cross-source Splink person linkage (cross-census identity)        🔜 next
+5. Analysis     → Community queries, graph traversal, GEDCOM export                 🔜 future
+```
+
+Stages 2 and 3 are deterministic and do not require Splink. They run immediately after ingest and populate the conclusion layer with household-level conclusions. Stages 4 and 5 require the Splink probabilistic engine and build on the household conclusions as a prior.
+
+**Source-specific inference:** The inference engine is designed to be extended per source type. The census-specific household grouping logic in `household_inference.py` will be joined by `registration_inference.py` and `parish_inference.py` in Release 2, all sharing a common `core.py` for Person/Relationship/Event commit logic.
+
 ### Validation Framework
 
 **46 rules** across five categories, executed in order:
@@ -102,7 +120,7 @@ Researcher assertions, mutable and supported by evidence. All linkages to eviden
    - Parent age and marriage age plausibility
    - Lifespan boundaries for record-person linkage
 
-Enforcement is distributed: the database enforces what it can (NOT NULL, CHECK, UNIQUE, REFERENCES), while validation runs before writes and for cross-object checks.
+Enforcement is distributed: the database enforces what it can (NOT NULL, CHECK, UNIQUE, REFERENCES), while Python validation runs before writes and for cross-object checks.
 
 ### Probabilistic Reasoning Framework
 
@@ -112,7 +130,7 @@ Enforcement is distributed: the database enforces what it can (NOT NULL, CHECK, 
 - **Singularity** — birth, death, marriage, census uniqueness per person
 - **Source Eligibility** — which sources to search given person's profile (birth year, gender, role)
 - **Biological Plausibility** — parent age (15–70 year gaps), marriage age (15+ years), sibling spacing
-- **Co-residency** — household membership expectations (household head + spouse + children)
+- **Co-residency** — household membership expectations
 - **Community Patterns** — naming conventions, witness/godparent networks, occupational consistency
 - **Record-Specific** — death registration informant as relationship signal, geographical coherence
 
@@ -138,7 +156,7 @@ Clients access the knowledge base through this API. Multiple client types are su
 The knowledge base combines:
 
 - **Evidence** — 12 sources across 7 repositories (civil registrations, census returns, land records, parish registers, military records, folklore collections)
-- **Conclusions** — persons, relationships, events, places asserted by researchers and validated by the system
+- **Conclusions** — persons, relationships, events, places asserted by the reconstruction pipeline and verified by researchers
 - **Linkages** — scored and verified connections between records and conclusions, with confidence tracking
 - **Reasoning** — 22 genealogical constraints applied to score linkages and flag anomalies
 
@@ -161,13 +179,16 @@ python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
 # Print knowledge base summary
 python -m src.db summary
 
+# Run reconstruction pipeline (place resolution + household inference)
+python -m src.db reconstruct --source 4
+
 # Use a non-default database path with any command
 python -m src.db --db path/to/custom.db summary
 ```
 
-**Supported ingest sources:** Census 1911 (source 4) and Census 1901 (source 3) using the NAI download CSV format. Additional source handlers are pending implementation — see `ROADMAP.md`.
+**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), and Census 1926 (source 5) using the NAI download CSV format. Additional source handlers (civil registration, parish registers) are planned for Release 2 — see `ROADMAP.md`.
 
-> **Tests:** The v1 test suite is retired. A v2.1+ test suite covering all validation categories and object types is a pending work item.
+> **Tests:** The v1 test suite is retired. A v2.5+ test suite covering all validation categories and object types is a pending work item.
 
 ---
 
