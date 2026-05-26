@@ -1,5 +1,5 @@
 -- GRA — Genealogy Research Assistant
--- Schema version 2.5 — May 2026
+-- Schema version 2.6 — May 2026
 -- SQLite 3.35.0+ required
 --
 -- Run via: src/db.py init_db()
@@ -180,13 +180,19 @@ CREATE TABLE place (
 -- ---------------------------------------------------------------------------
 -- Naming convention: {owner}_{target} in singular form.
 -- Linkage junctions (evidence-to-conclusion) carry scoring columns.
+--
+-- score: null for manually-asserted linkages (no algorithm score);
+--        non-null real in [0.0, 1.0] for algorithm-scored linkages.
+-- score_version: null when score is null; algorithm version string otherwise.
+-- verified: 0 = algorithm assertion or unreviewed manual; 1 = researcher-verified.
+--           Verified rows are never overwritten by re-scoring passes.
 
 -- Person.record_ids  [linkage junction]
 CREATE TABLE person_record (
     person_id       INTEGER NOT NULL REFERENCES person (person_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (person_id, record_id)
 );
@@ -209,8 +215,8 @@ CREATE TABLE person_relationship (
 CREATE TABLE relationship_record (
     relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (relationship_id, record_id)
 );
@@ -226,8 +232,8 @@ CREATE TABLE relationship_event (
 CREATE TABLE event_record (
     event_id        INTEGER NOT NULL REFERENCES event (event_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (event_id, record_id)
 );
@@ -250,8 +256,8 @@ CREATE TABLE event_person (
 CREATE TABLE place_record (
     place_id        INTEGER NOT NULL REFERENCES place (place_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (place_id, record_id)
 );
@@ -281,13 +287,14 @@ CREATE INDEX idx_name_variant_value          ON name_variant (variant_value);
 CREATE INDEX idx_name_variant_recorded_person ON name_variant (recorded_person_id);
 
 -- Unverified linkage re-scoring passes (partial indexes)
-CREATE INDEX idx_person_record_score       ON person_record (score)       WHERE verified = 0;
-CREATE INDEX idx_event_record_score        ON event_record (score)        WHERE verified = 0;
-CREATE INDEX idx_relationship_record_score ON relationship_record (score)  WHERE verified = 0;
-CREATE INDEX idx_place_record_score        ON place_record (score)         WHERE verified = 0;
+-- Note: rows with score IS NULL are manually-asserted and excluded from re-scoring.
+CREATE INDEX idx_person_record_score       ON person_record (score)       WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_event_record_score        ON event_record (score)        WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_relationship_record_score ON relationship_record (score)  WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_place_record_score        ON place_record (score)         WHERE verified = 0 AND score IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- SCHEMA VERSION
 -- ---------------------------------------------------------------------------
 
-PRAGMA user_version = 25;
+PRAGMA user_version = 26;
