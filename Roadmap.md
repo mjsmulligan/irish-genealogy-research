@@ -62,6 +62,7 @@ The three NAI census sources are structurally identical and handled by the same 
 Civil registration sources (birth, marriage, death) and Catholic parish registers share a role vocabulary that overlaps heavily with the census event roles. Release 2 adds source-specific inference modules and refactors the shared commit logic into `src/reconstruction/core.py`.
 
 **Planned modules:**
+
 - `src/reconstruction/core.py` — shared Person/Relationship/Event commit logic extracted from household_inference.py
 - `src/reconstruction/registration_inference.py` — civil birth, marriage, death registration
 - `src/reconstruction/parish_inference.py` — Catholic parish register (baptism, marriage, burial)
@@ -125,6 +126,7 @@ These are explicitly deferred design questions. Each blocks downstream work unti
 The current schema requires `score REAL NOT NULL DEFAULT 0.0` on all four linkage junction tables. A manually-asserted linkage has no meaningful score — `0.0` is misleading.
 
 **Options:**
+
 - Allow `score` to be nullable. Null means "manually asserted, no algorithm score." `verified = 1` implied for all null-score rows.
 - Keep `NOT NULL` with a sentinel value (e.g., `-1.0`). Requires a vocabulary convention and CHECK constraint update.
 - Add a separate `assertion_type TEXT` column (`'algorithm'` / `'manual'`) alongside `score`.
@@ -142,6 +144,7 @@ The current implementation uses a provisional placeholder (confidence = `low` / 
 ---
 
 ### OD-03 — Narrative output architecture
+
 *Resolved: out of scope for GRA platform.*
 
 Narrative output is confirmed as a future consumer application built on top of the GRA service layer, not a platform concern. GRA's focus is ingest, linkage, validation, and conclusions.
@@ -149,6 +152,7 @@ Narrative output is confirmed as a future consumer application built on top of t
 ---
 
 ### OD-04 — Splink backend compatibility
+
 *Blocks: cross-census person linkage*
 
 `reconstruction_algorithms.md` §9.1 specifies a Splink configuration sketch using `DuckDBAPI`. The project database is SQLite. Whether Splink operates directly on the SQLite file via `SQLiteAPI` or loads data into DuckDB for linkage workloads and writes results back needs a concrete decision before cross-census linkage implementation begins.
