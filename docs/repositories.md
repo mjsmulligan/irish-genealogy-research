@@ -118,9 +118,10 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | record_url_template | https://nationalarchives.ie/collections/search-the-1926-census/view-1926-pdf/?doc={document_id} |
 | source_parameters | null |
 | record_parameter_names | document_id |
-| column_schema | document_id, household_id, line_number, surname, forename, relation_to_head, age_years, age_months, sex, marriage_status, orphanhood_status, birthplace, irish_language, religion, personal_occupation, employer_name, employer_business, unemployment_duration, years_married, children_born_alive, dependencies_under_16, county, ded, townland, house_number |
+| column_schema | aform_name, county, townland, ded, first_name, surname, relationship_to_head, updated_relationship_to_head, updated_sex, updated_marriage, irish_or_english, years_married, birthplace_county, children_born_alive, children_living, updated_age, geocode, institution_name, institution_type, image_group, a_id |
+| nai_ingest_mapping | document_id ← `aform_name`; household_id ← `image_group`; role ← `updated_relationship_to_head` (fallback: `relationship_to_head`) via census role mapping table in `data_dictionary.md` §6.4 |
 
-**Notes:** The 1926 Census was the first census executed by the independent Irish Free State. The 1926 source uses a distinct URL path (`view-1926-pdf`) from the 1901 and 1911 templates, requiring a separate Source entry. `document_id` is the sole Record-level parameter and `source_parameters` is null. The column schema captures specialised 1926 demographic categories including sub-year age parameters, orphanhood context, and employment variables.
+**Notes:** The 1926 Census was the first census executed by the independent Irish Free State. The 1926 source uses a distinct URL path (`view-1926-pdf`) from the 1901 and 1911 templates, requiring a separate Source entry. `document_id` is the sole Record-level parameter and `source_parameters` is null. The column schema reflects the 1926 NAI download format and captures its QA-clean fields, including `aform_name` for the Form A document ID and `updated_relationship_to_head` for relationship inference. The ingest pipeline normalizes these fields into the shared census schema so the same household and role inference logic can handle 1901, 1911, and 1926.
 
 ---
 

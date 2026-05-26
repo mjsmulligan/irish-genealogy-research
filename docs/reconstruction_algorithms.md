@@ -357,6 +357,8 @@ Within-source deduplication uses the same Splink pipeline as cross-source linkag
 
 For census sources (1901, 1911, 1926), the household Record provides strong structural information that the general scoring model does not capture. All RecordedPersons in a single census Record share the same household, and their roles (`head`, `spouse`, `child`, `boarder`) define an implicit relationship structure.
 
+The pipeline treats 1926 as a first-class census source by normalising its QA-clean fields into the shared census ingest schema. Important 1926 fields such as `aform_name` and `updated_relationship_to_head` are preserved and mapped so the same household inference logic can operate consistently across all three census years.
+
 The household inference algorithm operates on census Records before the general Person linkage pipeline:
 
 1. For each census Record, extract all RecordedPersons with their roles and ages

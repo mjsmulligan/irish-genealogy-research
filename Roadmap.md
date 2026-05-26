@@ -25,7 +25,7 @@
 
 | Module | File(s) | Status | Notes |
 |---|---|---|---|
-| Database layer | `src/db.py` | ✅ Complete | `open_db()`, `init_db()`, `build_record_url()`, Census 1901/1911/1926 NAI ingest, `print_summary()`, CLI |
+| Database layer | `src/db.py` | ✅ Complete | `open_db()`, `init_db()`, `build_record_url()`, Census 1901/1911/1926 NAI ingest with 1926 QA-clean field normalization, `print_summary()`, CLI |
 | Schema DDL | `src/db/schema.sql` | ✅ Complete | DDL at v2.5 — all tables, indexes, constraints |
 | Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources and 7 repositories |
 | Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | Townland normalisation, Jaro-Winkler clustering, auto-commit to Place conclusions |
@@ -36,7 +36,7 @@
 | Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; implementation pending |
 | Test suite | `tests/` | 🔜 Pending | v1 suite retired; v2.5+ suite not yet written |
 
-**Verified against real data:** Census 1911 NAI download for Tullynaught DED (1,080 persons, 240 households, 31 townlands) ingested cleanly. Reconstruction pipeline tested: place resolution and household inference produce correct conclusion-layer output (persons, relationships, events, places) from census evidence.
+**Verified against real data:** Census 1901, 1911 and 1926 NAI downloads for Tullynaught DED can be ingested through the same census ingest pipeline. The 1926 importer preserves QA-clean fields such as `aform_name`, `updated_relationship_to_head`, `updated_age`, `updated_sex`, and `updated_religion`. Reconstruction pipeline tested: place resolution and household inference produce correct conclusion-layer output (persons, relationships, events, places) from census evidence.
 
 ---
 
