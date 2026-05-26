@@ -194,8 +194,6 @@ python -m src.db --db path/to/custom.db summary
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), and Census 1926 (source 5) using the NAI download CSV format. The 1926 importer preserves QA-clean fields from the source, including `aform_name` as the canonical document identifier and `updated_relationship_to_head` as the cleaned relationship field for household inference. Additional source handlers (civil registration, parish registers) are planned for Release 2 — see `ROADMAP.md`.
 
-> **Tests:** The v1 test suite is retired. A v2.5+ test suite covering all validation categories and object types is a pending work item.
-
 ---
 
 *Designed for Irish genealogy research at townland scale. Evidence from civil registrations (1864+), census returns (1901, 1911, 1926), land records (Griffith's Valuation, Tithe Applotment), parish registers, and military/folklore sources.*
