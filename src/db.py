@@ -23,7 +23,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
 SEED_SQL = Path(__file__).parent / "db" / "seed.sql"
@@ -147,8 +147,12 @@ _CENSUS_ROLE_MAP: dict[str, str] = {
 
 _SEX_MAP = {"M": "male", "F": "female", "m": "male", "f": "female"}
 
-# Census night 1911
-_CENSUS_1911_DATE = "1911-04-02"
+# Census night dates by source_id
+_CENSUS_DATES: dict[int, str] = {
+    3: "1901-03-31",  # Census 1901: Sunday 31 March 1901
+    4: "1911-04-02",  # Census 1911: Sunday 2 April 1911
+    5: "1926-04-18",  # Census 1926: Sunday 18 April 1926
+}
 
 
 def _extract_document_id(images_str: str) -> str | None:
@@ -211,6 +215,7 @@ def _normalize_census_1926_row(row: dict) -> dict:
         "relation_to_head_updated": row.get("updated_relationship_to_head", ""),
         "language_updated": row.get("irish_or_english", ""),
         "images": "",
+        "aform_name": row.get("aform_name", ""),  # preserved for _get_document_id fallback
         "geocode": row.get("geocode", ""),
         "institution_name": row.get("institution_name", ""),
         "institution_type": row.get("institution_type", ""),
@@ -233,13 +238,14 @@ def _map_role(relation: str) -> tuple[str, str | None]:
     return "principal", f"unmapped relation '{relation}'; mapped to principal"
 
 
-def ingest_census_1911(
+def ingest_census(
     conn: sqlite3.Connection,
     csv_path: str,
     source_id: int = 4,
 ) -> dict:
     """
-    Ingest a Census 1911 NAI download CSV into the evidence layer.
+    Ingest a census NAI download CSV into the evidence layer.
+    Handles Census 1901 (source 3), 1911 (source 4), and 1926 (source 5).
 
     Groups person rows into households by image_group (NAI household ID).
     Creates one Record per household, one RecordedEvent per Record,
@@ -333,11 +339,12 @@ def ingest_census_1911(
 
             # Insert RecordedEvent — one per household
             townland = persons[0].get("townland_clean", "") or persons[0].get("townland", "")
+            census_date = _CENSUS_DATES.get(source_id, "")
             conn.execute(
                 "INSERT INTO recorded_event "
                 "(recorded_event_id, record_id, type, date, date_qualifier, place_as_recorded) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                (re_id, record_id, "census", _CENSUS_1911_DATE, "exact", townland),
+                (re_id, record_id, "census", census_date, "exact", townland),
             )
 
             # Insert RecordedPersons
@@ -506,7 +513,7 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
     # Route to the correct ingest function by source
     if source_id in (3, 4, 5):
         # Census 1901, 1911, and 1926 all use the same NAI CSV format.
-        result = ingest_census_1911(conn, args.file, source_id=source_id)
+        result = ingest_census(conn, args.file, source_id=source_id)
     else:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)
         sys.exit(1)
