@@ -185,7 +185,19 @@ def _get_document_id(person: dict) -> str | None:
 
 
 def _normalize_census_1926_row(row: dict) -> dict:
-    """Normalize 1926 census rows into the same ingest schema used for 1901/1911."""
+    """Normalize 1926 census rows into the shared ingest schema used for 1901/1911.
+
+    The 1926 NAI download schema differs from 1901/1911 in several ways:
+    - No house_number column (mapped to empty string)
+    - No occupation column (the 1926 census captured employer details separately;
+      the NAI download does not include a simple occupation field — mapped to empty string)
+    - language split into two columns: irish_or_english (raw) and updated_irish_language
+      (NAI-cleaned); mapped to language and language_updated respectively
+    - religion column is raw only; updated_religion is the NAI-cleaned value
+    - birthplace is birthplace_county (county-level only, not parish/townland)
+    - age is updated_age (NAI-cleaned integer)
+    - document_id is aform_name (Form A reference, not extracted from images field)
+    """
     normalized = {
         "id": row.get("aform_name", ""),
         "census_year": "1926",
@@ -197,25 +209,25 @@ def _normalize_census_1926_row(row: dict) -> dict:
         "ded": row.get("ded", ""),
         "age": row.get("updated_age", ""),
         "sex": row.get("updated_sex", ""),
-        "house_number": row.get("house_number", ""),
+        "house_number": "",                          # not present in 1926 NAI schema
         "relation_to_head": row.get("relationship_to_head", ""),
-        "religion": row.get("religion", ""),
-        "education": "",
-        "occupation": row.get("personal_occupation", ""),
+        "religion": "",                              # no raw religion column in 1926 NAI schema
+        "education": "",                             # not present in 1926 NAI schema
+        "occupation": "",                            # not present in 1926 NAI download
         "marriage_status": row.get("updated_marriage", ""),
         "marriage_years": row.get("years_married", ""),
         "children_born": row.get("children_born_alive", ""),
         "children_living": row.get("children_living", ""),
         "birthplace": row.get("birthplace_county", ""),
-        "language": row.get("irish_or_english", ""),
+        "language": row.get("irish_or_english", ""),         # raw form (Irish/English)
         "deafdumb": "",
         "image_group": row.get("image_group", ""),
-        "religion_updated": row.get("religion", ""),
-        "occupation_updated": row.get("personal_occupation", ""),
+        "religion_updated": row.get("updated_religion", ""), # NAI-cleaned religion value
+        "occupation_updated": "",                            # not present in 1926 NAI download
         "relation_to_head_updated": row.get("updated_relationship_to_head", ""),
-        "language_updated": row.get("irish_or_english", ""),
-        "images": "",
-        "aform_name": row.get("aform_name", ""),  # preserved for _get_document_id fallback
+        "language_updated": row.get("updated_irish_language", ""),  # NAI-cleaned language code
+        "images": "",                                        # not present; aform_name used instead
+        "aform_name": row.get("aform_name", ""),             # preserved for _get_document_id
         "geocode": row.get("geocode", ""),
         "institution_name": row.get("institution_name", ""),
         "institution_type": row.get("institution_type", ""),

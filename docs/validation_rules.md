@@ -478,16 +478,11 @@ Text dates, circa prefixes, non-ISO separators, two-digit years, and day or mont
 
 ### R38 — Linkage score range `[DB + Python]`
 
-The `score` column on all four linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) must be a real number in the closed interval [0.0, 1.0].
-
-DB enforcement: `CHECK (score >= 0.0 AND score <= 1.0)` on all four tables.
+The `score` column on all four linkage junction tables must be either null or a real number in the closed interval [0.0, 1.0].
+Null score represents a manually-asserted linkage — one created via `assert_linkage()` where no algorithm score was computed. Null is semantically distinct from a score of 0.0 (which would represent a near-certain non-match). A null-score row should always have `verified = 1`.
+Non-null score must fall within [0.0, 1.0].
+DB enforcement: `CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0))` on all four tables.
 Python enforcement: pre-write validation via `validate_object()`.
-
-```
-[R38] person_record (person_id={pid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
-[R38] event_record (event_id={eid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
-[R38] relationship_record (relationship_id={rid}, record_id={rec}): score={val} is outside valid range [0.0, 1.0]
-[R38] place_record (place_id={pid}, record_id={rid}): score={val} is outside valid range [0.0, 1.0]
 ```
 
 ---
@@ -676,7 +671,7 @@ The following table summarises all rules, their description, and their enforceme
 | R35 | Confidence vocabulary | **Retired** |
 | R36 | Date format | Python only |
 | R37 | record_parameters keys match record_parameter_names | Python only |
-| R38 | Linkage score range [0.0–1.0] | DB + Python |
+| R38 | Linkage score range [0.0–1.0] or null (manual assertion) | DB + Python |
 | R39 | Verified flag values {0, 1} | DB + Python |
 | R40 | Birth Event singularity | Python only (GC04) |
 | R41 | Death Event singularity | Python only (GC05) |
@@ -760,6 +755,7 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 | 2.3 | May 2026 | Retired R10 (name object completeness) and R33 (name type vocabulary) — both superseded by `person_name` table constraints. Python-only rules reduced from 6 to 4: R20, R21, R26, R36. |
 | 2.4 | May 2026 | Retired R35 (confidence vocabulary) — `confidence` removed from `relationship` and `event` tables. Added R38 (linkage score range, DB + Python) and R39 (verified flag values, DB + Python) covering the new scoring columns on `person_record`, `event_record`, `relationship_record`, `place_record`. Updated rule summary table and execution order. |
 | 2.5 | May 2026 | Added `genealogical_constraints.md` to preamble. Added fifth rule category — genealogical constraint rules. Added §6 (Genealogical Constraint Rules) with R40 (birth Event singularity, GC04), R41 (death Event singularity, GC05), R42 (census Record singularity per source, GC07), R43 (life event sequence, GC02), R44 (minimum and maximum parent age, GC12), R45 (minimum marriage age, GC13), R46 (lifespan boundary, GC01). Added `validate_genealogical()` entry point to §9. Extended execution order in §8 to include genealogical constraint category and added SKIP message for unevaluable persons. Renumbered §§6–9 to §§7–10. Updated rule summary table. Added R40–R46 examples to §10 error format. |
+| 2.6 | May 2026 | Updated R38 (linkage score range) to permit null scores for manually-asserted linkages. Updated rule text, DB enforcement expression, and rule summary table. |
 
 ---
 
