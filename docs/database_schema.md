@@ -44,13 +44,15 @@ The reconstruction algorithm produces normalised name variants (Anglicised, Iris
 
 The four linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) carry three additional columns beyond their foreign keys:
 
-- `score REAL` — the floating-point similarity score (0.0–1.0) produced by the reconstruction algorithm when this linkage was asserted.
-- `score_version TEXT` — the algorithm version string that produced the score, enabling detection of stale scores when the algorithm is updated.
-- `verified INTEGER` — researcher override flag (0 = algorithm assertion, 1 = researcher-verified). A verified linkage is never automatically overwritten by a re-scoring pass.
+- `score REAL` — the floating-point similarity score produced by the reconstruction algorithm when this linkage was asserted. Nullable: null for manually-asserted linkages (no algorithm score); non-null in [0.0, 1.0] for algorithm-scored linkages.
+- `score_version TEXT` — the algorithm version string that produced the score. Null when `score` is null.
+- `verified INTEGER`  — researcher override flag (0 = algorithm assertion or unreviewed manual assertion, 1 = researcher-verified). A verified linkage is never automatically overwritten by a re-scoring pass.
 
 These columns live on the junction tables rather than on the conclusion objects because the score is a property of the specific record-to-conclusion linkage, not of the conclusion itself. A Person linked to three Records may have three different scores for those three linkages.
 
 `confidence` on `relationship` and `event` has been removed. It was a static scalar that could not capture the per-linkage granularity the reconstruction algorithm requires. Aggregate confidence, if needed for display, is derived at query time from the scores across all linked Records.
+
+Null score is the correct representation for a manually-asserted linkage (`assert_linkage()` in the service layer). The previous schema used `NOT NULL DEFAULT 0.0` with an empty score_version, which was a misleading sentinel. Migration script `migrate_25_to_26.sql` converts existing sentinel rows to null.
 
 ### URL parameter fields → JSON TEXT columns
 
@@ -299,16 +301,18 @@ All junction tables use a compound primary key on both columns. The ordering con
 The four **linkage junction tables** (`person_record`, `event_record`, `relationship_record`, `place_record`) carry additional scoring columns:
 
 - `score REAL` — similarity score in [0.0, 1.0] assigned by the reconstruction algorithm.
-- `score_version TEXT` — algorithm version string; used to detect stale scores after algorithm updates.
-- `verified INTEGER` — researcher override: 0 = algorithm assertion, 1 = researcher-verified. Verified rows are never overwritten by re-scoring passes.
+  Null for manually-asserted linkages (no algorithm score).
+- `score_version TEXT` — algorithm version string. Null when score is null.
+- `verified INTEGER` — researcher override: 0 = algorithm assertion or unreviewed manual, 1 = researcher-verified.
+  Verified rows are never overwritten by re-scoring passes.
 
 ```sql
 -- Person.record_ids  (linkage junction — carries scoring columns)
 CREATE TABLE person_record (
     person_id       INTEGER NOT NULL REFERENCES person (person_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (person_id, record_id)
 );
@@ -331,8 +335,8 @@ CREATE TABLE person_relationship (
 CREATE TABLE relationship_record (
     relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (relationship_id, record_id)
 );
@@ -348,8 +352,8 @@ CREATE TABLE relationship_event (
 CREATE TABLE event_record (
     event_id        INTEGER NOT NULL REFERENCES event (event_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (event_id, record_id)
 );
@@ -372,8 +376,8 @@ CREATE TABLE event_person (
 CREATE TABLE place_record (
     place_id        INTEGER NOT NULL REFERENCES place (place_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL    NOT NULL DEFAULT 0.0 CHECK (score >= 0.0 AND score <= 1.0),
-    score_version   TEXT    NOT NULL DEFAULT '',
+    score           REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
+    score_version   TEXT,
     verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
     PRIMARY KEY (place_id, record_id)
 );
@@ -434,14 +438,15 @@ CREATE INDEX idx_name_variant_recorded_person
     ON name_variant (recorded_person_id);
 
 -- Linkage scoring: find unverified linkages below a score threshold (re-scoring pass)
+-- Null-score rows are manually-asserted and excluded from re-scoring passes.
 CREATE INDEX idx_person_record_score
-    ON person_record (score) WHERE verified = 0;
+    ON person_record (score) WHERE verified = 0 AND score IS NOT NULL;
 CREATE INDEX idx_event_record_score
-    ON event_record (score) WHERE verified = 0;
+    ON event_record (score) WHERE verified = 0 AND score IS NOT NULL;
 CREATE INDEX idx_relationship_record_score
-    ON relationship_record (score) WHERE verified = 0;
+    ON relationship_record (score) WHERE verified = 0 AND score IS NOT NULL;
 CREATE INDEX idx_place_record_score
-    ON place_record (score) WHERE verified = 0;
+    ON place_record (score) WHERE verified = 0 AND score IS NOT NULL;
 ```
 
 ---
@@ -488,7 +493,7 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R35 | Confidence vocabulary | **Retired** — `confidence` removed from `relationship` and `event` | N/A |
 | R36 | Date format | Not enforceable declaratively in SQLite | **Python only** |
 | R37 | record_parameters keys match record_parameter_names | Not enforceable declaratively | **Python only** |
-| R38 | Linkage score range [0.0–1.0] | `CHECK (score >= 0.0 AND score <= 1.0)` on scoring junction tables | Yes (pre-write) |
+| R38 | Linkage score range [0.0–1.0] or null | `CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0))` on scoring junction tables | Yes (pre-write) |
 | R39 | verified flag values {0, 1} | `CHECK (verified IN (0, 1))` on scoring junction tables | Yes (pre-write) |
 
 **Rules requiring Python-only enforcement:** R20 (lower bound), R21, R26, R36, R37.
@@ -663,11 +668,11 @@ def init_db(path: str) -> sqlite3.Connection:
 
 ```python
 # Record schema version on init
-conn.execute("PRAGMA user_version = 25")  # version 2.5
+conn.execute("PRAGMA user_version = 26")  # version 2.6
 
 # Check version on open
 version = conn.execute("PRAGMA user_version").fetchone()[0]
-if version != 25:
+if version != 26:
     raise RuntimeError(f"Schema version mismatch: expected 25, got {version}")
 ```
 
@@ -696,6 +701,7 @@ if version != 25:
 | 2.3 | May 2026 | Replaced `record.source_identifier TEXT` with `record.record_parameters TEXT` (JSON). Added `source.source_parameters TEXT` (JSON) and `source.record_parameter_names TEXT` (JSON array) to the source table. Added §1 design decision explaining JSON TEXT choice for parameter fields. Added R37 (record_parameters key validation, Python-only) to validation rule mapping. Updated DataStore mapping to note JSON serialisation for new fields. Added `build_record_url()` utility to DataStore mapping and file locations. Updated worked example INSERT statements to reflect new column structure and show a resolved deep link URL. Schema user_version bumped to 23. |
 | 2.4 | May 2026 | Removed `confidence TEXT` from `relationship` and `event` tables; retired R35. Added `score REAL`, `score_version TEXT`, `verified INTEGER` scoring columns to `person_record`, `event_record`, `relationship_record`, `place_record`; added R38 and R39. Added `name_variant` table with `variant_type` vocabulary `CHECK` and `algorithm_version`. Added `idx_name_variant_value`, `idx_name_variant_recorded_person`, and partial indexes on score for unverified linkage rows. Added §1 design decisions for name variants and scoring junction columns. Updated schema overview, validation rule mapping, DataStore mapping, and worked example. Schema user_version bumped to 24. |
 | 2.5 | May 2026 | Expanded `recorded_person.role` CHECK constraint to cover full NAI census download vocabulary. Added census roles: `son`, `daughter`, `sibling`, `grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`. Removed `child` (replaced by `son`/`daughter`). Grouped CHECK values into census roles and event roles with inline comments. Updated R31 note in validation rule mapping. Schema user_version bumped to 25. |
+| 2.6 | May 2026 | Made `score` and `score_version` nullable on all four linkage junction tables. Null score represents a manually-asserted linkage (OD-01 resolved). Updated partial indexes to exclude null-score rows. Added migration script `src/db/migrations/migrate_25_to_26.sql`. Schema user_version bumped to 26. |
 
 ---
 

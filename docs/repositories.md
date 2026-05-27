@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Repositories and Sources
 
-*Version 1.3 — May 2026*
+*Version 1.4 — May 2026*
 *Audience: All roles. This document is a practical reference for transcription and ingestion sessions. It defines the pre-populated global repository and source set available to all projects without setup.*
 
 ---
@@ -77,13 +77,15 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | repository_id | 1 (National Archives of Ireland) |
 | type | census |
 | coverage | 1901 |
+| census_night | 31 March 1901 |
 | source_url | https://nationalarchives.ie/collections/search-the-census/ |
 | record_url_template | https://nationalarchives.ie/collections/search-the-census/view-pdf/?doc={document_id} |
 | source_parameters | null |
 | record_parameter_names | document_id |
-| column_schema | document_id, household_id, line_number, surname, forename, relation_to_head, religion, literacy, age, sex, occupation, marriage_status, birthplace, irish_language, medical_disability, county, ded, townland, house_number |
+| column_schema | id, census_year, county, surname, firstname, townland, townland_clean, ded, age, sex, house_number, relation_to_head, religion, education, occupation, marriage_status, marriage_years, children_born, children_living, birthplace, language, deafdumb, image_group, religion_updated, occupation_updated, relation_to_head_updated, language_updated, images, ded_clean |
+| nai_ingest_mapping | document_id ← first image id extracted from `images` field; household_id ← `image_group`; role ← `relation_to_head_updated` (fallback: `relation_to_head`) via census role mapping table in `data_dictionary.md` §6.4 |
 
-**Notes:** The 1901 census is the earliest surviving complete decennial return for the island. The template targets the NAI's centralised PDF delivery mechanism directly. The `document_id` is a flat, unique string representing the specific Form A page scan and varies per Record, so `source_parameters` is null. The legacy domain `census.nationalarchives.ie` is obsolete.
+**Notes:** The 1901 census is the earliest surviving complete decennial return for the island of Ireland. The column_schema reflects the NAI census download CSV format exactly as published — it is identical to the 1911 download format, confirming that both census years use the same NAI download schema. The `images` field contains a JSON-serialised list of image objects; Python extracts the first Form A image ID as `document_id`. The `image_group` field is the NAI household grouping identifier. One Record is created per household; all persons share that Record. Role assignment is fully automated via the `relation_to_head_updated` mapping — no manual intervention required. The legacy domain `census.nationalarchives.ie` is obsolete. The 1901 census predates civil registration reform and does not include the marital history fields (`marriage_years`, `children_born`, `children_living`) introduced in 1911 — those columns are present in the download schema but will be empty for 1901 entries.
 
 ---
 
@@ -95,6 +97,7 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | repository_id | 1 (National Archives of Ireland) |
 | type | census |
 | coverage | 1911 |
+| census_night | 2 April 1911 |
 | source_url | https://nationalarchives.ie/collections/search-the-census/ |
 | record_url_template | https://nationalarchives.ie/collections/search-the-census/view-pdf/?doc={document_id} |
 | source_parameters | null |
@@ -114,14 +117,19 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | repository_id | 1 (National Archives of Ireland) |
 | type | census |
 | coverage | 1926 |
+| census_night | 18 April 1926 |
 | source_url | https://nationalarchives.ie/collections/search-the-1926-census/ |
 | record_url_template | https://nationalarchives.ie/collections/search-the-1926-census/view-1926-pdf/?doc={document_id} |
 | source_parameters | null |
 | record_parameter_names | document_id |
-| column_schema | aform_name, county, townland, ded, first_name, surname, relationship_to_head, updated_relationship_to_head, updated_sex, updated_marriage, irish_or_english, years_married, birthplace_county, children_born_alive, children_living, updated_age, geocode, institution_name, institution_type, image_group, a_id |
+| column_schema | aform_name, county, townland, ded, first_name, surname, relationship_to_head, updated_relationship_to_head, updated_sex, updated_marriage, updated_irish_language, updated_religion, years_married, irish_or_english, birthplace_county, children_born_alive, children_living, updated_age, geocode, institution_name, institution_type, image_group, a_id |
 | nai_ingest_mapping | document_id ← `aform_name`; household_id ← `image_group`; role ← `updated_relationship_to_head` (fallback: `relationship_to_head`) via census role mapping table in `data_dictionary.md` §6.4 |
 
-**Notes:** The 1926 Census was the first census executed by the independent Irish Free State. The 1926 source uses a distinct URL path (`view-1926-pdf`) from the 1901 and 1911 templates, requiring a separate Source entry. `document_id` is the sole Record-level parameter and `source_parameters` is null. The column schema reflects the 1926 NAI download format and captures its QA-clean fields, including `aform_name` for the Form A document ID and `updated_relationship_to_head` for relationship inference. The ingest pipeline normalizes these fields into the shared census schema so the same household and role inference logic can handle 1901, 1911, and 1926.
+**Notes:** The 1926 Census was the first census executed by the independent Irish Free State. The column_schema reflects the actual 1926 NAI download CSV format, verified against the live download. The 1926 source uses a distinct URL path (`view-1926-pdf`) from the 1901 and 1911 templates, requiring a separate Source entry.
+
+The 1926 download schema differs from 1901/1911 in several important ways. There is no `occupation` column in the 1926 NAI download — the 1926 census captured employer details and employment status separately, but no simple occupation string is included. There is no `house_number` column. There is no `education` or `deafdumb` column. Religion is provided only as a NAI-cleaned value (`updated_religion`); there is no raw religion column. Age is provided as a NAI-cleaned integer (`updated_age`). Birthplace is at county level only (`birthplace_county`), not at the parish or townland precision available in 1901/1911. Irish language usage is split across two columns: `irish_or_english` (the raw recorded form) and `updated_irish_language` (the NAI-cleaned code).
+
+The ingest pipeline normalises these differences into the shared census ingest schema so that household and role inference logic operates consistently across all three census years. Fields absent from the 1926 download are mapped to empty strings in the normalised row; no data is fabricated.
 
 ---
 
@@ -263,3 +271,4 @@ Sources are the primary ingestion targets. Each source defines the shared contex
 | 1.1 | May 2026 | Minor corrections |
 | 1.2 | May 2026 | Replaced single `record_url_template` parameter model with two-level parameter system. Added `source_parameters` and `record_parameter_names` fields to all Source entries. Sources 9 (NLI Parish Registers) and 11 (Military Service Pensions) identified as requiring Source-level parameters (`vtls_id` and `release_id` respectively). Updated §1 overview to explain deep link construction. Updated §3 section intro. |
 | 1.3 | May 2026 | Updated Source 4 (Census 1911) column_schema to match NAI census download CSV format exactly. Added `nai_ingest_mapping` field documenting `document_id`, `household_id`, and role extraction from the download format. Updated notes to describe NAI download as gold standard input, explain `_updated` field preference, image extraction for `document_id`, and `image_group` as `household_id`. |
+| 1.4 | May 2026 | Updated Source 3 (Census 1901) column_schema to match actual NAI download CSV format — confirmed identical to 1911 schema. Added `census_night` field to Sources 3, 4, and 5. Added `nai_ingest_mapping` to Source 3. Corrected Source 5 (Census 1926) column_schema against actual NAI download: removed `personal_occupation` (not in 1926 download), corrected language columns to show both `irish_or_english` and `updated_irish_language` as distinct fields, corrected religion to `updated_religion` only. Added detailed notes to Source 5 documenting 1926-specific schema differences from 1901/1911. |
