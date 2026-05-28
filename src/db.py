@@ -6,6 +6,8 @@ CLI usage:
     python -m src.db init [--db PATH]
     python -m src.db ingest --source SOURCE_ID --file CSV_PATH [--db PATH]
     python -m src.db summary [--db PATH]
+    python -m src.db reconstruct [--db PATH]   # repair/re-run mode only
+
 
 Default database path: genealogy.db
 """
@@ -519,12 +521,17 @@ def _cmd_init(args: argparse.Namespace) -> None:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> None:
+    from src.reconstruction import (
+        run_place_resolution, print_place_resolution_report,
+        run_household_inference, print_household_inference_report,
+        run_census_linkage, print_census_linkage_report,
+    )
+
     conn = open_db(args.db)
     source_id = int(args.source)
 
-    # Route to the correct ingest function by source
+    # ── Stage 1: Ingest ────────────────────────────────────────────────────
     if source_id in (3, 4, 5):
-        # Census 1901, 1911, and 1926 all use the same NAI CSV format.
         result = ingest_census(conn, args.file, source_id=source_id)
     else:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)
@@ -546,6 +553,25 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
     else:
         print("\n  No parse notes — clean ingest.")
 
+    # ── Stage 2: Place resolution ──────────────────────────────────────────
+    print("\n[2/4] Place resolution")
+    place_result = run_place_resolution(conn)
+    print_place_resolution_report(place_result)
+
+    # ── Stage 3: Household inference ───────────────────────────────────────
+    print("\n[3/4] Household structure inference")
+    inference_result = run_household_inference(conn, source_id)
+    print_household_inference_report(inference_result)
+
+    # ── Stage 4: Cross-census linkage (runs when ≥2 census sources exist) ──
+    print("\n[4/4] Cross-census linkage")
+    linkage_result = run_census_linkage(conn)
+    print_census_linkage_report(linkage_result)
+
+    print("\nPipeline complete. Running summary...\n")
+    print_summary(conn)
+
+
 
 def _cmd_summary(args: argparse.Namespace) -> None:
     conn = open_db(args.db)
@@ -553,23 +579,50 @@ def _cmd_summary(args: argparse.Namespace) -> None:
 
 
 def _cmd_reconstruct(args: argparse.Namespace) -> None:
+    """
+    Re-run the full reconstruction pipeline against already-ingested data.
+    Use this after a bug fix, algorithm update, or to recover from a
+    partial pipeline run. Normal workflow uses 'ingest' which runs the
+    pipeline automatically.
+    """
     from src.reconstruction import (
         run_place_resolution, print_place_resolution_report,
         run_household_inference, print_household_inference_report,
+        run_census_linkage, print_census_linkage_report,
     )
+
     conn = open_db(args.db)
     check_version(conn)
 
-    print("\nRunning reconstruction pipeline...")
+    print("\nRunning reconstruction pipeline (repair mode)...")
 
-    print("\n[1/2] Place resolution")
+    # Determine which census sources have ingested records
+    source_rows = conn.execute(
+        """
+        SELECT DISTINCT s.source_id FROM source s
+        JOIN record r ON r.source_id = s.source_id
+        WHERE s.source_id IN (3, 4, 5)
+        ORDER BY s.source_id
+        """
+    ).fetchall()
+    census_source_ids = [row["source_id"] for row in source_rows]
+
+    if not census_source_ids:
+        print("  No census records found. Ingest a census CSV first.")
+        return
+
+    print("\n[2/4] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
-    print("\n[2/2] Household structure inference")
-    source_id = int(args.source)
-    inference_result = run_household_inference(conn, source_id)
-    print_household_inference_report(inference_result)
+    for source_id in census_source_ids:
+        print(f"\n[3/4] Household structure inference — source {source_id}")
+        inference_result = run_household_inference(conn, source_id)
+        print_household_inference_report(inference_result)
+
+    print("\n[4/4] Cross-census linkage")
+    linkage_result = run_census_linkage(conn)
+    print_census_linkage_report(linkage_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
@@ -591,8 +644,10 @@ def main() -> None:
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
-    p_recon = sub.add_parser("reconstruct", help="Run place resolution and household inference")
-    p_recon.add_argument("--source", required=True, help="Census source ID (e.g. 4 for Census 1911)")
+    sub.add_parser(
+        "reconstruct",
+        help="Re-run full reconstruction pipeline (repair mode — normal workflow uses ingest)",
+    )
 
     args = parser.parse_args()
 
