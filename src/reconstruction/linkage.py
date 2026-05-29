@@ -232,8 +232,55 @@ def _merge_persons(
         "DELETE FROM person_name WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 6. relationship endpoints: re-point person_id_1 and person_id_2
-    # where duplicate_id appears as an endpoint.
+    # 6. relationship endpoints: re-point person_id_1 and person_id_2.
+    #
+    # The CHECK constraint person_id_1 != person_id_2 fires immediately on
+    # each row as UPDATE executes — SQLite does not defer constraint checks
+    # to end-of-statement. A relationship between canonical_id and
+    # duplicate_id will become self-referential the moment one endpoint is
+    # updated, causing an IntegrityError before we can clean it up.
+    #
+    # Solution: identify and delete those relationships BEFORE the UPDATE,
+    # cleaning their junction rows first so FK constraints are satisfied.
+    #
+    # A relationship becomes self-referential after re-pointing if:
+    #   - one endpoint is canonical_id and the other is duplicate_id, OR
+    #   - both endpoints are duplicate_id (edge case: relationship to self
+    #     in source data, shouldn't exist but guard anyway).
+    self_ref_ids = [
+        row[0] for row in conn.execute(
+            """
+            SELECT relationship_id FROM relationship
+            WHERE (person_id_1 = ? AND person_id_2 = ?)
+               OR (person_id_1 = ? AND person_id_2 = ?)
+               OR (person_id_1 = ? AND person_id_2 = ?)
+            """,
+            (canonical_id, duplicate_id,
+             duplicate_id, canonical_id,
+             duplicate_id, duplicate_id),
+        ).fetchall()
+    ]
+
+    if self_ref_ids:
+        placeholders = ",".join("?" * len(self_ref_ids))
+        conn.execute(
+            f"DELETE FROM relationship_record WHERE relationship_id IN ({placeholders})",
+            self_ref_ids,
+        )
+        conn.execute(
+            f"DELETE FROM relationship_event WHERE relationship_id IN ({placeholders})",
+            self_ref_ids,
+        )
+        conn.execute(
+            f"DELETE FROM person_relationship WHERE relationship_id IN ({placeholders})",
+            self_ref_ids,
+        )
+        conn.execute(
+            f"DELETE FROM relationship WHERE relationship_id IN ({placeholders})",
+            self_ref_ids,
+        )
+
+    # Now safe to re-point all remaining endpoints.
     conn.execute(
         "UPDATE relationship SET person_id_1 = ? WHERE person_id_1 = ?",
         (canonical_id, duplicate_id),
@@ -243,11 +290,10 @@ def _merge_persons(
         (canonical_id, duplicate_id),
     )
 
-    # 7. Drop any self-referential relationships created by the re-pointing
-    # (e.g. a sibling relationship between the two persons being merged).
-    # Must clean junction rows first — FK constraints prevent deleting a
-    # relationship row while relationship_record / relationship_event rows
-    # still reference it.
+    # 7. (Safety net) Drop any remaining self-referential relationships.
+    # Under correct logic step 6 should have caught all of them; this is
+    # a belt-and-suspenders guard for any edge case missed above.
+    # Junction rows cleaned first for the same FK reason as above.
     conn.execute(
         """
         DELETE FROM relationship_record
