@@ -177,7 +177,23 @@ def _merge_persons(
         "DELETE FROM person_event WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 3. person_relationship: move, drop duplicates
+    # 3. event_person: re-point the other direction of the person↔event link.
+    # event_person (event_id, person_id) is the Event's view of participants;
+    # person_event (person_id, event_id) is the Person's view. Both must be
+    # updated — missing this step leaves event_person rows referencing
+    # duplicate_id, which blocks the eventual DELETE FROM person.
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO event_person (event_id, person_id)
+        SELECT event_id, ? FROM event_person WHERE person_id = ?
+        """,
+        (canonical_id, duplicate_id),
+    )
+    conn.execute(
+        "DELETE FROM event_person WHERE person_id = ?", (duplicate_id,)
+    )
+
+    # 4. person_relationship: move, drop duplicates
     conn.execute(
         """
         INSERT OR IGNORE INTO person_relationship (person_id, relationship_id)
@@ -189,7 +205,7 @@ def _merge_persons(
         "DELETE FROM person_relationship WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 4. person_name: move, drop exact duplicates (same value + type)
+    # 5. person_name: move, drop exact duplicates (same value + type)
     dup_names = conn.execute(
         "SELECT value, type FROM person_name WHERE person_id = ?",
         (duplicate_id,),
@@ -216,8 +232,8 @@ def _merge_persons(
         "DELETE FROM person_name WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 5. relationship endpoints: re-point person_id_1 and person_id_2
-    # where duplicate_id appears as an endpoint
+    # 6. relationship endpoints: re-point person_id_1 and person_id_2
+    # where duplicate_id appears as an endpoint.
     conn.execute(
         "UPDATE relationship SET person_id_1 = ? WHERE person_id_1 = ?",
         (canonical_id, duplicate_id),
@@ -227,13 +243,73 @@ def _merge_persons(
         (canonical_id, duplicate_id),
     )
 
-    # 6. Drop any self-referential relationships created by the re-pointing
+    # 7. Drop any self-referential relationships created by the re-pointing
+    # (e.g. a sibling relationship between the two persons being merged).
+    # Must clean junction rows first — FK constraints prevent deleting a
+    # relationship row while relationship_record / relationship_event rows
+    # still reference it.
+    conn.execute(
+        """
+        DELETE FROM relationship_record
+        WHERE relationship_id IN (
+            SELECT relationship_id FROM relationship
+            WHERE person_id_1 = person_id_2
+        )
+        """
+    )
+    conn.execute(
+        """
+        DELETE FROM relationship_event
+        WHERE relationship_id IN (
+            SELECT relationship_id FROM relationship
+            WHERE person_id_1 = person_id_2
+        )
+        """
+    )
+    conn.execute(
+        """
+        DELETE FROM person_relationship
+        WHERE relationship_id IN (
+            SELECT relationship_id FROM relationship
+            WHERE person_id_1 = person_id_2
+        )
+        """
+    )
     conn.execute(
         "DELETE FROM relationship WHERE person_id_1 = person_id_2"
     )
 
-    # 7. Deduplicate relationships: if re-pointing created an exact
+    # 8. Deduplicate relationships: if re-pointing created an exact
     # (type, person_id_1, person_id_2) duplicate, keep the lower relationship_id
+    # and delete the higher ones — but clean their junction rows first.
+    conn.execute(
+        """
+        DELETE FROM relationship_record
+        WHERE relationship_id NOT IN (
+            SELECT MIN(relationship_id)
+            FROM relationship
+            GROUP BY type, person_id_1, person_id_2
+        )
+        """
+    )
+    conn.execute(
+        """
+        DELETE FROM relationship_event
+        WHERE relationship_id NOT IN (
+            SELECT MIN(relationship_id)
+            FROM relationship
+            GROUP BY type, person_id_1, person_id_2
+        )
+        """
+    )
+    conn.execute(
+        """
+        DELETE FROM person_relationship
+        WHERE relationship_id NOT IN (
+            SELECT relationship_id FROM relationship
+        )
+        """
+    )
     conn.execute(
         """
         DELETE FROM relationship
@@ -245,11 +321,9 @@ def _merge_persons(
         """
     )
 
-    # 8. Add the linkage score to person_record for the Splink-matched record
-    # (already inserted above via dup_records loop; this is the Splink score
-    # for the cross-census match itself, stored on any new record rows added)
-
-    # 9. Delete the duplicate Person
+    # 9. Delete the duplicate Person.
+    # All junction rows referencing duplicate_id have been moved or deleted
+    # above. The DELETE will now succeed without FK violations.
     conn.execute("DELETE FROM person WHERE person_id = ?", (duplicate_id,))
 
     result.persons_merged += 1
@@ -317,9 +391,21 @@ def run_census_linkage(conn: sqlite3.Connection) -> CensusLinkageResult:
     # Estimate u probabilities via random sampling
     linker.training.estimate_u_using_random_sampling(max_pairs=1e5)
 
-    # Estimate m probabilities via EM on surname blocking
+    # Estimate m probabilities via two EM passes with different blocking keys.
+    #
+    # Pass 1 blocks on surname prefix — this trains birth_year_est, forename_norm,
+    # and place_id. Splink explicitly excludes any comparison whose column is used
+    # as the blocking key, so surname_norm cannot be estimated in this pass.
+    #
+    # Pass 2 blocks on place_id — place_id is not a comparison feature, so all
+    # four comparisons (including surname_norm) receive m-probability estimates.
+    # Without this pass surname_norm carries no trained weight and all match
+    # probabilities are depressed below the auto-commit threshold.
     linker.training.estimate_parameters_using_expectation_maximisation(
         block_on("substr(surname_norm, 1, 4)")
+    )
+    linker.training.estimate_parameters_using_expectation_maximisation(
+        block_on("place_id")
     )
 
     # Generate predictions
