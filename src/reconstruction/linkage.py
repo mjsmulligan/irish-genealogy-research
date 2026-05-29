@@ -298,25 +298,21 @@ def run_census_linkage(conn: sqlite3.Connection) -> CensusLinkageResult:
         )
         return result
 
-    # Build feature DataFrame
-    df = build_census_features(conn)
+    # Build feature DataFrames — one per census source
+    source_dfs = build_census_features(conn)
 
-    if df.empty:
+    if not source_dfs:
         result.skipped = "Feature extraction returned no rows."
         return result
 
-    # Convert birth_year_est to string for Splink date comparison
-    # (AbsoluteDateDifferenceAtThresholds with input_is_string=False
-    #  actually accepts numeric; keep as int but cast nulls to None)
-    df["birth_year_est"] = df["birth_year_est"].where(
-        df["birth_year_est"].notna(), other=None
-    )
-
-    # Run Splink with DuckDB backend (in-memory)
+    # Run Splink with DuckDB backend (in-memory).
+    # Pass the list of per-source DataFrames; Splink's link_and_dedupe mode
+    # assigns source_dataset automatically from list position and uses
+    # unique_id (= person_id) as the row key.
     db_api = DuckDBAPI()
     settings = _build_settings()
 
-    linker = Linker(df, settings, db_api=db_api)
+    linker = Linker(source_dfs, settings, db_api=db_api)
 
     # Estimate u probabilities via random sampling
     linker.training.estimate_u_using_random_sampling(max_pairs=1e5)
@@ -345,8 +341,10 @@ def run_census_linkage(conn: sqlite3.Connection) -> CensusLinkageResult:
 
     with conn:
         for _, row in pred_df.iterrows():
-            pid_l = int(row["person_id_l"])
-            pid_r = int(row["person_id_r"])
+            # Splink link_and_dedupe outputs unique_id_l / unique_id_r;
+            # unique_id == person_id in our feature DataFrames.
+            pid_l = int(row["unique_id_l"])
+            pid_r = int(row["unique_id_r"])
             score = float(row["match_probability"])
 
             # Skip self-matches (shouldn't happen but guard anyway)

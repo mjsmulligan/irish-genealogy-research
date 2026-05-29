@@ -74,21 +74,27 @@ def _split_name(full_name: str | None) -> tuple[str | None, str | None]:
     return _normalise_name(parts[0]), _normalise_name(" ".join(parts[1:]))
 
 
-def build_census_features(conn: sqlite3.Connection) -> pd.DataFrame:
+# Replace from line 77 to end
+
+def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     """
-    Build a flat feature DataFrame for all census Person conclusions.
+    Build feature DataFrames for all census Person conclusions, one DataFrame
+    per census source.  Splink's link_and_dedupe mode requires a list of
+    DataFrames so it can produce both within-source and cross-source candidate
+    pairs.
 
-    Returns a pandas DataFrame with one row per (person_id, source_id) pair,
-    suitable for passing to Splink as input data.
+    Each DataFrame has one row per person_id and the following columns:
 
-    Columns:
-        person_id       int     — GRA Person primary key (unique id for Splink)
+        unique_id       int     — Splink required PK; equals person_id
+        person_id       int     — GRA Person primary key
         source_id       int     — census source (3=1901, 4=1911, 5=1926)
         surname_norm    str     — normalised surname
         forename_norm   str     — normalised forename
         birth_year_est  int     — estimated birth year (census year - age)
         place_id        int     — resolved Place conclusion id (blocking anchor)
         place_raw       str     — normalised place string (fallback if unresolved)
+
+    Returns an empty list if no census Person conclusions exist.
     """
     query = """
         SELECT
@@ -157,6 +163,7 @@ def build_census_features(conn: sqlite3.Connection) -> pd.DataFrame:
             place_raw = _normalise_name(row["place_raw"])
 
         records.append({
+            "unique_id":      row["person_id"],   # Splink required PK
             "person_id":      row["person_id"],
             "source_id":      row["source_id"],
             "surname_norm":   surname,
@@ -167,16 +174,20 @@ def build_census_features(conn: sqlite3.Connection) -> pd.DataFrame:
         })
 
     if not records:
-        return pd.DataFrame(columns=[
-            "person_id", "source_id", "surname_norm", "forename_norm",
-            "birth_year_est", "place_id", "place_raw",
-        ])
+        return []
 
     df = pd.DataFrame(records)
 
-    # One row per person_id — take the first record per person if duplicates
-    # (can happen if a person is linked to multiple records from the same source,
-    # which R42 will flag; we still need to handle it gracefully here)
-    df = df.drop_duplicates(subset=["person_id"], keep="first")
+    # One row per person_id — take the first source record per person if there
+    # are duplicates within a source (R42 will flag these; handle gracefully here)
+    df = df.drop_duplicates(subset=["unique_id"], keep="first")
 
-    return df
+    # Split into one DataFrame per census source so Splink's link_and_dedupe
+    # can distinguish within-source deduplication from cross-source linkage.
+    # Sources present in the data may be a subset of {3, 4, 5}.
+    result: list[pd.DataFrame] = []
+    for source_id in sorted(df["source_id"].unique()):
+        source_df = df[df["source_id"] == source_id].reset_index(drop=True)
+        result.append(source_df)
+
+    return result
