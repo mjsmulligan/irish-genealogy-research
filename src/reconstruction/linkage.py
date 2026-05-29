@@ -32,7 +32,6 @@ import splink.comparison_library as cl
 import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
-from src.reconstruction.features.census import CENSUS_SOURCE_IDS, build_census_features
 
 # ---------------------------------------------------------------------------
 # Threshold bands (reconstruction_algorithms.md §1.3)
