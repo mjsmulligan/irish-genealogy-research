@@ -116,35 +116,52 @@ def build_record_url(source: dict, record: dict) -> str | None:
 # Census 1911 NAI ingest (Source 4)
 # ---------------------------------------------------------------------------
 
-# NAI relation_to_head → GRA role mapping
+# NAI relation_to_head → GRA role mapping.
+# Keys cover both the 1901/1911 NAI vocabulary ("Head of Family", "Wife", etc.)
+# and the 1926 NAI vocabulary ("Head", "Spouse", "Grandson", etc.), which uses
+# shorter and differently-capitalised values.
 _CENSUS_ROLE_MAP: dict[str, str] = {
-    "Head of Family": "head",
-    "Wife":           "spouse",
-    "Son":            "son",
-    "Daughter":       "daughter",
-    "Brother":        "sibling",
-    "Sister":         "sibling",
-    "Grand Son":      "grandchild",
-    "Grand Daughter": "grandchild",
-    "Son in Law":     "in_law",
-    "Daughter in Law":"in_law",
-    "Mother in Law":  "in_law",
-    "Father in Law":  "in_law",
-    "Brother In Law": "in_law",
-    "Sister In Law":  "in_law",
-    "Niece in Law":   "in_law",
-    "Niece":          "niece_nephew",
-    "Nephew":         "niece_nephew",
-    "Nice":           "niece_nephew",   # transcription error for Niece
-    "Aunt":           "aunt_uncle",
-    "Uncle":          "aunt_uncle",
-    "Cousin":         "cousin",
-    "Mother":         "mother",
-    "Father":         "father",
-    "Servant":        "servant",
-    "Visitor":        "visitor",
-    "Boarder":        "boarder",
-    "Lodger":         "boarder",
+    # ── 1901 / 1911 NAI values ───────────────────────────────────────────────
+    "Head of Family":  "head",
+    "Wife":            "spouse",
+    "Son":             "son",
+    "Daughter":        "daughter",
+    "Brother":         "sibling",
+    "Sister":          "sibling",
+    "Grand Son":       "grandchild",
+    "Grand Daughter":  "grandchild",
+    "Son in Law":      "in_law",
+    "Daughter in Law": "in_law",
+    "Mother in Law":   "in_law",
+    "Father in Law":   "in_law",
+    "Brother In Law":  "in_law",
+    "Sister In Law":   "in_law",
+    "Niece in Law":    "in_law",
+    "Niece":           "niece_nephew",
+    "Nephew":          "niece_nephew",
+    "Nice":            "niece_nephew",   # transcription error for Niece
+    "Aunt":            "aunt_uncle",
+    "Uncle":           "aunt_uncle",
+    "Cousin":          "cousin",
+    "Mother":          "mother",
+    "Father":          "father",
+    "Servant":         "servant",
+    "Visitor":         "visitor",
+    "Boarder":         "boarder",
+    "Lodger":          "boarder",
+    # ── 1926 NAI values (shorter / differently capitalised) ──────────────────
+    "Head":            "head",
+    "Spouse":          "spouse",
+    "Grandson":        "grandchild",
+    "Granddaughter":   "grandchild",
+    "Son-in-law":      "in_law",
+    "Daughter-in-law": "in_law",
+    "Mother-in-law":   "in_law",
+    "Father-in-law":   "in_law",
+    "Brother-in-law":  "in_law",
+    "Sister-in-law":   "in_law",
+    "Sister in Law":   "in_law",   # variant spacing seen in 1926 data
+    "Brother in Law":  "in_law",   # variant spacing seen in 1926 data
 }
 
 _SEX_MAP = {"M": "male", "F": "female", "m": "male", "f": "female"}
