@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 import splink.comparison_library as cl
+import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
 from src.reconstruction.features.census import CENSUS_SOURCE_IDS, build_census_features
@@ -90,11 +91,19 @@ def _build_settings() -> SettingsCreator:
                 "forename_norm",
                 [0.92, 0.80],
             ),
-            cl.AbsoluteDateDifferenceAtThresholds(
-                "birth_year_est",
-                [2, 5, 10],
-                date_format="yyyy",          # integer year treated as 4-digit string
-                input_is_string=False,
+            # birth_year_est is an integer — use AbsoluteDifferenceLevel directly.
+            # Thresholds match reconstruction_algorithms.md §5.6: ±2, ±5, ±10 years.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("birth_year_est"),
+                    cll.ExactMatchLevel("birth_year_est"),
+                    cll.AbsoluteDifferenceLevel("birth_year_est", 2),
+                    cll.AbsoluteDifferenceLevel("birth_year_est", 5),
+                    cll.AbsoluteDifferenceLevel("birth_year_est", 10),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="birth_year_est",
+                comparison_description="Birth year absolute difference at thresholds 2, 5, 10",
             ),
             cl.ExactMatch("place_id"),
         ],
