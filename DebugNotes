@@ -1,5 +1,6 @@
 1. Place name resolution
 Place name resolution causes issues (e.g. upper/lower) and similar townlands are merged.
+But not always, e.g. townagh/tawnagh
 Might want to make this manual or use townlands.ie to create the normalised places.
 
 2. Unmapped relation mapped to principal
