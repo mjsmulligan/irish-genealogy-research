@@ -105,7 +105,19 @@ def _build_settings() -> SettingsCreator:
                 output_column_name="birth_year_est",
                 comparison_description="Birth year absolute difference at thresholds 2, 5, 10",
             ),
-            cl.ExactMatch("place_id"),
+            # place_id: exact match on resolved townland conclusion.
+            # A NullLevel is required first — without it, DuckDB's
+            # IS NOT DISTINCT FROM treats NULL=NULL as a positive place
+            # match, giving unresolved persons a spurious place score.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("place_id"),
+                    cll.ExactMatchLevel("place_id"),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="place_id",
+                comparison_description="Place ID exact match (nulls treated as non-match)",
+            ),
         ],
         retain_matching_columns=True,
         retain_intermediate_calculation_columns=False,
