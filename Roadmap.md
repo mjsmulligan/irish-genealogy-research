@@ -10,14 +10,14 @@
 
 | Document | Version | Status | Notes |
 |---|---|---|---|
-| `docs/conceptual_model.md` | v2.2 | ✅ Complete | Three-layer architecture, ten first-class objects |
-| `docs/data_dictionary.md` | v2.4 | ✅ Complete | All fields, controlled vocabularies, full NAI census role mapping |
-| `docs/repositories.md` | v1.4 | ✅ Complete | Sources 3 and 5 corrected against actual NAI download schemas |
-| `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 genealogical constraint rules; R38 updated for nullable score |
-| `docs/database_schema.md` | v2.6 | ✅ Complete | Score/score_version nullable; migration script added |
-| `docs/reconstruction_algorithms.md` | v1.1 | ✅ Complete | Fellegi-Sunter, Jaro-Winkler, constraint application, expanded role-pair rules |
-| `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints (GC01–GC22) |
-| `docs/service_api.md` | v1.0 | ✅ Complete | Service layer API, research scope, pipeline state |
+| `docs/conceptual_model.md` | v2.3 | ✅ Complete | PlaceAuthority added to foundational layer; flat hierarchy design |
+| `docs/data_dictionary.md` | v2.5 | ✅ Complete | PlaceAuthority flat schema; place_type vocabulary; place_authority source type |
+| `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
+| `docs/validation_rules.md` | v2.6 | ✅ Complete | R38 updated for nullable score |
+| `docs/database_schema.md` | v2.7 | ✅ Complete | PlaceAuthority flat table; place_membership retired; migration v2.6→v2.7 |
+| `docs/reconstruction_algorithms.md` | v1.1 | ✅ Complete | Fellegi-Sunter, Jaro-Winkler, constraint application |
+| `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
+| `docs/service_api.md` | v1.0 | ✅ Complete | Service layer API |
 | `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
 | `ROADMAP.md` | v1.4 | ✅ This document | — |
 
@@ -25,103 +25,116 @@
 
 | Module | File(s) | Status | Notes |
 |---|---|---|---|
-| Database layer | `src/db.py` | ✅ Complete | `open_db()`, `init_db()`, `build_record_url()`, Census 1901/1911/1926 NAI ingest, `print_summary()`, CLI. Ingest now triggers full pipeline automatically. |
-| Schema DDL | `src/db/schema.sql` | ✅ Complete | v2.6 — score/score_version nullable on all four linkage junction tables |
-| Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources and 7 repositories |
-| Migration | `src/db/migrations/migrate_25_to_26.sql` | ✅ Complete | Converts v2.5 → v2.6 |
-| Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | Townland normalisation, Jaro-Winkler clustering, auto-commit to Place conclusions |
+| Database layer | `src/db.py` | ✅ Complete | Schema v2.7; `seed-places` CLI updated to single `--file` arg |
+| Schema DDL | `src/db/schema.sql` | ✅ Complete | v2.7 — `place_authority` flat table; `place` retired; `place_authority` source type |
+| Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources, 7 repositories, Repository 8 (logainm.ie) |
+| Migration | `src/db/migrations/migrate_26_to_27.sql` | ✅ Complete | Migrates place → place_authority; drops place_membership |
+| Place fetcher | `src/fetch_places.py` | ✅ Complete | logainm API → DB direct write or CSV export; CSV round-trip; manual entry support |
+| Place seeder | `src/seed_places.py` | ✅ Complete | CSV → place_authority; idempotent; delegates to fetch_places |
+| Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | v2.0 — authority-based matching; unresolved flagging; hierarchy queries |
 | Household inference | `src/reconstruction/household_inference.py` | ✅ Complete | Census role-pair rules → Person/Relationship/Event conclusions |
-| Census feature extractor | `src/reconstruction/features/census.py` | ✅ Complete | Flat feature DataFrame for Splink from census Person conclusions |
-| Cross-census linkage | `src/reconstruction/linkage.py` | ✅ Implemented — test pending | Splink DuckDBAPI, auto-commit ≥0.85, propose 0.30–0.85, lower person_id merge |
-| Validator | `src/validator.py` | ✅ Complete | R40–R46 genealogical constraint rules; `validate()`, `validate_object()`, `validate_genealogical()` |
-| Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; implementation pending |
-| Test suite | `tests/` | 🔜 Pending | NAI schema header CSVs in place as authoritative schema references |
+| Test suite | `tests/test_place_authority.py` | ✅ 33/33 passing | Covers: normalisation, CSV load/validation, DB insert, idempotency, resolution, hierarchy queries, real CSV round-trip |
+| Validator | `src/validator.py` | 🔜 Pending | All 46 rules specified |
+| Cross-census linkage | `src/reconstruction/linkage.py` | 🔜 Next | Splink person linkage 1901↔1911↔1926 |
+| Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete |
 
-**Verified against real data:** Census 1901, 1911, and 1926 NAI downloads for Tullynaught DED ingested (715 records, 3,167 recorded persons). Cross-census linkage implementation complete; end-to-end pipeline test pending.
+**Verified against real data:**
+- Tullynaught DED logainm fetch: 1 DED + 33 townlands, all loaded correctly
+- 17 townlands correctly store NULL barony/civil_parish (genuine logainm gap, not a bug)
+- 16 townlands correctly linked to Drumhome civil parish (civil_parish_id=785)
+- Census 1901, 1911, and 1926 NAI downloads for Tullynaught ingest correctly
+- Place resolution matches "Straniss" → "Straness" (logainm 14300) via Jaro-Winkler
 
 **Development environment:** VSCode with GitHub integration. Repository: https://github.com/mjsmulligan/irish-genealogy-research
 
-**Housekeeping item:** `genealogy.db` should be untracked — run `git rm --cached genealogy.db` if not already done.
+**Housekeeping:** `genealogy.db` should be removed from git tracking — run `git rm --cached genealogy.db`.
 
 ---
 
-## 2. Release Plan
+## 2. Workflow: Place Authority First
+
+The introduction of PlaceAuthority changes the standard workflow. Place seeding is now a prerequisite step before any record ingest:
+
+```bash
+# 1. Initialise fresh database
+python -m src.db init
+
+# 2. Seed place authority for target area (logainm API)
+python -m src.fetch_places --logainm-id 111482 --db genealogy.db
+
+# 2a. Alternative: seed from CSV (for manual entries or pre-fetched data)
+python -m src.db seed-places --file tullynaught_places.csv
+
+# 3. Ingest census records
+python -m src.db ingest --source 3 --file 1901_Tullynaught.csv
+python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
+python -m src.db ingest --source 5 --file 1926_Tullynaught.csv
+
+# 4. Reconstruct (place resolution + household inference)
+python -m src.db reconstruct --source 4
+
+# 5. Inspect
+python -m src.db summary
+```
+
+---
+
+## 3. Release Plan
 
 ### Release 1 — Full census pipeline (1901, 1911, 1926)
 
 | # | Milestone | Status |
 |---|---|---|
+| R1-0 | Place authority seeding (logainm API + CSV) | ✅ Complete |
 | R1-1 | Place resolution + household inference | ✅ Complete |
-| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | ✅ Implemented — pipeline test pending |
-| R1-3 | Validator (R40–R46 genealogical constraint rules) | ✅ Complete |
-| R1-4 | Person Browser basics (source coverage, merge error flags) | 🔜 Next |
+| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | 🔜 Next |
+| R1-3 | Validator (R40–R46 genealogical constraint rules) | 🔜 Pending |
+| R1-4 | Person Browser basics (source coverage, merge error flags) | 🔜 Pending |
 
 ### Release 2 — Civil registration and parish registers
 
-- `src/reconstruction/core.py` — shared Person/Relationship/Event commit logic extracted from `household_inference.py`
-- `src/reconstruction/features/registration.py` — civil birth, marriage, death registration feature extractor
-- `src/reconstruction/features/parish.py` — Catholic parish register feature extractor
-- `src/reconstruction/registration_inference.py` — civil registration inference module
-- `src/reconstruction/parish_inference.py` — parish register inference module
+Civil registration sources (birth, marriage, death) and Catholic parish registers. Planned modules:
+- `src/reconstruction/core.py` — shared Person/Relationship/Event commit logic
+- `src/reconstruction/registration_inference.py`
+- `src/reconstruction/parish_inference.py`
 
 ### Release 3 and beyond
 
-Land records (Griffith's Valuation, Tithe Applotment), military sources, folklore collection, service layer, consumer front ends.
+Land records, military sources, folklore, service layer, consumer front ends.
 
 ---
 
-## 3. Work Queue
+## 4. Work Queue
 
-### Immediate — pipeline testing
+### Tier 3 — Reconstruction pipeline ← current
 
-Test the cross-census linkage pipeline against Tullynaught:
+**Cross-census Splink linkage (R1-2)** 🔜 — next implementation priority.
 
-```bash
-rm genealogy.db
-python -m src.db init
-python -m src.db ingest --source 4 --file tests/1911_Tullynaught.csv
-python -m src.db ingest --source 3 --file tests/1901_Tullynaught.csv
-python -m src.db ingest --source 5 --file tests/1926_Tullynaught.csv
-python -m src.db summary
-```
+- Resolve OD-04 (SQLiteAPI vs DuckDBAPI) before starting
+- Feature extraction for census: name, birth year, place_id (now a stable authority ID — better Splink signal than before), occupation, co-persons
+- place_id from place_authority gives Splink a clean, stable blocking key
 
-Expected: person count rises on first ingest, rises less steeply on subsequent ingests as cross-census merges reduce duplicates. Merge log should show genealogically plausible matches. Splink threshold tuning may be needed based on results.
+**Validator (R1-3)** 🔜 — R40–R46 implementation against real Tullynaught data.
 
-### Tier 4 — Person Browser basics (R1-4)
+### Tier 4 — Service layer
 
-Source coverage display per Person (GC08–GC11 eligibility logic) and merge error flag surfacing (R40–R46 warnings). Entry point: `DataStore.validate_genealogical(person_id)` already implemented.
+`src/service.py` — ResearchService class. Depends on reconstruction pipeline being stable.
 
-### Tier 5 — Service layer
+### Tier 5 — Consumers
 
-`src/service.py` — `ResearchService` class with all methods defined in `service_api.md` v1.0.
-
-### Tier 6 — Test suite
-
-`tests/` — covering all five validation categories, ingest pipeline, and reconstruction stages.
-
-### Tier 7 — Consumers
-
-Claude consumer, Lovable UI, MCP server — all depend on service layer.
+Claude consumer, Lovable UI, MCP server.
 
 ---
 
-## 4. Open Design Decisions
+## 5. Open Decisions
 
 ### OD-02 — Derived confidence function
 
-The current implementation uses a provisional placeholder (confidence = `low` / `medium` / `high` based on record count alone). The actual derivation function — weighting mean score, record count, and source diversity — is deferred pending calibration against real scored linkage data.
+Provisional placeholder (record count → low/medium/high) in place. Now unblocked — real multi-source scored linkages available after cross-census Splink run. Revisit after R1-2.
 
-**Status:** Unblocked once cross-census Splink linkage produces real score distributions from Tullynaught test run.
+### OD-04 — Splink backend (SQLiteAPI vs DuckDBAPI)
 
----
-
-## 5. Resolved Decisions
-
-| ID | Decision |
-|---|---|
-| OD-01 | Score nullable on linkage junction tables — null represents manually-asserted linkages |
-| OD-03 | Narrative output is out of scope — future consumer application |
-| OD-04 | Splink backend = DuckDBAPI — in-memory per linkage run, results written back to genealogy.db; SQLite remains persistent store |
+Blocks R1-2. Recommendation: start with SQLiteAPI for simplicity at townland scale. Migrate to DuckDBAPI only if performance is inadequate. Decision needed before beginning R1-2 implementation.
 
 ---
 
@@ -130,11 +143,7 @@ The current implementation uses a provisional placeholder (confidence = `low` / 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | May 2026 | Initial ROADMAP |
-| 1.1 | May 2026 | Tier 1 and Tier 2 marked complete. Tullynaught 1911 results. OD-03 resolved. |
-| 1.2 | May 2026 | R1-1 complete. Release Plan added. Cross-census linkage as R1-2. |
-| 1.3 | May 2026 | Schema v2.6. OD-01 resolved. Census date bug fixed. 1926 normaliser corrected. Migration script added. OD-04 recommendation added. |
-| 1.4 | May 2026 | R1-2 implemented (cross-census Splink linkage, DuckDBAPI, lower-id merge). R1-3 complete (validator R40–R46). Ingest now triggers full pipeline automatically — reconstruct is repair-mode only. Linkage architecture: source-specific feature extractors in src/reconstruction/features/, generic pipeline in linkage.py. splink>=4.0 added to requirements.txt. OD-04 resolved (DuckDBAPI confirmed at ~300k person scale). |
-
----
-
-*This document should be updated at the start of each working session to reflect progress and any new decisions or open questions.*
+| 1.1 | May 2026 | Tier 1 and 2 complete; Tullynaught 1911 tested |
+| 1.2 | May 2026 | R1-1 complete; Release Plan added; R1-2 as next milestone |
+| 1.3 | May 2026 | Schema v2.6 (OD-01 resolved); census date fixes; 1926 normaliser corrected; migration added |
+| 1.4 | May 2026 | Place authority redesign complete. PlaceAuthority added to foundational layer (flat schema, logainm.ie source). `src/fetch_places.py` and updated `src/seed_places.py` implemented. `src/reconstruction/place_resolution.py` v2.0 (authority-based matching). Schema v2.7. Migration v2.6→v2.7. 33 tests passing against real Tullynaught data. R1-0 milestone added and marked complete. Workflow updated: place seeding now prerequisite before ingest. |
