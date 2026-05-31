@@ -3,9 +3,14 @@ GRA — Place Resolution
 Stage 2 of the reconstruction pipeline.
 
 Reads all distinct place_as_recorded strings from the evidence layer,
-normalises them, clusters by Jaro-Winkler similarity, auto-commits each
-cluster as a Place conclusion, and links every contributing Record via
-place_record.
+normalises them, and matches each against the place_authority table using
+Jaro-Winkler similarity on name_en. Matched strings are committed to
+place_record. Unmatched strings are collected as unresolved flags.
+
+Requires place_authority to be seeded before running:
+    python -m src.db seed-places --file places.csv
+or:
+    python -m src.fetch_places --logainm-id 111482 --db genealogy.db
 
 Entry point: run_place_resolution(conn) -> PlaceResolutionResult
 """
@@ -18,16 +23,16 @@ from dataclasses import dataclass, field
 
 import jellyfish
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
+SCORE_VERSION = "place_v2.0"
 
-SCORE_VERSION = "place_v1.0"
-JW_THRESHOLD = 0.88      # minimum similarity to merge two place tokens
-EXACT_SCORE = 1.0        # score for records whose normalised token exactly matches the cluster canonical
-AUTO_COMMIT_SCORE = 0.90 # default score stored on place_record for fuzzy (non-exact) matches
+# Minimum Jaro-Winkler similarity to accept a match.
+# Higher than person linkage (0.85) because false-positive place merges
+# cause downstream damage to person linkage quality.
+JW_THRESHOLD = 0.88
 
-# Abbreviation expansions applied during normalisation
+EXACT_SCORE = 1.0    # normalised token exactly matches authority name
+FUZZY_SCORE = 0.90   # above threshold but not exact
+
 _ABBREV = {
     r"\bco\b\.?":    "county",
     r"\bpar\b\.?":   "parish",
@@ -35,7 +40,6 @@ _ABBREV = {
     r"\btd\b\.?":    "townland",
 }
 
-# Administrative suffixes stripped after abbreviation expansion
 _SUFFIXES = re.compile(
     r"\b(townland|civil parish|ded|barony|county|parish)\b",
     re.IGNORECASE,
@@ -47,19 +51,11 @@ _SUFFIXES = re.compile(
 # ---------------------------------------------------------------------------
 
 def _normalise(raw: str) -> str:
-    """
-    Apply the townland normalisation pipeline from reconstruction_algorithms.md §2.3.
-    Returns a normalised token suitable for Jaro-Winkler comparison.
-    """
     s = raw.lower()
-    # Strip punctuation (commas, full stops, hyphens-as-separators)
     s = re.sub(r"[,.\-]", " ", s)
-    # Expand abbreviations
     for pattern, replacement in _ABBREV.items():
         s = re.sub(pattern, replacement, s, flags=re.IGNORECASE)
-    # Strip administrative suffixes
     s = _SUFFIXES.sub(" ", s)
-    # Collapse whitespace
     s = " ".join(s.split())
     return s
 
@@ -69,19 +65,31 @@ def _normalise(raw: str) -> str:
 # ---------------------------------------------------------------------------
 
 @dataclass
-class PlaceCluster:
-    canonical_raw: str          # the most-common raw string in the cluster (used as Place.name)
-    canonical_norm: str         # normalised form of canonical_raw
-    records: list[int]          # record_ids in this cluster
-    raw_variants: list[str]     # all distinct raw strings that mapped here
-    place_id: int = 0           # assigned after insert
+class PlaceMatch:
+    place_as_recorded: str
+    norm: str
+    place_id: int
+    name_en: str
+    place_type: str
+    score: float
+    record_ids: list[int] = field(default_factory=list)
+
+
+@dataclass
+class UnresolvedPlace:
+    place_as_recorded: str
+    norm: str
+    record_ids: list[int] = field(default_factory=list)
+    best_candidate: str | None = None
+    best_score: float = 0.0
 
 
 @dataclass
 class PlaceResolutionResult:
-    places_created: int = 0
+    matched: list[PlaceMatch] = field(default_factory=list)
+    unresolved: list[UnresolvedPlace] = field(default_factory=list)
     records_linked: int = 0
-    clusters: list[PlaceCluster] = field(default_factory=list)
+    records_already_linked: int = 0
     skipped_blank: int = 0
 
 
@@ -89,106 +97,79 @@ class PlaceResolutionResult:
 # Core algorithm
 # ---------------------------------------------------------------------------
 
-def _collect_place_tokens(conn: sqlite3.Connection) -> dict[str, list[int]]:
+def _load_authorities(conn: sqlite3.Connection) -> list[dict]:
     """
-    Return a mapping of normalised place token → list of record_ids.
-    Reads place_as_recorded from recorded_event (one per record).
-    Skips null/blank values.
+    Load all place_authority rows. For each row build a list of normalised
+    name strings to match against: name_en is always included; any
+    non-empty barony_name, civil_parish_name, ded_name are not used as
+    match candidates (they are parent names, not this place's name).
     """
     rows = conn.execute(
-        "SELECT re.record_id, re.place_as_recorded "
-        "FROM recorded_event re "
-        "WHERE re.place_as_recorded IS NOT NULL AND trim(re.place_as_recorded) != ''"
+        "SELECT place_id, name_en, place_type FROM place_authority"
     ).fetchall()
 
-    token_to_records: dict[str, list[int]] = {}
+    authorities = []
+    for row in rows:
+        norms = [_normalise(row["name_en"])]
+        authorities.append({
+            "place_id":   row["place_id"],
+            "name_en":    row["name_en"],
+            "place_type": row["place_type"],
+            "norms":      norms,
+        })
+    return authorities
+
+
+def _collect_evidence_tokens(
+    conn: sqlite3.Connection,
+) -> tuple[dict[str, dict], int]:
+    """
+    Collect all distinct place_as_recorded strings from recorded_event,
+    grouped by normalised token.
+    Returns (token_map, blank_count).
+    """
+    rows = conn.execute(
+        "SELECT record_id, place_as_recorded FROM recorded_event "
+        "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
+    ).fetchall()
+
+    blank_count = conn.execute(
+        "SELECT COUNT(*) FROM recorded_event "
+        "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
+    ).fetchone()[0]
+
+    token_map: dict[str, dict] = {}
     for row in rows:
         norm = _normalise(row["place_as_recorded"])
         if not norm:
+            blank_count += 1
             continue
-        token_to_records.setdefault(norm, []).append(row["record_id"])
-    return token_to_records
+        if norm not in token_map:
+            token_map[norm] = {"raw": row["place_as_recorded"], "record_ids": []}
+        token_map[norm]["record_ids"].append(row["record_id"])
+
+    return token_map, blank_count
 
 
-def _build_clusters(
-    token_to_records: dict[str, list[int]],
-    raw_lookup: dict[str, str],   # norm → most-common raw string
-) -> list[PlaceCluster]:
+def _best_match(
+    norm: str,
+    authorities: list[dict],
+) -> tuple[dict | None, float, dict | None]:
+    """Return (matched_auth, score, best_candidate_auth).
+    matched_auth is set only when score >= JW_THRESHOLD.
+    best_candidate_auth is always the highest-scoring authority, for researcher hints.
     """
-    Greedy single-linkage clustering of normalised place tokens by
-    Jaro-Winkler similarity ≥ JW_THRESHOLD.
-
-    Tokens are processed largest-first (most records) so the cluster
-    canonical is drawn from the most-evidenced variant.
-    """
-    # Sort tokens by record count descending so high-frequency tokens
-    # become cluster seeds first.
-    tokens_sorted = sorted(
-        token_to_records.keys(),
-        key=lambda t: len(token_to_records[t]),
-        reverse=True,
-    )
-
-    assigned: dict[str, int] = {}   # norm token → cluster index
-    clusters: list[PlaceCluster] = []
-
-    for token in tokens_sorted:
-        if token in assigned:
-            continue
-
-        # Try to find an existing cluster whose canonical is similar enough
-        best_idx = -1
-        best_score = 0.0
-        for idx, cluster in enumerate(clusters):
-            score = jellyfish.jaro_winkler_similarity(token, cluster.canonical_norm)
-            if score >= JW_THRESHOLD and score > best_score:
+    best_auth = None
+    best_score = 0.0
+    for auth in authorities:
+        for auth_norm in auth["norms"]:
+            score = jellyfish.jaro_winkler_similarity(norm, auth_norm)
+            if score > best_score:
                 best_score = score
-                best_idx = idx
-
-        if best_idx >= 0:
-            # Merge into existing cluster
-            cluster = clusters[best_idx]
-            cluster.records.extend(token_to_records[token])
-            raw = raw_lookup[token]
-            if raw not in cluster.raw_variants:
-                cluster.raw_variants.append(raw)
-            assigned[token] = best_idx
-        else:
-            # Start a new cluster seeded by this token
-            new_cluster = PlaceCluster(
-                canonical_raw=raw_lookup[token],
-                canonical_norm=token,
-                records=list(token_to_records[token]),
-                raw_variants=[raw_lookup[token]],
-            )
-            assigned[token] = len(clusters)
-            clusters.append(new_cluster)
-
-    return clusters
-
-
-def _most_common_raw(conn: sqlite3.Connection, norm: str, records: list[int]) -> str:
-    """
-    Among all place_as_recorded values for the given record_ids that
-    normalise to this token, return the most frequent raw string.
-    Falls back to the normalised token itself if nothing resolves.
-    """
-    placeholders = ",".join("?" * len(records))
-    rows = conn.execute(
-        f"SELECT place_as_recorded FROM recorded_event "
-        f"WHERE record_id IN ({placeholders}) AND place_as_recorded IS NOT NULL",
-        records,
-    ).fetchall()
-
-    counts: dict[str, int] = {}
-    for row in rows:
-        raw = row["place_as_recorded"].strip()
-        if raw:
-            counts[raw] = counts.get(raw, 0) + 1
-
-    if counts:
-        return max(counts, key=lambda k: counts[k])
-    return norm
+                best_auth = auth
+    if best_score >= JW_THRESHOLD:
+        return best_auth, best_score, best_auth
+    return None, best_score, best_auth  # best_auth = hint even below threshold
 
 
 # ---------------------------------------------------------------------------
@@ -197,142 +178,123 @@ def _most_common_raw(conn: sqlite3.Connection, norm: str, records: list[int]) ->
 
 def run_place_resolution(conn: sqlite3.Connection) -> PlaceResolutionResult:
     """
-    Run place resolution across all unresolved place strings in the
-    evidence layer. Auto-commits all clusters as Place conclusions and
-    links Records via place_record.
+    Match all unresolved place_as_recorded strings in the evidence layer
+    against place_authority. Commits matched linkages to place_record.
+    Collects unresolved strings for researcher attention.
 
-    Safe to call on a database that already has Place conclusions —
-    existing places are loaded first and new tokens are matched against
-    them before any new Place is created.
+    Safe to call incrementally — records already in place_record are skipped.
+    Requires place_authority to be populated (run seed-places or fetch-places first).
     """
     result = PlaceResolutionResult()
 
-    # Count blanks for reporting
-    blank_count = conn.execute(
-        "SELECT COUNT(*) FROM recorded_event "
-        "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
+    authority_count = conn.execute(
+        "SELECT COUNT(*) FROM place_authority"
     ).fetchone()[0]
+    if authority_count == 0:
+        print(
+            "  Place resolution: place_authority is empty.\n"
+            "  Run 'python -m src.fetch_places' or 'python -m src.db seed-places' first."
+        )
+        return result
+
+    authorities = _load_authorities(conn)
+    token_map, blank_count = _collect_evidence_tokens(conn)
     result.skipped_blank = blank_count
 
-    # Collect tokens
-    token_to_records = _collect_place_tokens(conn)
-    if not token_to_records:
+    if not token_map:
         print("  Place resolution: no place strings found in evidence layer.")
         return result
 
-    # For each token, find its most common raw form
-    raw_lookup: dict[str, str] = {}
-    for norm, records in token_to_records.items():
-        raw_lookup[norm] = _most_common_raw(conn, norm, records)
-
-    # Load any existing Place conclusions so we can match against them
-    # before creating new ones (safe for incremental calls)
-    existing = conn.execute(
-        "SELECT place_id, name FROM place"
-    ).fetchall()
-    existing_clusters: list[PlaceCluster] = []
-    for row in existing:
-        norm = _normalise(row["name"])
-        existing_clusters.append(PlaceCluster(
-            canonical_raw=row["name"],
-            canonical_norm=norm,
-            records=[],
-            raw_variants=[row["name"]],
-            place_id=row["place_id"],
-        ))
-
-    # Determine next IDs
-    max_place = conn.execute("SELECT COALESCE(MAX(place_id), 0) FROM place").fetchone()[0]
-    next_place_id = max_place + 1
-
-    # Build clusters from evidence tokens, seeded with existing places
-    # by prepending them to the sorted token list as fixed seeds.
-    # Simplest approach: run clustering on evidence tokens, then merge
-    # with existing places via a second pass.
-    new_clusters = _build_clusters(token_to_records, raw_lookup)
-
-    # Match new clusters against existing Place conclusions
-    committed_clusters: list[PlaceCluster] = []
-    for nc in new_clusters:
-        matched = False
-        for ec in existing_clusters:
-            score = jellyfish.jaro_winkler_similarity(nc.canonical_norm, ec.canonical_norm)
-            if score >= JW_THRESHOLD:
-                # Merge records into the existing place
-                ec.records.extend(nc.records)
-                for v in nc.raw_variants:
-                    if v not in ec.raw_variants:
-                        ec.raw_variants.append(v)
-                committed_clusters.append(ec)
-                matched = True
-                break
-        if not matched:
-            nc.place_id = next_place_id
-            next_place_id += 1
-            committed_clusters.append(nc)
-            existing_clusters.append(nc)
-
-    # Determine which records are already linked to avoid duplicate junction rows
     already_linked: set[int] = set(
         row[0] for row in conn.execute("SELECT record_id FROM place_record").fetchall()
     )
 
-    # Commit to database
+    matches: list[PlaceMatch] = []
+    unresolved: list[UnresolvedPlace] = []
+
+    for norm, info in token_map.items():
+        raw = info["raw"]
+        record_ids = info["record_ids"]
+        auth, score, hint_auth = _best_match(norm, authorities)
+
+        if auth is not None:
+            stored_score = EXACT_SCORE if score == 1.0 else FUZZY_SCORE
+            matches.append(PlaceMatch(
+                place_as_recorded=raw,
+                norm=norm,
+                place_id=auth["place_id"],
+                name_en=auth["name_en"],
+                place_type=auth["place_type"],
+                score=stored_score,
+                record_ids=record_ids,
+            ))
+        else:
+            unresolved.append(UnresolvedPlace(
+                place_as_recorded=raw,
+                norm=norm,
+                record_ids=record_ids,
+                best_candidate=hint_auth["name_en"] if hint_auth else None,
+                best_score=score,
+            ))
+
     with conn:
-        for cluster in committed_clusters:
-            is_new = cluster.place_id > max_place
-
-            if is_new:
-                # Notes: record the variant spellings found
-                notes = None
-                if len(cluster.raw_variants) > 1:
-                    others = [v for v in cluster.raw_variants if v != cluster.canonical_raw]
-                    notes = "Variants: " + "; ".join(others)
-
-                conn.execute(
-                    "INSERT INTO place (place_id, name, notes) VALUES (?, ?, ?)",
-                    (cluster.place_id, cluster.canonical_raw, notes),
-                )
-                result.places_created += 1
-
-            # Link records not yet in place_record
-            for record_id in cluster.records:
+        for match in matches:
+            for record_id in match.record_ids:
                 if record_id in already_linked:
+                    result.records_already_linked += 1
                     continue
-                # Determine score: exact normalised match = EXACT_SCORE, else AUTO_COMMIT_SCORE
-                raw_for_record = conn.execute(
-                    "SELECT place_as_recorded FROM recorded_event WHERE record_id = ?",
-                    (record_id,),
-                ).fetchone()
-                if raw_for_record:
-                    rec_norm = _normalise(raw_for_record["place_as_recorded"] or "")
-                    score = EXACT_SCORE if rec_norm == cluster.canonical_norm else AUTO_COMMIT_SCORE
-                else:
-                    score = AUTO_COMMIT_SCORE
-
                 conn.execute(
-                    "INSERT INTO place_record (place_id, record_id, score, score_version, verified) "
+                    "INSERT INTO place_record "
+                    "(place_id, record_id, score, score_version, verified) "
                     "VALUES (?, ?, ?, ?, 0)",
-                    (cluster.place_id, record_id, score, SCORE_VERSION),
+                    (match.place_id, record_id, match.score, SCORE_VERSION),
                 )
                 already_linked.add(record_id)
                 result.records_linked += 1
 
-            result.clusters.append(cluster)
-
+    result.matched = matches
+    result.unresolved = unresolved
     return result
 
 
+# ---------------------------------------------------------------------------
+# Reporting
+# ---------------------------------------------------------------------------
+
 def print_place_resolution_report(result: PlaceResolutionResult) -> None:
-    """Print a human-readable summary of place resolution results."""
-    print(f"\n  PLACE RESOLUTION")
-    print(f"    Places created:        {result.places_created:>6}")
-    print(f"    Records linked:        {result.records_linked:>6}")
-    print(f"    Skipped (blank):       {result.skipped_blank:>6}")
-    print(f"\n  PLACE CLUSTERS ({len(result.clusters)})")
-    for cluster in sorted(result.clusters, key=lambda c: c.canonical_raw):
-        variant_note = ""
-        if len(cluster.raw_variants) > 1:
-            others = [v for v in cluster.raw_variants if v != cluster.canonical_raw]
-            variant_note = f"  [also: {'; '.join(others)}]"
-        print(f"    [{cluster.place_id:>3}] {cluster.canonical_raw:<30} {len(cluster.records):>4} records{variant_note}")
+    total_matched_records   = sum(len(m.record_ids) for m in result.matched)
+    total_unresolved_records = sum(len(u.record_ids) for u in result.unresolved)
+
+    print(f"\n  PLACE RESOLUTION  (authority-based, v2.0)")
+    print(f"    Distinct tokens evaluated:   {len(result.matched) + len(result.unresolved):>4}")
+    print(f"    Matched to authority:         {len(result.matched):>4}  tokens  ({total_matched_records} records)")
+    print(f"    Unresolved:                   {len(result.unresolved):>4}  tokens  ({total_unresolved_records} records)")
+    print(f"    Skipped (blank place):        {result.skipped_blank:>4}  records")
+    if result.records_already_linked:
+        print(f"    Already linked (skipped):    {result.records_already_linked:>4}  records")
+    print(f"    Newly linked:                 {result.records_linked:>4}  records")
+
+    if result.matched:
+        print(f"\n  MATCHED ({len(result.matched)})")
+        for m in sorted(result.matched, key=lambda x: x.name_en):
+            score_label = "exact" if m.score == EXACT_SCORE else f"{m.score:.2f}"
+            variant_note = (
+                f"  ← '{m.place_as_recorded}'"
+                if m.place_as_recorded.lower() != m.name_en.lower() else ""
+            )
+            print(
+                f"    [{m.place_id:>5}] {m.name_en:<30} ({m.place_type:<14}) "
+                f"{len(m.record_ids):>4} records  score={score_label}{variant_note}"
+            )
+
+    if result.unresolved:
+        print(f"\n  UNRESOLVED ({len(result.unresolved)})  — researcher attention required")
+        for u in sorted(result.unresolved, key=lambda x: -len(x.record_ids)):
+            hint = (
+                f"  closest: '{u.best_candidate}' ({u.best_score:.2f})"
+                if u.best_candidate else "  no close match found"
+            )
+            print(f"    '{u.place_as_recorded}' ({len(u.record_ids)} records){hint}")
+        print()
+        print("    → Seed missing authorities: python -m src.fetch_places --logainm-id <ID> --db genealogy.db")
+        print("    → Or assert manually via the service layer assert_linkage()")
