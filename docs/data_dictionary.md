@@ -1,7 +1,7 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.4 — May 2026*
-*Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object. It defines field names, types, constraints, and controlled vocabulary values with GEDCOMx alignment notes.*
+*Version 2.5 — May 2026*
+*Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
 ---
 
@@ -14,23 +14,15 @@
 | `integer` | Whole number, used for primary and foreign keys |
 | `string` | Variable length text |
 | `boolean` | True or false |
-| `date` | Partial or full date string — see Date Format below |
+| `real` | Floating-point number |
+| `date` | Partial or full ISO 8601 date string |
 | `array[integer]` | Array of integer foreign keys |
 | `array[string]` | Array of string values |
-| `array[object]` | Array of embedded objects |
 | `object` | Embedded key-value structure — stored as JSON |
 
 ### Date Format
 
-Date fields accept ISO 8601 strings or partial dates in the following forms only:
-
-| Format | Example | Meaning |
-|---|---|---|
-| `YYYY` | `1857` | Year only |
-| `YYYY-MM` | `1901-04` | Year and month |
-| `YYYY-MM-DD` | `1890-01-10` | Full date |
-
-Text dates, circa prefixes, and non-ISO separators are not valid. Verbatim date strings from sources are stored on `RecordedEvent.date_as_recorded` and are not subject to this constraint.
+Date fields accept ISO 8601 strings or partial dates: `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`.
 
 ### Required vs Optional
 
@@ -40,22 +32,11 @@ Text dates, circa prefixes, and non-ISO separators are not valid. Verbatim date 
 | `NO` | Field is optional |
 | `CONDITIONAL` | Required only when a specified condition is met |
 
-### Namespace Conventions
-
-| Prefix | Namespace | Usage |
-|---|---|---|
-| gedcomx | `http://gedcomx.org/` | Standard GEDCOMx controlled vocabulary |
-| local | `http://irishgenealogy.local/gedcomx/` | Irish-specific extensions with no GEDCOMx equivalent |
-
-GEDCOMx URIs are reference metadata only. Stored values in the database use short codes as defined in each controlled vocabulary table below.
-
 ---
 
 ## 2. Foundational Layer
 
 ### 2.1 Repository
-
-The physical or digital institution holding historical source material.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -68,8 +49,6 @@ The physical or digital institution holding historical source material.
 
 ### 2.2 Source
 
-A specific document collection, register volume, or digital asset held by a Repository.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | source_id | integer | YES | Primary key |
@@ -79,14 +58,44 @@ A specific document collection, register volume, or digital asset held by a Repo
 | coverage_from | integer | NO | Start year of source coverage |
 | coverage_to | integer | NO | End year of source coverage |
 | source_url | string | NO | URL of the source collection landing page |
-| record_url_template | string | NO | URL template for constructing deep links to individual Records. Placeholders use `{parameter_name}` syntax. At runtime, placeholders are filled by merging `source_parameters` (Source-level constants) with `record_parameters` (Record-level values). Null for sources that do not support direct linking. |
-| source_parameters | object | NO | Source-level identifier constants required to fill placeholders in `record_url_template`. Keys are placeholder names; values are the fixed string or integer values that are the same for every Record in this Source (e.g. `{"vtls_id": 634016}` for an NLI microfilm, or `{"release_id": "A"}` for a pension collection release). Null when all template placeholders are Record-level. |
-| record_parameter_names | array[string] | NO | Ordered list of placeholder names in `record_url_template` that must be supplied per Record via `Record.record_parameters`. Null when the source does not support direct linking. Complement of `source_parameters` — together they account for every placeholder in the template. |
-| column_schema | array[string] | NO | Ordered list of CSV column names for parsing `raw_text`. Null for narrative sources using a transcription workflow. |
-| citation | string | NO | Formatted bibliographic citation (Elizabeth Shown Mills style) |
+| record_url_template | string | NO | URL template with `{placeholder}` tokens |
+| source_parameters | object | NO | Source-level URL parameter constants (JSON) |
+| record_parameter_names | array[string] | NO | Per-Record placeholder names (JSON array) |
+| column_schema | array[string] | NO | CSV column names for parsing `raw_text` (JSON array) |
+| citation | string | NO | Formatted bibliographic citation |
 | notes | string | NO | Free text notes |
 
-**Deep link construction** — the Python layer constructs a deep link for any Record by: (1) retrieving the parent Source's `record_url_template`, `source_parameters`, and `record_parameter_names`; (2) retrieving the Record's `record_parameters`; (3) merging both parameter sets; (4) substituting each `{placeholder}` in the template with its resolved value. An error is raised if any placeholder remains unresolved after the merge.
+---
+
+### 2.3 PlaceAuthority
+
+Authoritative place identities seeded from logainm.ie or added manually. Not researcher conclusions — these are reference facts. The hierarchy is expressed as denormalised columns (flat schema) rather than a separate junction table.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| place_id | integer | YES | Synthetic primary key |
+| logainm_id | integer | NO | logainm.ie numeric identifier. Unique where present; null for manually-added entities |
+| name_en | string | YES | Canonical English place name |
+| place_type | string | YES | Place type — see §6.10 |
+| parent_name | string | NO | Name of the immediate parent entity (e.g. the DED under which this townland was fetched) |
+| parent_id | integer | NO | logainm_id of the immediate parent |
+| parent_type | string | NO | place_type of the immediate parent |
+| ded_name | string | NO | Name of the District Electoral Division containing this place |
+| ded_id | integer | NO | logainm_id of the DED |
+| county_name | string | NO | Name of the county |
+| county_id | integer | NO | logainm_id of the county |
+| barony_name | string | NO | Name of the barony (null where not in logainm) |
+| barony_id | integer | NO | logainm_id of the barony |
+| civil_parish_name | string | NO | Name of the civil parish (null where not in logainm) |
+| civil_parish_id | integer | NO | logainm_id of the civil parish |
+| latitude | real | NO | WGS84 latitude |
+| longitude | real | NO | WGS84 longitude |
+| logainm_url | string | NO | Permalink to logainm.ie entry; null for manually-added entities |
+| notes | string | NO | Free text — used for manually-added entities or variant notes |
+
+**Hierarchy note:** A townland may lack barony and civil_parish values if logainm does not record them for that townland. This is a data quality characteristic of the source, not a model deficiency. The ded_id and county_id are typically populated for all townlands.
+
+**Church parishes:** logainm.ie does not catalogue church (Catholic) parishes. These are added manually with `logainm_id = NULL`. Membership of a church parish is recorded by adding the townland rows with the `parent_type = 'church_parish'` where applicable — or more commonly queried via a researcher-maintained lookup outside the core schema.
 
 ---
 
@@ -94,29 +103,25 @@ A specific document collection, register volume, or digital asset held by a Repo
 
 ### 3.1 Record
 
-The core administrative boundary for data extraction. One entry in a source — one row of a register, one census household, one valuation line.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | record_id | integer | YES | Primary key |
 | source_id | integer | YES | Foreign key to Source |
-| record_parameters | object | NO | Record-level identifier values required to fill the Record-specific placeholders in the parent Source's `record_url_template`. Keys must match the names listed in `Source.record_parameter_names`. For example: `{"image_number": 42}` for an NLI parish register page, or `{"folder_id": "births_1890_001", "image_id": "0042"}` for a civil registration. Null for sources that do not support direct linking or where all parameters are Source-level. |
-| raw_text | string | YES | Verbatim ingest string exactly as received — typically a CSV row for structured sources, a transcribed passage for narrative sources. Sacrosanct — never modified after ingest. |
-| notes | string | NO | Free text notes on the ingest or transcription |
+| record_parameters | object | NO | Record-level URL parameter values (JSON) |
+| raw_text | string | YES | Verbatim ingest string — sacrosanct, never modified |
+| notes | string | NO | Free text notes on ingest |
 
 ---
 
 ### 3.2 RecordedEvent
 
-An occurrence exactly as described within a parent Record. Captures verbatim date, place, and type without normalisation. Contains no foreign keys to conclusion-layer objects.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | recorded_event_id | integer | YES | Primary key |
 | record_id | integer | YES | Foreign key to Record. Exactly one RecordedEvent per Record. |
-| type | string | YES | Event type as recorded — see §6.2 |
-| date_as_recorded | string | NO | Verbatim date string exactly as it appears in the source (e.g. "10th Jany 1890", "Jan 1890") |
-| date | date | NO | Normalised ISO 8601 date or partial date derived from date_as_recorded |
+| type | string | YES | Event type — see §6.2 |
+| date_as_recorded | string | NO | Verbatim date string as it appears in the source |
+| date | date | NO | Normalised ISO 8601 date |
 | date_qualifier | string | NO | Date qualifier — see §6.3 |
 | place_as_recorded | string | NO | Verbatim place name exactly as it appears in the source |
 | notes | string | NO | Free text notes |
@@ -125,24 +130,22 @@ An occurrence exactly as described within a parent Record. Captures verbatim dat
 
 ### 3.3 RecordedPerson
 
-An individual documented within a parent Record, captured verbatim without interpretation. Contains no foreign keys to conclusion-layer objects.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | recorded_person_id | integer | YES | Primary key |
 | record_id | integer | YES | Foreign key to Record |
-| name_as_recorded | string | YES | Verbatim name exactly as it appears in the source, including original spelling |
+| name_as_recorded | string | YES | Verbatim name including original spelling |
 | role | string | YES | Role in the record — see §6.4 |
-| age_as_recorded | string | NO | Verbatim age exactly as recorded (e.g. "28", "about 30", "inf") |
-| age | integer | NO | Normalised integer age derived from age_as_recorded |
-| sex_as_recorded | string | NO | Sex or gender exactly as recorded |
+| age_as_recorded | string | NO | Verbatim age |
+| age | integer | NO | Normalised integer age |
+| sex_as_recorded | string | NO | Sex exactly as recorded |
 | occupation_as_recorded | string | NO | Occupation exactly as recorded |
 | place_as_recorded | string | NO | Place of origin or residence exactly as recorded |
 | notes | string | NO | Transcription observations |
 
-### 3.4 NameVariant — Evidence (derived)
+---
 
-A normalised name variant derived from a `RecordedPerson.name_as_recorded` value by the reconstruction algorithm. Variants are computed once and persisted to avoid redundant calculation across scoring passes. They are derived data and must never be treated as source evidence.
+### 3.4 NameVariant — Evidence (derived)
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -150,7 +153,7 @@ A normalised name variant derived from a `RecordedPerson.name_as_recorded` value
 | recorded_person_id | integer | YES | Foreign key to RecordedPerson |
 | variant_value | string | YES | The normalised name string |
 | variant_type | string | YES | How the variant was produced — see §6.9 |
-| algorithm_version | string | YES | Version string of the algorithm that produced this variant. Used to detect stale variants after algorithm updates. |
+| algorithm_version | string | YES | Version string of the producing algorithm |
 | notes | string | NO | Free text notes |
 
 ---
@@ -159,107 +162,71 @@ A normalised name variant derived from a `RecordedPerson.name_as_recorded` value
 
 ### 4.1 Person
 
-A concluded identity representing a real-world individual as asserted by the researcher.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | person_id | integer | YES | Primary key |
-| label | string | YES | Researcher convenience label — carries no evidential weight |
+| label | string | YES | Researcher convenience label |
 | gender | string | NO | Concluded gender — see §6.5 |
-| names | array[object] | NO | Typed name array — see Name Object below |
-| record_ids | array[integer] | NO | Foreign keys to Records concluded to be about this Person. This is the primary linkage assertion. |
-| event_ids | array[integer] | NO | Foreign keys to Events this Person participated in |
-| relationship_ids | array[integer] | NO | Foreign keys to Relationships involving this Person |
-| private | boolean | NO | Whether Person is flagged for limited display. Default false. |
+| names | array[object] | NO | Typed name array — stored in `person_name` table |
+| record_ids | array[integer] | NO | Foreign keys to Records (via `person_record`) |
+| event_ids | array[integer] | NO | Foreign keys to Events (via `person_event`) |
+| relationship_ids | array[integer] | NO | Foreign keys to Relationships (via `person_relationship`) |
+| private | boolean | NO | Whether Person is flagged for limited display |
 | notes | string | NO | Free text notes |
-
-**Name Object**
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| value | string | YES | The name string |
-| type | string | YES | Name type — see §6.6 |
 
 ---
 
 ### 4.2 Relationship
 
-A concluded assertion about a connection between two specific Persons. Independent of any single Event — accumulates evidence from multiple Records over time.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | relationship_id | integer | YES | Primary key |
 | type | string | YES | Relationship type — see §6.7 |
-| person_id_1 | integer | YES | Foreign key to Person. For ParentChild: the parent. For Couple: either person. |
-| person_id_2 | integer | YES | Foreign key to Person. For ParentChild: the child. For Couple: either person. |
-| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Relationship. Aggregate confidence is derived at query time from the `score` values on the `relationship_record` junction rows. |
+| person_id_1 | integer | YES | For ParentChild: the parent. For Couple: either person. |
+| person_id_2 | integer | YES | For ParentChild: the child. For Couple: either person. |
+| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Relationship |
 | event_ids | array[integer] | NO | Foreign keys to Events associated with this Relationship |
-| notes | string | NO | Researcher reasoning supporting this Relationship conclusion |
+| notes | string | NO | Researcher reasoning |
 
 ---
 
 ### 4.3 Event
 
-A concluded assertion about a discrete real-world occurrence, synthesised from one or more Records.
-
 | Field | Type | Required | Description |
 |---|---|---|---|
 | event_id | integer | YES | Primary key |
 | type | string | YES | Event type — see §6.2 |
-| date | date | NO | Concluded ISO 8601 date or partial date, reconciled across Records |
+| date | date | NO | Concluded ISO 8601 date |
 | date_qualifier | string | NO | Date qualifier — see §6.3 |
-| place_id | integer | NO | Foreign key to Place — concluded place for this Event |
-| person_ids | array[integer] | NO | Foreign keys to Persons who participated in this Event |
-| relationship_id | integer | NO | Foreign key to Relationship — identifies the principal connection within the Event (e.g. the Couple in a marriage Event) |
-| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event. Aggregate confidence is derived at query time from the `score` values on the `event_record` junction rows. |
-| recorded_event_ids | array[integer] | NO | Foreign keys to RecordedEvents that this Event is concluded from |
-| notes | string | NO | Researcher reasoning supporting this Event conclusion |
-
----
-
-### 4.4 Place
-
-A concluded assertion that one or more verbatim place strings found in Records refer to the same real-world geographical location. Place is a researcher conclusion — the normalisation of variant spellings, transcription errors, and historical name forms is an interpretive judgment, not an objective fact.
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| place_id | integer | YES | Primary key |
-| name | string | YES | Researcher's working name for this place |
-| record_ids | array[integer] | NO | Foreign keys to Records containing place strings concluded to refer to this Place |
-| townland_ie_url | string | NO | Permalink to townlands.ie entry — reference authority, not conclusion authority |
-| logainm_id | integer | NO | Logainm.ie numeric identifier |
-| logainm_url | string | NO | Permalink to logainm.ie entry — reference authority, not conclusion authority |
-| notes | string | NO | Researcher reasoning — e.g. explanation of variant spellings linked to this Place |
-
-Place hierarchy (townland → civil parish → barony → county), Irish language name, historical name variants, and geographic coordinates are retrievable from the external sources via the linked URLs.
+| place_id | integer | NO | Foreign key to PlaceAuthority (not a conclusion — an authority reference) |
+| person_ids | array[integer] | NO | Foreign keys to Persons who participated |
+| relationship_id | integer | NO | Foreign key to Relationship — principal connection |
+| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event |
+| recorded_event_ids | array[integer] | NO | Foreign keys to RecordedEvents synthesised into this Event |
+| notes | string | NO | Researcher reasoning |
 
 ---
 
 ## 5. Cross-Layer Linkage Summary
-
-The following table summarises all linkage assertions connecting the conclusion layer to the evidence layer. All linkages are researcher conclusions and remain mutable. Evidence-layer objects contain no foreign keys to conclusion-layer objects.
 
 | Conclusion object | Evidence linkage | Description |
 |---|---|---|
 | Person.record_ids | → Record | Records concluded to be about this Person |
 | Event.record_ids | → Record | Records concluded to document this Event |
 | Event.recorded_event_ids | → RecordedEvent | RecordedEvents this Event is synthesised from |
+| Event.place_id | → PlaceAuthority | Authoritative place for this Event |
 | Relationship.record_ids | → Record | Records evidencing this Relationship |
-| Place.record_ids | → Record | Records containing place strings concluded to refer to this Place |
-
-RecordedPerson and RecordedEvent are not direct linkage targets for conclusion-layer objects. They are the structured attributes the reconstruction algorithm reads when scoring record-to-person, record-to-event, and record-to-place linkage candidates.
+| place_record | Record → PlaceAuthority | Scored conclusion: this recorded place string refers to this authority |
 
 ### Scoring columns on linkage junction tables
 
-The four primary linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) carry three additional fields beyond their foreign key pair:
+The four primary linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) carry:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| score | real | YES | Similarity score in [0.0, 1.0] assigned by the reconstruction algorithm when this linkage was asserted. Default 0.0. |
-| score_version | string | YES | Algorithm version string that produced the score. Used to detect stale scores after algorithm updates. Default empty string. |
-| verified | boolean | YES | Researcher override: 0 = algorithm assertion, 1 = researcher-verified. A verified row is never automatically overwritten by a re-scoring pass. Default 0. |
-
-Aggregate confidence for display purposes (where the old `Relationship.confidence` or `Event.confidence` would have been used) is derived at query time as a function of the score distribution across the linked Records.
+| score | real | NO | Similarity score in [0.0, 1.0]; null for manually-asserted linkages |
+| score_version | string | NO | Algorithm version that produced the score; null when score is null |
+| verified | boolean | YES | 0 = algorithm assertion; 1 = researcher-verified. Verified rows exempt from re-scoring. |
 
 ---
 
@@ -267,151 +234,139 @@ Aggregate confidence for display purposes (where the old `Relationship.confidenc
 
 ### 6.1 Source Types
 
-| Code | GEDCOMx URI | Description |
-|---|---|---|
-| `valuation` | local:Valuation | Land valuation survey |
-| `tithe` | local:Tithe | Tithe applotment record |
-| `census` | local:Census | Census household return |
-| `birth_registration` | local:BirthRegistration | Civil birth registration |
-| `marriage_registration` | local:MarriageRegistration | Civil marriage registration |
-| `death_registration` | local:DeathRegistration | Civil death registration |
-| `parish_register` | local:ParishRegister | Church parish register (baptism, marriage, burial) |
-| `military` | local:Military | Military history or pension record |
-| `folklore` | local:Folklore | Folklore or oral history collection |
+| Code | Description |
+|---|---|
+| `valuation` | Land valuation survey |
+| `tithe` | Tithe applotment record |
+| `census` | Census household return |
+| `birth_registration` | Civil birth registration |
+| `marriage_registration` | Civil marriage registration |
+| `death_registration` | Civil death registration |
+| `parish_register` | Church parish register |
+| `military` | Military history or pension record |
+| `folklore` | Folklore or oral history collection |
+| `place_authority` | Place authority source (logainm.ie) |
 
 ### 6.2 Event Types
 
-Applies to both RecordedEvent.type and Event.type.
-
-| Code | GEDCOMx URI | Description |
-|---|---|---|
-| `birth` | gedcomx:Birth | Birth |
-| `baptism` | gedcomx:Baptism | Baptism ceremony |
-| `marriage` | gedcomx:Marriage | Marriage ceremony |
-| `death` | gedcomx:Death | Death |
-| `burial` | gedcomx:Burial | Burial |
-| `census` | gedcomx:Census | Census enumeration |
-| `residence` | gedcomx:Residence | Recorded residence at a place |
-| `emigration` | gedcomx:Emigration | Emigration |
-| `valuation` | local:Valuation | Land valuation entry |
-| `tithe` | local:Tithe | Tithe applotment entry |
-| `military_service` | local:MilitaryService | Military service record |
-| `pension` | local:Pension | Pension application or record |
-| `folklore` | local:Folklore | Folklore collection entry |
+| Code | Description |
+|---|---|
+| `birth` | Birth |
+| `baptism` | Baptism ceremony |
+| `marriage` | Marriage ceremony |
+| `death` | Death |
+| `burial` | Burial |
+| `census` | Census enumeration |
+| `residence` | Recorded residence at a place |
+| `emigration` | Emigration |
+| `valuation` | Land valuation entry |
+| `tithe` | Tithe applotment entry |
+| `military_service` | Military service record |
+| `pension` | Pension application or record |
+| `folklore` | Folklore collection entry |
 
 ### 6.3 Date Qualifiers
 
-| Code | GEDCOMx analog | Description |
-|---|---|---|
-| `exact` | — | Date is precisely known |
-| `about` | ABT | Approximate date |
-| `before` | BEF | Known to be before this date |
-| `after` | AFT | Known to be after this date |
-| `between` | BET | Between two dates — specify range in notes |
-| `estimated` | EST | Estimated from other evidence |
-| `calculated` | CAL | Calculated from other known facts |
+| Code | Description |
+|---|---|
+| `exact` | Date is precisely known |
+| `about` | Approximate date |
+| `before` | Known to be before this date |
+| `after` | Known to be after this date |
+| `between` | Between two dates |
+| `estimated` | Estimated from other evidence |
+| `calculated` | Calculated from other known facts |
 
 ### 6.4 RecordedPerson Roles
 
-Roles are verbatim-adjacent — they normalise the raw role text from the source into a controlled value while remaining faithful to the source's meaning.
+**Census roles (NAI relation_to_head mapping):**
 
-The role vocabulary covers two distinct source contexts. **Census roles** map directly from the NAI download `relation_to_head_updated` field; the mapping is applied by Python at ingest with no manual intervention required. **Event roles** appear in civil registration, parish register, and other documentary sources.
-
-**Census roles** (NAI relation_to_head mapping):
-
-| Code | NAI value(s) | GEDCOMx URI | Description |
-|---|---|---|---|
-| `head` | Head of Family | local:Head | Head of household |
-| `spouse` | Wife | local:Spouse | Spouse of head |
-| `son` | Son | local:Son | Son of head or spouse |
-| `daughter` | Daughter | local:Daughter | Daughter of head or spouse |
-| `sibling` | Brother, Sister | local:Sibling | Sibling of head |
-| `grandchild` | Grand Son, Grand Daughter | local:Grandchild | Grandchild of head or spouse |
-| `in_law` | Son in Law, Daughter in Law, Mother in Law, Father in Law, Brother In Law, Sister In Law, Niece in Law | local:InLaw | Relation by marriage |
-| `niece_nephew` | Niece, Nephew, Nice | local:NieceNephew | Niece or nephew of head or spouse |
-| `aunt_uncle` | Aunt, Uncle | local:AuntUncle | Aunt or uncle of head or spouse |
-| `cousin` | Cousin | local:Cousin | Cousin of head or spouse |
-| `mother` | Mother | local:Mother | Mother of head |
-| `father` | Father | local:Father | Father of head |
-| `servant` | Servant | local:Servant | Domestic servant in household |
-| `visitor` | Visitor | local:Visitor | Visitor to household on census night |
-| `boarder` | Boarder, Lodger | local:Boarder | Paying lodger or boarder |
-
-**Event roles** (civil registration, parish register, and other documentary sources):
-
-| Code | GEDCOMx URI | Description |
+| Code | NAI value(s) | Description |
 |---|---|---|
-| `principal` | gedcomx:Principal | Primary subject of the record (general) |
-| `groom` | local:Groom | Groom in marriage record |
-| `bride` | local:Bride | Bride in marriage record |
-| `father_of_groom` | local:FatherOfGroom | Father of groom in marriage record |
-| `father_of_bride` | local:FatherOfBride | Father of bride in marriage record |
-| `godfather` | local:Godfather | Godfather in baptism record |
-| `godmother` | local:Godmother | Godmother in baptism record |
-| `witness` | gedcomx:Witness | Witness to an event |
-| `informant` | gedcomx:Informant | Person providing information to registrar |
-| `officiator` | gedcomx:Officiator | Celebrant or officiant |
-| `occupier` | local:Occupier | Land occupier in valuation or tithe record |
-| `lessor` | local:Lessor | Lessor in valuation record |
-| `deceased` | local:Deceased | Deceased person in death or burial record |
+| `head` | Head of Family | Head of household |
+| `spouse` | Wife | Spouse of head |
+| `son` | Son | Son of head or spouse |
+| `daughter` | Daughter | Daughter of head or spouse |
+| `sibling` | Brother, Sister | Sibling of head |
+| `grandchild` | Grand Son, Grand Daughter | Grandchild of head or spouse |
+| `in_law` | Son in Law, Daughter in Law, etc. | Relation by marriage |
+| `niece_nephew` | Niece, Nephew, Nice | Niece or nephew |
+| `aunt_uncle` | Aunt, Uncle | Aunt or uncle |
+| `cousin` | Cousin | Cousin |
+| `mother` | Mother | Mother of head |
+| `father` | Father | Father of head |
+| `servant` | Servant | Domestic servant |
+| `visitor` | Visitor | Visitor on census night |
+| `boarder` | Boarder, Lodger | Paying lodger |
 
-**NAI ingest mapping notes:** Python applies the census role mapping automatically from `relation_to_head_updated` (preferred) falling back to `relation_to_head`. For Census 1926, the source uses `updated_relationship_to_head`; ingest normalization maps this field into the internal `relation_to_head_updated` canonical key before role inference. The value `Nice` is treated as `niece_nephew` (transcription error for Niece). A blank `relation_to_head_updated` with no fallback maps to `principal` with a parse note. All mappings are deterministic — no Claude involvement required for role assignment during census ingest.
-
-### 6.5 Gender Values
-
-| Code | GEDCOMx analog | Description |
-|---|---|---|
-| `male` | Male | Male |
-| `female` | Female | Female |
-| `unknown` | Unknown | Gender not determinable from evidence |
-
-### 6.6 Name Types
-
-| Code | GEDCOMx URI | Description |
-|---|---|---|
-| `birth_name` | gedcomx:BirthName | Name given at birth |
-| `married_name` | gedcomx:MarriedName | Name adopted on marriage |
-| `also_known_as` | gedcomx:AlsoKnownAs | Alternative name or Irish language form |
-| `nickname` | gedcomx:Nickname | Informal name |
-
-### 6.7 Relationship Types
-
-| Code | GEDCOMx URI | Directionality | Description |
-|---|---|---|---|
-| `couple` | gedcomx:Couple | Symmetric | Married or partnered pair |
-| `parent_child` | gedcomx:ParentChild | person_id_1 = parent, person_id_2 = child | Parent to child |
-| `sibling` | local:Sibling | Symmetric | Sibling pair |
-
-**Inference notes:** `sibling` relationships are inferred from census records when two persons share the same `head` and both carry a `son`, `daughter`, or `sibling` role (see `reconstruction_algorithms.md` §6.1). A `grandchild` role implies a two-hop `parent_child` chain (head → child → grandchild) but does not directly generate a grandparent Relationship — the intermediate parent Person must be resolved first. `in_law`, `niece_nephew`, `aunt_uncle`, and `cousin` roles do not generate automatic Relationship assertions; they are retained as role evidence for researcher-led reasoning.
-
-### 6.8 Confidence Levels
-
-**Retired as a stored field.** `Relationship.confidence` and `Event.confidence` have been removed from the schema. The `confidence` vocabulary is preserved here for reference only. Aggregate confidence for display, where required, is derived at query time from the distribution of `score` values on the relevant linkage junction rows.
-
-| Code | GEDCOMx URI | Description |
-|---|---|---|
-| `high` | gedcomx:High | Strong convergent evidence across multiple independent Records |
-| `medium` | gedcomx:Medium | Some evidence — reasonable but not yet corroborated |
-| `low` | gedcomx:Low | Weak or single-source evidence — provisional |
-
----
-
-### 6.9 Name Variant Types
-
-Applies to `NameVariant.variant_type`.
+**Event roles (civil registration, parish register, other):**
 
 | Code | Description |
 |---|---|
-| `anglicised` | Anglicised form derived from an Irish-language name (e.g. "Seán" → "John") |
-| `irish` | Irish-language form derived from an Anglicised name (e.g. "John" → "Seán") |
-| `phonetic` | Phonetic encoding (e.g. Soundex or Metaphone) used for fuzzy matching |
-| `normalised` | Lowercased, stripped of diacritics and punctuation, whitespace-collapsed |
+| `principal` | Primary subject of the record |
+| `groom` | Groom in marriage record |
+| `bride` | Bride in marriage record |
+| `father_of_groom` | Father of groom |
+| `father_of_bride` | Father of bride |
+| `godfather` | Godfather in baptism record |
+| `godmother` | Godmother in baptism record |
+| `witness` | Witness to an event |
+| `informant` | Person providing information to registrar |
+| `officiator` | Celebrant or officiant |
+| `occupier` | Land occupier in valuation or tithe record |
+| `lessor` | Lessor in valuation record |
+| `deceased` | Deceased person in death or burial record |
 
----
+### 6.5 Gender Values
 
-*This document should be brought into context for database implementation, ingestion engineering, and transcription sessions. Controlled vocabulary tables are the authoritative reference for all coded field values.*
+| Code | Description |
+|---|---|
+| `male` | Male |
+| `female` | Female |
+| `unknown` | Gender not determinable |
 
-*Related documents: conceptual_model.md, repositories.md, database_schema.md, validation_rules.md*
+### 6.6 Name Types
+
+| Code | Description |
+|---|---|
+| `birth_name` | Name given at birth |
+| `married_name` | Name adopted on marriage |
+| `also_known_as` | Alternative name or Irish language form |
+| `nickname` | Informal name |
+
+### 6.7 Relationship Types
+
+| Code | Directionality | Description |
+|---|---|---|
+| `couple` | Symmetric | Married or partnered pair |
+| `parent_child` | person_id_1 = parent, person_id_2 = child | Parent to child |
+| `sibling` | Symmetric | Sibling pair |
+
+### 6.8 Confidence Levels
+
+**Retired as a stored field.** Aggregate confidence is derived at query time from the distribution of `score` values on linkage junction rows.
+
+### 6.9 Name Variant Types
+
+| Code | Description |
+|---|---|
+| `anglicised` | Anglicised form derived from an Irish-language name |
+| `irish` | Irish-language form |
+| `phonetic` | Phonetic encoding (Soundex or Metaphone) |
+| `normalised` | Lowercased, stripped of diacritics and punctuation |
+
+### 6.10 Place Types
+
+| Code | Description |
+|---|---|
+| `province` | One of the four Irish provinces |
+| `county` | County (civil) |
+| `barony` | Barony |
+| `civil_parish` | Civil parish |
+| `ded` | District Electoral Division (census administrative unit) |
+| `townland` | Townland — the atomic unit for place resolution |
+| `church_parish` | Church/Catholic parish — not in logainm; manually added |
+| `town` | Town or village |
 
 ---
 
@@ -420,6 +375,7 @@ Applies to `NameVariant.variant_type`.
 | Version | Date | Change |
 |---|---|---|
 | 2.1 | May 2026 | Initial v2.1 data dictionary |
-| 2.2 | May 2026 | Replaced `Source.record_url_template` single-parameter model with a two-level parameter system. Added `Source.source_parameters` (Source-level URL constants), `Source.record_parameter_names` (names of Record-level placeholders), and `Record.record_parameters` (per-Record placeholder values). Removed `Record.source_identifier`. Added deep link construction note to §2.2. |
-| 2.3 | May 2026 | Removed `confidence` from Relationship (§4.2) and Event (§4.3) field tables — field retired from schema; aggregate confidence is now query-derived from junction scores. Added §3.4 NameVariant object with `variant_type`, `variant_value`, and `algorithm_version` fields. Added scoring column documentation (`score`, `score_version`, `verified`) to §5 cross-layer linkage summary. Updated §6.8 (Confidence) to note retirement as a stored field. Added §6.9 (Name Variant Types) vocabulary table. |
-| 2.4 | May 2026 | Expanded §6.4 RecordedPerson Roles to cover full NAI census download vocabulary. Added census roles: `son`, `daughter`, `sibling`, `grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`. Retired generic `child` role (replaced by `son`/`daughter`). Split role table into census roles and event roles with NAI mapping notes. Activated `sibling` Relationship type in §6.7 (previously reserved). Added inference notes for `grandchild`, `in_law`, and extended-family roles. |
+| 2.2 | May 2026 | Two-level deep link parameter system |
+| 2.3 | May 2026 | Removed confidence from Relationship/Event; added NameVariant, scoring columns |
+| 2.4 | May 2026 | Expanded RecordedPerson roles for full NAI census vocabulary |
+| 2.5 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §2.3 PlaceAuthority with full flat-schema field table. Added §6.10 Place Types vocabulary. Updated §5 linkage summary to reflect place_record → PlaceAuthority. Added source type `place_authority` to §6.1. Removed PlaceMembership (flat schema adopted). |
