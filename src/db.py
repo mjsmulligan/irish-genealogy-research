@@ -5,9 +5,9 @@ Database layer: connection management, schema initialisation, ingest, summary.
 CLI usage:
     python -m src.db init [--db PATH]
     python -m src.db ingest --source SOURCE_ID --file CSV_PATH [--db PATH]
+    python -m src.db seed-places --file CSV_PATH [--db PATH]
     python -m src.db summary [--db PATH]
-    python -m src.db reconstruct [--db PATH]   # repair/re-run mode only
-
+    python -m src.db reconstruct --source SOURCE_ID [--db PATH]
 
 Default database path: genealogy.db
 """
@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 26
+SCHEMA_VERSION = 27
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
 SEED_SQL = Path(__file__).parent / "db" / "seed.sql"
@@ -113,80 +113,53 @@ def build_record_url(source: dict, record: dict) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Census 1911 NAI ingest (Source 4)
+# Census ingest (Sources 3, 4, 5)
 # ---------------------------------------------------------------------------
 
-# NAI relation_to_head → GRA role mapping.
-# Keys cover both the 1901/1911 NAI vocabulary ("Head of Family", "Wife", etc.)
-# and the 1926 NAI vocabulary ("Head", "Spouse", "Grandson", etc.), which uses
-# shorter and differently-capitalised values.
 _CENSUS_ROLE_MAP: dict[str, str] = {
-    # ── 1901 / 1911 NAI values ───────────────────────────────────────────────
-    "Head of Family":  "head",
-    "Wife":            "spouse",
-    "Son":             "son",
-    "Daughter":        "daughter",
-    "Brother":         "sibling",
-    "Sister":          "sibling",
-    "Grand Son":       "grandchild",
-    "Grand Daughter":  "grandchild",
-    "Son in Law":      "in_law",
-    "Daughter in Law": "in_law",
-    "Mother in Law":   "in_law",
-    "Father in Law":   "in_law",
-    "Brother In Law":  "in_law",
-    "Sister In Law":   "in_law",
-    "Niece in Law":    "in_law",
-    "Niece":           "niece_nephew",
-    "Nephew":          "niece_nephew",
-    "Nice":            "niece_nephew",   # transcription error for Niece
-    "Aunt":            "aunt_uncle",
-    "Uncle":           "aunt_uncle",
-    "Cousin":          "cousin",
-    "Mother":          "mother",
-    "Father":          "father",
-    "Servant":         "servant",
-    "Visitor":         "visitor",
-    "Boarder":         "boarder",
-    "Lodger":          "boarder",
-    # ── 1926 NAI values (shorter / differently capitalised) ──────────────────
-    "Head":            "head",
-    "Spouse":          "spouse",
-    "Grandson":        "grandchild",
-    "Granddaughter":   "grandchild",
-    "Son-in-law":      "in_law",
-    "Daughter-in-law": "in_law",
-    "Mother-in-law":   "in_law",
-    "Father-in-law":   "in_law",
-    "Brother-in-law":  "in_law",
-    "Sister-in-law":   "in_law",
-    "Sister in Law":   "in_law",   # variant spacing seen in 1926 data
-    "Brother in Law":  "in_law",   # variant spacing seen in 1926 data
+    "Head of Family": "head",
+    "Wife":           "spouse",
+    "Son":            "son",
+    "Daughter":       "daughter",
+    "Brother":        "sibling",
+    "Sister":         "sibling",
+    "Grand Son":      "grandchild",
+    "Grand Daughter": "grandchild",
+    "Son in Law":     "in_law",
+    "Daughter in Law":"in_law",
+    "Mother in Law":  "in_law",
+    "Father in Law":  "in_law",
+    "Brother In Law": "in_law",
+    "Sister In Law":  "in_law",
+    "Niece in Law":   "in_law",
+    "Niece":          "niece_nephew",
+    "Nephew":         "niece_nephew",
+    "Nice":           "niece_nephew",
+    "Aunt":           "aunt_uncle",
+    "Uncle":          "aunt_uncle",
+    "Cousin":         "cousin",
+    "Mother":         "mother",
+    "Father":         "father",
+    "Servant":        "servant",
+    "Visitor":        "visitor",
+    "Boarder":        "boarder",
+    "Lodger":         "boarder",
 }
 
 _SEX_MAP = {"M": "male", "F": "female", "m": "male", "f": "female"}
 
-# Census night dates by source_id
 _CENSUS_DATES: dict[int, str] = {
-    3: "1901-03-31",  # Census 1901: Sunday 31 March 1901
-    4: "1911-04-02",  # Census 1911: Sunday 2 April 1911
-    5: "1926-04-18",  # Census 1926: Sunday 18 April 1926
+    3: "1901-03-31",
+    4: "1911-04-02",
+    5: "1926-04-18",
 }
 
 
 def _extract_document_id(images_str: str) -> str | None:
-    """
-    Extract the first Form A image ID from the NAI images field.
-    The field is a Python-literal list of dicts with a 'url' key like:
-        [{'url': 'https://...nai002051808...', ...}, ...]
-    Returns the last path segment of the first image URL, which serves
-    as the document_id for record_parameters.
-    """
     try:
         images = ast.literal_eval(images_str)
         if images and isinstance(images, list):
             url = images[0].get("url", "")
-            # Extract the filename stem (without extension) as the document_id
             stem = Path(url.split("?")[0]).stem
             return stem if stem else None
     except Exception:
@@ -194,7 +167,6 @@ def _extract_document_id(images_str: str) -> str | None:
 
 
 def _get_document_id(person: dict) -> str | None:
-    """Get an internal document identifier for the census household."""
     doc_id = None
     if person.get("images"):
         doc_id = _extract_document_id(person.get("images", ""))
@@ -204,20 +176,7 @@ def _get_document_id(person: dict) -> str | None:
 
 
 def _normalize_census_1926_row(row: dict) -> dict:
-    """Normalize 1926 census rows into the shared ingest schema used for 1901/1911.
-
-    The 1926 NAI download schema differs from 1901/1911 in several ways:
-    - No house_number column (mapped to empty string)
-    - No occupation column (the 1926 census captured employer details separately;
-      the NAI download does not include a simple occupation field — mapped to empty string)
-    - language split into two columns: irish_or_english (raw) and updated_irish_language
-      (NAI-cleaned); mapped to language and language_updated respectively
-    - religion column is raw only; updated_religion is the NAI-cleaned value
-    - birthplace is birthplace_county (county-level only, not parish/townland)
-    - age is updated_age (NAI-cleaned integer)
-    - document_id is aform_name (Form A reference, not extracted from images field)
-    """
-    normalized = {
+    return {
         "id": row.get("aform_name", ""),
         "census_year": "1926",
         "county": row.get("county", ""),
@@ -228,39 +187,34 @@ def _normalize_census_1926_row(row: dict) -> dict:
         "ded": row.get("ded", ""),
         "age": row.get("updated_age", ""),
         "sex": row.get("updated_sex", ""),
-        "house_number": "",                          # not present in 1926 NAI schema
+        "house_number": "",
         "relation_to_head": row.get("relationship_to_head", ""),
-        "religion": "",                              # no raw religion column in 1926 NAI schema
-        "education": "",                             # not present in 1926 NAI schema
-        "occupation": "",                            # not present in 1926 NAI download
+        "religion": "",
+        "education": "",
+        "occupation": "",
         "marriage_status": row.get("updated_marriage", ""),
         "marriage_years": row.get("years_married", ""),
         "children_born": row.get("children_born_alive", ""),
         "children_living": row.get("children_living", ""),
         "birthplace": row.get("birthplace_county", ""),
-        "language": row.get("irish_or_english", ""),         # raw form (Irish/English)
+        "language": row.get("irish_or_english", ""),
         "deafdumb": "",
         "image_group": row.get("image_group", ""),
-        "religion_updated": row.get("updated_religion", ""), # NAI-cleaned religion value
-        "occupation_updated": "",                            # not present in 1926 NAI download
+        "religion_updated": row.get("updated_religion", ""),
+        "occupation_updated": "",
         "relation_to_head_updated": row.get("updated_relationship_to_head", ""),
-        "language_updated": row.get("updated_irish_language", ""),  # NAI-cleaned language code
-        "images": "",                                        # not present; aform_name used instead
-        "aform_name": row.get("aform_name", ""),             # preserved for _get_document_id
+        "language_updated": row.get("updated_irish_language", ""),
+        "images": "",
+        "aform_name": row.get("aform_name", ""),
         "geocode": row.get("geocode", ""),
         "institution_name": row.get("institution_name", ""),
         "institution_type": row.get("institution_type", ""),
         "a_id": row.get("a_id", ""),
         "ded_clean": row.get("ded", ""),
     }
-    return normalized
 
 
 def _map_role(relation: str) -> tuple[str, str | None]:
-    """
-    Map NAI relation_to_head value to a GRA role code.
-    Returns (role, parse_note). parse_note is set when a fallback is used.
-    """
     role = _CENSUS_ROLE_MAP.get(relation)
     if role:
         return role, None
@@ -277,12 +231,6 @@ def ingest_census(
     """
     Ingest a census NAI download CSV into the evidence layer.
     Handles Census 1901 (source 3), 1911 (source 4), and 1926 (source 5).
-
-    Groups person rows into households by image_group (NAI household ID).
-    Creates one Record per household, one RecordedEvent per Record,
-    and one RecordedPerson per person row.
-
-    Returns a summary dict.
     """
     check_version(conn)
 
@@ -299,38 +247,34 @@ def ingest_census(
     if source_id == 5:
         rows = [_normalize_census_1926_row(row) for row in rows]
 
-    # Verify source exists
     source_row = conn.execute(
         "SELECT * FROM source WHERE source_id = ?", (source_id,)
     ).fetchone()
     if not source_row:
         raise ValueError(f"Source {source_id} not found in database.")
 
-    # Group rows by image_group (household)
     households: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         households[row["image_group"]].append(row)
-
-    # Determine next available IDs
-    def next_id(table: str, pk_col: str) -> int:
-        result = conn.execute(f"SELECT MAX({pk_col}) FROM {table}").fetchone()[0]
-        return (result or 0) + 1
-
-    record_id      = next_id("record", "record_id")
-    re_id          = next_id("recorded_event", "recorded_event_id")
-    rp_id          = next_id("recorded_person", "recorded_person_id")
 
     parse_notes: list[dict] = []
     records_committed = 0
     persons_committed = 0
 
     with conn:
-        for image_group, persons in households.items():
+        # IDs computed inside the transaction so concurrent writes cannot
+        # cause collisions (SQLite WAL serialises writers, but this is
+        # cleaner and explicit).
+        def next_id(table: str, pk_col: str) -> int:
+            result = conn.execute(f"SELECT MAX({pk_col}) FROM {table}").fetchone()[0]
+            return (result or 0) + 1
 
-            # Extract document_id from the first person's images field or 1926 aform_name
+        record_id = next_id("record", "record_id")
+        re_id     = next_id("recorded_event", "recorded_event_id")
+        rp_id     = next_id("recorded_person", "recorded_person_id")
+        for image_group, persons in households.items():
             document_id = _get_document_id(persons[0])
 
-            # raw_text: all person rows for this household as CSV lines
             if source_id == 5:
                 raw_columns = [
                     "id", "census_year", "county", "surname", "firstname",
@@ -356,19 +300,16 @@ def ingest_census(
                 for p in persons
             ]
             raw_text = "\n".join(raw_lines)
-
             record_parameters = json.dumps(
                 {"document_id": document_id} if document_id else {}
             )
 
-            # Insert Record
             conn.execute(
                 "INSERT INTO record (record_id, source_id, record_parameters, raw_text) "
                 "VALUES (?, ?, ?, ?)",
                 (record_id, source_id, record_parameters, raw_text),
             )
 
-            # Insert RecordedEvent — one per household
             townland = persons[0].get("townland_clean", "") or persons[0].get("townland", "")
             census_date = _CENSUS_DATES.get(source_id, "")
             conn.execute(
@@ -378,7 +319,6 @@ def ingest_census(
                 (re_id, record_id, "census", census_date, "exact", townland),
             )
 
-            # Insert RecordedPersons
             for person in persons:
                 relation_raw = (
                     person.get("relation_to_head_updated")
@@ -396,7 +336,6 @@ def ingest_census(
                         "note": note,
                     })
 
-                # Age
                 age_raw = person.get("age", "").strip()
                 try:
                     age_int = int(float(age_raw)) if age_raw else None
@@ -436,15 +375,18 @@ def ingest_census(
             record_id += 1
             records_committed += 1
 
-    # Collect townland and DED summary
-    townlands = sorted({p.get("townland_clean") or p.get("townland", "") for p in rows if p.get("townland_clean") or p.get("townland")})
-    deds = sorted({p.get("ded_clean") or p.get("ded", "") for p in rows if p.get("ded_clean") or p.get("ded")})
+    townlands = sorted({
+        p.get("townland_clean") or p.get("townland", "")
+        for p in rows
+        if p.get("townland_clean") or p.get("townland")
+    })
+    deds = sorted({
+        p.get("ded_clean") or p.get("ded", "")
+        for p in rows
+        if p.get("ded_clean") or p.get("ded")
+    })
 
-    source_titles = {
-        3: "Census 1901",
-        4: "Census 1911",
-        5: "Census 1926",
-    }
+    source_titles = {3: "Census 1901", 4: "Census 1911", 5: "Census 1926"}
 
     return {
         "source_id": source_id,
@@ -474,40 +416,57 @@ def print_summary(conn: sqlite3.Connection) -> None:
         return conn.execute(sql).fetchone()[0]
 
     print()
-    print("=" * 56)
+    print("=" * 60)
     print("  GRA — Knowledge Base Summary")
-    print("=" * 56)
+    print("=" * 60)
 
     print("\n  FOUNDATIONAL LAYER")
-    print(f"    Repositories:          {q('SELECT COUNT(*) FROM repository'):>6}")
-    print(f"    Sources:               {q('SELECT COUNT(*) FROM source'):>6}")
+    print(f"    Repositories:              {q('SELECT COUNT(*) FROM repository'):>6}")
+    print(f"    Sources:                   {q('SELECT COUNT(*) FROM source'):>6}")
+
+    # Place authority breakdown
+    pa_total = q("SELECT COUNT(*) FROM place_authority")
+    print(f"    Place authorities:         {pa_total:>6}")
+    if pa_total:
+        type_counts = conn.execute(
+            "SELECT place_type, COUNT(*) AS n FROM place_authority GROUP BY place_type ORDER BY n DESC"
+        ).fetchall()
+        for tc in type_counts:
+            print(f"      {tc['place_type']:<20}   {tc['n']:>4}")
+        # place_membership retired in v2.7 — hierarchy is flat columns on place_authority
 
     print("\n  EVIDENCE LAYER")
-    print(f"    Records:               {q('SELECT COUNT(*) FROM record'):>6}")
-    print(f"    Recorded Events:       {q('SELECT COUNT(*) FROM recorded_event'):>6}")
-    print(f"    Recorded Persons:      {q('SELECT COUNT(*) FROM recorded_person'):>6}")
+    print(f"    Records:                   {q('SELECT COUNT(*) FROM record'):>6}")
+    print(f"    Recorded Events:           {q('SELECT COUNT(*) FROM recorded_event'):>6}")
+    print(f"    Recorded Persons:          {q('SELECT COUNT(*) FROM recorded_person'):>6}")
+
+    # Place resolution coverage
+    total_records = q("SELECT COUNT(*) FROM record")
+    linked_records = q("SELECT COUNT(DISTINCT record_id) FROM place_record")
+    if total_records:
+        unlinked = total_records - linked_records
+        print(f"    Records with place linked: {linked_records:>6}  ({unlinked} unresolved)")
 
     print("\n  CONCLUSION LAYER")
-    couple_count     = q("SELECT COUNT(*) FROM relationship WHERE type='couple'")
-    parent_count     = q("SELECT COUNT(*) FROM relationship WHERE type='parent_child'")
-    sibling_count    = q("SELECT COUNT(*) FROM relationship WHERE type='sibling'")
+    couple_count  = q("SELECT COUNT(*) FROM relationship WHERE type='couple'")
+    parent_count  = q("SELECT COUNT(*) FROM relationship WHERE type='parent_child'")
+    sibling_count = q("SELECT COUNT(*) FROM relationship WHERE type='sibling'")
 
-    print(f"    Persons:               {q('SELECT COUNT(*) FROM person'):>6}")
-    print(f"    Relationships:         {q('SELECT COUNT(*) FROM relationship'):>6}")
-    print(f"      Couples:             {couple_count:>6}")
-    print(f"      Parent-child:        {parent_count:>6}")
-    print(f"      Siblings:            {sibling_count:>6}")
-    print(f"    Events:                {q('SELECT COUNT(*) FROM event'):>6}")
-    print(f"    Places:                {q('SELECT COUNT(*) FROM place'):>6}")
+    print(f"    Persons:                   {q('SELECT COUNT(*) FROM person'):>6}")
+    print(f"    Relationships:             {q('SELECT COUNT(*) FROM relationship'):>6}")
+    print(f"      Couples:                 {couple_count:>6}")
+    print(f"      Parent-child:            {parent_count:>6}")
+    print(f"      Siblings:                {sibling_count:>6}")
+    print(f"    Events:                    {q('SELECT COUNT(*) FROM event'):>6}")
 
     print("\n  LINKAGE")
     total_links = q("SELECT COUNT(*) FROM person_record")
     verified    = q("SELECT COUNT(*) FROM person_record WHERE verified=1")
-    print(f"    Person-Record links:   {total_links:>6}")
-    print(f"    Verified:              {verified:>6}")
-    print(f"    Unverified:            {total_links - verified:>6}")
+    place_links = q("SELECT COUNT(*) FROM place_record")
+    place_verified = q("SELECT COUNT(*) FROM place_record WHERE verified=1")
+    print(f"    Person-Record links:       {total_links:>6}  ({verified} verified)")
+    print(f"    Place-Record links:        {place_links:>6}  ({place_verified} verified)")
 
-    # Sources with records
     source_counts = conn.execute("""
         SELECT s.title, COUNT(DISTINCT r.record_id) AS records,
                COUNT(rp.recorded_person_id) AS persons
@@ -521,10 +480,10 @@ def print_summary(conn: sqlite3.Connection) -> None:
     if source_counts:
         print("\n  RECORDS BY SOURCE")
         for row in source_counts:
-            print(f"    {row['title']:<30} {row['records']:>4} records  {row['persons']:>5} persons")
+            print(f"    {row['title']:<34} {row['records']:>4} records  {row['persons']:>5} persons")
 
     print()
-    print("=" * 56)
+    print("=" * 60)
     print()
 
 
@@ -538,16 +497,9 @@ def _cmd_init(args: argparse.Namespace) -> None:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> None:
-    from src.reconstruction import (
-        run_place_resolution, print_place_resolution_report,
-        run_household_inference, print_household_inference_report,
-        run_census_linkage, print_census_linkage_report,
-    )
-
     conn = open_db(args.db)
     source_id = int(args.source)
 
-    # ── Stage 1: Ingest ────────────────────────────────────────────────────
     if source_id in (3, 4, 5):
         result = ingest_census(conn, args.file, source_id=source_id)
     else:
@@ -570,24 +522,15 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
     else:
         print("\n  No parse notes — clean ingest.")
 
-    # ── Stage 2: Place resolution ──────────────────────────────────────────
-    print("\n[2/4] Place resolution")
-    place_result = run_place_resolution(conn)
-    print_place_resolution_report(place_result)
 
-    # ── Stage 3: Household inference ───────────────────────────────────────
-    print("\n[3/4] Household structure inference")
-    inference_result = run_household_inference(conn, source_id)
-    print_household_inference_report(inference_result)
-
-    # ── Stage 4: Cross-census linkage (runs when ≥2 census sources exist) ──
-    print("\n[4/4] Cross-census linkage")
-    linkage_result = run_census_linkage(conn)
-    print_census_linkage_report(linkage_result)
-
-    print("\nPipeline complete. Running summary...\n")
-    print_summary(conn)
-
+def _cmd_seed_places(args: argparse.Namespace) -> None:
+    from src.seed_places import seed_places, print_seed_places_report
+    conn = open_db(args.db)
+    check_version(conn)
+    result = seed_places(conn, args.file)
+    print_seed_places_report(result)
+    if not result["ok"]:
+        sys.exit(1)
 
 
 def _cmd_summary(args: argparse.Namespace) -> None:
@@ -596,50 +539,23 @@ def _cmd_summary(args: argparse.Namespace) -> None:
 
 
 def _cmd_reconstruct(args: argparse.Namespace) -> None:
-    """
-    Re-run the full reconstruction pipeline against already-ingested data.
-    Use this after a bug fix, algorithm update, or to recover from a
-    partial pipeline run. Normal workflow uses 'ingest' which runs the
-    pipeline automatically.
-    """
     from src.reconstruction import (
         run_place_resolution, print_place_resolution_report,
         run_household_inference, print_household_inference_report,
-        run_census_linkage, print_census_linkage_report,
     )
-
     conn = open_db(args.db)
     check_version(conn)
 
-    print("\nRunning reconstruction pipeline (repair mode)...")
+    print("\nRunning reconstruction pipeline...")
 
-    # Determine which census sources have ingested records
-    source_rows = conn.execute(
-        """
-        SELECT DISTINCT s.source_id FROM source s
-        JOIN record r ON r.source_id = s.source_id
-        WHERE s.source_id IN (3, 4, 5)
-        ORDER BY s.source_id
-        """
-    ).fetchall()
-    census_source_ids = [row["source_id"] for row in source_rows]
-
-    if not census_source_ids:
-        print("  No census records found. Ingest a census CSV first.")
-        return
-
-    print("\n[2/4] Place resolution")
+    print("\n[1/2] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
-    for source_id in census_source_ids:
-        print(f"\n[3/4] Household structure inference — source {source_id}")
-        inference_result = run_household_inference(conn, source_id)
-        print_household_inference_report(inference_result)
-
-    print("\n[4/4] Cross-census linkage")
-    linkage_result = run_census_linkage(conn)
-    print_census_linkage_report(linkage_result)
+    print("\n[2/2] Household structure inference")
+    source_id = int(args.source)
+    inference_result = run_household_inference(conn, source_id)
+    print_household_inference_report(inference_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
@@ -659,20 +575,22 @@ def main() -> None:
     p_ingest.add_argument("--source", required=True, help="Source ID (e.g. 4 for Census 1911)")
     p_ingest.add_argument("--file", required=True, help="Path to the CSV file")
 
+    p_seed = sub.add_parser("seed-places", help="Seed place_authority from a CSV file")
+    p_seed.add_argument("--file", required=True, help="Path to place_authority CSV (logainm format)")
+
     sub.add_parser("summary", help="Print knowledge base summary")
 
-    sub.add_parser(
-        "reconstruct",
-        help="Re-run full reconstruction pipeline (repair mode — normal workflow uses ingest)",
-    )
+    p_recon = sub.add_parser("reconstruct", help="Run place resolution and household inference")
+    p_recon.add_argument("--source", required=True, help="Census source ID (e.g. 4 for Census 1911)")
 
     args = parser.parse_args()
 
     dispatch = {
-        "init":        _cmd_init,
-        "ingest":      _cmd_ingest,
-        "summary":     _cmd_summary,
-        "reconstruct": _cmd_reconstruct,
+        "init":         _cmd_init,
+        "ingest":       _cmd_ingest,
+        "seed-places":  _cmd_seed_places,
+        "summary":      _cmd_summary,
+        "reconstruct":  _cmd_reconstruct,
     }
     dispatch[args.command](args)
 
