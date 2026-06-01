@@ -25,6 +25,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from src.reconstruction.linkage import run_census_linkage
+from src.reconstruction.linkage import print_census_linkage_report
+
 SCHEMA_VERSION = 27
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
@@ -562,6 +565,10 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     source_id = int(args.source)
     inference_result = run_household_inference(conn, source_id)
     print_household_inference_report(inference_result)
+
+    print("\n[3/3] Cross-census linkage") # Added linkage execution
+    linkage_result = run_census_linkage(conn)
+    print_census_linkage_report(linkage_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
