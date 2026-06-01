@@ -133,11 +133,18 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
                 FROM person_name pn2
                 WHERE pn2.person_id = p.person_id AND pn2.type = 'birth_name'
             )
-        -- Link to census records via person_record
+
+        -- Link to census records via person_record.
+            -- Restrict to household-inference-origin rows so that after merges,
+            -- a person whose person_record now spans multiple census sources still
+            -- appears in exactly one source DataFrame — the one that created them.
         JOIN person_record pr ON pr.person_id = p.person_id
+                              AND pr.score_version = 'household_v1.0'
         JOIN record r         ON r.record_id  = pr.record_id
         JOIN source s         ON s.source_id  = r.source_id
                               AND s.source_id IN (3, 4, 5)
+
+                              
         -- RecordedEvent for census date and place
         JOIN recorded_event re ON re.record_id = r.record_id
         -- Match THIS person's RecordedPerson row by name within the household
