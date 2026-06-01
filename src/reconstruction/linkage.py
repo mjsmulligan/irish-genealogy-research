@@ -229,17 +229,20 @@ def _merge_persons(
             (canonical_id,),
         ).fetchall()
     }
+    # Fetch max once; increment locally to avoid a query per iteration.
+    next_pn_id = conn.execute(
+        "SELECT COALESCE(MAX(person_name_id), 0) FROM person_name"
+    ).fetchone()[0] + 1
+
     for name_row in dup_names:
         key = (name_row["value"], name_row["type"])
         if key not in existing_names:
-            max_pn_id = conn.execute(
-                "SELECT COALESCE(MAX(person_name_id), 0) FROM person_name"
-            ).fetchone()[0]
             conn.execute(
                 "INSERT INTO person_name (person_name_id, person_id, value, type) "
                 "VALUES (?, ?, ?, ?)",
-                (max_pn_id + 1, canonical_id, name_row["value"], name_row["type"]),
+                (next_pn_id, canonical_id, name_row["value"], name_row["type"]),
             )
+            next_pn_id += 1
     conn.execute(
         "DELETE FROM person_name WHERE person_id = ?", (duplicate_id,)
     )
@@ -339,45 +342,66 @@ def _merge_persons(
 
     # 8. Deduplicate relationships: if re-pointing created an exact
     # (type, person_id_1, person_id_2) duplicate, keep the lower relationship_id
-    # and delete the higher ones — but clean their junction rows first.
-    conn.execute(
-        """
-        DELETE FROM relationship_record
-        WHERE relationship_id NOT IN (
-            SELECT MIN(relationship_id)
-            FROM relationship
-            GROUP BY type, person_id_1, person_id_2
-        )
-        """
-    )
-    conn.execute(
-        """
-        DELETE FROM relationship_event
-        WHERE relationship_id NOT IN (
-            SELECT MIN(relationship_id)
-            FROM relationship
-            GROUP BY type, person_id_1, person_id_2
-        )
-        """
-    )
-    conn.execute(
-        """
-        DELETE FROM person_relationship
-        WHERE relationship_id NOT IN (
+    # and migrate any relationship_event rows from the duplicates to the survivor
+    # before deleting the duplicates and their junction rows.
+    duplicate_rel_ids = [
+        row[0] for row in conn.execute(
+            """
             SELECT relationship_id FROM relationship
+            WHERE relationship_id NOT IN (
+                SELECT MIN(relationship_id)
+                FROM relationship
+                GROUP BY type, person_id_1, person_id_2
+            )
+            """
+        ).fetchall()
+    ]
+
+    if duplicate_rel_ids:
+        placeholders = ",".join("?" * len(duplicate_rel_ids))
+
+        # For each duplicate relationship, find its canonical survivor and
+        # migrate relationship_event rows that aren't already on the survivor.
+        for dup_rel_id in duplicate_rel_ids:
+            survivor_id = conn.execute(
+                """
+                SELECT MIN(r2.relationship_id)
+                FROM relationship r1
+                JOIN relationship r2
+                ON r2.type = r1.type
+                AND r2.person_id_1 = r1.person_id_1
+                AND r2.person_id_2 = r1.person_id_2
+                WHERE r1.relationship_id = ?
+                """,
+                (dup_rel_id,),
+            ).fetchone()[0]
+
+            if survivor_id is not None:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO relationship_event (relationship_id, event_id)
+                    SELECT ?, event_id FROM relationship_event WHERE relationship_id = ?
+                    """,
+                    (survivor_id, dup_rel_id),
+                )
+
+        # Now safe to clean up junction rows and delete duplicate relationships.
+        conn.execute(
+            f"DELETE FROM relationship_record WHERE relationship_id IN ({placeholders})",
+            duplicate_rel_ids,
         )
-        """
-    )
-    conn.execute(
-        """
-        DELETE FROM relationship
-        WHERE relationship_id NOT IN (
-            SELECT MIN(relationship_id)
-            FROM relationship
-            GROUP BY type, person_id_1, person_id_2
+        conn.execute(
+            f"DELETE FROM relationship_event WHERE relationship_id IN ({placeholders})",
+            duplicate_rel_ids,
         )
-        """
-    )
+        conn.execute(
+            f"DELETE FROM person_relationship WHERE relationship_id IN ({placeholders})",
+            duplicate_rel_ids,
+        )
+        conn.execute(
+            f"DELETE FROM relationship WHERE relationship_id IN ({placeholders})",
+            duplicate_rel_ids,
+        )  
 
     # 9. Delete the duplicate Person.
     # All junction rows referencing duplicate_id have been moved or deleted

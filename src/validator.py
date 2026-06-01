@@ -111,6 +111,8 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
             return year
 
     # 3. Derive from census RecordedPerson age + census date
+    # Join recorded_person and filter by the person's own concluded name so we
+    # don't accidentally pick up a younger household member's age.
     row = conn.execute(
         """
         SELECT rp.age, re.date
@@ -119,23 +121,24 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
         JOIN source s ON s.source_id = r.source_id
         JOIN recorded_person rp ON rp.record_id = r.record_id
         JOIN recorded_event re ON re.record_id = r.record_id
+        JOIN person_name pn ON pn.person_id = pr.person_id
+                            AND pn.type = 'birth_name'
+                            AND rp.name_as_recorded = pn.value
         WHERE pr.person_id = ?
           AND s.type = 'census'
           AND rp.age IS NOT NULL
           AND re.date IS NOT NULL
-        ORDER BY pr.age ASC
+        ORDER BY re.date ASC
         LIMIT 1
         """,
         (person_id,),
     ).fetchone()
     if row and row["age"] is not None:
         census_year = _year_from_date(row["date"])
-        if census_year:
-            return census_year - row["age"]
+    if census_year:
+        return census_year - row["age"]
 
-    return None
-
-
+    
 def _derive_death_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     """Return the concluded death year for a Person, or None."""
     row = conn.execute(
