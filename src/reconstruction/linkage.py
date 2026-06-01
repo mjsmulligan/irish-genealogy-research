@@ -492,6 +492,8 @@ def run_census_linkage(conn: sqlite3.Connection) -> CensusLinkageResult:
 
     # Sort by score descending; process highest confidence first
     pred_df = pred_df.sort_values("match_probability", ascending=False)
+    pred_df.to_csv('pred_df.csv', index=False) # MIKE DEBUG
+
 
     # Track which person_ids have already been merged this run
     # to avoid acting on stale pairs (both IDs must still exist)
