@@ -110,24 +110,55 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
         if year:
             return year
 
-    # 3. Derive from census RecordedPerson age + census date
-    # Join recorded_person and filter by the person's own concluded name so we
-    # don't accidentally pick up a younger household member's age.
+    # 3. Derive from census RecordedPerson age + census date.
+    #
+    # Join strategy mirrors census.py build_census_features: prefer the
+    # RecordedPerson whose name_as_recorded matches the Person's concluded
+    # birth_name, falling back to the lowest recorded_person_id in the
+    # household if no name match exists.  The previous ORDER BY pr.age ASC
+    # picked the youngest person in the household — typically an infant —
+    # which produced a birth year far too late for the Person being validated.
     row = conn.execute(
         """
         SELECT rp.age, re.date
         FROM person_record pr
-        JOIN record r ON r.record_id = pr.record_id
-        JOIN source s ON s.source_id = r.source_id
-        JOIN recorded_person rp ON rp.record_id = r.record_id
+        JOIN record r  ON r.record_id  = pr.record_id
+        JOIN source s  ON s.source_id  = r.source_id
         JOIN recorded_event re ON re.record_id = r.record_id
+        -- Person's concluded name, used for the name-match preference below
         JOIN person_name pn ON pn.person_id = pr.person_id
-                            AND pn.type = 'birth_name'
-                            AND rp.name_as_recorded = pn.value
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = pr.person_id AND pn2.type = 'birth_name'
+            )
+        -- Same COALESCE strategy as census.py: named match first, head fallback
+        LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
+            AND rp.recorded_person_id = COALESCE(
+                (
+                    SELECT rp2.recorded_person_id
+                    FROM recorded_person rp2
+                    WHERE rp2.record_id = r.record_id
+                      AND rp2.name_as_recorded = pn.value
+                    ORDER BY rp2.recorded_person_id
+                    LIMIT 1
+                ),
+                (
+                    SELECT rp3.recorded_person_id
+                    FROM recorded_person rp3
+                    WHERE rp3.record_id = r.record_id
+                    ORDER BY rp3.recorded_person_id
+                    LIMIT 1
+                )
+            )
         WHERE pr.person_id = ?
           AND s.type = 'census'
           AND rp.age IS NOT NULL
           AND re.date IS NOT NULL
+        -- Among multiple census records for this person, prefer the one with
+        -- the smallest derived birth year uncertainty (oldest recorded age is
+        -- typically the most reliable; youngest-at-census = earliest source).
         ORDER BY re.date ASC
         LIMIT 1
         """,
@@ -135,10 +166,12 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     ).fetchone()
     if row and row["age"] is not None:
         census_year = _year_from_date(row["date"])
-    if census_year:
-        return census_year - row["age"]
+        if census_year:
+            return census_year - row["age"]
 
-    
+    return None
+
+
 def _derive_death_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     """Return the concluded death year for a Person, or None."""
     row = conn.execute(
