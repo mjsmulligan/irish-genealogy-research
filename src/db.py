@@ -156,14 +156,20 @@ _CENSUS_DATES: dict[int, str] = {
 
 
 def _extract_document_id(images_str: str) -> str | None:
+    """
+    Extract the first Form A image ID from the NAI images field.
+    """
+    if not images_str:
+        return None
     try:
         images = ast.literal_eval(images_str)
         if images and isinstance(images, list):
             url = images[0].get("url", "")
             stem = Path(url.split("?")[0]).stem
             return stem if stem else None
-    except Exception:
+    except (ValueError, SyntaxError):
         return None
+    return None
 
 
 def _get_document_id(person: dict) -> str | None:

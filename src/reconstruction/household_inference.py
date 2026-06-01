@@ -58,9 +58,12 @@ def _next_ids(conn: sqlite3.Connection) -> dict[str, int]:
 
 
 def _gender_for_rp(rp: sqlite3.Row) -> str | None:
-    role_gender = _ROLE_GENDER.get(rp["role"])
-    if role_gender:
-        return role_gender
+    """Determine gender: prefer role-derived gender, fall back to sex_as_recorded."""
+    role = rp["role"]
+    if role in _ROLE_GENDER:
+        role_gender = _ROLE_GENDER[role]
+        if role_gender is not None:
+            return role_gender
     return _SEX_MAP.get(rp["sex_as_recorded"] or "", None)
 
 
