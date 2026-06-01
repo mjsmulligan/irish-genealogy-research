@@ -82,7 +82,7 @@ def _build_settings() -> SettingsCreator:
             # Primary: same resolved townland authority. This is the strongest
             # anchor for a One Place Study — most cross-census pairs will be
             # caught here.
-            block_on("place_id"),
+            # block_on("place_id"),Removed as place blocking misaligned scoring
             # Fallback 1: same first 4 characters of normalised surname.
             # Catches pairs whose place string was unresolved (place_id=NULL)
             # but whose surname prefix agrees.
