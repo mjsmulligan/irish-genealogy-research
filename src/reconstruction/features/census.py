@@ -135,6 +135,8 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
         JOIN record r         ON r.record_id  = pr.record_id
         JOIN source s         ON s.source_id  = r.source_id
                               AND s.source_id IN (3, 4, 5)
+
+                              
         -- RecordedEvent for census date and place
         JOIN recorded_event re ON re.record_id = r.record_id
         -- Match THIS person's RecordedPerson row by name within the household
