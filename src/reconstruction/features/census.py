@@ -103,16 +103,6 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
         place_raw       str     — normalised place string (fallback if unresolved)
 
     Returns an empty list if no census Person conclusions exist.
-
-    RecordedPerson join strategy
-    ----------------------------
-    The join first attempts to match by name (name_as_recorded = person_name.value),
-    giving each Person their own age feature rather than the household head's age.
-    If no name match exists — which can happen when a name was altered during
-    household inference — it falls back to the lowest recorded_person_id in the
-    household.  A person who falls through to the fallback will have age=NULL and
-    therefore birth_year_est=NULL; they remain in the DataFrame and are matchable
-    via name and place, but carry no birth year weight in Splink scoring.
     """
     query = """
         SELECT
@@ -133,39 +123,37 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
                 FROM person_name pn2
                 WHERE pn2.person_id = p.person_id AND pn2.type = 'birth_name'
             )
-        -- Link to census records via person_record
+        -- Link to census records via person_record.
+        -- Restrict to household-inference-origin rows (score_version = 'household_v1.0')
+        -- so that after cross-census merges, a person whose person_record now spans
+        -- multiple census sources still appears in exactly one source DataFrame —
+        -- the one that created them via household inference. Without this filter,
+        -- a merged person would appear in multiple DataFrames, producing spurious
+        -- self-match pairs that pollute the candidate pool and bias EM training.
         JOIN person_record pr ON pr.person_id = p.person_id
+                              AND pr.score_version = 'household_v1.0'
         JOIN record r         ON r.record_id  = pr.record_id
         JOIN source s         ON s.source_id  = r.source_id
                               AND s.source_id IN (3, 4, 5)
         -- RecordedEvent for census date and place
         JOIN recorded_event re ON re.record_id = r.record_id
         -- Match THIS person's RecordedPerson row by name within the household
-        -- record, so each person gets their own age rather than the head's.
+        -- record. The previous implementation always took the household head's
+        -- row, giving every household member the head's age and name. The
+        -- correct approach matches name_as_recorded against the person's
+        -- concluded name so each person gets their own features.
         --
-        -- Strategy: prefer the name-matched row (COALESCE picks the first
-        -- non-NULL argument).  If no name match exists, fall back to the
-        -- lowest recorded_person_id in the household.  The LEFT JOIN ensures
-        -- persons are never silently dropped when a name match fails.
-        LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
-            AND rp.recorded_person_id = COALESCE(
-                -- Named match: this person's own RecordedPerson row
-                (
-                    SELECT rp2.recorded_person_id
-                    FROM recorded_person rp2
-                    WHERE rp2.record_id = r.record_id
-                      AND rp2.name_as_recorded = pn.value
-                    ORDER BY rp2.recorded_person_id
-                    LIMIT 1
-                ),
-                -- Fallback: first RecordedPerson in the household
-                (
-                    SELECT rp3.recorded_person_id
-                    FROM recorded_person rp3
-                    WHERE rp3.record_id = r.record_id
-                    ORDER BY rp3.recorded_person_id
-                    LIMIT 1
-                )
+        -- Where two people in the same household share a name (rare), LIMIT 1
+        -- on recorded_person_id picks the first occurrence — acceptable for
+        -- Splink feature purposes.
+        JOIN recorded_person rp ON rp.record_id = r.record_id
+            AND rp.recorded_person_id = (
+                SELECT rp2.recorded_person_id
+                FROM recorded_person rp2
+                WHERE rp2.record_id = r.record_id
+                  AND rp2.name_as_recorded = pn.value
+                ORDER BY rp2.recorded_person_id
+                LIMIT 1
             )
         -- Resolved place
         LEFT JOIN place_record pr2 ON pr2.record_id = r.record_id
@@ -228,19 +216,9 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     # Split into one DataFrame per census source so Splink's link_and_dedupe
     # can distinguish within-source deduplication from cross-source linkage.
     # Sources present in the data may be a subset of {3, 4, 5}.
-    #
-    # Log row counts here — if these numbers are suspiciously low relative to
-    # raw NAI record counts, the JOIN in build_census_features is the choke
-    # point.  Each source_id is read from the data, not assumed by index.
     result: list[pd.DataFrame] = []
     for source_id in sorted(df["source_id"].unique()):
         source_df = df[df["source_id"] == source_id].reset_index(drop=True)
-        no_birth_year = source_df["birth_year_est"].isna().sum()
-        print(
-            f"  [census features] source {source_id}: "
-            f"{len(source_df)} persons "
-            f"({no_birth_year} without birth year estimate)"
-        )
         result.append(source_df)
 
     return result
