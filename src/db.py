@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 import sqlite3
 
+
 SCHEMA_VERSION = 28
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
@@ -534,6 +535,9 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
         run_place_resolution, print_place_resolution_report,
         run_household_inference, print_household_inference_report,
     )
+    # Import the linkage function and its report generator
+    from src.reconstruction.linkage import run_census_linkage, print_census_linkage_report
+
     conn = open_db(args.db)
     check_version(conn)
 
@@ -547,6 +551,11 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     source_id = int(args.source)
     inference_result = run_household_inference(conn, source_id)
     print_household_inference_report(inference_result)
+
+    # Add the linkage execution here
+    print("\n[3/3] Cross-source person linkage")
+    run_census_linkage(conn, debug_log="linkage_debug.txt")
+    
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
