@@ -17,15 +17,16 @@ from dataclasses import dataclass, field
 
 SCORE_VERSION = "household_v1.0"
 
-_COUPLE_PRIOR          = 0.90
-_PARENT_CHILD_HEAD     = 0.85
-_PARENT_CHILD_SPOUSE   = 0.80
-_PARENT_CHILD_DIRECT   = 0.90
-_SIBLING_DIRECT        = 0.80
-_SIBLING_INFERRED      = 0.75
-_PERSON_RECORD_SCORE   = 0.90
-_EVENT_RECORD_SCORE    = 0.90
+# Prior scores from reconstruction_algorithms.md §6.1
+_COUPLE_PRIOR        = 0.90
+_PARENT_CHILD_HEAD   = 0.85
+_PARENT_CHILD_SPOUSE = 0.80
+_SIBLING_DIRECT      = 0.80
+_SIBLING_INFERRED    = 0.75
+_PERSON_RECORD_SCORE = 0.90
+_EVENT_RECORD_SCORE  = 0.90
 
+# Gender derivation from role
 _ROLE_GENDER: dict[str, str | None] = {
     "head": None, "spouse": None, "son": "male", "daughter": "female",
     "sibling": None, "grandchild": None, "in_law": None,
@@ -36,6 +37,10 @@ _ROLE_GENDER: dict[str, str | None] = {
 
 _SEX_MAP = {"M": "male", "F": "female", "m": "male", "f": "female"}
 
+
+# ---------------------------------------------------------------------------
+# Result type
+# ---------------------------------------------------------------------------
 
 @dataclass
 class HouseholdInferenceResult:
@@ -49,6 +54,10 @@ class HouseholdInferenceResult:
     skipped_records: list[str] = field(default_factory=list)
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def _next_ids(conn: sqlite3.Connection) -> dict[str, int]:
     return {
         "person":       conn.execute("SELECT COALESCE(MAX(person_id), 0) + 1 FROM person").fetchone()[0],
@@ -58,12 +67,9 @@ def _next_ids(conn: sqlite3.Connection) -> dict[str, int]:
 
 
 def _gender_for_rp(rp: sqlite3.Row) -> str | None:
-    """Determine gender: prefer role-derived gender, fall back to sex_as_recorded."""
-    role = rp["role"]
-    if role in _ROLE_GENDER:
-        role_gender = _ROLE_GENDER[role]
-        if role_gender is not None:
-            return role_gender
+    role_gender = _ROLE_GENDER.get(rp["role"])
+    if role_gender:
+        return role_gender
     return _SEX_MAP.get(rp["sex_as_recorded"] or "", None)
 
 
@@ -106,21 +112,13 @@ def _insert_relationship(conn, rel_id, rel_type, pid1, pid2, record_id, prior_sc
         (rel_id, rel_type, pid1, pid2, notes),
     )
     conn.execute(
-        "INSERT INTO person_relationship (person_id, relationship_id) VALUES (?, ?)",
-        (pid1, rel_id),
-    )
-    conn.execute(
-        "INSERT OR IGNORE INTO person_relationship (person_id, relationship_id) VALUES (?, ?)",
-        (pid2, rel_id),
-    )
-    conn.execute(
         "INSERT INTO relationship_record "
         "(relationship_id, record_id, score, score_version, verified) VALUES (?, ?, ?, ?, 0)",
         (rel_id, record_id, prior_score, SCORE_VERSION),
     )
 
 
-def _insert_census_event(conn, event_id, record_id, recorded_event_id, place_id, census_date, person_ids):
+def _insert_census_event(conn, event_id, record_id, place_id, census_date, person_ids):
     conn.execute(
         "INSERT INTO event (event_id, type, date, date_qualifier, place_id) "
         "VALUES (?, 'census', ?, 'exact', ?)",
@@ -131,20 +129,16 @@ def _insert_census_event(conn, event_id, record_id, recorded_event_id, place_id,
         "VALUES (?, ?, ?, ?, 0)",
         (event_id, record_id, _EVENT_RECORD_SCORE, SCORE_VERSION),
     )
-    conn.execute(
-        "INSERT INTO event_recorded_event (event_id, recorded_event_id) VALUES (?, ?)",
-        (event_id, recorded_event_id),
-    )
     for pid in person_ids:
         conn.execute(
-            "INSERT INTO event_person (event_id, person_id) VALUES (?, ?)",
-            (event_id, pid),
-        )
-        conn.execute(
-            "INSERT OR IGNORE INTO person_event (person_id, event_id) VALUES (?, ?)",
+            "INSERT INTO person_event (person_id, event_id) VALUES (?, ?)",
             (pid, event_id),
         )
 
+
+# ---------------------------------------------------------------------------
+# Relationship inference for a single household
+# ---------------------------------------------------------------------------
 
 def _infer_relationships(conn, rp_list, pid_map, record_id, ids, result):
     by_role: dict[str, list] = {}
@@ -198,10 +192,18 @@ def _infer_relationships(conn, rp_list, pid_map, record_id, ids, result):
                          notes="Inferred sibling: shared household parents")
 
 
-def run_household_inference(conn: sqlite3.Connection, source_id: int) -> HouseholdInferenceResult:
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def run_household_inference(
+    conn: sqlite3.Connection,
+    source_id: int,
+) -> HouseholdInferenceResult:
     """
-    Run household structure inference for all unprocessed Records from the given census source.
-    Creates Person, Relationship, and Event conclusions. Safe to call incrementally.
+    Run household structure inference for all unprocessed Records from the
+    given census source. Creates Person, Relationship, and Event conclusions.
+    Safe to call incrementally.
     """
     result = HouseholdInferenceResult()
 
@@ -213,11 +215,11 @@ def run_household_inference(conn: sqlite3.Connection, source_id: int) -> Househo
     if source_row["type"] != "census":
         raise ValueError(f"Source {source_id} ('{source_row['title']}') is not a census source.")
 
+    # Fetch unprocessed records — event fields now on record directly
     records = conn.execute(
         """
-        SELECT r.record_id, re.recorded_event_id, re.date, re.place_as_recorded
+        SELECT r.record_id, r.date, r.place_as_recorded
         FROM record r
-        JOIN recorded_event re ON re.record_id = r.record_id
         WHERE r.source_id = ?
           AND r.record_id NOT IN (SELECT DISTINCT record_id FROM person_record)
         ORDER BY r.record_id
@@ -239,12 +241,11 @@ def run_household_inference(conn: sqlite3.Connection, source_id: int) -> Househo
 
     with conn:
         for rec in records:
-            record_id         = rec["record_id"]
-            recorded_event_id = rec["recorded_event_id"]
-            census_date       = rec["date"] or "1911-04-02"
-            census_year       = int(census_date[:4])
-            townland          = rec["place_as_recorded"] or ""
-            place_id          = place_for_record.get(record_id)
+            record_id   = rec["record_id"]
+            census_date = rec["date"] or "1911-04-02"
+            census_year = int(census_date[:4])
+            townland    = rec["place_as_recorded"] or ""
+            place_id    = place_for_record.get(record_id)
 
             rp_list = conn.execute(
                 "SELECT * FROM recorded_person WHERE record_id = ? ORDER BY recorded_person_id",
@@ -271,8 +272,7 @@ def run_household_inference(conn: sqlite3.Connection, source_id: int) -> Househo
 
             event_id = ids["event"]
             _insert_census_event(
-                conn, event_id, record_id, recorded_event_id,
-                place_id, census_date, household_pids,
+                conn, event_id, record_id, place_id, census_date, household_pids,
             )
             ids["event"] += 1
             result.events_created += 1

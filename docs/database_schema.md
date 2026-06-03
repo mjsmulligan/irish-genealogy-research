@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Database Schema
 
-*Version 2.5 — May 2026*
+*Version 2.8 — June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ---
@@ -66,7 +66,7 @@ The Python layer is responsible for serialising these fields to JSON on write an
 
 ### Enforcing evidence-layer isolation at the DB level
 
-Rule R26 (evidence-layer objects must not contain conclusion-layer foreign keys) is enforced architecturally: the `recorded_event` and `recorded_person` tables simply do not have columns for `person_id`, `event_id`, `relationship_id`, or `place_id`. The schema makes the violation structurally impossible.
+Rule R27 (evidence-layer objects must not contain conclusion-layer foreign keys) is enforced architecturally: neither `record` nor `recorded_person` carry columns for `person_id`, `event_id`, `relationship_id`, or `place_id`. The schema makes the violation structurally impossible.
 
 ### Foreign key enforcement
 
@@ -84,30 +84,33 @@ All primary keys are declared `INTEGER PRIMARY KEY`. In SQLite this is an alias 
 FOUNDATIONAL
   repository
   source
+  place_authority         — authoritative place identities seeded from logainm.ie
 
 EVIDENCE
-  record
-  recorded_event          — 1:1 with record (enforced by UNIQUE on record_id)
+  record                  — includes inline event fields (event_type, date, date_qualifier,
+                            date_as_recorded, place_as_recorded); always one event per record
   recorded_person         — N:1 with record
   name_variant            — derived normalised variants of recorded names; indexed for scoring
 
 CONCLUSION
   person
-  person_name             — one row per name; replaces JSON column; indexed for search
+  person_name             — one row per name; indexed for search
   relationship
   event
-  place
 
-JUNCTION TABLES (many-to-many)
-  person_record           — Person.record_ids  [+ score, score_version, verified]
-  person_event            — Person.event_ids
-  person_relationship     — Person.relationship_ids
-  relationship_record     — Relationship.record_ids  [+ score, score_version, verified]
-  relationship_event      — Relationship.event_ids
-  event_record            — Event.record_ids  [+ score, score_version, verified]
-  event_recorded_event    — Event.recorded_event_ids
-  event_person            — Event.person_ids
-  place_record            — Place.record_ids  [+ score, score_version, verified]
+JUNCTION TABLES
+  person_record           — Person.record_ids          [linkage: score, score_version, verified]
+  person_event            — Person.event_ids / Event.person_ids  [structural; query either direction]
+  relationship_record     — Relationship.record_ids    [linkage: score, score_version, verified]
+  event_record            — Event.record_ids           [linkage: score, score_version, verified]
+  place_record            — place_authority → record   [linkage: score, score_version, verified]
+
+Removed in v2.8:
+  recorded_event          — merged into record (1:1; no information lost)
+  event_recorded_event    — redundant once recorded_event is merged
+  person_relationship     — superseded by indexed queries on relationship.person_id_1/2
+  relationship_event      — superseded by event.relationship_id column
+  event_person            — superseded by person_event (single table, both directions)
 ```
 
 ---
@@ -157,21 +160,17 @@ CREATE TABLE record (
     source_id           INTEGER NOT NULL REFERENCES source (source_id),
     record_parameters   TEXT,   -- JSON object of Record-level URL parameter values; keys must match Source.record_parameter_names
     raw_text            TEXT    NOT NULL CHECK (trim(raw_text) != ''),
-    notes               TEXT
-);
 
-CREATE TABLE recorded_event (
-    recorded_event_id   INTEGER PRIMARY KEY,
-    record_id           INTEGER NOT NULL UNIQUE REFERENCES record (record_id),
-    -- UNIQUE enforces Rule R18: exactly one RecordedEvent per Record.
-    type                TEXT    NOT NULL,
-    date_as_recorded    TEXT,   -- verbatim; no format constraint (Rule R35 exempts this field)
-    date                TEXT,   -- normalised ISO 8601; validated by Python (Rule R35)
+    -- Event fields (formerly on recorded_event; always 1:1 with record)
+    event_type          TEXT    NOT NULL,
+    date_as_recorded    TEXT,   -- verbatim; exempt from date format validation (Rule R36)
+    date                TEXT,   -- normalised ISO 8601; validated by Python (Rule R36)
     date_qualifier      TEXT,
     place_as_recorded   TEXT,
+
     notes               TEXT,
 
-    CHECK (type IN (
+    CHECK (event_type IN (
         'birth', 'baptism', 'marriage', 'death', 'burial',
         'census', 'residence', 'emigration',
         'valuation', 'tithe', 'military_service', 'pension', 'folklore'
@@ -324,14 +323,9 @@ CREATE TABLE person_event (
     PRIMARY KEY (person_id, event_id)
 );
 
--- Person.relationship_ids
-CREATE TABLE person_relationship (
-    person_id       INTEGER NOT NULL REFERENCES person (person_id),
-    relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
-    PRIMARY KEY (person_id, relationship_id)
-);
-
 -- Relationship.record_ids  (linkage junction — carries scoring columns)
+-- Note: person_relationship removed in v2.8; Person.relationship_ids is
+-- queried directly via relationship.person_id_1 / person_id_2.
 CREATE TABLE relationship_record (
     relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
@@ -341,14 +335,8 @@ CREATE TABLE relationship_record (
     PRIMARY KEY (relationship_id, record_id)
 );
 
--- Relationship.event_ids
-CREATE TABLE relationship_event (
-    relationship_id INTEGER NOT NULL REFERENCES relationship (relationship_id),
-    event_id        INTEGER NOT NULL REFERENCES event (event_id),
-    PRIMARY KEY (relationship_id, event_id)
-);
-
 -- Event.record_ids  (linkage junction — carries scoring columns)
+-- Note: relationship_event removed in v2.8; event.relationship_id expresses this directly.
 CREATE TABLE event_record (
     event_id        INTEGER NOT NULL REFERENCES event (event_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
@@ -358,21 +346,9 @@ CREATE TABLE event_record (
     PRIMARY KEY (event_id, record_id)
 );
 
--- Event.recorded_event_ids
-CREATE TABLE event_recorded_event (
-    event_id            INTEGER NOT NULL REFERENCES event (event_id),
-    recorded_event_id   INTEGER NOT NULL REFERENCES recorded_event (recorded_event_id),
-    PRIMARY KEY (event_id, recorded_event_id)
-);
-
--- Event.person_ids
-CREATE TABLE event_person (
-    event_id    INTEGER NOT NULL REFERENCES event (event_id),
-    person_id   INTEGER NOT NULL REFERENCES person (person_id),
-    PRIMARY KEY (event_id, person_id)
-);
-
 -- Place.record_ids  (linkage junction — carries scoring columns)
+-- Note: event_recorded_event and event_person removed in v2.8.
+-- person_event handles both person→event and event→person directions.
 CREATE TABLE place_record (
     place_id        INTEGER NOT NULL REFERENCES place (place_id),
     record_id       INTEGER NOT NULL REFERENCES record (record_id),
@@ -390,63 +366,38 @@ CREATE TABLE place_record (
 The primary key indexes (via `INTEGER PRIMARY KEY`) cover all single-object lookups. The following secondary indexes cover the most frequent query patterns: ingest traversal (all children of a parent), linkage scoring (all RecordedPersons for a source batch), and conclusion reconstruction (all Records for a Person).
 
 ```sql
--- Ingest traversal: find all Records for a Source
-CREATE INDEX idx_record_source
-    ON record (source_id);
+-- Ingest traversal
+CREATE INDEX idx_record_source           ON record (source_id);
+CREATE INDEX idx_recorded_person_record  ON recorded_person (record_id);
 
--- Ingest traversal: find all RecordedPersons for a Record
-CREATE INDEX idx_recorded_person_record
-    ON recorded_person (record_id);
+-- Linkage scoring: name candidate lookup
+CREATE INDEX idx_recorded_person_name    ON recorded_person (name_as_recorded);
+CREATE INDEX idx_person_name_value       ON person_name (value);
+CREATE INDEX idx_person_name_person      ON person_name (person_id);
 
--- Linkage scoring: find all RecordedPersons with a given name
--- (Jaro-Winkler scoring loads a batch; this index supports exact and prefix lookups)
-CREATE INDEX idx_recorded_person_name
-    ON recorded_person (name_as_recorded);
+-- Reconstruction
+CREATE INDEX idx_person_record_record    ON person_record (record_id);
+CREATE INDEX idx_relationship_person1    ON relationship (person_id_1);
+CREATE INDEX idx_relationship_person2    ON relationship (person_id_2);
+CREATE INDEX idx_event_place             ON event (place_id);
+CREATE INDEX idx_event_relationship      ON event (relationship_id);
 
--- Name search: find all Persons with a given concluded name value
-CREATE INDEX idx_person_name_value
-    ON person_name (value);
+-- Reverse lookup on person_event (replaces former event_person index)
+CREATE INDEX idx_person_event_event      ON person_event (event_id);
 
--- Name fetch: find all names for a Person
-CREATE INDEX idx_person_name_person
-    ON person_name (person_id);
+-- Name variant scoring
+CREATE INDEX idx_name_variant_value           ON name_variant (variant_value);
+CREATE INDEX idx_name_variant_recorded_person ON name_variant (recorded_person_id);
 
--- Reconstruction: find all Records for a Person (via junction table)
-CREATE INDEX idx_person_record_record
-    ON person_record (record_id);
+-- Place authority lookups
+CREATE INDEX idx_place_authority_logainm  ON place_authority (logainm_id);
+CREATE INDEX idx_place_authority_type     ON place_authority (place_type);
 
--- Reconstruction: find all Persons in a Relationship
-CREATE INDEX idx_relationship_person1
-    ON relationship (person_id_1);
-CREATE INDEX idx_relationship_person2
-    ON relationship (person_id_2);
-
--- Reconstruction: find all Events for a Place
-CREATE INDEX idx_event_place
-    ON event (place_id);
-
--- Reconstruction: find all Events for a Relationship
-CREATE INDEX idx_event_relationship
-    ON event (relationship_id);
-
--- Name variant scoring: find variants by normalised value (batch candidate loading)
-CREATE INDEX idx_name_variant_value
-    ON name_variant (variant_value);
-
--- Name variant fetch: find all variants for a RecordedPerson
-CREATE INDEX idx_name_variant_recorded_person
-    ON name_variant (recorded_person_id);
-
--- Linkage scoring: find unverified linkages below a score threshold (re-scoring pass)
--- Null-score rows are manually-asserted and excluded from re-scoring passes.
-CREATE INDEX idx_person_record_score
-    ON person_record (score) WHERE verified = 0 AND score IS NOT NULL;
-CREATE INDEX idx_event_record_score
-    ON event_record (score) WHERE verified = 0 AND score IS NOT NULL;
-CREATE INDEX idx_relationship_record_score
-    ON relationship_record (score) WHERE verified = 0 AND score IS NOT NULL;
-CREATE INDEX idx_place_record_score
-    ON place_record (score) WHERE verified = 0 AND score IS NOT NULL;
+-- Unverified linkage re-scoring passes (null-score rows excluded)
+CREATE INDEX idx_person_record_score       ON person_record (score)       WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_event_record_score        ON event_record (score)        WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_relationship_record_score ON relationship_record (score)  WHERE verified = 0 AND score IS NOT NULL;
+CREATE INDEX idx_place_record_score        ON place_record (score)         WHERE verified = 0 AND score IS NOT NULL;
 ```
 
 ---
@@ -460,7 +411,7 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R01 | Required fields on Repository | `NOT NULL` + `CHECK` on name, url | Yes |
 | R02 | Required fields on Source | `NOT NULL` + `CHECK (trim(...) != '')` on title | Yes |
 | R03 | raw_text required on Record | `NOT NULL` + `CHECK (trim(raw_text) != '')` | Yes |
-| R04 | Required fields on RecordedEvent | `NOT NULL` on type; `UNIQUE` on record_id | Yes |
+| R04 | Required fields on RecordedEvent | **Retired** — event fields now on `record`; R03 covers them | N/A |
 | R05 | Required fields on RecordedPerson | `NOT NULL` + `CHECK` on name_as_recorded, role | Yes |
 | R06 | Required fields on Person | `NOT NULL` + `CHECK` on label | Yes |
 | R07 | Required fields on Relationship | `NOT NULL` on type, person_id_1, person_id_2 | Yes |
@@ -469,19 +420,19 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R10 | Name object completeness | `NOT NULL` + `CHECK` on person_name table | Yes |
 | R12 | Source → Repository FK | `REFERENCES repository` | Yes |
 | R13 | Record → Source FK | `REFERENCES source` | Yes |
-| R14 | RecordedEvent → Record FK | `REFERENCES record` | Yes |
+| R14 | RecordedEvent → Record FK | **Retired** — `recorded_event` table removed | N/A |
 | R15 | RecordedPerson → Record FK | `REFERENCES record` | Yes |
 | R16 | Person FK arrays | Junction table FKs | Yes |
 | R17 | Relationship FK arrays | `REFERENCES person`; junction table FKs | Yes |
 | R18 | Event FK arrays | `REFERENCES place`, `REFERENCES relationship`; junction table FKs | Yes |
 | R19 | Place FK arrays | Junction table FKs | Yes |
-| R20 | Exactly one RecordedEvent per Record | `UNIQUE (record_id)` on recorded_event (upper); Python (lower) | Yes (lower bound only) |
+| R20 | Exactly one RecordedEvent per Record | **Retired** — event fields are columns on `record`; one-event-per-record is structural | N/A |
 | R21 | At least one RecordedPerson per Record | Not enforceable declaratively | **Python only** |
 | R22 | Relationship self-reference | `CHECK (person_id_1 != person_id_2)` | No |
 | R23 | Person ↔ Relationship bidirectionality | Retired — junction table is single source of truth | N/A |
 | R24 | Person ↔ Event bidirectionality | Retired — junction table is single source of truth | N/A |
 | R25 | Relationship ↔ Event bidirectionality | Retired — junction table is single source of truth | N/A |
-| R26 | RecordedEvent ↔ Event Record consistency | Not enforceable declaratively | **Python only** |
+| R26 | RecordedEvent ↔ Event Record consistency | **Retired** — `event_recorded_event` table removed | N/A |
 | R27 | Evidence layer isolation | Retired — columns absent from schema | N/A |
 | R28 | Source type vocabulary | `CHECK (type IN (...))` | Yes |
 | R29 | Event type vocabulary | `CHECK (type IN (...))` on both tables | Yes |
@@ -510,7 +461,6 @@ The Python `DataStore` class maps the ten first-class objects to dictionaries ke
 | `ds.repositories` | `repository` | Simple 1:1 |
 | `ds.sources` | `source` | `column_schema`, `source_parameters`, and `record_parameter_names` stored as JSON strings |
 | `ds.records` | `record` | `record_parameters` stored as JSON string |
-| `ds.recorded_events` | `recorded_event` | Simple 1:1 |
 | `ds.recorded_persons` | `recorded_person` | Simple 1:1 |
 | `ds.name_variants` | `name_variant` | Keyed by `recorded_person_id`; assembled as a list of `{variant_value, variant_type, algorithm_version}` dicts |
 | `ds.persons` | `person` + `person_name` + junction tables | `names` assembled from `person_name` rows; `record_ids`, `event_ids`, `relationship_ids` from junction tables |
@@ -551,20 +501,20 @@ INSERT INTO source VALUES (
 **Evidence layer**
 
 ```sql
+-- Record now carries event fields inline; no separate recorded_event insert.
 INSERT INTO record VALUES (
     1, 1,
     '{"year": 1890, "folder_id": "marriages_1890_001", "image_id": "0042"}',  -- record_parameters
     '1890-01-10,Straness,John Mulligan,28,farmer,Mary Brennan,24,Patrick Mulligan,Thomas Brennan',
-    NULL
+    'marriage',          -- event_type
+    '10th Jany 1890',    -- date_as_recorded
+    '1890-01-10',        -- date
+    'exact',             -- date_qualifier
+    'Straness',          -- place_as_recorded
+    NULL                 -- notes
 );
 -- Deep link resolves to:
 -- https://civilrecords.irishgenealogy.ie/churchrecords/images/marriage_returns/marriages_1890/marriages_1890_001/0042.pdf
-
-INSERT INTO recorded_event VALUES (
-    1, 1, 'marriage',
-    '10th Jany 1890', '1890-01-10', 'exact',
-    'Straness', NULL
-);
 
 INSERT INTO recorded_person VALUES (1, 1, 'John Mulligan',   'groom',           '28', 28, NULL, 'farmer', NULL, NULL);
 INSERT INTO recorded_person VALUES (2, 1, 'Mary Brennan',    'bride',           '24', 24, NULL, NULL,     NULL, NULL);
@@ -596,35 +546,19 @@ INSERT INTO person_record VALUES (2, 1, 0.88, 'v1.0', 0);
 INSERT INTO person_record VALUES (3, 1, 0.75, 'v1.0', 0);
 INSERT INTO person_record VALUES (4, 1, 0.75, 'v1.0', 0);
 
--- Junction rows: Person.relationship_ids
-INSERT INTO person_relationship VALUES (1, 1);
-INSERT INTO person_relationship VALUES (2, 1);
-
--- Junction rows: Person.event_ids
+-- Junction rows: Person.event_ids  (via person_event; also serves Event.person_ids direction)
 INSERT INTO person_event VALUES (1, 1);
 INSERT INTO person_event VALUES (2, 1);
 INSERT INTO person_event VALUES (3, 1);
 INSERT INTO person_event VALUES (4, 1);
 
--- Junction rows: Relationship.record_ids  (score columns)
+-- Junction rows: Relationship.record_ids  (linkage junction)
 INSERT INTO relationship_record VALUES (1, 1, 0.91, 'v1.0', 0);
 
--- Junction rows: Relationship.event_ids
-INSERT INTO relationship_event VALUES (1, 1);
-
--- Junction rows: Event.record_ids  (score columns)
+-- Junction rows: Event.record_ids  (linkage junction; replaces both event_record and event_recorded_event)
 INSERT INTO event_record VALUES (1, 1, 0.91, 'v1.0', 0);
 
--- Junction rows: Event.recorded_event_ids
-INSERT INTO event_recorded_event VALUES (1, 1);
-
--- Junction rows: Event.person_ids
-INSERT INTO event_person VALUES (1, 1);
-INSERT INTO event_person VALUES (1, 2);
-INSERT INTO event_person VALUES (1, 3);
-INSERT INTO event_person VALUES (1, 4);
-
--- Junction rows: Place.record_ids  (score columns)
+-- Junction rows: place_authority → record  (linkage junction)
 INSERT INTO place_record VALUES (1, 1, 0.85, 'v1.0', 0);
 ```
 
@@ -702,6 +636,8 @@ if version != 26:
 | 2.4 | May 2026 | Removed `confidence TEXT` from `relationship` and `event` tables; retired R35. Added `score REAL`, `score_version TEXT`, `verified INTEGER` scoring columns to `person_record`, `event_record`, `relationship_record`, `place_record`; added R38 and R39. Added `name_variant` table with `variant_type` vocabulary `CHECK` and `algorithm_version`. Added `idx_name_variant_value`, `idx_name_variant_recorded_person`, and partial indexes on score for unverified linkage rows. Added §1 design decisions for name variants and scoring junction columns. Updated schema overview, validation rule mapping, DataStore mapping, and worked example. Schema user_version bumped to 24. |
 | 2.5 | May 2026 | Expanded `recorded_person.role` CHECK constraint to cover full NAI census download vocabulary. Added census roles: `son`, `daughter`, `sibling`, `grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`. Removed `child` (replaced by `son`/`daughter`). Grouped CHECK values into census roles and event roles with inline comments. Updated R31 note in validation rule mapping. Schema user_version bumped to 25. |
 | 2.6 | May 2026 | Made `score` and `score_version` nullable on all four linkage junction tables. Null score represents a manually-asserted linkage (OD-01 resolved). Updated partial indexes to exclude null-score rows. Added migration script `src/db/migrations/migrate_25_to_26.sql`. Schema user_version bumped to 26. |
+| 2.7 | May 2026 | Added `place_authority` table (flat denormalised schema seeded from logainm.ie). Replaced `place` conclusion table. `event.place_id` now references `place_authority`. |
+| 2.8 | June 2026 | Merged `recorded_event` into `record` (inline event fields). Dropped `event_recorded_event`, `person_relationship`, `relationship_event`, `event_person`. Retained `person_event` for both person↔event directions with added `idx_person_event_event` index. Junction table count reduced from 9 to 5. Added `idx_place_authority_logainm` and `idx_place_authority_type`. Schema user_version bumped to 28. Migration script `src/db/migrations/migrate_27_to_28.sql`. |
 
 ---
 
