@@ -124,17 +124,17 @@ def _collect_evidence_tokens(
     conn: sqlite3.Connection,
 ) -> tuple[dict[str, dict], int]:
     """
-    Collect all distinct place_as_recorded strings from recorded_event,
+    Collect all distinct place_as_recorded strings from record,
     grouped by normalised token.
     Returns (token_map, blank_count).
     """
     rows = conn.execute(
-        "SELECT record_id, place_as_recorded FROM recorded_event "
+        "SELECT record_id, place_as_recorded FROM record "
         "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
     ).fetchall()
 
     blank_count = conn.execute(
-        "SELECT COUNT(*) FROM recorded_event "
+        "SELECT COUNT(*) FROM record "
         "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
     ).fetchone()[0]
 

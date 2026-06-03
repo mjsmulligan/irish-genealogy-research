@@ -84,7 +84,7 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     row = conn.execute(
         """
         SELECT e.date FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'birth' AND e.date IS NOT NULL
         LIMIT 1
         """,
@@ -99,7 +99,7 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     row = conn.execute(
         """
         SELECT e.date FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'baptism' AND e.date IS NOT NULL
         LIMIT 1
         """,
@@ -110,56 +110,19 @@ def _derive_birth_year(conn: sqlite3.Connection, person_id: int) -> int | None:
         if year:
             return year
 
-    # 3. Derive from census RecordedPerson age + census date.
-    #
-    # Join strategy mirrors census.py build_census_features: prefer the
-    # RecordedPerson whose name_as_recorded matches the Person's concluded
-    # birth_name, falling back to the lowest recorded_person_id in the
-    # household if no name match exists.  The previous ORDER BY pr.age ASC
-    # picked the youngest person in the household — typically an infant —
-    # which produced a birth year far too late for the Person being validated.
+    # 3. Derive from census RecordedPerson age + census date
     row = conn.execute(
         """
         SELECT rp.age, re.date
         FROM person_record pr
-        JOIN record r  ON r.record_id  = pr.record_id
-        JOIN source s  ON s.source_id  = r.source_id
-        JOIN recorded_event re ON re.record_id = r.record_id
-        -- Person's concluded name, used for the name-match preference below
-        JOIN person_name pn ON pn.person_id = pr.person_id
-            AND pn.type = 'birth_name'
-            AND pn.person_name_id = (
-                SELECT MIN(pn2.person_name_id)
-                FROM person_name pn2
-                WHERE pn2.person_id = pr.person_id AND pn2.type = 'birth_name'
-            )
-        -- Same COALESCE strategy as census.py: named match first, head fallback
-        LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
-            AND rp.recorded_person_id = COALESCE(
-                (
-                    SELECT rp2.recorded_person_id
-                    FROM recorded_person rp2
-                    WHERE rp2.record_id = r.record_id
-                      AND rp2.name_as_recorded = pn.value
-                    ORDER BY rp2.recorded_person_id
-                    LIMIT 1
-                ),
-                (
-                    SELECT rp3.recorded_person_id
-                    FROM recorded_person rp3
-                    WHERE rp3.record_id = r.record_id
-                    ORDER BY rp3.recorded_person_id
-                    LIMIT 1
-                )
-            )
+        JOIN record r ON r.record_id = pr.record_id
+        JOIN source s ON s.source_id = r.source_id
+        JOIN recorded_person rp ON rp.record_id = r.record_id
         WHERE pr.person_id = ?
           AND s.type = 'census'
           AND rp.age IS NOT NULL
-          AND re.date IS NOT NULL
-        -- Among multiple census records for this person, prefer the one with
-        -- the smallest derived birth year uncertainty (oldest recorded age is
-        -- typically the most reliable; youngest-at-census = earliest source).
-        ORDER BY re.date ASC
+          AND r.date IS NOT NULL
+        ORDER BY pr.age ASC
         LIMIT 1
         """,
         (person_id,),
@@ -177,7 +140,7 @@ def _derive_death_year(conn: sqlite3.Connection, person_id: int) -> int | None:
     row = conn.execute(
         """
         SELECT e.date FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'death' AND e.date IS NOT NULL
         LIMIT 1
         """,
@@ -198,7 +161,7 @@ def _get_event_years(
     rows = conn.execute(
         """
         SELECT e.type, e.date FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.date IS NOT NULL
         ORDER BY e.date
         """,
@@ -231,7 +194,7 @@ def _r40(conn: sqlite3.Connection, person_id: int) -> list[str]:
     row = conn.execute(
         """
         SELECT COUNT(*) AS n FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'birth'
         """,
         (person_id,),
@@ -256,7 +219,7 @@ def _r41(conn: sqlite3.Connection, person_id: int) -> list[str]:
     row = conn.execute(
         """
         SELECT COUNT(*) AS n FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'death'
         """,
         (person_id,),
@@ -495,7 +458,7 @@ def _r45(conn: sqlite3.Connection, person_id: int) -> list[str]:
     marriage_events = conn.execute(
         """
         SELECT e.event_id, e.date FROM event e
-        JOIN event_person ep ON ep.event_id = e.event_id
+        JOIN person_event ep ON ep.event_id = e.event_id
         WHERE ep.person_id = ? AND e.type = 'marriage' AND e.date IS NOT NULL
         """,
         (person_id,),
@@ -544,10 +507,10 @@ def _r46(conn: sqlite3.Connection, person_id: int) -> list[str]:
     # Fetch all linked Records with their RecordedEvent dates
     linked = conn.execute(
         """
-        SELECT pr.record_id, re.date AS event_date
+        SELECT pr.record_id, r.date AS event_date
         FROM person_record pr
-        JOIN recorded_event re ON re.record_id = pr.record_id
-        WHERE pr.person_id = ? AND re.date IS NOT NULL
+        JOIN record r ON r.record_id = pr.record_id
+        WHERE pr.person_id = ? AND r.date IS NOT NULL
         """,
         (person_id,),
     ).fetchall()
@@ -658,7 +621,7 @@ def validate_object(obj_type: str, obj: dict[str, Any]) -> list[str]:
     the dict in isolation before any INSERT is attempted.
 
     obj_type must be one of:
-        'repository', 'source', 'record', 'recorded_event',
+        'repository', 'source', 'record',
         'recorded_person', 'person', 'relationship', 'event', 'place'
 
     Returns a flat list of error strings.  An empty list means the
@@ -675,7 +638,6 @@ def validate_object(obj_type: str, obj: dict[str, Any]) -> list[str]:
         "repository":      ["repository_id", "name", "url"],
         "source":          ["source_id", "repository_id", "title", "type"],
         "record":          ["record_id", "source_id", "raw_text"],
-        "recorded_event":  ["recorded_event_id", "record_id", "type"],
         "recorded_person": ["recorded_person_id", "record_id", "name_as_recorded", "role"],
         "person":          ["person_id", "label"],
         "relationship":    ["relationship_id", "type", "person_id_1", "person_id_2"],
@@ -692,7 +654,6 @@ def validate_object(obj_type: str, obj: dict[str, Any]) -> list[str]:
         "person":          ["label"],
         "place":           ["name"],
         "event":           ["type"],
-        "recorded_event":  ["type"],
         "relationship":    ["type"],
     }
 
@@ -703,7 +664,6 @@ def validate_object(obj_type: str, obj: dict[str, Any]) -> list[str]:
         "repository":      "R01",
         "source":          "R02",
         "record":          "R03",
-        "recorded_event":  "R04",
         "recorded_person": "R05",
         "person":          "R06",
         "relationship":    "R07",
@@ -741,11 +701,7 @@ def validate_object(obj_type: str, obj: dict[str, Any]) -> list[str]:
         r"|^\d{4}-(0[1-9]|1[0-2])$"   # YYYY-MM
         r"|^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$"  # YYYY-MM-DD
     )
-    date_fields = []
-    if obj_type == "recorded_event":
-        date_fields = ["date"]
-    elif obj_type == "event":
-        date_fields = ["date"]
+    date_fields = ["date"] if obj_type in ("record", "event") else []
 
     for field in date_fields:
         val = obj.get(field)

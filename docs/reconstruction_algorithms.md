@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Reconstruction Algorithms
 
-*Version 1.1 — May 2026*
+*Version 1.2 — June 2026*
 *Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `validation_rules.md` first.*
 
 ---
@@ -9,7 +9,7 @@
 
 ### 1.1 The reconstruction problem
 
-Reconstruction is the process of building conclusion-layer objects (Person, Event, Relationship, Place) from evidence-layer objects (Record, RecordedEvent, RecordedPerson). It answers four related questions:
+Reconstruction is the process of building conclusion-layer objects (Person, Event, Relationship, Place) from evidence-layer objects (Record, RecordedPerson). It answers four related questions:
 
 - **Record-to-Place:** Does this verbatim place string refer to an existing Place conclusion, or does it warrant a new one?
 - **Record-to-Person:** Is this Record about an existing Person, or does it warrant a new Person conclusion?
@@ -21,7 +21,7 @@ These questions are not independent. Place resolution must precede Person linkag
 The reconstruction pipeline therefore executes in the following order:
 
 ```
-1. Ingest         → Evidence layer complete (Records, RecordedEvents, RecordedPersons)
+1. Ingest         → Evidence layer complete (Records with inline event fields, RecordedPersons)
 2. Place          → Place conclusions established; townland variants collapsed
 3. Person         → Person conclusions constructed; Records linked to Persons
 4. Relationship   → Relationship assertions derived from Person linkages and roles
@@ -127,7 +127,7 @@ CREATE TABLE person_record (
 );
 ```
 
-The same additions apply to `event_record`, `relationship_record`, and `place_record`. Junction tables that do not express evidence-to-conclusion linkages (`person_event`, `person_relationship`, `relationship_event`, `event_recorded_event`, `event_person`) are not modified — they express conclusion-to-conclusion or conclusion-to-evidence structural relationships, not scored linkage assertions.
+The same additions apply to `event_record`, `relationship_record`, and `place_record`. The `person_event` structural junction is not modified — it expresses conclusion-to-conclusion participation and carries no score. The dropped tables (`person_relationship`, `relationship_event`, `event_recorded_event`, `event_person`) are not present in schema v2.8.
 
 **Conclusion table changes** — `confidence TEXT` is removed from the `relationship` and `event` tables. Confidence is now always derived, never stored. The `CHECK (confidence IN (...))` constraint is removed accordingly.
 
@@ -182,7 +182,7 @@ Before any string matching occurs, all `place_as_recorded` strings are passed th
 4. **Strip administrative suffixes** — remove "townland", "td", "civil parish", "DED", "barony" and equivalents
 5. **Normalise whitespace** — collapse multiple spaces to single space, strip leading/trailing
 
-The result is a normalised place token suitable for fuzzy comparison. The original `place_as_recorded` string is always preserved verbatim in the RecordedEvent or RecordedPerson field — normalisation is a comparison artefact, never a data modification.
+The result is a normalised place token suitable for fuzzy comparison. The original `place_as_recorded` string is always preserved verbatim in the `record.place_as_recorded` column or `recorded_person.place_as_recorded` column — normalisation is a comparison artefact, never a data modification.
 
 ### 2.4 Place candidate scoring
 
@@ -225,7 +225,7 @@ Because the source set is fixed and documented, the algorithm knows exactly whic
 
 ### 3.2 Source-specific feature extractors
 
-Each source type has a dedicated feature extractor that reads the RecordedPersons and RecordedEvent for a Record and returns a standardised feature dictionary. The feature dictionary is the input to Splink's comparison functions.
+Each source type has a dedicated feature extractor that reads the RecordedPersons and the inline event fields on the Record and returns a standardised feature dictionary. The feature dictionary is the input to Splink's comparison functions.
 
 **Standard feature dictionary fields:**
 
@@ -453,15 +453,15 @@ Event construction runs after Person linkage is complete for the relevant Record
 
 Two Records are candidates for the same Event if:
 
-- They share the same RecordedEvent `type`
+- They share the same `event_type` (from `record.event_type`)
 - Their normalised dates are within a configurable tolerance (default ±1 year for `birth`, `baptism`, `death`, `burial`; ±0 years for `marriage` — marriage dates in this period are typically precise)
 - Their resolved Place conclusions are the same or geographically proximate
 
 Geographic proximity between Place conclusions is not currently modelled beyond exact match on `place_id`. Records with unresolved place strings that fall within the same inferred DED or parish are treated as a weak positive signal but not a definitive match. Full geographic proximity modelling is a future extension.
 
-### 7.3 RecordedEvent to Event linkage
+### 7.3 Record to Event linkage
 
-When a Record is linked to an existing Event conclusion, its RecordedEvent is added to `event_recorded_event` (the RecordedEvents that this Event is synthesised from) and the Record itself is added to `event_record`. Rule R26 (validation rule) requires that if a RecordedEvent is cited for an Event, its parent Record must also be cited — this constraint is enforced during Event linkage.
+When a Record is linked to an existing Event conclusion, the Record is added to `event_record`. Because event data is now inline on the Record, this single insertion is sufficient — there is no separate `event_recorded_event` junction to maintain. Rule R26 (which enforced consistency between those two tables) has been retired in schema v2.8.
 
 ---
 
@@ -671,6 +671,7 @@ The following entries seed the `name_variant` table for common Irish names encou
 |---|---|---|
 | 1.0 | May 2026 | Initial version |
 | 1.1 | May 2026 | Updated §6.1 role-pair rules to cover expanded census role vocabulary. Split table into marriage/registration roles and census household roles. Added `son`/`daughter` rows replacing generic `child`. Added `sibling` inference rows (head+sibling, and shared-child sibling pairs at 0.75–0.80 prior). Added `mother`/`father` census rows. Added grandchild inference note. Added godmother row. Documented roles that do not generate automatic assertions (`grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`). Updated §5.5 household structure inference to use `son`/`daughter` and include sibling provisional relationships. |
+| 1.2 | June 2026 | Updated for schema v2.8. §1.1 evidence layer description removes RecordedEvent. §1.6 junction table note updated to reflect dropped tables. §2.3 place_as_recorded field reference updated to `record.place_as_recorded`. §3.2 feature extractor description updated. §7.2 event candidate scoring uses `record.event_type`. §7.3 rewritten: `event_recorded_event` removed; Record-to-Event linkage via `event_record` only. |
 
 ---
 

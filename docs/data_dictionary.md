@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.5 — May 2026*
+*Version 2.6 — June 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
 ---
@@ -113,18 +113,19 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 
 ---
 
-### 3.2 RecordedEvent
+### 3.2 Record event fields
+
+Event attributes are stored directly on the `record` table rather than in a separate `recorded_event` table. Because every Record documents exactly one event, the 1:1 join was eliminated in schema v2.8.
+
+The following fields on `record` carry the event data:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| recorded_event_id | integer | YES | Primary key |
-| record_id | integer | YES | Foreign key to Record. Exactly one RecordedEvent per Record. |
-| type | string | YES | Event type — see §6.2 |
-| date_as_recorded | string | NO | Verbatim date string as it appears in the source |
-| date | date | NO | Normalised ISO 8601 date |
+| event_type | string | YES | Event type — see §6.2 |
+| date_as_recorded | string | NO | Verbatim date string as it appears in the source; exempt from date format validation |
+| date | date | NO | Normalised ISO 8601 date — validated by Python (R36) |
 | date_qualifier | string | NO | Date qualifier — see §6.3 |
 | place_as_recorded | string | NO | Verbatim place name exactly as it appears in the source |
-| notes | string | NO | Free text notes |
 
 ---
 
@@ -170,7 +171,7 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 | names | array[object] | NO | Typed name array — stored in `person_name` table |
 | record_ids | array[integer] | NO | Foreign keys to Records (via `person_record`) |
 | event_ids | array[integer] | NO | Foreign keys to Events (via `person_event`) |
-| relationship_ids | array[integer] | NO | Foreign keys to Relationships (via `person_relationship`) |
+| relationship_ids | array[integer] | NO | Foreign keys to Relationships — queried via `relationship.person_id_1` / `person_id_2` |
 | private | boolean | NO | Whether Person is flagged for limited display |
 | notes | string | NO | Free text notes |
 
@@ -202,7 +203,6 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 | person_ids | array[integer] | NO | Foreign keys to Persons who participated |
 | relationship_id | integer | NO | Foreign key to Relationship — principal connection |
 | record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event |
-| recorded_event_ids | array[integer] | NO | Foreign keys to RecordedEvents synthesised into this Event |
 | notes | string | NO | Researcher reasoning |
 
 ---
@@ -213,7 +213,6 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 |---|---|---|
 | Person.record_ids | → Record | Records concluded to be about this Person |
 | Event.record_ids | → Record | Records concluded to document this Event |
-| Event.recorded_event_ids | → RecordedEvent | RecordedEvents this Event is synthesised from |
 | Event.place_id | → PlaceAuthority | Authoritative place for this Event |
 | Relationship.record_ids | → Record | Records evidencing this Relationship |
 | place_record | Record → PlaceAuthority | Scored conclusion: this recorded place string refers to this authority |
@@ -379,3 +378,4 @@ The four primary linkage junction tables (`person_record`, `event_record`, `rela
 | 2.3 | May 2026 | Removed confidence from Relationship/Event; added NameVariant, scoring columns |
 | 2.4 | May 2026 | Expanded RecordedPerson roles for full NAI census vocabulary |
 | 2.5 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §2.3 PlaceAuthority with full flat-schema field table. Added §6.10 Place Types vocabulary. Updated §5 linkage summary to reflect place_record → PlaceAuthority. Added source type `place_authority` to §6.1. Removed PlaceMembership (flat schema adopted). |
+| 2.6 | June 2026 | Merged RecordedEvent into Record (schema v2.8). §3.2 replaced with inline event fields on `record`. Removed `Event.recorded_event_ids` from §4.3 and §5. Updated `Person.relationship_ids` description to reflect removal of `person_relationship` junction table. |

@@ -13,7 +13,6 @@ back to genealogy.db:
 
 Merge contract (lower person_id = canonical):
   - person_record rows       → re-pointed to canonical
-  - person_relationship rows → re-pointed to canonical (both endpoints)
   - person_event rows        → re-pointed to canonical
   - person_name rows         → re-pointed to canonical (duplicates dropped)
   - relationship endpoints   → person_id_1 / person_id_2 updated
@@ -75,13 +74,6 @@ def _build_settings() -> SettingsCreator:
 
     Comparisons follow reconstruction_algorithms.md §5.2.
     Birth year comparison uses absolute difference; place uses exact match.
-
-    place_id is included as both a blocking key AND a comparison feature.
-    This is intentional: as a blocking key it efficiently limits the candidate
-    space; as a comparison it contributes a large positive weight for the
-    majority of pairs that share a resolved townland. The EM training passes
-    are designed so that place_id is never the blocking key during training
-    (see run_census_linkage), ensuring it receives clean m-weight estimates.
     """
     return SettingsCreator(
         link_type="link_and_dedupe",
@@ -196,35 +188,6 @@ def _merge_persons(
         "DELETE FROM person_event WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 3. event_person: re-point the other direction of the person↔event link.
-    # event_person (event_id, person_id) is the Event's view of participants;
-    # person_event (person_id, event_id) is the Person's view. Both must be
-    # updated — missing this step leaves event_person rows referencing
-    # duplicate_id, which blocks the eventual DELETE FROM person.
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO event_person (event_id, person_id)
-        SELECT event_id, ? FROM event_person WHERE person_id = ?
-        """,
-        (canonical_id, duplicate_id),
-    )
-    conn.execute(
-        "DELETE FROM event_person WHERE person_id = ?", (duplicate_id,)
-    )
-
-    # 4. person_relationship: move, drop duplicates
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO person_relationship (person_id, relationship_id)
-        SELECT ?, relationship_id FROM person_relationship WHERE person_id = ?
-        """,
-        (canonical_id, duplicate_id),
-    )
-    conn.execute(
-        "DELETE FROM person_relationship WHERE person_id = ?", (duplicate_id,)
-    )
-
-    # 5. person_name: move, drop exact duplicates (same value + type)
     dup_names = conn.execute(
         "SELECT value, type FROM person_name WHERE person_id = ?",
         (duplicate_id,),
@@ -251,7 +214,7 @@ def _merge_persons(
         "DELETE FROM person_name WHERE person_id = ?", (duplicate_id,)
     )
 
-    # 6. relationship endpoints: re-point person_id_1 and person_id_2.
+    # 5. relationship endpoints: re-point person_id_1 and person_id_2.
     #
     # The CHECK constraint person_id_1 != person_id_2 fires immediately on
     # each row as UPDATE executes — SQLite does not defer constraint checks
@@ -287,14 +250,6 @@ def _merge_persons(
             self_ref_ids,
         )
         conn.execute(
-            f"DELETE FROM relationship_event WHERE relationship_id IN ({placeholders})",
-            self_ref_ids,
-        )
-        conn.execute(
-            f"DELETE FROM person_relationship WHERE relationship_id IN ({placeholders})",
-            self_ref_ids,
-        )
-        conn.execute(
             f"DELETE FROM relationship WHERE relationship_id IN ({placeholders})",
             self_ref_ids,
         )
@@ -309,7 +264,7 @@ def _merge_persons(
         (canonical_id, duplicate_id),
     )
 
-    # 7. (Safety net) Drop any remaining self-referential relationships.
+    # 6. (Safety net) Drop any remaining self-referential relationships.
     # Under correct logic step 6 should have caught all of them; this is
     # a belt-and-suspenders guard for any edge case missed above.
     # Junction rows cleaned first for the same FK reason as above.
@@ -323,28 +278,10 @@ def _merge_persons(
         """
     )
     conn.execute(
-        """
-        DELETE FROM relationship_event
-        WHERE relationship_id IN (
-            SELECT relationship_id FROM relationship
-            WHERE person_id_1 = person_id_2
-        )
-        """
-    )
-    conn.execute(
-        """
-        DELETE FROM person_relationship
-        WHERE relationship_id IN (
-            SELECT relationship_id FROM relationship
-            WHERE person_id_1 = person_id_2
-        )
-        """
-    )
-    conn.execute(
         "DELETE FROM relationship WHERE person_id_1 = person_id_2"
     )
 
-    # 8. Deduplicate relationships: if re-pointing created an exact
+    # 7. Deduplicate relationships: if re-pointing created an exact
     # (type, person_id_1, person_id_2) duplicate, keep the lower relationship_id
     # and delete the higher ones — but clean their junction rows first.
     conn.execute(
@@ -359,24 +296,6 @@ def _merge_persons(
     )
     conn.execute(
         """
-        DELETE FROM relationship_event
-        WHERE relationship_id NOT IN (
-            SELECT MIN(relationship_id)
-            FROM relationship
-            GROUP BY type, person_id_1, person_id_2
-        )
-        """
-    )
-    conn.execute(
-        """
-        DELETE FROM person_relationship
-        WHERE relationship_id NOT IN (
-            SELECT relationship_id FROM relationship
-        )
-        """
-    )
-    conn.execute(
-        """
         DELETE FROM relationship
         WHERE relationship_id NOT IN (
             SELECT MIN(relationship_id)
@@ -386,7 +305,7 @@ def _merge_persons(
         """
     )
 
-    # 9. Delete the duplicate Person.
+    # 8. Delete the duplicate Person.
     # All junction rows referencing duplicate_id have been moved or deleted
     # above. The DELETE will now succeed without FK violations.
     conn.execute("DELETE FROM person WHERE person_id = ?", (duplicate_id,))
@@ -453,39 +372,24 @@ def run_census_linkage(conn: sqlite3.Connection) -> CensusLinkageResult:
 
     linker = Linker(source_dfs, settings, db_api=db_api)
 
-    # Estimate u probabilities via random sampling across the full dataset.
+    # Estimate u probabilities via random sampling
     linker.training.estimate_u_using_random_sampling(max_pairs=1e5)
 
     # Estimate m probabilities via two EM passes with different blocking keys.
     #
-    # The four comparisons are: surname_norm, forename_norm, birth_year_est,
-    # place_id. Splink cannot estimate m-weights for a comparison whose column
-    # is also used as the blocking key in the same EM pass. The two passes are
-    # therefore chosen so that no comparison is ever its own blocking key:
+    # Pass 1 blocks on surname prefix — this trains birth_year_est, forename_norm,
+    # and place_id. Splink explicitly excludes any comparison whose column is used
+    # as the blocking key, so surname_norm cannot be estimated in this pass.
     #
-    # Pass 1 — block on surname prefix:
-    #   Trains forename_norm, birth_year_est, place_id.
-    #   surname_norm is excluded (it is the blocking key for this pass).
-    #
-    # Pass 2 — block on forename_norm:
-    #   Trains surname_norm, birth_year_est, place_id.
-    #   forename_norm is excluded (it is the blocking key for this pass).
-    #
-    # Result: every comparison receives at least one clean training pass.
-    # birth_year_est and place_id are trained in both passes. surname_norm
-    # is trained in pass 2; forename_norm is trained in pass 1.
-    #
-    # Notably, place_id is NOT used as an EM blocking key in either pass,
-    # even though it is the primary prediction blocking key. Using place_id
-    # as an EM blocking key would prevent it from receiving a trained
-    # m-weight (Splink excludes the comparison in that pass), which in
-    # practice suppresses all scores below the auto-commit threshold because
-    # place_id's weight defaults to a poorly-calibrated value.
+    # Pass 2 blocks on place_id — place_id is not a comparison feature, so all
+    # four comparisons (including surname_norm) receive m-probability estimates.
+    # Without this pass surname_norm carries no trained weight and all match
+    # probabilities are depressed below the auto-commit threshold.
     linker.training.estimate_parameters_using_expectation_maximisation(
         block_on("substr(surname_norm, 1, 4)")
     )
     linker.training.estimate_parameters_using_expectation_maximisation(
-        block_on("forename_norm")
+        block_on("place_id")
     )
 
     # Generate predictions

@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Conceptual Data Model
 
-*Version 2.3 — May 2026*
+*Version 2.4 — June 2026*
 *Audience: All roles. This document defines the what and why of the data model. It contains no implementation detail.*
 
 ---
@@ -15,7 +15,7 @@ This system is built around a strict separation between what historical sources 
 
 **Convergent evidence drives confidence.** A conclusion supported by a single record is a hypothesis. A conclusion supported by multiple independent records converging on the same assertion is a finding. The model is designed to accumulate evidence against conclusions over time.
 
-**Symmetry between layers.** The evidence layer and conclusion layer mirror each other structurally. RecordedPerson corresponds to Person. RecordedEvent corresponds to Event. This symmetry makes the linkage between layers explicit and consistent.
+**Symmetry between layers.** The evidence layer and conclusion layer mirror each other structurally. RecordedPerson corresponds to Person. Event field data (type, date, place) is captured verbatim on the Record itself, keeping the evidence unit cohesive and query paths simple.
 
 **Place is authoritative, not concluded.** Places are seeded from an external authority (logainm.ie) before research begins. The linkage from a recorded place string to an authoritative place identity is a conclusion — but the place identity itself is not. This gives Splink a stable, high-quality place anchor rather than a researcher-derived cluster centroid.
 
@@ -47,7 +47,7 @@ The model has eleven first-class objects across three layers.
 
 ```
 Foundational:   Repository     Source     PlaceAuthority
-Evidence:       Record         RecordedEvent      RecordedPerson
+Evidence:       Record         RecordedPerson
 Conclusion:     Person         Relationship       Event
 ```
 
@@ -110,9 +110,9 @@ The core administrative and contextual boundary for data extraction. A Record re
 
 ---
 
-### 4.5 RecordedEvent — Evidence
+### 4.5 Record event fields — Evidence
 
-A flat collection of attributes describing an occurrence exactly as written within a parent Record. RecordedEvent captures the verbatim date string, textual place name, and event type as the source states them — without normalisation or interpretation.
+Each Record carries the event attributes of the occurrence it documents directly as columns: `event_type`, `date_as_recorded`, `date`, `date_qualifier`, and `place_as_recorded`. These are verbatim or normalised from the source without interpretation — the same semantics that RecordedEvent previously provided, now inline on the Record itself. Because every Record documents exactly one event (a design invariant), the separate RecordedEvent table added a mandatory join without adding information. Merging these fields into Record eliminates that join from every query in the reconstruction pipeline.
 
 ---
 
@@ -146,7 +146,6 @@ A concluded assertion about a discrete real-world occurrence, representing the r
 Repository
   └── Source
         └── Record  ─────────────────────────────────────┐
-              ├── RecordedEvent                            │ evidence
               └── RecordedPerson                           │ linkage
                                                            │
               ┌──────────────────────────────────────────── ┘
@@ -166,11 +165,11 @@ The Record is the pivot point of the entire model. Everything above it is proven
 
 ## 6. Core Operational Rules
 
-**Rule 1 — The flat evidence pair.** RecordedEvent and RecordedPerson are flat, parallel structures bound solely by their shared parent Record. They do not nest inside one another.
+**Rule 1 — Evidence cohesion.** Event fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier`, `place_as_recorded`) and RecordedPerson rows are the structured evidence content of a Record. Event fields live directly on the Record; RecordedPersons are child rows keyed to the Record. Neither contains foreign keys to conclusion-layer objects.
 
 **Rule 2 — Record as evidence unit.** All conclusion-layer objects point to Records as their justifying evidence.
 
-**Rule 3 — Exactly one RecordedEvent per Record.**
+**Rule 3 — One event per Record.** Each Record documents exactly one event. The event fields on the Record express this directly. A physical source entry documenting two discrete events is modelled as two Records.
 
 **Rule 4 — Relationship independence.** A Relationship is independent of any Event.
 
@@ -191,3 +190,4 @@ The Record is the pivot point of the entire model. Everything above it is proven
 | 2.1 | May 2026 | Initial v2.1 conceptual model |
 | 2.2 | May 2026 | Updated §4.2 (Source) and §4.3 (Record) for two-level deep link parameter system |
 | 2.3 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §4.3 PlaceAuthority with flat hierarchy design rationale. Removed PlaceMembership (flat schema adopted). Updated §3 object summary, §5 data flow, §6 Rule 8. Added logainm.ie seeding workflow. Event.place_id now references PlaceAuthority. |
+| 2.4 | June 2026 | Merged RecordedEvent into Record (schema v2.8). RecordedEvent removed as a first-class object. §1 symmetry principle updated. §3 object summary updated. §4.5 rewritten to describe inline event fields. §5 data flow updated. §6 Rules 1 and 3 updated. |

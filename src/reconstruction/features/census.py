@@ -110,8 +110,8 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
             s.source_id,
             pn.value                                     AS full_name,
             rp.age                                       AS age,
-            re.date                                      AS census_date,
-            re.place_as_recorded                         AS place_raw,
+            r.date                                       AS census_date,
+            r.place_as_recorded                          AS place_raw,
             pr2.place_id                                 AS place_id
         FROM person p
         -- Concluded person_name (birth_name preferred); required — persons
@@ -123,31 +123,14 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
                 FROM person_name pn2
                 WHERE pn2.person_id = p.person_id AND pn2.type = 'birth_name'
             )
-        -- Link to census records via person_record.
-        -- Restrict to household-inference-origin rows (score_version = 'household_v1.0')
-        -- so that after cross-census merges, a person whose person_record now spans
-        -- multiple census sources still appears in exactly one source DataFrame —
-        -- the one that created them via household inference. Without this filter,
-        -- a merged person would appear in multiple DataFrames, producing spurious
-        -- self-match pairs that pollute the candidate pool and bias EM training.
+        -- Link to census records via person_record
         JOIN person_record pr ON pr.person_id = p.person_id
-                              AND pr.score_version = 'household_v1.0'
         JOIN record r         ON r.record_id  = pr.record_id
         JOIN source s         ON s.source_id  = r.source_id
                               AND s.source_id IN (3, 4, 5)
-
-                              
-        -- RecordedEvent for census date and place
-        JOIN recorded_event re ON re.record_id = r.record_id
         -- Match THIS person's RecordedPerson row by name within the household
-        -- record. The previous implementation always took the household head's
-        -- row, giving every household member the head's age and name. The
-        -- correct approach matches name_as_recorded against the person's
-        -- concluded name so each person gets their own features.
-        --
-        -- Where two people in the same household share a name (rare), LIMIT 1
-        -- on recorded_person_id picks the first occurrence — acceptable for
-        -- Splink feature purposes.
+        -- record. Where two people share a name, LIMIT 1 picks the first
+        -- occurrence — acceptable for Splink feature purposes.
         JOIN recorded_person rp ON rp.record_id = r.record_id
             AND rp.recorded_person_id = (
                 SELECT rp2.recorded_person_id

@@ -18,17 +18,13 @@ import argparse
 import ast
 import csv
 import json
-import os
-import sqlite3
 import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+import sqlite3
 
-from src.reconstruction.linkage import run_census_linkage
-from src.reconstruction.linkage import print_census_linkage_report
-
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 28
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
 SEED_SQL = Path(__file__).parent / "db" / "seed.sql"
@@ -159,20 +155,14 @@ _CENSUS_DATES: dict[int, str] = {
 
 
 def _extract_document_id(images_str: str) -> str | None:
-    """
-    Extract the first Form A image ID from the NAI images field.
-    """
-    if not images_str:
-        return None
     try:
         images = ast.literal_eval(images_str)
         if images and isinstance(images, list):
             url = images[0].get("url", "")
             stem = Path(url.split("?")[0]).stem
             return stem if stem else None
-    except (ValueError, SyntaxError):
+    except Exception:
         return None
-    return None
 
 
 def _get_document_id(person: dict) -> str | None:
@@ -240,6 +230,9 @@ def ingest_census(
     """
     Ingest a census NAI download CSV into the evidence layer.
     Handles Census 1901 (source 3), 1911 (source 4), and 1926 (source 5).
+
+    Creates one Record per household (with event fields inline) and one
+    RecordedPerson per person row.
     """
     check_version(conn)
 
@@ -271,16 +264,13 @@ def ingest_census(
     persons_committed = 0
 
     with conn:
-        # IDs computed inside the transaction so concurrent writes cannot
-        # cause collisions (SQLite WAL serialises writers, but this is
-        # cleaner and explicit).
         def next_id(table: str, pk_col: str) -> int:
             result = conn.execute(f"SELECT MAX({pk_col}) FROM {table}").fetchone()[0]
             return (result or 0) + 1
 
         record_id = next_id("record", "record_id")
-        re_id     = next_id("recorded_event", "recorded_event_id")
         rp_id     = next_id("recorded_person", "recorded_person_id")
+
         for image_group, persons in households.items():
             document_id = _get_document_id(persons[0])
 
@@ -313,19 +303,17 @@ def ingest_census(
                 {"document_id": document_id} if document_id else {}
             )
 
-            conn.execute(
-                "INSERT INTO record (record_id, source_id, record_parameters, raw_text) "
-                "VALUES (?, ?, ?, ?)",
-                (record_id, source_id, record_parameters, raw_text),
-            )
-
             townland = persons[0].get("townland_clean", "") or persons[0].get("townland", "")
             census_date = _CENSUS_DATES.get(source_id, "")
+
+            # Single INSERT — event fields now live directly on record
             conn.execute(
-                "INSERT INTO recorded_event "
-                "(recorded_event_id, record_id, type, date, date_qualifier, place_as_recorded) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (re_id, record_id, "census", census_date, "exact", townland),
+                "INSERT INTO record "
+                "(record_id, source_id, record_parameters, raw_text, "
+                " event_type, date, date_qualifier, place_as_recorded) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (record_id, source_id, record_parameters, raw_text,
+                 "census", census_date, "exact", townland),
             )
 
             for person in persons:
@@ -357,7 +345,6 @@ def ingest_census(
                     })
 
                 sex_raw = person.get("sex", "").strip()
-                sex_norm = _SEX_MAP.get(sex_raw, sex_raw) or None
 
                 name = f"{person.get('firstname', '').strip()} {person.get('surname', '').strip()}".strip()
                 if not name:
@@ -380,7 +367,6 @@ def ingest_census(
                 rp_id += 1
                 persons_committed += 1
 
-            re_id += 1
             record_id += 1
             records_committed += 1
 
@@ -433,7 +419,6 @@ def print_summary(conn: sqlite3.Connection) -> None:
     print(f"    Repositories:              {q('SELECT COUNT(*) FROM repository'):>6}")
     print(f"    Sources:                   {q('SELECT COUNT(*) FROM source'):>6}")
 
-    # Place authority breakdown
     pa_total = q("SELECT COUNT(*) FROM place_authority")
     print(f"    Place authorities:         {pa_total:>6}")
     if pa_total:
@@ -442,14 +427,11 @@ def print_summary(conn: sqlite3.Connection) -> None:
         ).fetchall()
         for tc in type_counts:
             print(f"      {tc['place_type']:<20}   {tc['n']:>4}")
-        # place_membership retired in v2.7 — hierarchy is flat columns on place_authority
 
     print("\n  EVIDENCE LAYER")
     print(f"    Records:                   {q('SELECT COUNT(*) FROM record'):>6}")
-    print(f"    Recorded Events:           {q('SELECT COUNT(*) FROM recorded_event'):>6}")
     print(f"    Recorded Persons:          {q('SELECT COUNT(*) FROM recorded_person'):>6}")
 
-    # Place resolution coverage
     total_records = q("SELECT COUNT(*) FROM record")
     linked_records = q("SELECT COUNT(DISTINCT record_id) FROM place_record")
     if total_records:
@@ -565,10 +547,6 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     source_id = int(args.source)
     inference_result = run_household_inference(conn, source_id)
     print_household_inference_report(inference_result)
-
-    print("\n[3/3] Cross-census linkage") # Added linkage execution
-    linkage_result = run_census_linkage(conn)
-    print_census_linkage_report(linkage_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)

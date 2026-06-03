@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Validation Rules
 
-*Version 2.5 — May 2026*
+*Version 2.6 — June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, `database_schema.md`, and `genealogical_constraints.md`.*
 
 ---
@@ -78,15 +78,15 @@ Python enforcement: pre-write validation via `validate_object()`.
 
 ---
 
-### R04 — Required fields present on RecordedEvent `[DB + Python]`
+### R04 — Required fields present on Record event fields `[DB + Python]`
 
-Every RecordedEvent must have `recorded_event_id`, `record_id`, and `type`. `type` must be non-null and non-empty.
+**Updated in v2.8.** The `recorded_event` table has been merged into `record`. Event fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier`, `place_as_recorded`) are now columns on the `record` table. `event_type` must be non-null and non-empty. This rule is now subsumed by R03 — the record `CHECK` constraint on `event_type` enforces the vocabulary, and R36 covers the date format. No separate R04 validation step is required.
 
-DB enforcement: `NOT NULL` constraints on the `recorded_event` table.
-Python enforcement: pre-write validation via `validate_object()`.
+DB enforcement: `NOT NULL` and `CHECK (event_type IN (...))` on the `record` table.
+Python enforcement: covered by R03 pre-write validation and R36 date format check.
 
 ```
-[R04] RecordedEvent {id}: required field '{field}' is absent or null
+[R03] Record {id}: required field 'event_type' is absent or empty
 ```
 
 ---
@@ -202,15 +202,9 @@ DB enforcement: `REFERENCES source (source_id)` on the `record` table.
 
 ---
 
-### R14 — RecordedEvent → Record `[DB + Python]`
+### R14 — RecordedEvent → Record `[Retired]`
 
-`RecordedEvent.record_id` must resolve to an existing Record.
-
-DB enforcement: `REFERENCES record (record_id)` on the `recorded_event` table.
-
-```
-[R14] RecordedEvent {id}: record_id={val} does not resolve to a Record
-```
+**Retired in v2.8.** The `recorded_event` table has been removed. Event data is now inline on `record`. This rule no longer applies.
 
 ---
 
@@ -230,7 +224,7 @@ DB enforcement: `REFERENCES record (record_id)` on the `recorded_person` table.
 
 Each entry in `Person.record_ids` must resolve to an existing Record. Each entry in `Person.event_ids` must resolve to an existing Event. Each entry in `Person.relationship_ids` must resolve to an existing Relationship.
 
-DB enforcement: `REFERENCES` constraints on all three junction tables (`person_record`, `person_event`, `person_relationship`). A junction row referencing a non-existent ID is rejected.
+DB enforcement: `REFERENCES` constraints on `person_record` and `person_event`. A junction row referencing a non-existent ID is rejected. Note: `Person.relationship_ids` is no longer backed by a `person_relationship` junction table — relationships are queried directly via `relationship.person_id_1` / `person_id_2`.
 
 ```
 [R16] Person {id}: record_id={val} does not resolve to a Record
@@ -244,7 +238,7 @@ DB enforcement: `REFERENCES` constraints on all three junction tables (`person_r
 
 `Relationship.person_id_1` and `Relationship.person_id_2` must each resolve to an existing Person. Each entry in `Relationship.record_ids` must resolve to an existing Record. Each entry in `Relationship.event_ids` must resolve to an existing Event.
 
-DB enforcement: `REFERENCES person` on both FK columns; `REFERENCES` constraints on junction tables `relationship_record` and `relationship_event`.
+DB enforcement: `REFERENCES person` on both FK columns; `REFERENCES` constraint on `relationship_record`. Note: `relationship_event` has been removed — the `event.relationship_id` column expresses this association directly.
 
 ```
 [R17] Relationship {id}: person_id_1={val} does not resolve to a Person
@@ -257,16 +251,15 @@ DB enforcement: `REFERENCES person` on both FK columns; `REFERENCES` constraints
 
 ### R18 — Event foreign keys `[DB + Python]`
 
-`Event.place_id`, when present, must resolve to an existing Place. Each entry in `Event.person_ids` must resolve to an existing Person. `Event.relationship_id`, when present, must resolve to an existing Relationship. Each entry in `Event.record_ids` must resolve to an existing Record. Each entry in `Event.recorded_event_ids` must resolve to an existing RecordedEvent.
+`Event.place_id`, when present, must resolve to an existing PlaceAuthority entry. Each entry in `Event.person_ids` must resolve to an existing Person via `person_event`. `Event.relationship_id`, when present, must resolve to an existing Relationship. Each entry in `Event.record_ids` must resolve to an existing Record via `event_record`.
 
-DB enforcement: `REFERENCES place` and `REFERENCES relationship` on the `event` table; `REFERENCES` constraints on junction tables `event_person`, `event_record`, `event_recorded_event`.
+DB enforcement: `REFERENCES place_authority` and `REFERENCES relationship` on the `event` table; `REFERENCES` constraints on `person_event` and `event_record`.
 
 ```
-[R18] Event {id}: place_id={val} does not resolve to a Place
+[R18] Event {id}: place_id={val} does not resolve to a PlaceAuthority entry
 [R18] Event {id}: person_id={val} does not resolve to a Person
 [R18] Event {id}: relationship_id={val} does not resolve to a Relationship
 [R18] Event {id}: record_id={val} does not resolve to a Record
-[R18] Event {id}: recorded_event_id={val} does not resolve to a RecordedEvent
 ```
 
 ---
@@ -285,19 +278,11 @@ DB enforcement: `REFERENCES record` on junction table `place_record`.
 
 ## 4. Consistency Rules
 
-### R20 — Exactly one RecordedEvent per Record `[DB + Python]`
+### R20 — One event per Record `[DB]`
 
-Every Record must have exactly one RecordedEvent whose `record_id` points to it.
+**Updated in v2.8.** The `recorded_event` table has been merged into `record`. Each Record carries exactly one set of event fields (`event_type`, `date`, etc.) as columns. The one-event-per-record invariant is now structural — it is impossible to create a second event for the same record. No Python enforcement is required.
 
-DB enforcement: `UNIQUE (record_id)` on the `recorded_event` table prevents more than one RecordedEvent per Record (upper bound). The lower bound — zero RecordedEvents — cannot be enforced declaratively and remains Python-only.
-
-Python enforcement: after inserting a Record, the validator must confirm that exactly one RecordedEvent exists for it before the Record is considered committed.
-
-```
-[R20] Record {id}: has 0 RecordedEvents — exactly 1 required
-```
-
-*(The over-count case — more than one RecordedEvent — cannot be produced by a valid insert due to the DB UNIQUE constraint and therefore produces no error message.)*
+DB enforcement: event fields are columns on `record`; the constraint is structural.
 
 ---
 
@@ -321,7 +306,7 @@ Every Record must have at least one RecordedPerson whose `record_id` points to i
 
 ### R23 — Bidirectional consistency: Person ↔ Relationship `[Retired]`
 
-**Retired.** In the JSON model, `Person.relationship_ids` was a list maintained independently of the `Relationship` object, and drift between the two was possible. In the relational schema, the `person_relationship` junction table is the single source of truth for this association. There is no second list to diverge from. The invariant is structurally enforced by the schema.
+**Retired.** In the JSON model, `Person.relationship_ids` was a list maintained independently of the `Relationship` object. In the relational schema, `relationship.person_id_1` and `person_id_2` are the source of truth — no `person_relationship` junction table exists. Querying a person's relationships is a direct filter on the `relationship` table. The invariant is structurally enforced.
 
 ---
 
@@ -333,25 +318,19 @@ Every Record must have at least one RecordedPerson whose `record_id` points to i
 
 ### R25 — Bidirectional consistency: Relationship ↔ Event `[Retired]`
 
-**Retired.** Same reasoning as R23 and R24. The `relationship_event` junction table is the single source of truth. `Relationship.event_ids` and the `Event.relationship_id` back-reference cannot produce a mismatch that the DB permits to exist.
+**Retired.** The `relationship_event` junction table has been removed. `event.relationship_id` is the sole expression of this association — a nullable FK on the `event` table. No bidirectionality inconsistency is possible.
 
 ---
 
-### R26 — RecordedEvent ↔ Event Record consistency `[Python]`
+### R26 — RecordedEvent ↔ Event Record consistency `[Retired]`
 
-If an Event includes a `recorded_event_id` in `event_recorded_event`, then the parent `record_id` of that RecordedEvent must also appear in `event_record` for the same Event. A RecordedEvent cannot be cited as evidence for an Event while its parent Record is not.
-
-This cross-table invariant cannot be expressed as a declarative constraint in SQLite and remains Python-only.
-
-```
-[R26] Event {id}: recorded_event_id={val} is included but its parent record_id={rec_id} is not in Event.record_ids
-```
+**Retired in v2.8.** Both `recorded_event` and `event_recorded_event` have been removed. `event_record` links an Event directly to a Record. Since a Record carries its event fields inline, linking the Record to an Event is equivalent to linking the event data — the split that R26 was protecting against no longer exists.
 
 ---
 
 ### R27 — Evidence-layer objects contain no conclusion-layer foreign keys `[Retired]`
 
-**Retired.** In the JSON model, this rule detected cases where a conclusion-layer foreign key had been written into a RecordedEvent or RecordedPerson object. In the relational schema, the `recorded_event` and `recorded_person` tables have no columns for `person_id`, `event_id`, `relationship_id`, or `place_id`. The violation is architecturally impossible. No rule text is needed.
+**Retired.** In the JSON model, this rule detected cases where a conclusion-layer foreign key had been written into a RecordedEvent or RecordedPerson object. In the relational schema, neither `record` nor `recorded_person` carry foreign keys to conclusion-layer objects. The violation is architecturally impossible. No rule text is needed.
 
 ---
 
@@ -373,14 +352,14 @@ DB enforcement: `CHECK (type IN (...))` on the `source` table.
 
 ### R29 — Event type controlled vocabulary `[DB + Python]`
 
-`RecordedEvent.type` and `Event.type` must each be one of the values defined in §6.2 of the data dictionary.
+`Record.event_type` and `Event.type` must each be one of the values defined in §6.2 of the data dictionary.
 
 Valid values: `birth`, `baptism`, `marriage`, `death`, `burial`, `census`, `residence`, `emigration`, `valuation`, `tithe`, `military_service`, `pension`, `folklore`.
 
-DB enforcement: `CHECK (type IN (...))` on both `recorded_event` and `event` tables.
+DB enforcement: `CHECK (event_type IN (...))` on the `record` table; `CHECK (type IN (...))` on the `event` table.
 
 ```
-[R29] RecordedEvent {id}: type='{val}' is not a valid event type
+[R29] Record {id}: event_type='{val}' is not a valid event type
 [R29] Event {id}: type='{val}' is not a valid event type
 ```
 
@@ -388,14 +367,14 @@ DB enforcement: `CHECK (type IN (...))` on both `recorded_event` and `event` tab
 
 ### R30 — Date qualifier controlled vocabulary `[DB + Python]`
 
-`RecordedEvent.date_qualifier` and `Event.date_qualifier`, when present, must each be one of the values defined in §6.3 of the data dictionary. `Place` has no `date_qualifier` field; the previous reference to it was erroneous and has been removed.
+`Record.date_qualifier` and `Event.date_qualifier`, when present, must each be one of the values defined in §6.3 of the data dictionary.
 
 Valid values: `exact`, `about`, `before`, `after`, `between`, `estimated`, `calculated`.
 
-DB enforcement: `CHECK (date_qualifier IS NULL OR date_qualifier IN (...))` on both `recorded_event` and `event` tables.
+DB enforcement: `CHECK (date_qualifier IS NULL OR date_qualifier IN (...))` on both `record` and `event` tables.
 
 ```
-[R30] RecordedEvent {id}: date_qualifier='{val}' is not a valid date qualifier
+[R30] Record {id}: date_qualifier='{val}' is not a valid date qualifier
 [R30] Event {id}: date_qualifier='{val}' is not a valid date qualifier
 ```
 
@@ -457,7 +436,7 @@ DB enforcement: `CHECK (type IN (...))` on the `relationship` table.
 
 ### R36 — Date format `[Python]`
 
-All fields typed as `date` — `RecordedEvent.date` and `Event.date` — must conform to one of three valid ISO 8601 partial date forms when non-null. SQLite has no native date type and stores these fields as TEXT; format validation is Python-only.
+All fields typed as `date` — `Record.date` and `Event.date` — must conform to one of three valid ISO 8601 partial date forms when non-null. SQLite has no native date type and stores these fields as TEXT; format validation is Python-only.
 
 | Form | Pattern | Constraints |
 |---|---|---|
@@ -465,12 +444,12 @@ All fields typed as `date` — `RecordedEvent.date` and `Event.date` — must co
 | `YYYY-MM` | Year and month | Month must be 01–12 |
 | `YYYY-MM-DD` | Full date | Month 01–12; day 01–28/29/30/31 valid for the given month |
 
-Note: `RecordedEvent.date_as_recorded` is a free-text verbatim field and is explicitly exempt from this rule.
+Note: `Record.date_as_recorded` is a free-text verbatim field and is explicitly exempt from this rule.
 
 Text dates, circa prefixes, non-ISO separators, two-digit years, and day or month values of zero are all invalid.
 
 ```
-[R36] RecordedEvent {id}: date='{val}' is not a valid ISO 8601 partial date
+[R36] Record {id}: date='{val}' is not a valid ISO 8601 partial date
 [R36] Event {id}: date='{val}' is not a valid ISO 8601 partial date
 ```
 
@@ -569,7 +548,7 @@ For any concluded `Person`, the dates of their concluded life Events must follow
 
 **Tolerance:** Where an event date carries a qualifier of `about`, `estimated`, or `calculated`, a tolerance of ±2 years is applied before flagging. A sequence violation is only confirmed if the uncertainty ranges of the two dates do not overlap.
 
-**Adult baptism exception:** Where the baptism RecordedEvent's linked RecordedPerson has a recorded age greater than 1 year, the birth-before-baptism interval check is suppressed for that Event pair.
+**Adult baptism exception:** Where the baptism Record's linked RecordedPerson has a recorded age greater than 1 year, the birth-before-baptism interval check is suppressed for that Event pair.
 
 **Date qualifier precedence:** `exact` dates are compared directly. All other qualifiers trigger the ±2 year tolerance.
 
@@ -612,7 +591,7 @@ Where the Person has no concluded birth year derivable from their linked Records
 
 ### R46 — Lifespan boundary `[Python]` *(GC01)*
 
-For any Person linked to a Record via `person_record`, the RecordedEvent date of that Record must fall within the Person's concluded lifespan. A RecordedEvent date more than 5 years outside the lifespan bounds is flagged regardless of the linkage score.
+For any Person linked to a Record via `person_record`, the `record.date` of that Record must fall within the Person's concluded lifespan. A record date more than 5 years outside the lifespan bounds is flagged regardless of the linkage score.
 
 **Lifespan bounds:**
 - Lower bound: concluded birth Event date, or baptism Event date where no birth Event exists, or estimated birth year derived from linked Records.
@@ -623,7 +602,7 @@ For any Person linked to a Record via `person_record`, the RecordedEvent date of
 Where neither a lower nor upper bound can be established from the Person's concluded Events, the rule is skipped and noted as unevaluated.
 
 ```
-[R46] person_record (person_id={pid}, record_id={rid}): RecordedEvent date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}]; probable merge error
+[R46] person_record (person_id={pid}, record_id={rid}): record date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}]; probable merge error
 ```
 
 ---
@@ -637,7 +616,7 @@ The following table summarises all rules, their description, and their enforceme
 | R01 | Required fields on Repository | DB + Python |
 | R02 | Required fields on Source | DB + Python |
 | R03 | Required fields on Record | DB + Python |
-| R04 | Required fields on RecordedEvent | DB + Python |
+| R04 | Required fields on Record event fields | DB + Python (via R03/R36) |
 | R05 | Required fields on RecordedPerson | DB + Python |
 | R06 | Required fields on Person | DB + Python |
 | R07 | Required fields on Relationship | DB + Python |
@@ -647,19 +626,19 @@ The following table summarises all rules, their description, and their enforceme
 | R11 | Repository has no upstream FK | N/A |
 | R12 | Source → Repository FK | DB + Python |
 | R13 | Record → Source FK | DB + Python |
-| R14 | RecordedEvent → Record FK | DB + Python |
+| R14 | RecordedEvent → Record FK | **Retired** |
 | R15 | RecordedPerson → Record FK | DB + Python |
 | R16 | Person FK arrays | DB + Python |
 | R17 | Relationship FK arrays | DB + Python |
 | R18 | Event FK arrays | DB + Python |
 | R19 | Place FK arrays | DB + Python |
-| R20 | Exactly one RecordedEvent per Record (lower bound) | Python only |
+| R20 | One event per Record | DB (structural) |
 | R21 | At least one RecordedPerson per Record | Python only |
 | R22 | Relationship self-reference prohibition | DB only |
 | R23 | Person ↔ Relationship bidirectionality | **Retired** |
 | R24 | Person ↔ Event bidirectionality | **Retired** |
 | R25 | Relationship ↔ Event bidirectionality | **Retired** |
-| R26 | RecordedEvent ↔ Event Record consistency | Python only |
+| R26 | RecordedEvent ↔ Event Record consistency | **Retired** |
 | R27 | Evidence-layer isolation | **Retired** |
 | R28 | Source type vocabulary | DB + Python |
 | R29 | Event type vocabulary | DB + Python |
@@ -681,8 +660,8 @@ The following table summarises all rules, their description, and their enforceme
 | R45 | Minimum marriage age | Python only (GC13) |
 | R46 | Lifespan boundary | Python only (GC01) |
 
-**Python-only rules** (require active Python enforcement): R20, R21, R26, R36, R37, R40, R41, R42, R43, R44, R45, R46.
-**Retired rules** (no longer meaningful in the relational model): R10, R23, R24, R25, R27, R33, R35.
+**Python-only rules** (require active Python enforcement): R21, R36, R37, R40, R41, R42, R43, R44, R45, R46.
+**Retired rules** (no longer meaningful in the relational model): R10, R14, R23, R24, R25, R26, R27, R33, R35.
 **DB-only rule** (no Python action needed): R22.
 
 ---
@@ -693,7 +672,7 @@ Rules are executed in the following order. Later rules depend on earlier ones ha
 
 1. **Structural rules (R01–R09)** — object well-formedness. No cross-object lookups. Safe to run in isolation via `validate_object()`.
 2. **Referential integrity rules (R12–R19)** — pre-write checks that referenced IDs exist. In normal operation the DB enforces these; Python checks them to produce actionable error messages before attempting an insert.
-3. **Consistency rules (R20–R26)** — cross-object invariants. Depend on referential integrity holding.
+3. **Consistency rules (R21–R22)** — cross-object invariants. R20 is now structural (DB-enforced); R26 is retired.
 4. **Vocabulary and format rules (R28–R39)** — controlled values, date formats, and scoring column constraints. Run last among the schema rules to separate structural problems from vocabulary problems in the error output.
 5. **Genealogical constraint rules (R40–R46)** — domain knowledge checks. Run after all schema rules are clean. Depend on the conclusion layer being populated; skipped for objects with unresolved birth year or lifespan bounds. Produce warnings rather than hard errors.
 
@@ -734,9 +713,8 @@ Examples:
 ```
 [R03] Record 47: raw_text is absent or empty
 [R13] Record 47: source_id=999 does not resolve to a Source
-[R20] Record 47: has 0 RecordedEvents — exactly 1 required
-[R29] RecordedEvent 88: type='occupation' is not a valid event type
-[R36] Event 12: date='April 1890' is not a valid ISO 8601 partial date
+[R29] Record 88: event_type='occupation' is not a valid event type
+[R36] Record 12: date='April 1890' is not a valid ISO 8601 partial date
 [R40] Person 23: has 2 birth Events — maximum 1 permitted; probable merge error
 [R43] Person 23: sequence violation — marriage date 1878 precedes birth date 1880 (net of tolerance)
 [R44] Relationship 7 (parent_child): parent Person 12 birth year 1870 — child Person 23 birth year 1858 — gap of -12 years is below minimum of 15; probable merge error
@@ -756,6 +734,8 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 | 2.4 | May 2026 | Retired R35 (confidence vocabulary) — `confidence` removed from `relationship` and `event` tables. Added R38 (linkage score range, DB + Python) and R39 (verified flag values, DB + Python) covering the new scoring columns on `person_record`, `event_record`, `relationship_record`, `place_record`. Updated rule summary table and execution order. |
 | 2.5 | May 2026 | Added `genealogical_constraints.md` to preamble. Added fifth rule category — genealogical constraint rules. Added §6 (Genealogical Constraint Rules) with R40 (birth Event singularity, GC04), R41 (death Event singularity, GC05), R42 (census Record singularity per source, GC07), R43 (life event sequence, GC02), R44 (minimum and maximum parent age, GC12), R45 (minimum marriage age, GC13), R46 (lifespan boundary, GC01). Added `validate_genealogical()` entry point to §9. Extended execution order in §8 to include genealogical constraint category and added SKIP message for unevaluable persons. Renumbered §§6–9 to §§7–10. Updated rule summary table. Added R40–R46 examples to §10 error format. |
 | 2.6 | May 2026 | Updated R38 (linkage score range) to permit null scores for manually-asserted linkages. Updated rule text, DB enforcement expression, and rule summary table. |
+| 2.7 (schema) | May 2026 | No validation rule changes for place_authority addition. |
+| 2.8 (schema) | June 2026 | Retired R14 (`recorded_event` removed) and R26 (`event_recorded_event` removed). R04 merged into R03/R36. R20 reclassified as DB-structural. R23 updated (no `person_relationship` table). R25 updated (no `relationship_event` table). R29, R30, R36, R43, R46 updated to reference `record.event_type` / `record.date` instead of `recorded_event` fields. Rule summary table and Python-only/retired rule lists updated. |
 
 ---
 
