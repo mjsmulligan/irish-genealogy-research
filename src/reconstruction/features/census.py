@@ -5,9 +5,14 @@ Builds a flat feature DataFrame for Splink from census Person conclusions.
 One row per Person per census source. Features extracted from:
   - person_name (concluded names)
   - person_record → recorded_person (name_as_recorded, age, role)
-  - person_record → recorded_event (date, place_as_recorded)
   - person_record → record → source (source_id)
   - place_record (resolved place_id)
+  - relationship graph (spouse, children, siblings from conclusion layer)
+
+Relationship features require household inference to have run first.
+They are null — not zero — for persons with no concluded relationships,
+so Splink's NullLevel correctly treats absence-of-information differently
+from confirmed non-overlap.
 
 Called by src/reconstruction/linkage.py — not invoked directly.
 """
@@ -84,6 +89,94 @@ def _split_name(full_name: str | None) -> tuple[str | None, str | None]:
     return _normalise_forename(parts[0]), _normalise_name(" ".join(parts[1:]))
 
 
+# ---------------------------------------------------------------------------
+# Relationship feature lookups (conclusion layer)
+# ---------------------------------------------------------------------------
+
+def _spouse_name(conn: sqlite3.Connection, person_id: int) -> str | None:
+    """
+    Return the normalised birth name of the most recently concluded spouse,
+    or None if no couple relationship exists.
+
+    Where a person has multiple couple relationships (serial marriage), the
+    highest relationship_id is used as a proxy for recency — a deliberate
+    simplification until marriage event dates are reliably populated.
+    """
+    row = conn.execute(
+        """
+        SELECT pn.value
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = CASE
+            WHEN r.person_id_1 = ? THEN r.person_id_2
+            ELSE r.person_id_1
+        END
+        WHERE r.type = 'couple'
+          AND (r.person_id_1 = ? OR r.person_id_2 = ?)
+          AND pn.type = 'birth_name'
+          AND pn.person_name_id = (
+              SELECT MIN(pn2.person_name_id)
+              FROM person_name pn2
+              WHERE pn2.person_id = pn.person_id AND pn2.type = 'birth_name'
+          )
+        ORDER BY r.relationship_id DESC
+        LIMIT 1
+        """,
+        (person_id, person_id, person_id),
+    ).fetchone()
+    return _normalise_name(row[0]) if row else None
+
+
+def _child_names(conn: sqlite3.Connection, person_id: int) -> set[str]:
+    """
+    Return the set of normalised birth names of all concluded children
+    (parent_child relationships where this person is person_id_1 = parent).
+    """
+    rows = conn.execute(
+        """
+        SELECT pn.value
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_2
+        WHERE r.type = 'parent_child'
+          AND r.person_id_1 = ?
+          AND pn.type = 'birth_name'
+          AND pn.person_name_id = (
+              SELECT MIN(pn2.person_name_id)
+              FROM person_name pn2
+              WHERE pn2.person_id = pn.person_id AND pn2.type = 'birth_name'
+          )
+        """,
+        (person_id,),
+    ).fetchall()
+    return {_normalise_name(row[0]) for row in rows if row[0]}
+
+
+def _sibling_names(conn: sqlite3.Connection, person_id: int) -> set[str]:
+    """
+    Return the set of normalised birth names of all concluded siblings.
+    Sibling relationships are symmetric so both endpoints are checked.
+    """
+    rows = conn.execute(
+        """
+        SELECT pn.value
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = CASE
+            WHEN r.person_id_1 = ? THEN r.person_id_2
+            ELSE r.person_id_1
+        END
+        WHERE r.type = 'sibling'
+          AND (r.person_id_1 = ? OR r.person_id_2 = ?)
+          AND pn.type = 'birth_name'
+          AND pn.person_name_id = (
+              SELECT MIN(pn2.person_name_id)
+              FROM person_name pn2
+              WHERE pn2.person_id = pn.person_id AND pn2.type = 'birth_name'
+          )
+        """,
+        (person_id, person_id, person_id),
+    ).fetchall()
+    return {_normalise_name(row[0]) for row in rows if row[0]}
+
+
 def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     """
     Build feature DataFrames for all census Person conclusions, one DataFrame
@@ -93,14 +186,25 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
 
     Each DataFrame has one row per person_id and the following columns:
 
-        unique_id       int     — Splink required PK; equals person_id
-        person_id       int     — GRA Person primary key
-        source_id       int     — census source (3=1901, 4=1911, 5=1926)
-        surname_norm    str     — normalised surname
-        forename_norm   str     — normalised forename
-        birth_year_est  int     — estimated birth year (census year - age)
-        place_id        int     — resolved Place conclusion id (blocking anchor)
-        place_raw       str     — normalised place string (fallback if unresolved)
+        unique_id            int     — Splink required PK; equals person_id
+        person_id            int     — GRA Person primary key
+        source_id            int     — census source (3=1901, 4=1911, 5=1926)
+        surname_norm         str     — normalised surname
+        forename_norm        str     — normalised forename
+        birth_year_est       int     — estimated birth year (census year - age)
+        place_id             int     — resolved Place conclusion id (blocking anchor)
+        place_raw            str     — normalised place string (fallback if unresolved)
+        spouse_name_norm     str     — normalised name of concluded spouse; null if none
+        child_names          str     — pipe-joined sorted normalised child names;
+                                       null if no concluded children
+        sibling_names        str     — pipe-joined sorted normalised sibling names;
+                                       null if no concluded siblings
+
+    child_names and sibling_names are passed to Splink as pipe-joined strings.
+    Jaccard overlap is computed inside Splink's CustomComparison via DuckDB's
+    string_split / list_intersect / list_union array functions (see linkage.py).
+
+    Relationship features require household inference to have run first.
 
     Returns an empty list if no census Person conclusions exist.
     """
@@ -173,15 +277,28 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
         # place_id as DOUBLE. We handle this explicitly below with Int64.
         place_id = int(row["place_id"]) if row["place_id"] is not None else None
 
+        person_id = row["person_id"]
+        child_names   = _child_names(conn, person_id)
+        sibling_names = _sibling_names(conn, person_id)
+
         records.append({
-            "unique_id":      row["person_id"],   # Splink required PK
-            "person_id":      row["person_id"],
-            "source_id":      row["source_id"],
-            "surname_norm":   surname,
-            "forename_norm":  forename,
-            "birth_year_est": birth_year_est,
-            "place_id":       place_id,
-            "place_raw":      place_raw,
+            "unique_id":         person_id,   # Splink required PK
+            "person_id":         person_id,
+            "source_id":         row["source_id"],
+            "surname_norm":      surname,
+            "forename_norm":     forename,
+            "birth_year_est":    birth_year_est,
+            "place_id":          place_id,
+            "place_raw":         place_raw,
+            # Spouse: scalar string for JaroWinkler comparison.
+            # Null when no couple relationship concluded.
+            "spouse_name_norm":  _spouse_name(conn, person_id),
+            # Children and siblings: pipe-joined sorted name strings.
+            # Empty string when no relationships concluded.
+            # Jaccard overlap is computed inside Splink via SQL array functions
+            # (see CustomComparison in linkage.py). Empty string → NullLevel fires.
+            "child_names":       "|".join(sorted(child_names)),
+            "sibling_names":     "|".join(sorted(sibling_names)),
         })
 
     if not records:
@@ -193,6 +310,13 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     # coercing the column to float64 when NULLs are present. float64 place_ids
     # (5.0 instead of 5) can confuse DuckDB's blocking and ExactMatch logic.
     df["place_id"] = df["place_id"].astype("Int64")
+
+    # spouse_name_norm: string or None — pandas object dtype is correct.
+    # child_names / sibling_names: pipe-joined strings; empty string means
+    # no concluded relationships. Replace empty strings with None so that
+    # Splink's NullLevel fires rather than treating "" as a value to compare.
+    df["child_names"]   = df["child_names"].replace("", None)
+    df["sibling_names"] = df["sibling_names"].replace("", None)
 
     # One row per person_id per source. If a person somehow has two records
     # from the same source (R42 would flag this), take the first.
