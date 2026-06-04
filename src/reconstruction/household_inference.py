@@ -52,6 +52,7 @@ class HouseholdInferenceResult:
     parent_child_count: int = 0
     sibling_count: int = 0
     skipped_records: list[str] = field(default_factory=list)
+    unmapped_roles: dict[str, int] = field(default_factory=dict)   # role_value -> occurrence count
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +144,10 @@ def _insert_census_event(conn, event_id, record_id, place_id, census_date, perso
 def _infer_relationships(conn, rp_list, pid_map, record_id, ids, result):
     by_role: dict[str, list] = {}
     for rp in rp_list:
-        by_role.setdefault(rp["role"], []).append(rp)
+        role = rp["role"]
+        by_role.setdefault(role, []).append(rp)
+        if role not in _ROLE_GENDER:
+            result.unmapped_roles[role] = result.unmapped_roles.get(role, 0) + 1
 
     def pid(rp): return pid_map[rp["recorded_person_id"]]
 
@@ -278,6 +282,18 @@ def run_household_inference(
             result.events_created += 1
             result.records_processed += 1
 
+    if result.unmapped_roles:
+        import pathlib, csv, datetime
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = pathlib.Path(f"unmapped_roles_{source_id}_{ts}.tsv")
+        with out_path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh, delimiter="\t")
+            writer.writerow(["role_as_recorded", "occurrences"])
+            for role, count in sorted(result.unmapped_roles.items(),
+                                      key=lambda kv: -kv[1]):
+                writer.writerow([role, count])
+        print(f"  Unmapped roles written to: {out_path}")
+
     return result
 
 
@@ -296,3 +312,6 @@ def print_household_inference_report(result: HouseholdInferenceResult) -> None:
             print(f"    {note}")
         if len(result.skipped_records) > 10:
             print(f"    ... and {len(result.skipped_records) - 10} more")
+    if result.unmapped_roles:
+        total = sum(result.unmapped_roles.values())
+        print(f"\n  UNMAPPED ROLES ({len(result.unmapped_roles)} distinct, {total} occurrences — see TSV)")

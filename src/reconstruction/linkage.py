@@ -133,8 +133,10 @@ def _build_settings() -> SettingsCreator:
             ),
             # Child name overlap: Jaccard similarity between pipe-joined child
             # name strings, computed via DuckDB array functions.
-            # list_intersect / list_union operate on arrays; string_split
-            # produces VARCHAR[] from the pipe-joined strings.
+            # child_names / sibling_names: Jaccard computed via DuckDB array functions.
+            # string_split produces VARCHAR[] from pipe-joined strings.
+            # Union size computed as len(a) + len(b) - len(list_intersect(a, b))
+            # rather than list_union() which requires DuckDB >= 0.9.0.
             # NullLevel fires when either person has no concluded children.
             cl.CustomComparison(
                 comparison_levels=[
@@ -147,10 +149,14 @@ def _build_settings() -> SettingsCreator:
                                 string_split("child_names_r", '|')
                             )) * 1.0
                             /
-                            len(list_union(
-                                string_split("child_names_l", '|'),
-                                string_split("child_names_r", '|')
-                            ))
+                            (
+                                len(string_split("child_names_l", '|'))
+                                + len(string_split("child_names_r", '|'))
+                                - len(list_intersect(
+                                    string_split("child_names_l", '|'),
+                                    string_split("child_names_r", '|')
+                                ))
+                            )
                         ) >= 0.5
                         """,
                         label_for_charts="child_jaccard >= 0.5",
@@ -163,10 +169,14 @@ def _build_settings() -> SettingsCreator:
                                 string_split("child_names_r", '|')
                             )) * 1.0
                             /
-                            len(list_union(
-                                string_split("child_names_l", '|'),
-                                string_split("child_names_r", '|')
-                            ))
+                            (
+                                len(string_split("child_names_l", '|'))
+                                + len(string_split("child_names_r", '|'))
+                                - len(list_intersect(
+                                    string_split("child_names_l", '|'),
+                                    string_split("child_names_r", '|')
+                                ))
+                            )
                         ) > 0
                         """,
                         label_for_charts="child_jaccard > 0",
@@ -190,10 +200,14 @@ def _build_settings() -> SettingsCreator:
                                 string_split("sibling_names_r", '|')
                             )) * 1.0
                             /
-                            len(list_union(
-                                string_split("sibling_names_l", '|'),
-                                string_split("sibling_names_r", '|')
-                            ))
+                            (
+                                len(string_split("sibling_names_l", '|'))
+                                + len(string_split("sibling_names_r", '|'))
+                                - len(list_intersect(
+                                    string_split("sibling_names_l", '|'),
+                                    string_split("sibling_names_r", '|')
+                                ))
+                            )
                         ) >= 0.5
                         """,
                         label_for_charts="sibling_jaccard >= 0.5",
@@ -206,10 +220,14 @@ def _build_settings() -> SettingsCreator:
                                 string_split("sibling_names_r", '|')
                             )) * 1.0
                             /
-                            len(list_union(
-                                string_split("sibling_names_l", '|'),
-                                string_split("sibling_names_r", '|')
-                            ))
+                            (
+                                len(string_split("sibling_names_l", '|'))
+                                + len(string_split("sibling_names_r", '|'))
+                                - len(list_intersect(
+                                    string_split("sibling_names_l", '|'),
+                                    string_split("sibling_names_r", '|')
+                                ))
+                            )
                         ) > 0
                         """,
                         label_for_charts="sibling_jaccard > 0",
