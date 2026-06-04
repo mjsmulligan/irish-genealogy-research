@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import Any
 import sqlite3
 
-
 SCHEMA_VERSION = 28
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
@@ -535,29 +534,57 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
         run_place_resolution, print_place_resolution_report,
         run_household_inference, print_household_inference_report,
     )
-    # Import the linkage function and its report generator
-    from src.reconstruction.linkage import run_census_linkage, print_census_linkage_report
-
     conn = open_db(args.db)
     check_version(conn)
 
-    print("\nRunning reconstruction pipeline...")
+    source_id = int(args.source)
+    print(f"\nRunning reconstruction pipeline for source {source_id}...")
 
     print("\n[1/2] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
     print("\n[2/2] Household structure inference")
-    source_id = int(args.source)
     inference_result = run_household_inference(conn, source_id)
     print_household_inference_report(inference_result)
 
-    # Add the linkage execution here
-    print("\n[3/3] Cross-source person linkage")
-    run_census_linkage(conn, debug_log="linkage_debug.txt")
-    
+    print("\nReconstruction complete. Run 'link' when all sources are ingested.\n")
+    print_summary(conn)
 
-    print("\nReconstruction complete. Running summary...\n")
+
+def _cmd_place_resolve(args: argparse.Namespace) -> None:
+    from src.reconstruction import (
+        run_place_resolution, print_place_resolution_report,
+    )
+    conn = open_db(args.db)
+    check_version(conn)
+    print("\nRunning place resolution...")
+    result = run_place_resolution(conn)
+    print_place_resolution_report(result)
+
+
+def _cmd_household(args: argparse.Namespace) -> None:
+    from src.reconstruction import (
+        run_household_inference, print_household_inference_report,
+    )
+    conn = open_db(args.db)
+    check_version(conn)
+    source_id = int(args.source)
+    print(f"\nRunning household inference for source {source_id}...")
+    result = run_household_inference(conn, source_id)
+    print_household_inference_report(result)
+
+
+def _cmd_link(args: argparse.Namespace) -> None:
+    from src.reconstruction.linkage import (
+        run_census_linkage, print_census_linkage_report,
+    )
+    conn = open_db(args.db)
+    check_version(conn)
+    print("\nRunning cross-census person linkage...")
+    result = run_census_linkage(conn)
+    print_census_linkage_report(result)
+    print()
     print_summary(conn)
 
 
@@ -580,17 +607,27 @@ def main() -> None:
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
-    p_recon = sub.add_parser("reconstruct", help="Run place resolution and household inference")
+    sub.add_parser("place-resolve", help="Stage 2: resolve place strings against place_authority")
+
+    p_household = sub.add_parser("household", help="Stage 3: household structure inference for one census source")
+    p_household.add_argument("--source", required=True, help="Census source ID (e.g. 4 for Census 1911)")
+
+    sub.add_parser("link", help="Stage 4: cross-census person linkage across all sources")
+
+    p_recon = sub.add_parser("reconstruct", help="Convenience: place resolution + household inference for one source")
     p_recon.add_argument("--source", required=True, help="Census source ID (e.g. 4 for Census 1911)")
 
     args = parser.parse_args()
 
     dispatch = {
-        "init":         _cmd_init,
-        "ingest":       _cmd_ingest,
-        "seed-places":  _cmd_seed_places,
-        "summary":      _cmd_summary,
-        "reconstruct":  _cmd_reconstruct,
+        "init":          _cmd_init,
+        "ingest":        _cmd_ingest,
+        "seed-places":   _cmd_seed_places,
+        "summary":       _cmd_summary,
+        "place-resolve": _cmd_place_resolve,
+        "household":     _cmd_household,
+        "link":          _cmd_link,
+        "reconstruct":   _cmd_reconstruct,
     }
     dispatch[args.command](args)
 
