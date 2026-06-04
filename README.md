@@ -4,7 +4,7 @@
 
 A probabilistic genealogy research platform combining a SQLite knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: **2.7** (May 2026)
+Schema version: **2.8** (June 2026)
 
 ---
 
@@ -18,16 +18,16 @@ Schema version: **2.7** (May 2026)
 
 | File | Status | Description |
 |---|---|---|
-| `docs/conceptual_model.md` | ✅ v2.3 | Three-layer architecture; PlaceAuthority as foundational object |
-| `docs/data_dictionary.md` | ✅ v2.5 | Field-level definitions; flat PlaceAuthority schema; full NAI census role mapping |
+| `docs/conceptual_model.md` | ✅ v2.4 | Three-layer architecture; event fields inline on Record |
+| `docs/data_dictionary.md` | ✅ v2.6 | Field-level definitions; flat PlaceAuthority schema; full NAI census role mapping |
 | `docs/repositories.md` | ✅ v1.5 | 13 sources across 8 repositories; logainm.ie added |
 | `docs/validation_rules.md` | ✅ v2.6 | 46 rules (R01–R46) |
-| `docs/database_schema.md` | ✅ v2.7 | SQLite DDL; PlaceAuthority flat table; migration v2.6→v2.7 |
-| `docs/reconstruction_algorithms.md` | ✅ v1.1 | Record linkage scoring; role-pair rules; sibling inference |
+| `docs/database_schema.md` | ✅ v2.8 | SQLite DDL; RecordedEvent merged into Record; 5 junction tables |
+| `docs/reconstruction_algorithms.md` | ✅ v1.2 | Record linkage scoring; role-pair rules; sibling inference; updated for v2.8 |
 | `docs/genealogical_constraints.md` | ✅ v1.2 | 22 domain constraints (GC01–GC22) |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API |
 | `docs/session_bootstrap.md` | ✅ v1.0 | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | ✅ v1.4 | Work queue, open decisions, project roadmap |
+| `ROADMAP.md` | ✅ v1.5 | Work queue, open decisions, project roadmap |
 
 ---
 
@@ -40,19 +40,23 @@ irish-genealogy-research/
 │
 ├── src/                               # Implementation
 │   ├── db/
-│   │   ├── schema.sql                 # Complete DDL (v2.7)
+│   │   ├── schema.sql                 # Complete DDL (v2.8)
 │   │   ├── seed.sql                   # Repository and source seed data
 │   │   └── migrations/
 │   │       ├── migrate_25_to_26.sql
-│   │       └── migrate_26_to_27.sql   # place → place_authority
+│   │       ├── migrate_26_to_27.sql   # place → place_authority
+│   │       └── migrate_27_to_28.sql   # recorded_event merged into record
 │   ├── reconstruction/
 │   │   ├── __init__.py
 │   │   ├── place_resolution.py        # Stage 2: authority-based place matching
-│   │   └── household_inference.py     # Stage 3: household structure → conclusions
+│   │   ├── household_inference.py     # Stage 3: household structure → conclusions
+│   │   ├── linkage.py                 # Stage 4: cross-census Splink person linkage
+│   │   └── features/
+│   │       └── census.py              # Splink feature extractor (name, age, place, relationships)
 │   ├── db.py                          # Database layer and CLI
 │   ├── fetch_places.py                # logainm API fetcher → DB or CSV
 │   ├── seed_places.py                 # CSV → place_authority loader
-│   └── validator.py                   # Validation framework (pending)
+│   └── validator.py                   # Genealogical constraint rules R40–R46
 │
 └── tests/
     └── test_place_authority.py        # 33 tests: schema, CSV, resolution, hierarchy
@@ -67,34 +71,11 @@ irish-genealogy-research/
 **Foundational Layer** — Repository, Source, PlaceAuthority
 Institutional, bibliographic, and geographical reference data. PlaceAuthority entries are seeded from logainm.ie before research begins — they are facts, not conclusions.
 
-**Evidence Layer** — Record, RecordedEvent, RecordedPerson
-Verbatim assertions from historical sources. Never points to conclusions.
+**Evidence Layer** — Record, RecordedPerson
+Verbatim assertions from historical sources. Each Record carries its event fields inline (`event_type`, `date`, `place_as_recorded`). Never points to conclusions.
 
 **Conclusion Layer** — Person, Relationship, Event
 Researcher assertions, mutable and supported by evidence.
-
-### Place Authority (New in v2.7)
-
-Places are no longer researcher conclusions — they are authoritative identities from logainm.ie, Ireland's official placename authority. Each PlaceAuthority row carries the full administrative hierarchy as flat columns:
-
-```
-place_id | logainm_id | name_en   | place_type | ded_name    | county_name | barony_name | civil_parish_name | latitude   | longitude
----------|------------|-----------|------------|-------------|-------------|-------------|-------------------|------------|----------
-1        | 111482     | Tullynaught | ded       | Tullynaught | Donegal     |             |                   | 54.6455    | -8.0435
-2        | 14300      | Straness  | townland   | Tullynaught | Donegal     | Tirhugh     | Drumhome          | 54.6638    | -7.9794
-```
-
-Hierarchy queries are simple WHERE clauses:
-```sql
--- All townlands in Drumhome civil parish
-SELECT * FROM place_authority WHERE civil_parish_id = 785 AND place_type = 'townland';
-
--- All records in Tullynaught DED
-SELECT r.* FROM record r
-JOIN place_record pr ON pr.record_id = r.record_id
-JOIN place_authority pa ON pa.place_id = pr.place_id
-WHERE pa.ded_id = 111482;
-```
 
 ### Reconstruction Pipeline
 
@@ -102,10 +83,22 @@ WHERE pa.ded_id = 111482;
 0. Place seeding  → place_authority populated from logainm.ie        ✅ implemented
 1. Ingest         → Evidence layer populated                          ✅ implemented
 2. Place          → Evidence strings matched to place_authority       ✅ implemented
-3. Person         → Household structure → Person/Relationship/Event   ✅ implemented
-4. Linkage        → Cross-source Splink person linkage                🔜 next
+3. Household      → Census structure → Person/Relationship/Event      ✅ implemented
+4. Linkage        → Cross-census Splink person linkage                ✅ implemented
 5. Analysis       → Community queries, graph traversal, GEDCOM        🔜 future
 ```
+
+### Linkage Features
+
+The Splink linkage model compares persons across census years on:
+- Surname and forename (Jaro-Winkler)
+- Estimated birth year (absolute difference ±2/5/10 years)
+- Resolved townland (`place_id` exact match)
+- Concluded spouse name (Jaro-Winkler — high discriminating power)
+- Concluded child name set (Jaccard overlap)
+- Concluded sibling name set (Jaccard overlap)
+
+Relationship features are drawn from the conclusion layer and require household inference to have run first. They are null — not zero — for persons with no concluded relationships, so Splink's NullLevel correctly treats absence of information differently from confirmed non-overlap.
 
 ---
 
@@ -128,11 +121,26 @@ python -m src.db ingest --source 3 --file tests/1901_Tullynaught.csv
 python -m src.db ingest --source 4 --file tests/1911_Tullynaught.csv
 python -m src.db ingest --source 5 --file tests/1926_Tullynaught.csv
 
-# Run reconstruction (place resolution + household inference)
+# Reconstruct per source (place resolution + household inference)
+python -m src.db reconstruct --source 3
 python -m src.db reconstruct --source 4
+python -m src.db reconstruct --source 5
+
+# Cross-census linkage (run once all sources are reconstructed)
+python -m src.db link
 
 # Inspect
 python -m src.db summary
+```
+
+### Explicit Pipeline Stages
+
+For finer control, each reconstruction stage can be run independently:
+
+```bash
+python -m src.db place-resolve           # stage 2: resolve all unresolved place strings
+python -m src.db household --source 4   # stage 3: household inference for one source
+python -m src.db link                    # stage 4: cross-census linkage across all persons
 ```
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5). Additional sources planned for Release 2.
@@ -144,7 +152,9 @@ python -m src.db summary
 ## requirements.txt
 
 ```
+splink>=4.0
 jellyfish>=1.0
+pandas>=2.0
 jsonschema>=4.0
 pytest>=8.0
 requests>=2.31
