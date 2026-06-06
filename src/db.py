@@ -529,6 +529,51 @@ def _cmd_summary(args: argparse.Namespace) -> None:
     print_summary(conn)
 
 
+def _cmd_place_resolve(args: argparse.Namespace) -> None:
+    from src.reconstruction import run_place_resolution, print_place_resolution_report
+    conn = open_db(args.db)
+    check_version(conn)
+    print("\nRunning place resolution across all sources...")
+    result = run_place_resolution(conn)
+    print_place_resolution_report(result)
+
+
+def _cmd_household(args: argparse.Namespace) -> None:
+    from src.reconstruction import run_household_inference, print_household_inference_report
+    conn = open_db(args.db)
+    check_version(conn)
+    source_id = int(args.source)
+    print(f"\nRunning household inference for source {source_id}...")
+    result = run_household_inference(conn, source_id=source_id)
+    print_household_inference_report(result)
+
+
+def _cmd_link(args: argparse.Namespace) -> None:
+    from src.reconstruction.linkage import (
+        run_census_household_linkage, print_household_linkage_report,
+        run_census_linkage, print_census_linkage_report,
+    )
+    conn = open_db(args.db)
+    check_version(conn)
+
+    debug_log = getattr(args, "debug_log", None)
+
+    print("\n[1/2] Household linkage (Pass 1: Splink; Pass 2: person resolution)...")
+    hh_result = run_census_household_linkage(conn, debug_log=debug_log)
+    print_household_linkage_report(hh_result)
+
+    print("\n[2/2] Cross-census person linkage...")
+    person_result = run_census_linkage(
+        conn,
+        already_merged=hh_result.merged_person_ids,
+        debug_log=debug_log,
+    )
+    print_census_linkage_report(person_result)
+
+    print("\nLinkage complete. Running summary...\n")
+    print_summary(conn)
+
+
 def _cmd_reconstruct(args: argparse.Namespace) -> None:
     from src.reconstruction import (
         run_place_resolution, print_place_resolution_report,
@@ -537,14 +582,16 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     conn = open_db(args.db)
     check_version(conn)
 
-    print("\nRunning reconstruction pipeline...")
+    source_id = int(args.source) if getattr(args, "source", None) else None
+    label = f" (source {source_id})" if source_id else " (all sources)"
+    print(f"\nRunning reconstruction pipeline{label}...")
 
     print("\n[1/2] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
     print("\n[2/2] Household structure inference")
-    inference_result = run_household_inference(conn)
+    inference_result = run_household_inference(conn, source_id=source_id)
     print_household_inference_report(inference_result)
 
     print("\nReconstruction complete. Running summary...\n")
@@ -570,16 +617,38 @@ def main() -> None:
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
-    sub.add_parser("reconstruct", help="Run place resolution and household inference")
+    sub.add_parser("place-resolve", help="Stage 2: resolve place strings across all sources")
+
+    p_household = sub.add_parser("household", help="Stage 3: household inference for one source")
+    p_household.add_argument("--source", required=True, help="Source ID (e.g. 4 for Census 1911)")
+
+    p_link = sub.add_parser("link", help="Stage 4: cross-census Splink person linkage")
+    p_link.add_argument(
+        "--debug-log", dest="debug_log", default=None,
+        metavar="PATH",
+        help="Write a plain-text debug log to PATH (optional)",
+    )
+
+    p_reconstruct = sub.add_parser(
+        "reconstruct",
+        help="Convenience: run place resolution + household inference (stages 2+3)",
+    )
+    p_reconstruct.add_argument(
+        "--source", default=None,
+        help="Source ID to restrict household inference (optional; omit for all sources)",
+    )
 
     args = parser.parse_args()
 
     dispatch = {
-        "init":         _cmd_init,
-        "ingest":       _cmd_ingest,
-        "seed-places":  _cmd_seed_places,
-        "summary":      _cmd_summary,
-        "reconstruct":  _cmd_reconstruct,
+        "init":          _cmd_init,
+        "ingest":        _cmd_ingest,
+        "seed-places":   _cmd_seed_places,
+        "summary":       _cmd_summary,
+        "place-resolve": _cmd_place_resolve,
+        "household":     _cmd_household,
+        "link":          _cmd_link,
+        "reconstruct":   _cmd_reconstruct,
     }
     dispatch[args.command](args)
 
