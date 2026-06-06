@@ -7,7 +7,8 @@ For each census Record, reads all RecordedPersons and creates:
   - Relationships derived from role-pair rules (§6.1 reconstruction_algorithms.md)
   - One census Event per Record, linked to all persons and the resolved Place
 
-Entry point: run_household_inference(conn, source_id) -> HouseholdInferenceResult
+Entry point: run_household_inference(conn) -> HouseholdInferenceResult
+Processes all census sources (3, 4, 5) that have ingested records in one pass.
 """
 
 from __future__ import annotations
@@ -52,7 +53,6 @@ class HouseholdInferenceResult:
     parent_child_count: int = 0
     sibling_count: int = 0
     skipped_records: list[str] = field(default_factory=list)
-    unmapped_roles: dict[str, int] = field(default_factory=dict)   # role_value -> occurrence count
 
 
 # ---------------------------------------------------------------------------
@@ -144,10 +144,7 @@ def _insert_census_event(conn, event_id, record_id, place_id, census_date, perso
 def _infer_relationships(conn, rp_list, pid_map, record_id, ids, result):
     by_role: dict[str, list] = {}
     for rp in rp_list:
-        role = rp["role"]
-        by_role.setdefault(role, []).append(rp)
-        if role not in _ROLE_GENDER:
-            result.unmapped_roles[role] = result.unmapped_roles.get(role, 0) + 1
+        by_role.setdefault(rp["role"], []).append(rp)
 
     def pid(rp): return pid_map[rp["recorded_person_id"]]
 
@@ -197,29 +194,23 @@ def _infer_relationships(conn, rp_list, pid_map, record_id, ids, result):
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Entry points
 # ---------------------------------------------------------------------------
 
-def run_household_inference(
+_CENSUS_SOURCE_IDS = (3, 4, 5)
+
+
+def _run_single_source(
     conn: sqlite3.Connection,
     source_id: int,
-) -> HouseholdInferenceResult:
+    ids: dict,
+    result: HouseholdInferenceResult,
+    place_for_record: dict[int, int | None],
+) -> None:
     """
-    Run household structure inference for all unprocessed Records from the
-    given census source. Creates Person, Relationship, and Event conclusions.
-    Safe to call incrementally.
+    Process all unprocessed Records for one census source.
+    Mutates ids and result in place.
     """
-    result = HouseholdInferenceResult()
-
-    source_row = conn.execute(
-        "SELECT type, title FROM source WHERE source_id = ?", (source_id,)
-    ).fetchone()
-    if not source_row:
-        raise ValueError(f"Source {source_id} not found.")
-    if source_row["type"] != "census":
-        raise ValueError(f"Source {source_id} ('{source_row['title']}') is not a census source.")
-
-    # Fetch unprocessed records — event fields now on record directly
     records = conn.execute(
         """
         SELECT r.record_id, r.date, r.place_as_recorded
@@ -232,10 +223,70 @@ def run_household_inference(
     ).fetchall()
 
     if not records:
-        print(f"  Household inference: no unprocessed records for source {source_id}.")
+        return
+
+    for rec in records:
+        record_id   = rec["record_id"]
+        census_date = rec["date"] or "1901-03-31"
+        census_year = int(census_date[:4])
+        townland    = rec["place_as_recorded"] or ""
+        place_id    = place_for_record.get(record_id)
+
+        rp_list = conn.execute(
+            "SELECT * FROM recorded_person WHERE record_id = ? ORDER BY recorded_person_id",
+            (record_id,),
+        ).fetchall()
+
+        if not rp_list:
+            result.skipped_records.append(f"record_id={record_id}: no RecordedPersons")
+            continue
+
+        pid_map: dict[int, int] = {}
+        household_pids: list[int] = []
+
+        for rp in rp_list:
+            person_id = ids["person"]
+            _insert_person(conn, person_id, rp, townland, census_year)
+            _insert_person_record(conn, person_id, record_id)
+            pid_map[rp["recorded_person_id"]] = person_id
+            household_pids.append(person_id)
+            ids["person"] += 1
+            result.persons_created += 1
+
+        _infer_relationships(conn, rp_list, pid_map, record_id, ids, result)
+
+        event_id = ids["event"]
+        _insert_census_event(
+            conn, event_id, record_id, place_id, census_date, household_pids,
+        )
+        ids["event"] += 1
+        result.events_created += 1
+        result.records_processed += 1
+
+
+def run_household_inference(conn: sqlite3.Connection) -> HouseholdInferenceResult:
+    """
+    Run household structure inference for all unprocessed census Records
+    across all three census sources (3=1901, 4=1911, 5=1926).
+
+    Creates Person, Relationship, and Event conclusions.
+    Safe to call incrementally — only unprocessed records are touched.
+    Sources not yet ingested are silently skipped.
+    """
+    result = HouseholdInferenceResult()
+
+    # Determine which census sources have ingested records
+    active_sources = [
+        row[0] for row in conn.execute(
+            "SELECT DISTINCT source_id FROM record WHERE source_id IN (3, 4, 5)"
+        ).fetchall()
+    ]
+
+    if not active_sources:
+        print("  Household inference: no census records found.")
         return result
 
-    # Build place_id lookup from place_record
+    # Build place_id lookup once for all sources
     place_for_record: dict[int, int | None] = {
         row["record_id"]: row["place_id"]
         for row in conn.execute("SELECT record_id, place_id FROM place_record").fetchall()
@@ -244,55 +295,8 @@ def run_household_inference(
     ids = _next_ids(conn)
 
     with conn:
-        for rec in records:
-            record_id   = rec["record_id"]
-            census_date = rec["date"] or "1911-04-02"
-            census_year = int(census_date[:4])
-            townland    = rec["place_as_recorded"] or ""
-            place_id    = place_for_record.get(record_id)
-
-            rp_list = conn.execute(
-                "SELECT * FROM recorded_person WHERE record_id = ? ORDER BY recorded_person_id",
-                (record_id,),
-            ).fetchall()
-
-            if not rp_list:
-                result.skipped_records.append(f"record_id={record_id}: no RecordedPersons")
-                continue
-
-            pid_map: dict[int, int] = {}
-            household_pids: list[int] = []
-
-            for rp in rp_list:
-                person_id = ids["person"]
-                _insert_person(conn, person_id, rp, townland, census_year)
-                _insert_person_record(conn, person_id, record_id)
-                pid_map[rp["recorded_person_id"]] = person_id
-                household_pids.append(person_id)
-                ids["person"] += 1
-                result.persons_created += 1
-
-            _infer_relationships(conn, rp_list, pid_map, record_id, ids, result)
-
-            event_id = ids["event"]
-            _insert_census_event(
-                conn, event_id, record_id, place_id, census_date, household_pids,
-            )
-            ids["event"] += 1
-            result.events_created += 1
-            result.records_processed += 1
-
-    if result.unmapped_roles:
-        import pathlib, csv, datetime
-        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = pathlib.Path(f"unmapped_roles_{source_id}_{ts}.tsv")
-        with out_path.open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.writer(fh, delimiter="\t")
-            writer.writerow(["role_as_recorded", "occurrences"])
-            for role, count in sorted(result.unmapped_roles.items(),
-                                      key=lambda kv: -kv[1]):
-                writer.writerow([role, count])
-        print(f"  Unmapped roles written to: {out_path}")
+        for source_id in sorted(active_sources):
+            _run_single_source(conn, source_id, ids, result, place_for_record)
 
     return result
 
@@ -312,6 +316,3 @@ def print_household_inference_report(result: HouseholdInferenceResult) -> None:
             print(f"    {note}")
         if len(result.skipped_records) > 10:
             print(f"    ... and {len(result.skipped_records) - 10} more")
-    if result.unmapped_roles:
-        total = sum(result.unmapped_roles.values())
-        print(f"\n  UNMAPPED ROLES ({len(result.unmapped_roles)} distinct, {total} occurrences — see TSV)")
