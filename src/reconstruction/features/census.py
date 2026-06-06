@@ -1,18 +1,20 @@
 """
 GRA — Census Feature Extractor
-Builds a flat feature DataFrame for Splink from census Person conclusions.
+Builds flat feature DataFrames for Splink from census evidence.
 
-One row per Person per census source. Features extracted from:
-  - person_name (concluded names)
-  - person_record → recorded_person (name_as_recorded, age, role)
-  - person_record → record → source (source_id)
-  - place_record (resolved place_id)
-  - relationship graph (spouse, children, siblings from conclusion layer)
+Two extractors are provided:
 
-Relationship features require household inference to have run first.
-They are null — not zero — for persons with no concluded relationships,
-so Splink's NullLevel correctly treats absence-of-information differently
-from confirmed non-overlap.
+build_census_features()
+    One row per Person per census source (person-level).
+    Used by the general cross-census person linkage pass (linkage.py).
+    Features drawn from the conclusion layer (person_name, relationship graph).
+    Relationship features require household inference to have run first.
+
+build_census_household_features()
+    One row per census Record (household-level).
+    Used by the household linkage pass (linkage.py run_census_household_linkage).
+    Features drawn exclusively from the evidence layer (recorded_person rows).
+    Does NOT require household inference to have run — operates on raw evidence.
 
 Called by src/reconstruction/linkage.py — not invoked directly.
 """
@@ -26,6 +28,13 @@ import pandas as pd
 
 # Census source IDs
 CENSUS_SOURCE_IDS = (3, 4, 5)
+
+# Roles treated as children for household feature extraction
+_CHILD_ROLES = {"son", "daughter"}
+
+# Roles treated as head / spouse
+_HEAD_ROLES   = {"head"}
+_SPOUSE_ROLES = {"spouse"}
 
 # Abbreviation expansions for name normalisation (mirrors reconstruction_algorithms.md §4.1)
 _FORENAME_ABBREV: dict[str, str] = {
@@ -46,22 +55,26 @@ _FORENAME_ABBREV: dict[str, str] = {
 _FADA = str.maketrans("áéíóúÁÉÍÓÚ", "aeiouAEIOU")
 
 
+# ---------------------------------------------------------------------------
+# Normalisation helpers
+# ---------------------------------------------------------------------------
+
 def _normalise_name(raw: str | None) -> str | None:
     """
     Apply name normalisation pipeline from reconstruction_algorithms.md §4.1:
     1. Lowercase
     2. Strip fada (diacritics)
-    3. Normalise whitespace
-    Note: abbreviation expansion is NOT applied here — it is applied to the
-    forename token only in _split_name, to avoid corrupting surnames that
-    happen to match abbreviation keys (Pat, Jas, Wm used as surnames).
+    3. Strip apostrophes and hyphens
+    4. Normalise whitespace
+    Abbreviation expansion is NOT applied here — use _normalise_forename for
+    forename tokens to avoid corrupting surnames that match abbreviation keys.
     """
     if not raw:
         return None
     s = raw.lower().translate(_FADA)
-    s = re.sub(r"['\-]", " ", s)          # strip apostrophes and hyphens
-    s = " ".join(s.split())               # collapse whitespace
-    return s
+    s = re.sub(r"['\-]", " ", s)
+    s = " ".join(s.split())
+    return s or None
 
 
 def _normalise_forename(raw: str | None) -> str | None:
@@ -78,7 +91,6 @@ def _split_name(full_name: str | None) -> tuple[str | None, str | None]:
     """
     Split a 'Firstname Surname' string into (forename_norm, surname_norm).
     Forename receives abbreviation expansion; surname does not.
-    Handles single-token names (surname only) gracefully.
     NAI census format is always 'firstname surname' from the ingest mapping.
     """
     if not full_name:
@@ -89,8 +101,30 @@ def _split_name(full_name: str | None) -> tuple[str | None, str | None]:
     return _normalise_forename(parts[0]), _normalise_name(" ".join(parts[1:]))
 
 
+def _forename_from_full(full_name: str | None) -> str | None:
+    """Extract and normalise the forename token only from a full name string."""
+    if not full_name:
+        return None
+    parts = full_name.strip().split()
+    return _normalise_forename(parts[0]) if parts else None
+
+
+def _birth_year_est(age: int | None, census_date: str | None) -> int | None:
+    """
+    Derive estimated birth year from age and census date string.
+    Clamped to 1750–1926 to suppress transcription errors (e.g. age=999).
+    """
+    if age is None or not census_date:
+        return None
+    m = re.match(r"^(\d{4})", census_date)
+    if not m:
+        return None
+    raw = int(m.group(1)) - int(age)
+    return raw if 1750 <= raw <= 1926 else None
+
+
 # ---------------------------------------------------------------------------
-# Relationship feature lookups (conclusion layer)
+# Relationship feature lookups (conclusion layer — person-level extractor only)
 # ---------------------------------------------------------------------------
 
 def _spouse_name(conn: sqlite3.Connection, person_id: int) -> str | None:
@@ -177,6 +211,10 @@ def _sibling_names(conn: sqlite3.Connection, person_id: int) -> set[str]:
     return {_normalise_name(row[0]) for row in rows if row[0]}
 
 
+# ---------------------------------------------------------------------------
+# Person-level feature extractor (general cross-census linkage pass)
+# ---------------------------------------------------------------------------
+
 def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     """
     Build feature DataFrames for all census Person conclusions, one DataFrame
@@ -256,78 +294,218 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
         full_name = row["full_name"] or ""
         forename, surname = _split_name(full_name)
 
-        # Estimate birth year from census date and age.
-        # Clamped to 1750–1926: transcription errors in age (e.g. 999) would
-        # otherwise produce implausible birth years that corrupt Splink scoring.
-        birth_year_est = None
-        if row["age"] is not None and row["census_date"]:
-            m = re.match(r"^(\d{4})", row["census_date"])
-            if m:
-                raw_by = int(m.group(1)) - int(row["age"])
-                if 1750 <= raw_by <= 1926:
-                    birth_year_est = raw_by
+        place_raw = _normalise_name(row["place_raw"]) if row["place_raw"] else None
+        place_id  = int(row["place_id"]) if row["place_id"] is not None else None
 
-        # Normalise raw place string as fallback for unresolved places.
-        place_raw = None
-        if row["place_raw"]:
-            place_raw = _normalise_name(row["place_raw"])
-
-        # place_id: keep as Python int or None. Pandas converts int columns
-        # with None values to float64 (NaN), which can cause DuckDB to treat
-        # place_id as DOUBLE. We handle this explicitly below with Int64.
-        place_id = int(row["place_id"]) if row["place_id"] is not None else None
-
-        person_id = row["person_id"]
-        child_names   = _child_names(conn, person_id)
-        sibling_names = _sibling_names(conn, person_id)
+        person_id     = row["person_id"]
+        children      = _child_names(conn, person_id)
+        siblings      = _sibling_names(conn, person_id)
 
         records.append({
-            "unique_id":         person_id,   # Splink required PK
+            "unique_id":         person_id,
             "person_id":         person_id,
             "source_id":         row["source_id"],
             "surname_norm":      surname,
             "forename_norm":     forename,
-            "birth_year_est":    birth_year_est,
+            "birth_year_est":    _birth_year_est(row["age"], row["census_date"]),
             "place_id":          place_id,
             "place_raw":         place_raw,
-            # Spouse: scalar string for JaroWinkler comparison.
-            # Null when no couple relationship concluded.
             "spouse_name_norm":  _spouse_name(conn, person_id),
-            # Children and siblings: pipe-joined sorted name strings.
-            # Empty string when no relationships concluded.
-            # Jaccard overlap is computed inside Splink via SQL array functions
-            # (see CustomComparison in linkage.py). Empty string → NullLevel fires.
-            "child_names":       "|".join(sorted(child_names)),
-            "sibling_names":     "|".join(sorted(sibling_names)),
+            "child_names":       "|".join(sorted(children))   or None,
+            "sibling_names":     "|".join(sorted(siblings))   or None,
         })
 
     if not records:
         return []
 
     df = pd.DataFrame(records)
-
-    # Cast place_id to pandas Int64 (nullable integer) to prevent pandas from
-    # coercing the column to float64 when NULLs are present. float64 place_ids
-    # (5.0 instead of 5) can confuse DuckDB's blocking and ExactMatch logic.
     df["place_id"] = df["place_id"].astype("Int64")
-
-    # spouse_name_norm: string or None — pandas object dtype is correct.
-    # child_names / sibling_names: pipe-joined strings; empty string means
-    # no concluded relationships. Replace empty strings with None so that
-    # Splink's NullLevel fires rather than treating "" as a value to compare.
     df["child_names"]   = df["child_names"].replace("", None)
     df["sibling_names"] = df["sibling_names"].replace("", None)
-
-    # One row per person_id per source. If a person somehow has two records
-    # from the same source (R42 would flag this), take the first.
     df = df.drop_duplicates(subset=["unique_id", "source_id"], keep="first")
 
-    # Split into one DataFrame per census source so Splink's link_and_dedupe
-    # can distinguish within-source deduplication from cross-source linkage.
-    # Sources present in the data may be a subset of {3, 4, 5}.
     result: list[pd.DataFrame] = []
     for source_id in sorted(df["source_id"].unique()):
-        source_df = df[df["source_id"] == source_id].reset_index(drop=True)
-        result.append(source_df)
+        result.append(df[df["source_id"] == source_id].reset_index(drop=True))
+    return result
 
+
+# ---------------------------------------------------------------------------
+# Household-level feature extractor (household linkage pass)
+# ---------------------------------------------------------------------------
+
+def _extract_household_row(
+    record_id: int,
+    source_id: int,
+    census_date: str | None,
+    place_id: int | None,
+    place_raw: str | None,
+    rp_rows: list[sqlite3.Row],
+) -> dict:
+    """
+    Build one household feature row from a list of RecordedPerson rows
+    belonging to a single census Record.
+
+    Child name matching uses forenames only (not full names). Within a
+    confirmed same-surname household pair, the surname adds no discriminating
+    value and would penalise cases where a child's surname is recorded with
+    a variant spelling.
+
+    Features:
+        unique_id               int     — Splink required PK; equals record_id
+        record_id               int     — GRA Record primary key
+        source_id               int     — census source id
+        head_surname_norm       str     — normalised head surname
+        head_forename_norm      str     — normalised head forename
+        head_birth_year_est     int     — estimated head birth year
+        spouse_forename_norm    str     — normalised spouse forename; null if absent
+        child_forenames_sorted  str     — pipe-joined sorted normalised child forenames;
+                                          null if no sons or daughters present
+        child_count             int     — count of son + daughter RecordedPersons
+        household_size          int     — total RecordedPerson count
+        place_id                int     — resolved place_id (blocking anchor)
+        place_raw               str     — normalised place string (fallback)
+    """
+    head_surname       = None
+    head_forename      = None
+    head_birth_year    = None
+    spouse_forename    = None
+    child_forenames: list[str] = []
+    household_size     = len(rp_rows)
+
+    for rp in rp_rows:
+        role      = rp["role"]
+        name_raw  = rp["name_as_recorded"] or ""
+        age       = rp["age"]
+
+        if role in _HEAD_ROLES:
+            forename, surname    = _split_name(name_raw)
+            head_forename        = forename
+            head_surname         = surname
+            head_birth_year      = _birth_year_est(age, census_date)
+
+        elif role in _SPOUSE_ROLES:
+            spouse_forename = _forename_from_full(name_raw)
+
+        elif role in _CHILD_ROLES:
+            fn = _forename_from_full(name_raw)
+            if fn:
+                child_forenames.append(fn)
+
+    child_forenames_sorted = "|".join(sorted(child_forenames)) or None
+
+    return {
+        "unique_id":              record_id,
+        "record_id":              record_id,
+        "source_id":              source_id,
+        "head_surname_norm":      head_surname,
+        "head_forename_norm":     head_forename,
+        "head_birth_year_est":    head_birth_year,
+        "spouse_forename_norm":   spouse_forename,
+        "child_forenames_sorted": child_forenames_sorted,
+        "child_count":            len(child_forenames),
+        "household_size":         household_size,
+        "place_id":               place_id,
+        "place_raw":              place_raw,
+    }
+
+
+def build_census_household_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
+    """
+    Build household-level feature DataFrames for the household linkage pass.
+
+    One row per census Record (household). Features are extracted entirely
+    from the evidence layer — recorded_person roles and ages, record event
+    fields, and place_record. Does NOT require household inference to have
+    run; operates on raw evidence before any conclusions are formed.
+
+    Returns one DataFrame per census source present in the data, ordered by
+    source_id ascending. Splink's link_only mode receives these as a list
+    and generates cross-source household candidate pairs.
+
+    Each DataFrame has one row per record_id with columns as described in
+    _extract_household_row(). Records with no head RecordedPerson are
+    included but will have null head features — Splink's NullLevel will
+    handle them gracefully (they will not match above threshold).
+
+    Returns an empty list if no census Records exist.
+    """
+    # Fetch all census Records with their resolved place_id.
+    # One row per record — place_record is LEFT JOIN so unresolved places
+    # produce null place_id (NullLevel fires in blocking/comparison).
+    record_rows = conn.execute(
+        """
+        SELECT
+            r.record_id,
+            r.source_id,
+            r.date          AS census_date,
+            r.place_as_recorded,
+            pr.place_id
+        FROM record r
+        JOIN source s ON s.source_id = r.source_id
+                      AND s.source_id IN (3, 4, 5)
+        LEFT JOIN place_record pr ON pr.record_id = r.record_id
+        ORDER BY r.source_id, r.record_id
+        """,
+    ).fetchall()
+
+    if not record_rows:
+        return []
+
+    # Build a lookup: record_id → list of RecordedPerson rows.
+    # Fetched once for all census records to avoid N+1 queries.
+    record_ids = [row["record_id"] for row in record_rows]
+    placeholders = ",".join("?" * len(record_ids))
+
+    rp_by_record: dict[int, list[sqlite3.Row]] = {rid: [] for rid in record_ids}
+    for rp in conn.execute(
+        f"""
+        SELECT record_id, role, name_as_recorded, age
+        FROM recorded_person
+        WHERE record_id IN ({placeholders})
+        ORDER BY record_id, recorded_person_id
+        """,
+        record_ids,
+    ).fetchall():
+        rp_by_record[rp["record_id"]].append(rp)
+
+    # Build one feature row per Record.
+    rows_out = []
+    for rec in record_rows:
+        record_id  = rec["record_id"]
+        source_id  = rec["source_id"]
+        place_id   = int(rec["place_id"]) if rec["place_id"] is not None else None
+        place_raw  = _normalise_name(rec["place_as_recorded"]) if rec["place_as_recorded"] else None
+        rp_list    = rp_by_record.get(record_id, [])
+
+        rows_out.append(_extract_household_row(
+            record_id   = record_id,
+            source_id   = source_id,
+            census_date = rec["census_date"],
+            place_id    = place_id,
+            place_raw   = place_raw,
+            rp_rows     = rp_list,
+        ))
+
+    if not rows_out:
+        return []
+
+    df = pd.DataFrame(rows_out)
+
+    # Nullable integer columns — prevent pandas float64 coercion.
+    df["place_id"]           = df["place_id"].astype("Int64")
+    df["head_birth_year_est"] = df["head_birth_year_est"].astype("Int64")
+    df["child_count"]        = df["child_count"].astype("Int64")
+    df["household_size"]     = df["household_size"].astype("Int64")
+
+    # Replace empty strings with None so NullLevel fires correctly.
+    for col in ("head_surname_norm", "head_forename_norm",
+                "spouse_forename_norm", "child_forenames_sorted",
+                "place_raw"):
+        df[col] = df[col].replace("", None)
+
+    # Split into one DataFrame per census source for Splink link_only.
+    result: list[pd.DataFrame] = []
+    for source_id in sorted(df["source_id"].unique()):
+        result.append(df[df["source_id"] == source_id].reset_index(drop=True))
     return result
