@@ -542,9 +542,8 @@ def _cmd_household(args: argparse.Namespace) -> None:
     from src.reconstruction import run_household_inference, print_household_inference_report
     conn = open_db(args.db)
     check_version(conn)
-    source_id = int(args.source)
-    print(f"\nRunning household inference for source {source_id}...")
-    result = run_household_inference(conn, source_id=source_id)
+    print("\nRunning household inference across all sources...")
+    result = run_household_inference(conn)
     print_household_inference_report(result)
 
 
@@ -582,16 +581,14 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     conn = open_db(args.db)
     check_version(conn)
 
-    source_id = int(args.source) if getattr(args, "source", None) else None
-    label = f" (source {source_id})" if source_id else " (all sources)"
-    print(f"\nRunning reconstruction pipeline{label}...")
+    print("\nRunning reconstruction pipeline (all sources)...")
 
     print("\n[1/2] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
     print("\n[2/2] Household structure inference")
-    inference_result = run_household_inference(conn, source_id=source_id)
+    inference_result = run_household_inference(conn)
     print_household_inference_report(inference_result)
 
     print("\nReconstruction complete. Running summary...\n")
@@ -619,8 +616,7 @@ def main() -> None:
 
     sub.add_parser("place-resolve", help="Stage 2: resolve place strings across all sources")
 
-    p_household = sub.add_parser("household", help="Stage 3: household inference for one source")
-    p_household.add_argument("--source", required=True, help="Source ID (e.g. 4 for Census 1911)")
+    sub.add_parser("household", help="Stage 3: household inference across all sources")
 
     p_link = sub.add_parser("link", help="Stage 4: cross-census Splink person linkage")
     p_link.add_argument(
@@ -629,13 +625,9 @@ def main() -> None:
         help="Write a plain-text debug log to PATH (optional)",
     )
 
-    p_reconstruct = sub.add_parser(
+    sub.add_parser(
         "reconstruct",
         help="Convenience: run place resolution + household inference (stages 2+3)",
-    )
-    p_reconstruct.add_argument(
-        "--source", default=None,
-        help="Source ID to restrict household inference (optional; omit for all sources)",
     )
 
     args = parser.parse_args()
