@@ -74,15 +74,15 @@ def _gender_for_rp(rp: sqlite3.Row) -> str | None:
     return _SEX_MAP.get(rp["sex_as_recorded"] or "", None)
 
 
-def _label(rp: sqlite3.Row, townland: str, year: int) -> str:
+def _label(rp: sqlite3.Row, townland: str) -> str:
     name = rp["name_as_recorded"].strip()
     tl = townland.strip() if townland else "Unknown"
-    return f"{name} ({year}, {tl})"
+    return f"{name} {tl})"
 
 
-def _insert_person(conn, person_id, rp, townland, year):
+def _insert_person(conn, person_id, rp, townland):
     gender = _gender_for_rp(rp)
-    label = _label(rp, townland, year)
+    label = _label(rp, townland)
     conn.execute(
         "INSERT INTO person (person_id, label, gender) VALUES (?, ?, ?)",
         (person_id, label, gender),
@@ -246,7 +246,7 @@ def _run_single_source(
 
         for rp in rp_list:
             person_id = ids["person"]
-            _insert_person(conn, person_id, rp, townland, census_year)
+            _insert_person(conn, person_id, rp, townland)
             _insert_person_record(conn, person_id, record_id)
             pid_map[rp["recorded_person_id"]] = person_id
             household_pids.append(person_id)
