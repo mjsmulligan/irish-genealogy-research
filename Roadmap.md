@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*June 2026 — v1.5*
+*June 2026 — v1.7*
 
 ---
 
@@ -15,17 +15,17 @@
 | `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
 | `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
 | `docs/database_schema.md` | v2.8 | ✅ Complete | RecordedEvent merged into Record; junction table count 9→5; migration v2.7→v2.8 |
-| `docs/reconstruction_algorithms.md` | v1.2 | ✅ Complete | Updated for schema v2.8; event linkage simplified |
+| `docs/reconstruction_algorithms.md` | v1.4 | ✅ Complete | Linkage improvements: age coherence gate, child departure prior, S–S metric, role-independent HH features |
 | `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
 | `docs/service_api.md` | v1.0 | ✅ Complete | Service layer API; flag/lead tables still needed in schema |
 | `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | v1.5 | ✅ This document | — |
+| `ROADMAP.md` | v1.6 | ✅ This document | — |
 
 ### Implementation
 
 | Module | File(s) | Status | Notes |
 |---|---|---|---|
-| Database layer | `src/db.py` | ✅ Complete | Schema v2.8; explicit `place-resolve`, `household`, `link` CLI commands added; `reconstruct` retained as convenience |
+| Database layer | `src/db.py` | ✅ Complete | Schema v2.8; explicit `place-resolve`, `household`, `link` CLI commands; `reconstruct` retained as convenience |
 | Schema DDL | `src/db/schema.sql` | ✅ Complete | v2.8 — RecordedEvent merged; junction tables reduced to 5 |
 | Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources, 8 repositories |
 | Migration | `src/db/migrations/migrate_27_to_28.sql` | ✅ Complete | Merges recorded_event into record; drops redundant junction tables |
@@ -33,18 +33,31 @@
 | Place seeder | `src/seed_places.py` | ✅ Complete | CSV → place_authority; idempotent |
 | Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | v2.0 — authority-based Jaro-Winkler matching |
 | Household inference | `src/reconstruction/household_inference.py` | ✅ Complete | Census role-pair rules → Person/Relationship/Event conclusions |
-| Census feature extractor | `src/reconstruction/features/census.py` | ✅ Complete | Name, birth year, place_id, **spouse name, child names, sibling names** (relationship features added) |
-| Cross-census linkage | `src/reconstruction/linkage.py` | ✅ Complete | Splink DuckDBAPI; merge contract; **spouse/child/sibling comparisons added**; first test run completed |
+| Census feature extractor | `src/reconstruction/features/census.py` | ✅ Complete | Name, birth year, place_id, spouse name, child names, sibling names |
+| Cross-census linkage | `src/reconstruction/linkage.py` | ✅ Complete | **Significant improvements this session** — see notes below |
 | Validator | `src/validator.py` | ✅ Complete | R40–R46 genealogical constraint rules implemented |
 | Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; flag/lead tables needed first |
 | Test suite | `tests/test_place_authority.py` | ✅ 33/33 passing | Place authority: normalisation, CSV, DB, resolution, hierarchy |
 
-**Verified against real data (Tullynaught DED):**
-- Tullynaught DED: 1 DED + 33 townlands loaded; 17 townlands correctly store NULL barony/civil_parish
-- Census 1901, 1911, and 1926 NAI downloads ingest correctly
-- Place resolution matches "Straniss" → "Straness" via Jaro-Winkler
-- Cross-census linkage first test run: 3881 persons across 3 sources; 264 auto-committed at mean score 0.918; 3291 proposals queued
-- 16 merged pairs with birth year delta > 5 identified in first run (test DB wiped; will retest with relationship features)
+**linkage.py + census.py improvements (June 2026 — session 2, household robustness):**
+- Role-independent household features: `household_surname_norm` (modal surname, stable across head changes), `adult_forenames_sorted` (all non-child members), replacing head/spouse fixed-role columns
+- Szymkiewicz–Simpson replaces Jaccard for all name-set comparisons (household and person-level): `|A∩B| / min(|A|,|B|)` — correct for cross-census comparison where departure is expected
+- Child departure prior: `child_forenames_young` (age ≤ 20, primary signal) and `child_forenames_older` (age > 20, spinster/bachelor pattern, softer signal); `child_forenames_sorted` retained for statistics
+- Age coherence gate in `_resolve_household_persons`: `_age_coherent()` replaces birth-year-estimate comparison. Uses `|observed_age_delta - expected_census_gap| <= tol` with GC03 tolerances (±3yr for 10/15yr gaps, ±4yr for 25yr gap). Encodes the known census dates exactly.
+- `build_census_features` brittle name-join fixed with positional pairing (consistent with `linkage.py`)
+
+**linkage.py improvements (June 2026 — session 1, correctness pass):**
+- `link_type` → `link_only` — eliminates intra-census pair generation; 8,606 spurious intra-census merges eliminated
+- `_UnionFind` replaces `merged_set` — transitive closure, O(1) absorbed property
+- `_persons_for_record` positional pairing — eliminates brittle name-join and role-collision
+- Proposal write corrected — `training_labels (decision='proposed')` only; no premature `person_record` rows
+- `_merge_persons` safe ID generation; per-merge transactions; `CENSUS_SOURCE_IDS` constant; TF adjustment via `.configure()` (Splink 4 API)
+- `review.py` query update needed: proposals now in `training_labels WHERE decision='proposed'`
+
+**Verified against real data (Tullynaught + Clogher DEDs):**
+- Full e2e run analysed; 8,606 intra-census merges diagnosed and root-caused to `link_and_dedupe`; all fixed by `link_only`
+- Place resolution: 60% null `place_id` flagged — Clogher townlands may not be fully seeded
+- TF adjustment active for surname and forename
 
 **Development environment:** VSCode with GitHub integration. Repository: https://github.com/mjsmulligan/irish-genealogy-research
 
@@ -92,7 +105,7 @@ python -m src.db summary
 |---|---|---|
 | R1-0 | Place authority seeding (logainm API + CSV) | ✅ Complete |
 | R1-1 | Place resolution + household inference | ✅ Complete |
-| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | ✅ Complete — first test run done; relationship features added |
+| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | ✅ Complete — linkage correctness pass done this session |
 | R1-3 | Validator (R40–R46 genealogical constraint rules) | ✅ Complete |
 | R1-4 | Person Browser basics (source coverage, merge error flags) | 🔜 Next — depends on service layer |
 
@@ -113,10 +126,12 @@ Land records, military sources, folklore, service layer, consumer front ends.
 
 ### Tier 3 — Reconstruction pipeline ← current
 
-**Linkage quality iteration** 🔜 — following first test run:
-- Term-frequency adjustment for `surname_norm` — deferred until 3–4 DEDs ingested for a representative frequency distribution. High-frequency surnames at Tullynaught scale (Graham 284, Cassidy 206) are unrepresentative of the broader dataset.
-- Review 190 near-commit proposals (score 0.80–0.85) after relationship features run — if ≥80% correct, consider lowering AUTO_COMMIT_THRESHOLD to 0.82
-- Monitor birth year delta violations — R1 test had 16 merges with delta > 5; relationship features should reduce this
+**Linkage: clean re-run needed** 🔜 — wipe DB and rerun full pipeline with all linkage fixes applied. Expected: intra-census merges eliminated; revised delta-violation count; TF adjustment active. Then:
+- Review near-commit band (0.80–0.85) with fresh eyes — composition will change materially
+- Investigate 60% null `place_id` — run `place-resolve` verbosely to identify unresolved Clogher townland strings
+- After clean run: consider lowering `AUTO_COMMIT_THRESHOLD` to 0.82 if near-commit band quality justifies it
+
+**`review.py` update needed** 🔜 — proposal query must read from `training_labels WHERE decision = 'proposed'` rather than `person_record WHERE verified = 0 AND score < threshold`. This is a breaking change from the proposal write correction.
 
 **flag and lead tables** 🔜 — needed before service layer. DDL specified in `service_api.md` §10.3.
 
@@ -134,7 +149,7 @@ Claude consumer, Lovable UI, MCP server.
 
 ### OD-02 — Derived confidence function
 
-Provisional placeholder (record count → low/medium/high) in place. Real multi-source scored linkages now available after R1-2. Revisit after reviewing linkage quality with relationship features.
+Provisional placeholder (record count → low/medium/high) in place. Real multi-source scored linkages available after R1-2. Revisit after clean re-run with linkage fixes.
 
 ---
 
@@ -147,4 +162,6 @@ Provisional placeholder (record count → low/medium/high) in place. Real multi-
 | 1.2 | May 2026 | R1-1 complete; Release Plan added; R1-2 as next milestone |
 | 1.3 | May 2026 | Schema v2.6 (OD-01 resolved); census date fixes; 1926 normaliser corrected; migration added |
 | 1.4 | May 2026 | Place authority redesign complete. PlaceAuthority added to foundational layer (flat schema, logainm.ie source). `src/fetch_places.py` and updated `src/seed_places.py` implemented. `src/reconstruction/place_resolution.py` v2.0. Schema v2.7. 33 tests passing. |
-| 1.5 | June 2026 | Schema v2.8: RecordedEvent merged into Record; junction tables reduced from 9 to 5. R1-2 and R1-3 complete. Linkage first test run completed (3881 persons, 264 merged). Relationship features added to census feature extractor (spouse name, child names, sibling names via conclusion layer). Explicit `place-resolve`, `household`, `link` CLI commands added to `db.py`; `reconstruct` retained as convenience. OD-04 resolved (DuckDBAPI). TF adjustment deferred to multi-DED scale. |
+| 1.5 | June 2026 | Schema v2.8: RecordedEvent merged into Record; junction tables reduced from 9 to 5. R1-2 and R1-3 complete. Linkage first test run completed (3881 persons, 264 merged). Relationship features added to census feature extractor. Explicit `place-resolve`, `household`, `link` CLI commands added to `db.py`; `reconstruct` retained as convenience. OD-04 resolved (DuckDBAPI). |
+| 1.7 | June 2026 | Household robustness pass. Role-independent HH features (modal surname, adult forename set). Szymkiewicz–Simpson replaces Jaccard for all name-set comparisons. Child departure prior: age-split child columns (young ≤20 / older >20). Age coherence gate in Pass 2 person resolution. reconstruction_algorithms.md → v1.4. |
+| 1.6 | June 2026 | Linkage correctness pass. Full e2e log analysed. `link_type` → `link_only`. `_UnionFind` replaces `merged_set`. `_persons_for_record` positional pairing. Proposal write corrected. Safe ID generation. TF adjustment via `.configure()`. Per-merge commits. `CENSUS_SOURCE_IDS` constant. |
