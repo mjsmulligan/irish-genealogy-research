@@ -52,12 +52,14 @@ completes (even if it was skipped early):
 from __future__ import annotations
 
 import datetime
+import re
 import sqlite3
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import jellyfish
 import pandas as pd
 import splink.comparison_library as cl
 import splink.comparison_level_library as cll
@@ -69,6 +71,14 @@ from src.reconstruction.features.census import (
 )
 
 # ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+# SQLite source_ids for the three census years.  Defined once here so that
+# all queries reference the same constant rather than scattered literals.
+CENSUS_SOURCE_IDS: tuple[int, ...] = (3, 4, 5)
+
+# ---------------------------------------------------------------------------
 # Threshold bands (reconstruction_algorithms.md §1.3)
 # ---------------------------------------------------------------------------
 
@@ -78,9 +88,9 @@ SCORE_VERSION_PERSON  = "census_linkage_v1.0"
 SCORE_VERSION_HH      = "household_linkage_v1.0"
 
 _CENSUS_NAMES = {3: "Census 1901", 4: "Census 1911", 5: "Census 1926"}
+_CENSUS_SOURCE_PLACEHOLDERS = ",".join("?" * len(CENSUS_SOURCE_IDS))
 
 # Minimum forename similarity to accept a role match in Pass 2.
-# Below this threshold the role match is flagged rather than merged.
 _MIN_FORENAME_SIM = 0.80
 
 # ---------------------------------------------------------------------------
@@ -204,6 +214,95 @@ class _PersonDebugLog:
 
 
 # ---------------------------------------------------------------------------
+# Union-Find for transitive identity resolution
+# ---------------------------------------------------------------------------
+
+
+class _UnionFind:
+    """
+    Path-compressed, union-by-min-id union-find structure for person identity
+    clusters.
+
+    Lower person_id is always the canonical (root) node, matching the merge
+    contract enforced by _merge_persons().
+
+    This replaces the simple merged_set pattern, which caused non-transitive
+    resolution: if A→B merged first and then C→B was evaluated, C→B was
+    skipped (B absorbed) without evaluating C→A, leaving C unlinked.
+
+    With union-find:
+      - find(id)  returns the current canonical id for any person, following
+                  the chain with path compression.
+      - union(a, b)  merges the two clusters; lower root wins.
+      - absorbed  is the set of all non-canonical ids (formerly merged_set),
+                  used to exclude already-resolved persons from Splink input.
+      - rewrite(pid_l, pid_r)  translates a raw Splink pair to their current
+                  canonical ids before any merge decision is made, enabling
+                  transitive closure across sequential pair processing.
+    """
+
+    def __init__(self, initial: set[int] | None = None) -> None:
+        # parent[id] = canonical id (or self if root)
+        self._parent: dict[int, int] = {}
+        # _absorbed is maintained incrementally so absorbed is O(1).
+        self._absorbed: set[int] = set()
+        if initial:
+            for pid in initial:
+                self._parent[pid] = pid
+
+    def _ensure(self, pid: int) -> None:
+        if pid not in self._parent:
+            self._parent[pid] = pid
+
+    def find(self, pid: int) -> int:
+        """Return canonical id for pid, with path compression."""
+        self._ensure(pid)
+        root = pid
+        while self._parent[root] != root:
+            root = self._parent[root]
+        # Path compression: point every node on the chain directly to root.
+        node = pid
+        while self._parent[node] != root:
+            nxt = self._parent[node]
+            self._parent[node] = root
+            node = nxt
+        return root
+
+    def union(self, a: int, b: int) -> int:
+        """
+        Merge clusters containing a and b. Lower canonical id wins.
+        Returns the canonical id of the merged cluster.
+        """
+        ra = self.find(a)
+        rb = self.find(b)
+        if ra == rb:
+            return ra
+        canonical  = min(ra, rb)
+        absorbed   = max(ra, rb)
+        self._parent[absorbed] = canonical
+        self._absorbed.add(absorbed)
+        return canonical
+
+    def rewrite(self, pid_l: int, pid_r: int) -> tuple[int, int]:
+        """
+        Translate a raw pair to their current canonical ids.
+        Use this before any merge decision so stale pair endpoints resolve
+        correctly and transitive links are not missed.
+        """
+        return self.find(pid_l), self.find(pid_r)
+
+    @property
+    def absorbed(self) -> set[int]:
+        """
+        Set of all non-canonical (absorbed) person_ids.
+        Maintained incrementally in union() — O(1) access.
+        Equivalent to the old merged_set: use to exclude already-resolved
+        persons from Splink feature DataFrames.
+        """
+        return self._absorbed
+
+
+# ---------------------------------------------------------------------------
 # Shared merge logic
 # ---------------------------------------------------------------------------
 
@@ -214,7 +313,7 @@ def _merge_persons(
     score: float,
     score_version: str,
     merge_log: list[str],
-    merged_set: set[int],
+    uf: "_UnionFind",
 ) -> None:
     """
     Merge duplicate_id into canonical_id.
@@ -223,7 +322,8 @@ def _merge_persons(
     All junction rows referencing duplicate_id are re-pointed to
     canonical_id. The duplicate person row is then deleted.
 
-    merge_log and merged_set are mutated in place.
+    merge_log is mutated in place. uf.union() records the merge in the
+    union-find structure so subsequent pairs resolve transitively.
     """
     assert canonical_id < duplicate_id, (
         f"Merge called with canonical_id={canonical_id} > duplicate_id={duplicate_id}; "
@@ -281,17 +381,22 @@ def _merge_persons(
             (canonical_id,),
         ).fetchall()
     }
+    # Fetch MAX once before the loop; increment a local counter per insert
+    # to avoid re-querying inside the transaction where visibility of
+    # just-inserted rows is implementation-defined.
+    next_pn_id = conn.execute(
+        "SELECT COALESCE(MAX(person_name_id), 0) FROM person_name"
+    ).fetchone()[0] + 1
     for name_row in dup_names:
         key = (name_row["value"], name_row["type"])
         if key not in existing_names:
-            max_pn_id = conn.execute(
-                "SELECT COALESCE(MAX(person_name_id), 0) FROM person_name"
-            ).fetchone()[0]
             conn.execute(
                 "INSERT INTO person_name (person_name_id, person_id, value, type) "
                 "VALUES (?, ?, ?, ?)",
-                (max_pn_id + 1, canonical_id, name_row["value"], name_row["type"]),
+                (next_pn_id, canonical_id, name_row["value"], name_row["type"]),
             )
+            existing_names.add(key)
+            next_pn_id += 1
     conn.execute(
         "DELETE FROM person_name WHERE person_id = ?", (duplicate_id,)
     )
@@ -375,7 +480,7 @@ def _merge_persons(
     # 7. Delete the duplicate Person.
     conn.execute("DELETE FROM person WHERE person_id = ?", (duplicate_id,))
 
-    merged_set.add(duplicate_id)
+    uf.union(canonical_id, duplicate_id)
     merge_log.append(
         f"Merged person_id={duplicate_id} → canonical person_id={canonical_id} "
         f"(score={score:.3f}, version={score_version})"
@@ -501,7 +606,6 @@ def _jaro_winkler(a: str | None, b: str | None) -> float:
     if not a or not b:
         return 0.0
     try:
-        import jellyfish
         return jellyfish.jaro_winkler_similarity(a, b)
     except Exception:
         return 0.0
@@ -516,63 +620,79 @@ def _persons_for_record(
     role (from recorded_person) and normalised forename.
 
     Each dict: { person_id, role, forename_norm, birth_year_est, age }
+
+    Join strategy: fetch person_record rows and recorded_person rows for
+    this record separately, then pair them positionally by insertion order
+    (person_name_id ASC for persons, recorded_person_id ASC for evidence).
+
+    This avoids two historical problems:
+      1. Brittle name-string equality join (rp.name_as_recorded = pn.value)
+         that caused silent exclusions on transcription/case variance.
+      2. Role-collision: when two persons share the same role (e.g. two
+         boarders), a MIN(recorded_person_id) subquery assigned the same
+         evidence row to both conclusion-layer persons.
+
+    Positional pairing is valid because household inference creates Person
+    conclusions in the same order as recorded_person rows for the record.
+    Where the counts differ (inference skipped some rows), we truncate to
+    the shorter list — unmatched persons are excluded rather than mis-paired.
     """
-    rows = conn.execute(
+    # Fetch persons for this record in creation order.
+    person_rows = conn.execute(
         """
         SELECT
             pr.person_id,
-            rp.role,
-            rp.age,
-            r.date      AS census_date,
-            pn.value    AS full_name
+            pn.value        AS full_name
         FROM person_record pr
-        JOIN record r ON r.record_id = pr.record_id
-        JOIN recorded_person rp ON rp.record_id = r.record_id
-        -- Match person to their own RecordedPerson row via person_name.
-        -- Where a name is shared, LIMIT 1 picks the first occurrence.
         JOIN person_name pn ON pn.person_id = pr.person_id
             AND pn.type = 'birth_name'
             AND pn.person_name_id = (
                 SELECT MIN(pn2.person_name_id)
                 FROM person_name pn2
-                WHERE pn2.person_id = pr.person_id AND pn2.type = 'birth_name'
-            )
-            AND rp.name_as_recorded = pn.value
-            AND rp.recorded_person_id = (
-                SELECT MIN(rp2.recorded_person_id)
-                FROM recorded_person rp2
-                WHERE rp2.record_id = r.record_id
-                  AND rp2.name_as_recorded = pn.value
+                WHERE pn2.person_id = pr.person_id
+                  AND pn2.type = 'birth_name'
             )
         WHERE pr.record_id = ?
+        ORDER BY pr.person_id   -- creation order proxy; person_id is auto-increment
+        """,
+        (record_id,),
+    ).fetchall()
+
+    # Fetch evidence rows for this record in recorded order.
+    evidence_rows = conn.execute(
+        """
+        SELECT
+            rp.role,
+            rp.age,
+            r.date AS census_date
+        FROM recorded_person rp
+        JOIN record r ON r.record_id = rp.record_id
+        WHERE rp.record_id = ?
         ORDER BY rp.recorded_person_id
         """,
         (record_id,),
     ).fetchall()
 
     result = []
-    for row in rows:
-        full = row["full_name"] or ""
+    for pr, er in zip(person_rows, evidence_rows):
+        full = pr["full_name"] or ""
         parts = full.strip().split()
         forename_raw = parts[0] if parts else None
-        # Simple lowercase normalisation for comparison — abbreviation expansion
-        # already applied during household inference labelling.
         forename_norm = forename_raw.lower() if forename_raw else None
 
         birth_year = None
-        if row["age"] is not None and row["census_date"]:
-            import re
-            m = re.match(r"^(\d{4})", row["census_date"])
+        if er["age"] is not None and er["census_date"]:
+            m = re.match(r"^(\d{4})", er["census_date"])
             if m:
-                raw = int(m.group(1)) - int(row["age"])
+                raw = int(m.group(1)) - int(er["age"])
                 birth_year = raw if 1750 <= raw <= 1926 else None
 
         result.append({
-            "person_id":      row["person_id"],
-            "role":           row["role"],
+            "person_id":      pr["person_id"],
+            "role":           er["role"],
             "forename_norm":  forename_norm,
             "birth_year_est": birth_year,
-            "age":            row["age"],
+            "age":            er["age"],
         })
     return result
 
@@ -583,7 +703,7 @@ def _resolve_household_persons(
     record_id_r: int,
     hh_score: float,
     result: HouseholdLinkageResult,
-    merged_set: set[int],
+    uf: "_UnionFind",
 ) -> None:
     """
     Pass 2: resolve Person identities within a confirmed household pair
@@ -602,18 +722,16 @@ def _resolve_household_persons(
     matched by forename similarity where unambiguous; otherwise skipped
     and noted for researcher attention (deferred to leads system in R2).
 
-    Birth year delta tolerances from §5.6:
-      1901→1911: ±3    1911→1926: ±3    1901→1926: ±4
+    Birth year delta tolerances from GC03/§5.6:
+      1901↔1911: ±3    1911↔1926: ±3    1901↔1926: ±4
     """
-    # Derive census years from the records to select the right tolerance.
-    import re as _re
 
     def _census_year(record_id: int) -> int | None:
         row = conn.execute(
             "SELECT date FROM record WHERE record_id = ?", (record_id,)
         ).fetchone()
         if row and row["date"]:
-            m = _re.match(r"^(\d{4})", row["date"])
+            m = re.match(r"^(\d{4})", row["date"])
             return int(m.group(1)) if m else None
         return None
 
@@ -621,12 +739,16 @@ def _resolve_household_persons(
     year_r = _census_year(record_id_r)
 
     def _by_tolerance(yl: int | None, yr: int | None) -> int:
+        """
+        Return the birth-year delta tolerance (years) for a given census pair.
+        GC03 tolerances: 1901↔1911 = ±3, 1911↔1926 = ±3, 1901↔1926 = ±4.
+        Gaps: 1901↔1911 = 10 yrs, 1911↔1926 = 15 yrs, 1901↔1926 = 25 yrs.
+        """
         if yl is None or yr is None:
-            return 3
+            return 3  # conservative default when year unknown
         gap = abs(yr - yl)
-        if gap <= 11:   return 3   # 1901↔1911
-        if gap <= 16:   return 3   # 1911↔1926
-        return 4                   # 1901↔1926
+        if gap <= 15:   return 3   # 1901↔1911 (10) or 1911↔1926 (15)
+        return 4                   # 1901↔1926 (25)
 
     by_tol = _by_tolerance(year_l, year_r)
 
@@ -645,15 +767,16 @@ def _resolve_household_persons(
         """Attempt to merge two persons. Returns True if merged."""
         pid_l = pl["person_id"]
         pid_r = pr["person_id"]
-        if pid_l == pid_r:
+        # Rewrite through union-find so stale ids resolve to their current
+        # canonical before the merge decision.
+        can_l, can_r = uf.rewrite(pid_l, pid_r)
+        if can_l == can_r:
             return False
-        if pid_l in merged_set or pid_r in merged_set:
-            return False
-        canonical  = min(pid_l, pid_r)
-        duplicate  = max(pid_l, pid_r)
+        canonical  = min(can_l, can_r)
+        duplicate  = max(can_l, can_r)
         _merge_persons(
             conn, canonical, duplicate, score, SCORE_VERSION_HH,
-            result.merge_log, merged_set,
+            result.merge_log, uf,
         )
         result.persons_merged += 1
         return True
@@ -744,12 +867,13 @@ def run_census_household_linkage(
 
     # Guard: need at least 2 census sources with Records.
     source_counts = conn.execute(
-        """
+        f"""
         SELECT source_id, COUNT(*) AS n
         FROM record
-        WHERE source_id IN (3, 4, 5)
+        WHERE source_id IN ({_CENSUS_SOURCE_PLACEHOLDERS})
         GROUP BY source_id
-        """
+        """,
+        CENSUS_SOURCE_IDS,
     ).fetchall()
 
     active_sources = [row["source_id"] for row in source_counts]
@@ -827,52 +951,54 @@ def run_census_household_linkage(
     # Build a label map for the debug log: record_id → head name string
     label_map = _build_hh_label_map(conn, hh_dfs)
 
-    # merged_set is shared across Pass 1 and Pass 2 — tracks all person_ids
-    # merged this run so _try_merge can skip stale pairs.
-    merged_set: set[int] = set()
+    # uf is shared across Pass 1 and Pass 2 — tracks all identity clusters
+    # so _try_merge can resolve stale pair endpoints transitively and
+    # _resolve_household_persons can skip already-canonical pairs.
+    uf: _UnionFind = _UnionFind()
 
     # processed_records prevents acting on the same household pair twice
     # (Splink may produce (A,B) and (B,A) as separate rows).
     processed_records: set[frozenset] = set()
 
     _t0 = time.perf_counter()
-    with conn:
-        for _, row in pred_df.iterrows():
-            rid_l = int(row["unique_id_l"])   # unique_id == record_id
-            rid_r = int(row["unique_id_r"])
-            score = float(row["match_probability"])
+    for _, row in pred_df.iterrows():
+        rid_l = int(row["unique_id_l"])   # unique_id == record_id
+        rid_r = int(row["unique_id_r"])
+        score = float(row["match_probability"])
 
-            if rid_l == rid_r:
-                continue
+        if rid_l == rid_r:
+            continue
 
-            pair_key = frozenset((rid_l, rid_r))
-            if pair_key in processed_records:
-                continue
-            processed_records.add(pair_key)
+        pair_key = frozenset((rid_l, rid_r))
+        if pair_key in processed_records:
+            continue
+        processed_records.add(pair_key)
 
-            if score >= AUTO_COMMIT_THRESHOLD:
-                result.household_pairs_confirmed += 1
-                # Pass 2: resolve persons within this confirmed household pair.
-                persons_before = result.persons_merged
+        if score >= AUTO_COMMIT_THRESHOLD:
+            result.household_pairs_confirmed += 1
+            # Pass 2: resolve persons within this confirmed household pair.
+            # Each household pair commits independently so a failure mid-run
+            # does not roll back all preceding merges.
+            with conn:
                 _resolve_household_persons(
-                    conn, rid_l, rid_r, score, result, merged_set,
+                    conn, rid_l, rid_r, score, result, uf,
                 )
-                if debug_log:
-                    debug.record_pair(_build_hh_pair_record(
-                        row, "merged", "", label_map,
-                    ))
-                    debug.persons_merged = result.persons_merged
-            else:
-                # Below auto-commit but above floor — queue for researcher review.
-                # No person merges; the pair is noted for leads generation (R2).
-                result.household_pairs_proposed += 1
-                if debug_log:
-                    debug.record_pair(_build_hh_pair_record(
-                        row, "proposed", "", label_map,
-                    ))
+            if debug_log:
+                debug.record_pair(_build_hh_pair_record(
+                    row, "merged", "", label_map,
+                ))
+                debug.persons_merged = result.persons_merged
+        else:
+            # Below auto-commit but above floor — queue for researcher review.
+            # No person merges; the pair is noted for leads generation (R2).
+            result.household_pairs_proposed += 1
+            if debug_log:
+                debug.record_pair(_build_hh_pair_record(
+                    row, "proposed", "", label_map,
+                ))
     result.elapsed_merge = time.perf_counter() - _t0
 
-    result.merged_person_ids = merged_set
+    result.merged_person_ids = uf.absorbed
     debug.persons_merged     = result.persons_merged
     result.elapsed_total     = time.perf_counter() - _t_total
 
@@ -890,10 +1016,24 @@ def _build_settings() -> SettingsCreator:
     """
     Splink settings for cross-census person linkage.
 
-    link_type = "link_and_dedupe": find matches both within and across
-    census sources. This handles the case where household inference
-    has already created provisional Person conclusions per source and
-    we need to collapse them.
+    link_type = "link_only": generate candidate pairs across census sources
+    only — never within the same source. Each census year is a separate
+    DataFrame; Splink generates cross-DataFrame pairs only, so two persons
+    from the same census year can never be proposed or merged.
+
+    This matches the household linker's link_type and is the correct mode
+    for cross-census identity resolution. "link_and_dedupe" was previously
+    used here but caused intra-census pairs (husband/wife, siblings, same-
+    name neighbours) to be generated and committed as spurious merges.
+
+    Term-frequency adjustment is enabled for surname_norm and forename_norm.
+    In a small townland community, dominant surnames (Graham, Cassidy, Wray,
+    Gallagher, McCadden) and common forenames (Mary, John, James) create many
+    candidate pairs where a name match is weak evidence. TF adjustment scales
+    match weight by log(1/frequency) in log-odds space: a Graham↔Graham match
+    contributes far less than a Stevenson↔Stevenson match. Splink computes the
+    frequency distribution automatically from the feature DataFrames at
+    training time.
 
     Blocking rules:
       Primary:  same resolved place_id  (strong geographic anchor)
@@ -903,20 +1043,27 @@ def _build_settings() -> SettingsCreator:
     Birth year comparison uses absolute difference; place uses exact match.
     """
     return SettingsCreator(
-        link_type="link_and_dedupe",
+        link_type="link_only",
         blocking_rules_to_generate_predictions=[
             block_on("place_id"),
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
+            # TF adjustment on surname_norm downweights matches on high-frequency
+            # surnames (Graham, Cassidy, Wray, Gallagher, McCadden) that would
+            # otherwise carry the same m-weight as rare surnames. Splink computes
+            # the frequency distribution from the feature DataFrames at training
+            # time. In Splink 4, TF is set via .configure(), not the constructor.
             cl.JaroWinklerAtThresholds(
                 "surname_norm",
                 [0.92, 0.80],
-            ),
+            ).configure(term_frequency_adjustments=True),
+            # TF adjustment on forename_norm for the same reason: Mary, John,
+            # James are so common that a forename match alone is weak evidence.
             cl.JaroWinklerAtThresholds(
                 "forename_norm",
                 [0.92, 0.80],
-            ),
+            ).configure(term_frequency_adjustments=True),
             # birth_year_est is an integer — use AbsoluteDifferenceLevel directly.
             # Thresholds match reconstruction_algorithms.md §5.6: ±2, ±5, ±10 years.
             cl.CustomComparison(
@@ -1081,17 +1228,20 @@ def run_census_linkage(
         run_ts=datetime.datetime.now().isoformat(timespec="seconds")
     )
     _t_total = time.perf_counter()
-    merged_set: set[int] = set(already_merged or [])
+    # Seed the union-find with already-merged ids from the household pass so
+    # pair endpoint rewriting works correctly across both passes.
+    uf: _UnionFind = _UnionFind(initial=set(already_merged or []))
 
     source_counts = conn.execute(
-        """
+        f"""
         SELECT s.source_id, COUNT(DISTINCT pr.person_id) AS person_count
         FROM person_record pr
         JOIN record r ON r.record_id = pr.record_id
         JOIN source s ON s.source_id = r.source_id
-        WHERE s.source_id IN (3, 4, 5)
+        WHERE s.source_id IN ({_CENSUS_SOURCE_PLACEHOLDERS})
         GROUP BY s.source_id
-        """
+        """,
+        CENSUS_SOURCE_IDS,
     ).fetchall()
 
     active_sources = [row["source_id"] for row in source_counts]
@@ -1120,10 +1270,10 @@ def run_census_linkage(
             _write_person_debug_log(debug_log, debug, result)
         return result
 
-    # Exclude persons already merged by the household pass.
-    if merged_set:
+    # Exclude persons already resolved by the household pass.
+    if uf.absorbed:
         source_dfs = [
-            df[~df["unique_id"].isin(merged_set)].reset_index(drop=True)
+            df[~df["unique_id"].isin(uf.absorbed)].reset_index(drop=True)
             for df in source_dfs
         ]
         source_dfs = [df for df in source_dfs if not df.empty]
@@ -1184,68 +1334,77 @@ def run_census_linkage(
     pred_df = pred_df.sort_values("match_probability", ascending=False)
     debug.pairs_above_floor = len(pred_df)
 
-    with conn:
-        for _, row in pred_df.iterrows():
-            pid_l = int(row["unique_id_l"])
-            pid_r = int(row["unique_id_r"])
-            score = float(row["match_probability"])
+    for _, row in pred_df.iterrows():
+        pid_l = int(row["unique_id_l"])
+        pid_r = int(row["unique_id_r"])
+        score = float(row["match_probability"])
 
-            if pid_l == pid_r:
-                if debug_log:
-                    debug.record_pair(_build_person_pair_record(
-                        row, "skipped", "self-match", label_map, source_map))
-                continue
+        if pid_l == pid_r:
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "skipped", "self-match", label_map, source_map))
+            continue
 
-            if pid_l in merged_set or pid_r in merged_set:
-                if debug_log:
-                    debug.record_pair(_build_person_pair_record(
-                        row, "skipped", "already-merged", label_map, source_map))
-                continue
+        # Rewrite through union-find: if either id was previously absorbed,
+        # resolve to its current canonical before making any merge decision.
+        # This enables transitive closure — A→B then C→B becomes C→A.
+        can_l, can_r = uf.rewrite(pid_l, pid_r)
+        if can_l == can_r:
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "skipped", "already-merged", label_map, source_map))
+            continue
 
-            existing = {
-                r2[0] for r2 in conn.execute(
-                    "SELECT person_id FROM person WHERE person_id IN (?, ?)",
-                    (pid_l, pid_r),
-                ).fetchall()
-            }
-            if len(existing) < 2:
-                if debug_log:
-                    debug.record_pair(_build_person_pair_record(
-                        row, "skipped", "vanished", label_map, source_map))
-                continue
+        existing = {
+            r2[0] for r2 in conn.execute(
+                "SELECT person_id FROM person WHERE person_id IN (?, ?)",
+                (can_l, can_r),
+            ).fetchall()
+        }
+        if len(existing) < 2:
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "skipped", "vanished", label_map, source_map))
+            continue
 
-            canonical_id = min(pid_l, pid_r)
-            duplicate_id = max(pid_l, pid_r)
+        canonical_id = min(can_l, can_r)
+        duplicate_id = max(can_l, can_r)
 
-            if score >= AUTO_COMMIT_THRESHOLD:
+        if score >= AUTO_COMMIT_THRESHOLD:
+            # Each merge commits independently so a failure mid-run does not
+            # roll back preceding merges.
+            with conn:
                 _merge_persons(
                     conn, canonical_id, duplicate_id,
                     score, SCORE_VERSION_PERSON,
-                    result.merge_log, merged_set,
+                    result.merge_log, uf,
                 )
-                result.persons_merged += 1
-                if debug_log:
-                    debug.record_pair(_build_person_pair_record(
-                        row, "merged", "", label_map, source_map))
+            result.persons_merged += 1
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "merged", "", label_map, source_map))
 
-            else:
-                dup_records = conn.execute(
-                    "SELECT record_id FROM person_record WHERE person_id = ?",
-                    (duplicate_id,),
-                ).fetchall()
-                for rec_row in dup_records:
-                    conn.execute(
-                        """
-                        INSERT OR IGNORE INTO person_record
-                        (person_id, record_id, score, score_version, verified)
-                        VALUES (?, ?, ?, ?, 0)
-                        """,
-                        (canonical_id, rec_row["record_id"], score, SCORE_VERSION_PERSON),
-                    )
-                result.proposals_written += 1
-                if debug_log:
-                    debug.record_pair(_build_person_pair_record(
-                        row, "proposed", "", label_map, source_map))
+        else:
+            # Score is in the propose band — queue for researcher review.
+            # Do NOT write person_record rows here: doing so would attach
+            # the duplicate's records to the canonical person before any
+            # researcher decision, effectively performing a partial merge
+            # without consent.  Instead write a pending proposal to
+            # training_labels with decision='proposed' so the review
+            # workflow can present it for accept/reject.
+            with conn:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO training_labels
+                        (person_id_1, person_id_2, score, score_version, decision)
+                    VALUES (?, ?, ?, ?, 'proposed')
+                    """,
+                    (canonical_id, duplicate_id, score, SCORE_VERSION_PERSON),
+                )
+            result.proposals_written += 1
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "proposed", "", label_map, source_map))
 
     if debug_log:
         _write_person_debug_log(debug_log, debug, result)
