@@ -23,11 +23,11 @@ Schema version: **2.8** (June 2026)
 | `docs/repositories.md` | ✅ v1.5 | 13 sources across 8 repositories; logainm.ie added |
 | `docs/validation_rules.md` | ✅ v2.6 | 46 rules (R01–R46) |
 | `docs/database_schema.md` | ✅ v2.8 | SQLite DDL; RecordedEvent merged into Record; 5 junction tables |
-| `docs/reconstruction_algorithms.md` | ✅ v1.2 | Record linkage scoring; role-pair rules; sibling inference; updated for v2.8 |
+| `docs/reconstruction_algorithms.md` | ✅ v1.3 | Record linkage scoring; role-pair rules; sibling inference; linkage correctness improvements |
 | `docs/genealogical_constraints.md` | ✅ v1.2 | 22 domain constraints (GC01–GC22) |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API |
 | `docs/session_bootstrap.md` | ✅ v1.0 | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | ✅ v1.5 | Work queue, open decisions, project roadmap |
+| `ROADMAP.md` | ✅ v1.6 | Work queue, open decisions, project roadmap |
 
 ---
 
@@ -88,17 +88,24 @@ Researcher assertions, mutable and supported by evidence.
 5. Analysis       → Community queries, graph traversal, GEDCOM        🔜 future
 ```
 
-### Linkage Features
+### Linkage Design
 
-The Splink linkage model compares persons across census years on:
-- Surname and forename (Jaro-Winkler)
-- Estimated birth year (absolute difference ±2/5/10 years)
+The Splink linkage model uses `link_only` mode — candidate pairs are generated exclusively across census years (1901↔1911, 1901↔1926, 1911↔1926). Within-source pairs are never generated, eliminating a class of spurious intra-census merges.
+
+**Comparisons** (with term-frequency adjustment on name features):
+- Surname (Jaro-Winkler + TF adjustment) — high-frequency surnames (Graham, Cassidy, Wray, Gallagher, McCadden) automatically downweighted
+- Forename (Jaro-Winkler + TF adjustment) — common forenames (Mary, John, James) automatically downweighted
+- Estimated birth year (absolute difference, GC03 tolerances: ±3 for 10/15-year gaps, ±4 for 25-year gap)
 - Resolved townland (`place_id` exact match)
 - Concluded spouse name (Jaro-Winkler — high discriminating power)
 - Concluded child name set (Jaccard overlap)
 - Concluded sibling name set (Jaccard overlap)
 
 Relationship features are drawn from the conclusion layer and require household inference to have run first. They are null — not zero — for persons with no concluded relationships, so Splink's NullLevel correctly treats absence of information differently from confirmed non-overlap.
+
+**Identity resolution** uses a path-compressed union-find structure (`_UnionFind`) rather than a simple absorbed-id set. This enables transitive closure: if A→B merges first and C→B arrives later, C is correctly resolved to A rather than left unlinked.
+
+**Proposals** (score 0.30–0.85) are written to `training_labels (decision='proposed')` only. No premature `person_record` rows are written before researcher review.
 
 ---
 

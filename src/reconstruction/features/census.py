@@ -16,6 +16,21 @@ build_census_household_features()
     Features drawn exclusively from the evidence layer (recorded_person rows).
     Does NOT require household inference to have run — operates on raw evidence.
 
+    Household features are role-independent to handle head changes across the
+    25-year census span (death → spouse becomes head → son becomes head):
+
+      household_surname_norm   — modal surname across all members; stable
+                                  across head changes
+      adult_forenames_sorted   — pipe-joined sorted forenames of all non-child
+                                  members; compared with Szymkiewicz–Simpson
+      child_forenames_sorted   — pipe-joined sorted child forenames; compared
+                                  with Szymkiewicz–Simpson
+
+    Szymkiewicz–Simpson (|A∩B| / min(|A|,|B|)) replaces Jaccard for name-set
+    comparisons. Over a 25-year span children leave and adults die; the
+    expanding union penalises valid continuations under Jaccard. S–S measures
+    containment of the smaller set in the larger, which is the right question.
+
 Called by src/reconstruction/linkage.py — not invoked directly.
 """
 
@@ -23,6 +38,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from collections import Counter, defaultdict
 
 import pandas as pd
 
@@ -35,6 +51,15 @@ _CHILD_ROLES = {"son", "daughter"}
 # Roles treated as head / spouse
 _HEAD_ROLES   = {"head"}
 _SPOUSE_ROLES = {"spouse"}
+
+# Roles treated as adults (non-children) for the role-independent adult
+# forename set. Includes head, spouse, and any other co-resident adult.
+# Excludes child roles so the adult and child sets remain disjoint.
+_ADULT_ROLES = {
+    "head", "spouse", "mother", "father", "sibling",
+    "in_law", "aunt_uncle", "grandchild", "visitor",
+    "boarder", "servant", "niece_nephew", "cousin",
+}
 
 # Abbreviation expansions for name normalisation (mirrors reconstruction_algorithms.md §4.1)
 _FORENAME_ABBREV: dict[str, str] = {
@@ -218,9 +243,8 @@ def _sibling_names(conn: sqlite3.Connection, person_id: int) -> set[str]:
 def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     """
     Build feature DataFrames for all census Person conclusions, one DataFrame
-    per census source.  Splink's link_and_dedupe mode requires a list of
-    DataFrames so it can produce both within-source and cross-source candidate
-    pairs.
+    per census source.  Splink's link_only mode receives a list of DataFrames
+    and generates cross-source candidate pairs only — never within-source.
 
     Each DataFrame has one row per person_id and the following columns:
 
@@ -246,18 +270,22 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
 
     Returns an empty list if no census Person conclusions exist.
     """
-    query = """
+    # Fetch all person-level features from the conclusion layer.
+    # We no longer join recorded_person by name_as_recorded = pn.value (brittle;
+    # breaks on transcription/case variance). Instead we fetch person and
+    # recorded_person rows for each record separately and pair them positionally
+    # in Python, consistent with _persons_for_record in linkage.py.
+    person_rows = conn.execute(
+        f"""
         SELECT
             p.person_id,
             s.source_id,
-            pn.value                                     AS full_name,
-            rp.age                                       AS age,
-            r.date                                       AS census_date,
-            r.place_as_recorded                          AS place_raw,
-            pr2.place_id                                 AS place_id
+            pn.value                AS full_name,
+            r.record_id,
+            r.date                  AS census_date,
+            r.place_as_recorded     AS place_raw,
+            pr2.place_id            AS place_id
         FROM person p
-        -- Concluded person_name (birth_name preferred); required — persons
-        -- without a name cannot be matched and are excluded.
         JOIN person_name pn ON pn.person_id = p.person_id
             AND pn.type = 'birth_name'
             AND pn.person_name_id = (
@@ -265,41 +293,57 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
                 FROM person_name pn2
                 WHERE pn2.person_id = p.person_id AND pn2.type = 'birth_name'
             )
-        -- Link to census records via person_record
         JOIN person_record pr ON pr.person_id = p.person_id
         JOIN record r         ON r.record_id  = pr.record_id
         JOIN source s         ON s.source_id  = r.source_id
-                              AND s.source_id IN (3, 4, 5)
-        -- Match THIS person's RecordedPerson row by name within the household
-        -- record. Where two people share a name, LIMIT 1 picks the first
-        -- occurrence — acceptable for Splink feature purposes.
-        JOIN recorded_person rp ON rp.record_id = r.record_id
-            AND rp.recorded_person_id = (
-                SELECT rp2.recorded_person_id
-                FROM recorded_person rp2
-                WHERE rp2.record_id = r.record_id
-                  AND rp2.name_as_recorded = pn.value
-                ORDER BY rp2.recorded_person_id
-                LIMIT 1
-            )
-        -- Resolved place
+                              AND s.source_id IN ({",".join("?" * len(CENSUS_SOURCE_IDS))})
         LEFT JOIN place_record pr2 ON pr2.record_id = r.record_id
-        ORDER BY p.person_id, s.source_id
-    """
+        ORDER BY r.record_id, p.person_id
+        """,
+        CENSUS_SOURCE_IDS,
+    ).fetchall()
 
-    rows = conn.execute(query).fetchall()
+    if not person_rows:
+        return []
+
+    # Fetch recorded_person rows for all relevant records in one query.
+    record_ids = list({row["record_id"] for row in person_rows})
+    placeholders = ",".join("?" * len(record_ids))
+    rp_rows = conn.execute(
+        f"""
+        SELECT record_id, age
+        FROM recorded_person
+        WHERE record_id IN ({placeholders})
+        ORDER BY record_id, recorded_person_id
+        """,
+        record_ids,
+    ).fetchall()
+
+    # Build positional lookup: record_id → [age, age, ...] in recorded order.
+    rp_ages_by_record: dict[int, list] = defaultdict(list)
+    for rp in rp_rows:
+        rp_ages_by_record[rp["record_id"]].append(rp["age"])
+
+    # Track position within each record to pair person to evidence row.
+    record_person_pos: dict[int, int] = defaultdict(int)
 
     records = []
-    for row in rows:
-        full_name = row["full_name"] or ""
+    for row in person_rows:
+        full_name  = row["full_name"] or ""
         forename, surname = _split_name(full_name)
+        place_raw  = _normalise_name(row["place_raw"]) if row["place_raw"] else None
+        place_id   = int(row["place_id"]) if row["place_id"] is not None else None
+        record_id  = row["record_id"]
+        person_id  = row["person_id"]
 
-        place_raw = _normalise_name(row["place_raw"]) if row["place_raw"] else None
-        place_id  = int(row["place_id"]) if row["place_id"] is not None else None
+        # Pair this person with its positional evidence row.
+        pos  = record_person_pos[record_id]
+        ages = rp_ages_by_record[record_id]
+        age  = ages[pos] if pos < len(ages) else None
+        record_person_pos[record_id] += 1
 
-        person_id     = row["person_id"]
-        children      = _child_names(conn, person_id)
-        siblings      = _sibling_names(conn, person_id)
+        children = _child_names(conn, person_id)
+        siblings = _sibling_names(conn, person_id)
 
         records.append({
             "unique_id":         person_id,
@@ -307,12 +351,12 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
             "source_id":         row["source_id"],
             "surname_norm":      surname,
             "forename_norm":     forename,
-            "birth_year_est":    _birth_year_est(row["age"], row["census_date"]),
+            "birth_year_est":    _birth_year_est(age, row["census_date"]),
             "place_id":          place_id,
             "place_raw":         place_raw,
             "spouse_name_norm":  _spouse_name(conn, person_id),
-            "child_names":       "|".join(sorted(children))   or None,
-            "sibling_names":     "|".join(sorted(siblings))   or None,
+            "child_names":       "|".join(sorted(children)) or None,
+            "sibling_names":     "|".join(sorted(siblings)) or None,
         })
 
     if not records:
@@ -334,6 +378,38 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
 # Household-level feature extractor (household linkage pass)
 # ---------------------------------------------------------------------------
 
+def _modal_surname(rp_rows: list[sqlite3.Row]) -> str | None:
+    """
+    Return the most common normalised surname across all household members.
+
+    Using the modal surname rather than the head's surname makes the feature
+    stable across head changes (death → spouse becomes head → son becomes head).
+    In a same-surname household this is always the shared surname. In a mixed
+    household (servants, in-laws) it remains the family surname by plurality.
+
+    Falls back to the head's surname if no mode can be determined (single row).
+    """
+    counts: Counter = Counter()
+    for rp in rp_rows:
+        _, surname = _split_name(rp["name_as_recorded"] or "")
+        if surname:
+            counts[surname] += 1
+    if not counts:
+        return None
+    return counts.most_common(1)[0][0]
+
+
+# Age threshold for child departure prior.
+# Children aged > _CHILD_DEPARTURE_AGE at time of census are treated as
+# "older resident children" — the spinster/bachelor pattern common in large
+# Irish households. They are present but less diagnostic for household
+# continuity than younger children who are definitively still dependents.
+# Children aged <= _CHILD_DEPARTURE_AGE are "young children" — they are
+# essentially certain to still be in the household at the next census (or
+# recently departed by the 25-year 1901→1926 gap).
+_CHILD_DEPARTURE_AGE: int = 20
+
+
 def _extract_household_row(
     record_id: int,
     source_id: int,
@@ -346,67 +422,93 @@ def _extract_household_row(
     Build one household feature row from a list of RecordedPerson rows
     belonging to a single census Record.
 
-    Child name matching uses forenames only (not full names). Within a
-    confirmed same-surname household pair, the surname adds no discriminating
-    value and would penalise cases where a child's surname is recorded with
-    a variant spelling.
+    Features are role-independent to handle head changes across the 25-year
+    census span. A death making the spouse the new head, or a son becoming
+    head, should not break household continuity matching.
+
+    Surname: modal surname across all members (stable across head changes).
+
+    Adult forenames: all non-child member forenames as a sorted pipe-joined
+    set. A Patrick + Mary household where Mary becomes head in 1911 produces
+    the same adult forename set both years. Compared with Szymkiewicz–Simpson
+    so departed adults reduce score gracefully rather than collapsing it.
+
+    Child forenames: split into two age-based buckets using the departure
+    prior. Over the 25-year census span, children grow up and leave.
+
+      child_forenames_young  — children aged <= _CHILD_DEPARTURE_AGE (20).
+        These are definitively still dependents at the time of this census
+        and the most reliable cross-census continuity signal. Used as the
+        primary S–S comparison feature.
+
+      child_forenames_older  — children aged > 20 (the spinster/bachelor
+        pattern). Present in this census but likely departed by the next.
+        Used as a secondary S–S comparison feature; absence does not
+        strongly penalise a valid household continuation.
+
+      child_forenames_sorted — all children regardless of age. Retained for
+        backward compatibility and summary statistics.
+
+    When age is missing from a recorded_person row, the child is placed in
+    child_forenames_young (conservative: treat as young rather than discard).
+
+    Szymkiewicz–Simpson = |A ∩ B| / min(|A|, |B|). For the young child set
+    over 25 years: {Bridget(4), Patrick(7), James(9)} in 1901 (all young)
+    vs {Patrick, James} in 1926 → 2/2 = 1.0 rather than Jaccard's 2/3 ≈ 0.67.
 
     Features:
-        unique_id               int     — Splink required PK; equals record_id
-        record_id               int     — GRA Record primary key
-        source_id               int     — census source id
-        head_surname_norm       str     — normalised head surname
-        head_forename_norm      str     — normalised head forename
-        head_birth_year_est     int     — estimated head birth year
-        spouse_forename_norm    str     — normalised spouse forename; null if absent
-        child_forenames_sorted  str     — pipe-joined sorted normalised child forenames;
-                                          null if no sons or daughters present
-        child_count             int     — count of son + daughter RecordedPersons
-        household_size          int     — total RecordedPerson count
-        place_id                int     — resolved place_id (blocking anchor)
-        place_raw               str     — normalised place string (fallback)
+        unique_id                int   — Splink required PK; equals record_id
+        record_id                int   — GRA Record primary key
+        source_id                int   — census source id
+        household_surname_norm   str   — modal surname across all members
+        adult_forenames_sorted   str   — pipe-joined sorted adult forenames
+        child_forenames_young    str   — pipe-joined sorted child forenames,
+                                         aged <= 20 (primary continuity signal)
+        child_forenames_older    str   — pipe-joined sorted child forenames,
+                                         aged > 20 (spinster/bachelor pattern)
+        child_forenames_sorted   str   — pipe-joined sorted child forenames, all
+        adult_count              int   — count of non-child members
+        child_count              int   — count of son + daughter members
+        household_size           int   — total RecordedPerson count
+        place_id                 int   — resolved place_id (blocking anchor)
+        place_raw                str   — normalised place string (fallback)
     """
-    head_surname       = None
-    head_forename      = None
-    head_birth_year    = None
-    spouse_forename    = None
-    child_forenames: list[str] = []
-    household_size     = len(rp_rows)
+    adult_forenames:       list[str] = []
+    child_forenames_young: list[str] = []
+    child_forenames_older: list[str] = []
 
     for rp in rp_rows:
-        role      = rp["role"]
-        name_raw  = rp["name_as_recorded"] or ""
-        age       = rp["age"]
+        role     = rp["role"]
+        name_raw = rp["name_as_recorded"] or ""
+        fn       = _forename_from_full(name_raw)
+        if not fn:
+            continue
 
-        if role in _HEAD_ROLES:
-            forename, surname    = _split_name(name_raw)
-            head_forename        = forename
-            head_surname         = surname
-            head_birth_year      = _birth_year_est(age, census_date)
+        if role in _CHILD_ROLES:
+            age = rp["age"]
+            if age is None or int(age) <= _CHILD_DEPARTURE_AGE:
+                child_forenames_young.append(fn)
+            else:
+                child_forenames_older.append(fn)
+        elif role in _ADULT_ROLES:
+            adult_forenames.append(fn)
 
-        elif role in _SPOUSE_ROLES:
-            spouse_forename = _forename_from_full(name_raw)
-
-        elif role in _CHILD_ROLES:
-            fn = _forename_from_full(name_raw)
-            if fn:
-                child_forenames.append(fn)
-
-    child_forenames_sorted = "|".join(sorted(child_forenames)) or None
+    all_children = sorted(child_forenames_young + child_forenames_older)
 
     return {
-        "unique_id":              record_id,
-        "record_id":              record_id,
-        "source_id":              source_id,
-        "head_surname_norm":      head_surname,
-        "head_forename_norm":     head_forename,
-        "head_birth_year_est":    head_birth_year,
-        "spouse_forename_norm":   spouse_forename,
-        "child_forenames_sorted": child_forenames_sorted,
-        "child_count":            len(child_forenames),
-        "household_size":         household_size,
-        "place_id":               place_id,
-        "place_raw":              place_raw,
+        "unique_id":               record_id,
+        "record_id":               record_id,
+        "source_id":               source_id,
+        "household_surname_norm":  _modal_surname(rp_rows),
+        "adult_forenames_sorted":  "|".join(sorted(adult_forenames)) or None,
+        "child_forenames_young":   "|".join(sorted(child_forenames_young)) or None,
+        "child_forenames_older":   "|".join(sorted(child_forenames_older)) or None,
+        "child_forenames_sorted":  "|".join(all_children) or None,
+        "adult_count":             len(adult_forenames),
+        "child_count":             len(all_children),
+        "household_size":          len(rp_rows),
+        "place_id":                place_id,
+        "place_raw":               place_raw,
     }
 
 
@@ -424,9 +526,8 @@ def build_census_household_features(conn: sqlite3.Connection) -> list[pd.DataFra
     and generates cross-source household candidate pairs.
 
     Each DataFrame has one row per record_id with columns as described in
-    _extract_household_row(). Records with no head RecordedPerson are
-    included but will have null head features — Splink's NullLevel will
-    handle them gracefully (they will not match above threshold).
+    _extract_household_row(), including the age-split child forename columns
+    (child_forenames_young, child_forenames_older, child_forenames_sorted).
 
     Returns an empty list if no census Records exist.
     """
@@ -434,7 +535,7 @@ def build_census_household_features(conn: sqlite3.Connection) -> list[pd.DataFra
     # One row per record — place_record is LEFT JOIN so unresolved places
     # produce null place_id (NullLevel fires in blocking/comparison).
     record_rows = conn.execute(
-        """
+        f"""
         SELECT
             r.record_id,
             r.source_id,
@@ -443,10 +544,11 @@ def build_census_household_features(conn: sqlite3.Connection) -> list[pd.DataFra
             pr.place_id
         FROM record r
         JOIN source s ON s.source_id = r.source_id
-                      AND s.source_id IN (3, 4, 5)
+                      AND s.source_id IN ({",".join("?" * len(CENSUS_SOURCE_IDS))})
         LEFT JOIN place_record pr ON pr.record_id = r.record_id
         ORDER BY r.source_id, r.record_id
         """,
+        CENSUS_SOURCE_IDS,
     ).fetchall()
 
     if not record_rows:
@@ -493,15 +595,15 @@ def build_census_household_features(conn: sqlite3.Connection) -> list[pd.DataFra
     df = pd.DataFrame(rows_out)
 
     # Nullable integer columns — prevent pandas float64 coercion.
-    df["place_id"]           = df["place_id"].astype("Int64")
-    df["head_birth_year_est"] = df["head_birth_year_est"].astype("Int64")
-    df["child_count"]        = df["child_count"].astype("Int64")
-    df["household_size"]     = df["household_size"].astype("Int64")
+    df["place_id"]       = df["place_id"].astype("Int64")
+    df["adult_count"]    = df["adult_count"].astype("Int64")
+    df["child_count"]    = df["child_count"].astype("Int64")
+    df["household_size"] = df["household_size"].astype("Int64")
 
     # Replace empty strings with None so NullLevel fires correctly.
-    for col in ("head_surname_norm", "head_forename_norm",
-                "spouse_forename_norm", "child_forenames_sorted",
-                "place_raw"):
+    for col in ("household_surname_norm", "adult_forenames_sorted",
+                "child_forenames_young", "child_forenames_older",
+                "child_forenames_sorted", "place_raw"):
         df[col] = df[col].replace("", None)
 
     # Split into one DataFrame per census source for Splink link_only.
