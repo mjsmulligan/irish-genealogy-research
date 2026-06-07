@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import datetime
 import re
+import re
 import sqlite3
 import time
 from dataclasses import dataclass, field
@@ -69,14 +70,6 @@ from src.reconstruction.features.census import (
     build_census_features,
     build_census_household_features,
 )
-
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-
-# SQLite source_ids for the three census years.  Defined once here so that
-# all queries reference the same constant rather than scattered literals.
-CENSUS_SOURCE_IDS: tuple[int, ...] = (3, 4, 5)
 
 # ---------------------------------------------------------------------------
 # Threshold bands (reconstruction_algorithms.md §1.3)
@@ -214,95 +207,6 @@ class _PersonDebugLog:
 
 
 # ---------------------------------------------------------------------------
-# Union-Find for transitive identity resolution
-# ---------------------------------------------------------------------------
-
-
-class _UnionFind:
-    """
-    Path-compressed, union-by-min-id union-find structure for person identity
-    clusters.
-
-    Lower person_id is always the canonical (root) node, matching the merge
-    contract enforced by _merge_persons().
-
-    This replaces the simple merged_set pattern, which caused non-transitive
-    resolution: if A→B merged first and then C→B was evaluated, C→B was
-    skipped (B absorbed) without evaluating C→A, leaving C unlinked.
-
-    With union-find:
-      - find(id)  returns the current canonical id for any person, following
-                  the chain with path compression.
-      - union(a, b)  merges the two clusters; lower root wins.
-      - absorbed  is the set of all non-canonical ids (formerly merged_set),
-                  used to exclude already-resolved persons from Splink input.
-      - rewrite(pid_l, pid_r)  translates a raw Splink pair to their current
-                  canonical ids before any merge decision is made, enabling
-                  transitive closure across sequential pair processing.
-    """
-
-    def __init__(self, initial: set[int] | None = None) -> None:
-        # parent[id] = canonical id (or self if root)
-        self._parent: dict[int, int] = {}
-        # _absorbed is maintained incrementally so absorbed is O(1).
-        self._absorbed: set[int] = set()
-        if initial:
-            for pid in initial:
-                self._parent[pid] = pid
-
-    def _ensure(self, pid: int) -> None:
-        if pid not in self._parent:
-            self._parent[pid] = pid
-
-    def find(self, pid: int) -> int:
-        """Return canonical id for pid, with path compression."""
-        self._ensure(pid)
-        root = pid
-        while self._parent[root] != root:
-            root = self._parent[root]
-        # Path compression: point every node on the chain directly to root.
-        node = pid
-        while self._parent[node] != root:
-            nxt = self._parent[node]
-            self._parent[node] = root
-            node = nxt
-        return root
-
-    def union(self, a: int, b: int) -> int:
-        """
-        Merge clusters containing a and b. Lower canonical id wins.
-        Returns the canonical id of the merged cluster.
-        """
-        ra = self.find(a)
-        rb = self.find(b)
-        if ra == rb:
-            return ra
-        canonical  = min(ra, rb)
-        absorbed   = max(ra, rb)
-        self._parent[absorbed] = canonical
-        self._absorbed.add(absorbed)
-        return canonical
-
-    def rewrite(self, pid_l: int, pid_r: int) -> tuple[int, int]:
-        """
-        Translate a raw pair to their current canonical ids.
-        Use this before any merge decision so stale pair endpoints resolve
-        correctly and transitive links are not missed.
-        """
-        return self.find(pid_l), self.find(pid_r)
-
-    @property
-    def absorbed(self) -> set[int]:
-        """
-        Set of all non-canonical (absorbed) person_ids.
-        Maintained incrementally in union() — O(1) access.
-        Equivalent to the old merged_set: use to exclude already-resolved
-        persons from Splink feature DataFrames.
-        """
-        return self._absorbed
-
-
-# ---------------------------------------------------------------------------
 # Shared merge logic
 # ---------------------------------------------------------------------------
 
@@ -322,8 +226,7 @@ def _merge_persons(
     All junction rows referencing duplicate_id are re-pointed to
     canonical_id. The duplicate person row is then deleted.
 
-    merge_log is mutated in place. uf.union() records the merge in the
-    union-find structure so subsequent pairs resolve transitively.
+    merge_log and merged_set are mutated in place.
     """
     assert canonical_id < duplicate_id, (
         f"Merge called with canonical_id={canonical_id} > duplicate_id={duplicate_id}; "
@@ -771,38 +674,20 @@ def _resolve_household_persons(
     year_l = _census_year(record_id_l)
     year_r = _census_year(record_id_r)
 
-    # Census gaps are exact (1901↔1911=10, 1911↔1926=15, 1901↔1926=25).
-    # Age coherence: the observed age delta between two persons proposed as
-    # the same individual should equal the known census gap, within tolerance.
-    # This is stronger than comparing birth year estimates because it encodes
-    # what we know exactly (the gap) rather than what we estimate (birth year).
-    #
-    # GC03 tolerances: ±3 years for 10/15-year gaps, ±4 years for 25-year gap.
-    # These account for transcription error and age rounding in census records.
-    _expected_gap: int | None = abs(year_r - year_l) if (year_l and year_r) else None
-
-    def _age_coherence_tol() -> int:
-        if _expected_gap is None:
+    def _by_tolerance(yl: int | None, yr: int | None) -> int:
+        if yl is None or yr is None:
             return 3
-        return 4 if _expected_gap > 15 else 3
+        gap = abs(yr - yl)
+        if gap <= 11:   return 3   # 1901↔1911
+        if gap <= 16:   return 3   # 1911↔1926
+        return 4                   # 1901↔1926
 
-    _tol = _age_coherence_tol()
+    by_tol = _by_tolerance(year_l, year_r)
 
-    def _age_coherent(age_l: int | None, age_r: int | None) -> bool:
-        """
-        True if the observed age delta is within tolerance of the expected
-        census gap. Passes when either age is missing (can't disqualify on
-        absent data). Also passes when census years are unknown.
-
-        Example: child aged 4 in 1901 should be aged 14 in 1911.
-        observed_delta = |14 - 4| = 10, expected_gap = 10, deviation = 0 ✓
-        A child aged 16 in 1911 would give deviation = 2 — within ±3 ✓
-        A child aged 20 in 1911 would give deviation = 6 — rejected ✗
-        """
-        if age_l is None or age_r is None or _expected_gap is None:
-            return True
-        observed_delta = abs(int(age_r) - int(age_l))
-        return abs(observed_delta - _expected_gap) <= _tol
+    def _by_ok(by_l: int | None, by_r: int | None) -> bool:
+        if by_l is None or by_r is None:
+            return True   # can't disqualify on missing data
+        return abs(by_l - by_r) <= by_tol
 
     persons_l = _persons_for_record(conn, record_id_l)
     persons_r = _persons_for_record(conn, record_id_r)
