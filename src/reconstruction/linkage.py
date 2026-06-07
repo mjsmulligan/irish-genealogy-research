@@ -477,7 +477,56 @@ def _merge_persons(
         """
     )
 
-    # 7. Delete the duplicate Person.
+# 7. training_labels: re-point or delete proposals referencing duplicate_id.
+
+    # Delete the direct proposal between this pair — superseded by the merge.
+    conn.execute(
+        """
+        DELETE FROM training_labels
+        WHERE (person_id_1 = ? AND person_id_2 = ?)
+           OR (person_id_1 = ? AND person_id_2 = ?)
+        """,
+        (canonical_id, duplicate_id, duplicate_id, canonical_id),
+    )
+
+    # Re-point remaining proposals that reference duplicate_id.
+    # Fetch them, delete them, reinsert with canonical_id substituted and
+    # endpoints re-sorted (min left, max right) to satisfy person_id_1 < person_id_2.
+    stale_rows = conn.execute(
+        """
+        SELECT label_id, person_id_1, person_id_2, score, score_version,
+               decision, note, created_at, reviewed_at
+        FROM training_labels
+        WHERE person_id_1 = ? OR person_id_2 = ?
+        """,
+        (duplicate_id, duplicate_id),
+    ).fetchall()
+
+    if stale_rows:
+        stale_ids = [row["label_id"] for row in stale_rows]
+        placeholders = ",".join("?" * len(stale_ids))
+        conn.execute(
+            f"DELETE FROM training_labels WHERE label_id IN ({placeholders})",
+            stale_ids,
+        )
+        for row in stale_rows:
+            p1 = canonical_id if row["person_id_1"] == duplicate_id else row["person_id_1"]
+            p2 = canonical_id if row["person_id_2"] == duplicate_id else row["person_id_2"]
+            lo, hi = min(p1, p2), max(p1, p2)
+            if lo == hi:
+                continue  # self-referential after substitution — drop it
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO training_labels
+                    (person_id_1, person_id_2, score, score_version,
+                     decision, note, created_at, reviewed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (lo, hi, row["score"], row["score_version"],
+                 row["decision"], row["note"], row["created_at"], row["reviewed_at"]),
+            )
+
+      # 8. Delete the duplicate Person.
     conn.execute("DELETE FROM person WHERE person_id = ?", (duplicate_id,))
 
     uf.union(canonical_id, duplicate_id)
@@ -537,7 +586,7 @@ def _build_household_settings() -> SettingsCreator:
         b = f"string_split(\"{col}_r\", '|')"
         return (
             f"(len(list_intersect({a}, {b})) * 1.0) / "
-            f"nullif(min(len({a}), len({b})), 0)"
+            f"nullif(least(len({a}), len({b})), 0)"
         )
 
     return SettingsCreator(
@@ -981,6 +1030,7 @@ def run_census_household_linkage(
         threshold_match_probability=PROPOSE_FLOOR
     )
     pred_df: pd.DataFrame = predictions.as_pandas_dataframe()
+    print(pred_df[["source_dataset_l","source_dataset_r"]].drop_duplicates().to_string())
     result.elapsed_prediction = time.perf_counter() - _t0
 
     if pred_df.empty:
@@ -1156,11 +1206,11 @@ def _build_settings() -> SettingsCreator:
                 comparison_levels=[
                     cll.NullLevel("child_names"),
                     cll.CustomLevel(
-                        "(len(list_intersect(string_split(\"child_names_l\", '|'), string_split(\"child_names_r\", '|'))) * 1.0) / nullif(min(len(string_split(\"child_names_l\", '|')), len(string_split(\"child_names_r\", '|'))), 0) >= 1.0",
+                        "(len(list_intersect(string_split(\"child_names_l\", '|'), string_split(\"child_names_r\", '|'))) * 1.0) / nullif(least(len(string_split(\"child_names_l\", '|')), len(string_split(\"child_names_r\", '|'))), 0) >= 1.0",
                         label_for_charts="child_ss = 1.0 (full containment)",
                     ),
                     cll.CustomLevel(
-                        "(len(list_intersect(string_split(\"child_names_l\", '|'), string_split(\"child_names_r\", '|'))) * 1.0) / nullif(min(len(string_split(\"child_names_l\", '|')), len(string_split(\"child_names_r\", '|'))), 0) >= 0.5",
+                        "(len(list_intersect(string_split(\"child_names_l\", '|'), string_split(\"child_names_r\", '|'))) * 1.0) / nullif(least(len(string_split(\"child_names_l\", '|')), len(string_split(\"child_names_r\", '|'))), 0) >= 0.5",
                         label_for_charts="child_ss >= 0.5 (partial overlap)",
                     ),
                     cll.ElseLevel(),
@@ -1174,11 +1224,11 @@ def _build_settings() -> SettingsCreator:
                 comparison_levels=[
                     cll.NullLevel("sibling_names"),
                     cll.CustomLevel(
-                        "(len(list_intersect(string_split(\"sibling_names_l\", '|'), string_split(\"sibling_names_r\", '|'))) * 1.0) / nullif(min(len(string_split(\"sibling_names_l\", '|')), len(string_split(\"sibling_names_r\", '|'))), 0) >= 1.0",
+                        "(len(list_intersect(string_split(\"sibling_names_l\", '|'), string_split(\"sibling_names_r\", '|'))) * 1.0) / nullif(least(len(string_split(\"sibling_names_l\", '|')), len(string_split(\"sibling_names_r\", '|'))), 0) >= 1.0",
                         label_for_charts="sibling_ss = 1.0 (full containment)",
                     ),
                     cll.CustomLevel(
-                        "(len(list_intersect(string_split(\"sibling_names_l\", '|'), string_split(\"sibling_names_r\", '|'))) * 1.0) / nullif(min(len(string_split(\"sibling_names_l\", '|')), len(string_split(\"sibling_names_r\", '|'))), 0) >= 0.5",
+                        "(len(list_intersect(string_split(\"sibling_names_l\", '|'), string_split(\"sibling_names_r\", '|'))) * 1.0) / nullif(least(len(string_split(\"sibling_names_l\", '|')), len(string_split(\"sibling_names_r\", '|'))), 0) >= 0.5",
                         label_for_charts="sibling_ss >= 0.5 (partial overlap)",
                     ),
                     cll.ElseLevel(),
@@ -1336,6 +1386,8 @@ def run_census_linkage(
     pred_df = pred_df.sort_values("match_probability", ascending=False)
     debug.pairs_above_floor = len(pred_df)
 
+    processed_pairs: set[frozenset] = set()
+
     for _, row in pred_df.iterrows():
         pid_l = int(row["unique_id_l"])
         pid_r = int(row["unique_id_r"])
@@ -1356,6 +1408,86 @@ def run_census_linkage(
                 debug.record_pair(_build_person_pair_record(
                     row, "skipped", "already-merged", label_map, source_map))
             continue
+
+        pair_key = frozenset((can_l, can_r))
+        if pair_key in processed_pairs:
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "skipped", "duplicate-pair", label_map, source_map))
+            continue
+        processed_pairs.add(pair_key)
+
+        # Forename gate: reject auto-commit when forenames are entirely
+        # different (gamma_forename_norm == 0 means the ElseLevel fired —
+        # no Jaro-Winkler similarity above the lowest threshold).
+        # Surname + place alone is not sufficient evidence for an identity
+        # merge. Demote to proposal so the researcher sees the pair.
+        gamma_forename = row.get("gamma_forename_norm")
+        if (
+            score >= AUTO_COMMIT_THRESHOLD
+            and gamma_forename is not None
+            and float(gamma_forename) == 0.0
+        ):
+            with conn:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO training_labels
+                        (person_id_1, person_id_2, score, score_version, decision)
+                    VALUES (?, ?, ?, ?, 'proposed')
+                    """,
+                    (min(can_l, can_r), max(can_l, can_r),
+                     score, SCORE_VERSION_PERSON),
+                )
+            result.proposals_written += 1
+            if debug_log:
+                debug.record_pair(_build_person_pair_record(
+                    row, "proposed", "forename-gate", label_map, source_map))
+            continue
+
+# Birth year coherence gate: reject auto-commit when the birth year
+        # delta is impossible given the known census gap.
+        # Uses estimated birth years rather than raw ages; tolerance matches
+        # GC03 (±3 years for 10/15-year gaps, ±4 for 25-year gap).
+        by_l = row.get("birth_year_est_l")
+        by_r = row.get("birth_year_est_r")
+        if (
+            score >= AUTO_COMMIT_THRESHOLD
+            and by_l is not None
+            and by_r is not None
+        ):
+            try:
+                by_l_int = int(by_l)
+                by_r_int = int(by_r)
+                src_l = row.get("source_dataset_l", "")
+                src_r = row.get("source_dataset_r", "")
+                # Derive census years from source dataset labels.
+                # Splink source_dataset values match the DataFrame index
+                # passed to Linker — typically "0", "1", "2" or the df name.
+                # Use birth year range as a proxy when source labels are opaque.
+                # Expected gap: difference between the two census years.
+                # We can't read source_id directly from the Splink row, so
+                # use the birth year delta against the expected census gaps.
+                delta = abs(by_l_int - by_r_int)
+                # For any census pair the maximum plausible birth year drift
+                # is 4 years (GC03). If delta exceeds this, demote to proposal.
+                if delta > 4:
+                    with conn:
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO training_labels
+                                (person_id_1, person_id_2, score, score_version, decision)
+                            VALUES (?, ?, ?, ?, 'proposed')
+                            """,
+                            (min(can_l, can_r), max(can_l, can_r),
+                             score, SCORE_VERSION_PERSON),
+                        )
+                    result.proposals_written += 1
+                    if debug_log:
+                        debug.record_pair(_build_person_pair_record(
+                            row, "proposed", "birthyear-gate", label_map, source_map))
+                    continue
+            except (TypeError, ValueError):
+                pass  # can't compute delta — let Splink score decide
 
         existing = {
             r2[0] for r2 in conn.execute(
@@ -1527,8 +1659,8 @@ def _build_hh_pair_record(
     rid_r = int(row["unique_id_r"])
     score = float(row["match_probability"])
 
-    by_l = _safe_col(row, "adult_forenames_sorted_l")   # no birth year on HH rows
-    by_r = _safe_col(row, "adult_forenames_sorted_r")
+    by_l = None   # household feature rows carry no birth year
+    by_r = None
     pl_l = _safe_col(row, "place_id_l")
     pl_r = _safe_col(row, "place_id_r")
 

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 import sqlite3
 
-SCHEMA_VERSION = 28
+SCHEMA_VERSION = 29
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
 SEED_SQL = Path(__file__).parent / "db" / "seed.sql"
@@ -117,13 +117,17 @@ def build_record_url(source: dict, record: dict) -> str | None:
 
 _CENSUS_ROLE_MAP: dict[str, str] = {
     "Head of Family": "head",
+    "Head":           "head",
     "Wife":           "spouse",
+    "Husband":        "spouse",
     "Son":            "son",
     "Daughter":       "daughter",
     "Brother":        "sibling",
     "Sister":         "sibling",
     "Grand Son":      "grandchild",
+    "Grandson":       "grandchild",
     "Grand Daughter": "grandchild",
+    "Granddaughter":  "grandchild",
     "Son in Law":     "in_law",
     "Daughter in Law":"in_law",
     "Mother in Law":  "in_law",
