@@ -77,7 +77,7 @@ def _gender_for_rp(rp: sqlite3.Row) -> str | None:
 def _label(rp: sqlite3.Row, townland: str) -> str:
     name = rp["name_as_recorded"].strip()
     tl = townland.strip() if townland else "Unknown"
-    return f"{name} {tl})"
+    return f"{name} ({tl})"
 
 
 def _insert_person(conn, person_id, rp, townland):
