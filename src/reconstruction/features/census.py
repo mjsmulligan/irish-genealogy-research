@@ -61,6 +61,12 @@ _ADULT_ROLES = {
     "boarder", "servant", "niece_nephew", "cousin",
 }
 
+# Age threshold for child departure prior.
+# Children aged > _CHILD_DEPARTURE_AGE are treated as "older resident children"
+# (the spinster/bachelor pattern). Children aged <= _CHILD_DEPARTURE_AGE are
+# "young children" — definitively still dependents at the time of the census.
+_CHILD_DEPARTURE_AGE: int = 20
+
 # Abbreviation expansions for name normalisation (mirrors reconstruction_algorithms.md §4.1)
 _FORENAME_ABBREV: dict[str, str] = {
     "wm":    "william",
@@ -237,8 +243,169 @@ def _sibling_names(conn: sqlite3.Connection, person_id: int) -> set[str]:
 
 
 # ---------------------------------------------------------------------------
-# Person-level feature extractor (general cross-census linkage pass)
+# Batch relationship lookups (used by build_census_features)
 # ---------------------------------------------------------------------------
+
+def _batch_spouse_names(
+    conn: sqlite3.Connection,
+    person_ids: list[int],
+) -> dict[int, str | None]:
+    """
+    Return a mapping of person_id → normalised spouse name for all
+    person_ids in one query, replacing per-person calls to _spouse_name().
+
+    Where a person has multiple couple relationships, the highest
+    relationship_id is used as recency proxy (same logic as _spouse_name).
+    """
+    if not person_ids:
+        return {}
+    placeholders = ",".join("?" * len(person_ids))
+    rows = conn.execute(
+        f"""
+        SELECT
+            r.person_id_1     AS pid,
+            pn.value          AS spouse_name
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_2
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = r.person_id_2 AND pn2.type = 'birth_name'
+            )
+        WHERE r.type = 'couple'
+          AND r.person_id_1 IN ({placeholders})
+          AND r.relationship_id = (
+              SELECT MAX(r2.relationship_id)
+              FROM relationship r2
+              WHERE r2.type = 'couple' AND r2.person_id_1 = r.person_id_1
+          )
+        UNION ALL
+        SELECT
+            r.person_id_2     AS pid,
+            pn.value          AS spouse_name
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_1
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = r.person_id_1 AND pn2.type = 'birth_name'
+            )
+        WHERE r.type = 'couple'
+          AND r.person_id_2 IN ({placeholders})
+          AND r.relationship_id = (
+              SELECT MAX(r2.relationship_id)
+              FROM relationship r2
+              WHERE r2.type = 'couple' AND r2.person_id_2 = r.person_id_2
+          )
+        """,
+        person_ids + person_ids,
+    ).fetchall()
+
+    # Last row per pid wins (highest relationship_id floats last via UNION ALL
+    # order, but we deduplicate with keep-last to be safe).
+    result: dict[int, str | None] = {}
+    for row in rows:
+        result[row["pid"]] = _normalise_name(row["spouse_name"])
+    return result
+
+
+def _batch_child_names(
+    conn: sqlite3.Connection,
+    person_ids: list[int],
+) -> dict[int, set[str]]:
+    """
+    Return a mapping of person_id → set of normalised child names for all
+    person_ids in one query, replacing per-person calls to _child_names().
+
+    Only parent_child relationships where the person is person_id_1 (parent)
+    are included, consistent with the original _child_names() logic.
+    """
+    if not person_ids:
+        return {pid: set() for pid in person_ids}
+    placeholders = ",".join("?" * len(person_ids))
+    rows = conn.execute(
+        f"""
+        SELECT
+            r.person_id_1   AS parent_id,
+            pn.value        AS child_name
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_2
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = r.person_id_2 AND pn2.type = 'birth_name'
+            )
+        WHERE r.type = 'parent_child'
+          AND r.person_id_1 IN ({placeholders})
+        """,
+        person_ids,
+    ).fetchall()
+
+    result: dict[int, set[str]] = {pid: set() for pid in person_ids}
+    for row in rows:
+        normed = _normalise_name(row["child_name"])
+        if normed:
+            result[row["parent_id"]].add(normed)
+    return result
+
+
+def _batch_sibling_names(
+    conn: sqlite3.Connection,
+    person_ids: list[int],
+) -> dict[int, set[str]]:
+    """
+    Return a mapping of person_id → set of normalised sibling names for all
+    person_ids in one query, replacing per-person calls to _sibling_names().
+
+    Sibling relationships are symmetric so both endpoints are checked.
+    """
+    if not person_ids:
+        return {pid: set() for pid in person_ids}
+    placeholders = ",".join("?" * len(person_ids))
+    rows = conn.execute(
+        f"""
+        SELECT
+            r.person_id_1 AS focal_id,
+            pn.value      AS sibling_name
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_2
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = r.person_id_2 AND pn2.type = 'birth_name'
+            )
+        WHERE r.type = 'sibling'
+          AND r.person_id_1 IN ({placeholders})
+        UNION ALL
+        SELECT
+            r.person_id_2 AS focal_id,
+            pn.value      AS sibling_name
+        FROM relationship r
+        JOIN person_name pn ON pn.person_id = r.person_id_1
+            AND pn.type = 'birth_name'
+            AND pn.person_name_id = (
+                SELECT MIN(pn2.person_name_id)
+                FROM person_name pn2
+                WHERE pn2.person_id = r.person_id_1 AND pn2.type = 'birth_name'
+            )
+        WHERE r.type = 'sibling'
+          AND r.person_id_2 IN ({placeholders})
+        """,
+        person_ids + person_ids,
+    ).fetchall()
+
+    result: dict[int, set[str]] = {pid: set() for pid in person_ids}
+    for row in rows:
+        normed = _normalise_name(row["sibling_name"])
+        if normed:
+            result[row["focal_id"]].add(normed)
+    return result
+
+
 
 def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     """
@@ -263,8 +430,9 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
                                        null if no concluded siblings
 
     child_names and sibling_names are passed to Splink as pipe-joined strings.
-    Jaccard overlap is computed inside Splink's CustomComparison via DuckDB's
-    string_split / list_intersect / list_union array functions (see linkage.py).
+    Szymkiewicz–Simpson overlap (|A∩B| / min(|A|,|B|)) is computed inside
+    Splink's CustomComparison via DuckDB's string_split / list_intersect
+    array functions (see linkage.py _build_settings).
 
     Relationship features require household inference to have run first.
 
@@ -324,6 +492,13 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
     for rp in rp_rows:
         rp_ages_by_record[rp["record_id"]].append(rp["age"])
 
+    # Batch-fetch all relationship features in three queries — one per
+    # relationship type — replacing the previous per-person N+1 pattern.
+    all_person_ids = [row["person_id"] for row in person_rows]
+    spouse_map  = _batch_spouse_names(conn, all_person_ids)
+    children_map = _batch_child_names(conn, all_person_ids)
+    siblings_map = _batch_sibling_names(conn, all_person_ids)
+
     # Track position within each record to pair person to evidence row.
     record_person_pos: dict[int, int] = defaultdict(int)
 
@@ -342,8 +517,8 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
         age  = ages[pos] if pos < len(ages) else None
         record_person_pos[record_id] += 1
 
-        children = _child_names(conn, person_id)
-        siblings = _sibling_names(conn, person_id)
+        children = children_map.get(person_id, set())
+        siblings = siblings_map.get(person_id, set())
 
         records.append({
             "unique_id":         person_id,
@@ -354,7 +529,7 @@ def build_census_features(conn: sqlite3.Connection) -> list[pd.DataFrame]:
             "birth_year_est":    _birth_year_est(age, row["census_date"]),
             "place_id":          place_id,
             "place_raw":         place_raw,
-            "spouse_name_norm":  _spouse_name(conn, person_id),
+            "spouse_name_norm":  spouse_map.get(person_id),
             "child_names":       "|".join(sorted(children)) or None,
             "sibling_names":     "|".join(sorted(siblings)) or None,
         })
@@ -397,17 +572,6 @@ def _modal_surname(rp_rows: list[sqlite3.Row]) -> str | None:
     if not counts:
         return None
     return counts.most_common(1)[0][0]
-
-
-# Age threshold for child departure prior.
-# Children aged > _CHILD_DEPARTURE_AGE at time of census are treated as
-# "older resident children" — the spinster/bachelor pattern common in large
-# Irish households. They are present but less diagnostic for household
-# continuity than younger children who are definitively still dependents.
-# Children aged <= _CHILD_DEPARTURE_AGE are "young children" — they are
-# essentially certain to still be in the household at the next census (or
-# recently departed by the 25-year 1901→1926 gap).
-_CHILD_DEPARTURE_AGE: int = 20
 
 
 def _extract_household_row(

@@ -64,6 +64,7 @@ def _next_ids(conn: sqlite3.Connection) -> dict[str, int]:
         "person":       conn.execute("SELECT COALESCE(MAX(person_id), 0) + 1 FROM person").fetchone()[0],
         "relationship": conn.execute("SELECT COALESCE(MAX(relationship_id), 0) + 1 FROM relationship").fetchone()[0],
         "event":        conn.execute("SELECT COALESCE(MAX(event_id), 0) + 1 FROM event").fetchone()[0],
+        "person_name":  conn.execute("SELECT COALESCE(MAX(person_name_id), 0) + 1 FROM person_name").fetchone()[0],
     }
 
 
@@ -80,7 +81,7 @@ def _label(rp: sqlite3.Row, townland: str) -> str:
     return f"{name} ({tl})"
 
 
-def _insert_person(conn, person_id, rp, townland):
+def _insert_person(conn, person_id, rp, townland, ids):
     gender = _gender_for_rp(rp)
     label = _label(rp, townland)
     conn.execute(
@@ -89,9 +90,8 @@ def _insert_person(conn, person_id, rp, townland):
     )
     name = rp["name_as_recorded"].strip()
     if name and name != "Unknown":
-        pn_id = conn.execute(
-            "SELECT COALESCE(MAX(person_name_id), 0) + 1 FROM person_name"
-        ).fetchone()[0]
+        pn_id = ids["person_name"]
+        ids["person_name"] += 1
         conn.execute(
             "INSERT INTO person_name (person_name_id, person_id, value, type) VALUES (?, ?, ?, ?)",
             (pn_id, person_id, name, "birth_name"),
@@ -246,7 +246,7 @@ def _run_single_source(
 
         for rp in rp_list:
             person_id = ids["person"]
-            _insert_person(conn, person_id, rp, townland)
+            _insert_person(conn, person_id, rp, townland, ids)
             _insert_person_record(conn, person_id, record_id)
             pid_map[rp["recorded_person_id"]] = person_id
             household_pids.append(person_id)
