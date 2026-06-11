@@ -551,6 +551,44 @@ def _cmd_household(args: argparse.Namespace) -> None:
     print_household_inference_report(result)
 
 
+_PLACE_ID_NULL_RATE_LIMIT = 0.15  # refuse linkage above this threshold unless --force
+
+
+def _check_place_id_null_rate(conn: sqlite3.Connection, force: bool) -> None:
+    """
+    Check the place_id null rate across all recorded_person rows.
+    Abort (or warn) if the rate exceeds _PLACE_ID_NULL_RATE_LIMIT.
+    """
+    row = conn.execute("""
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN rp.recorded_person_id NOT IN (
+                SELECT recorded_person_id FROM place_record
+            ) THEN 1 ELSE 0 END) AS unresolved
+        FROM recorded_person rp
+    """).fetchone()
+    total = row["total"] or 0
+    unresolved = row["unresolved"] or 0
+    if total == 0:
+        return
+    null_rate = unresolved / total
+    pct = null_rate * 100
+    if null_rate > _PLACE_ID_NULL_RATE_LIMIT:
+        msg = (
+            f"  place_id null rate is {pct:.1f}% ({unresolved}/{total} persons unresolved) — "
+            f"above the {_PLACE_ID_NULL_RATE_LIMIT * 100:.0f}% threshold.\n"
+            f"  Seed place authority for any missing DEDs and re-run place resolution,\n"
+            f"  or pass --force to run linkage anyway."
+        )
+        if force:
+            print(f"\n  WARNING: {msg}\n  Proceeding because --force was passed.")
+        else:
+            print(f"\n  ABORTED: {msg}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"  place_id null rate: {pct:.1f}% ({unresolved}/{total}) — within threshold.")
+
+
 def _cmd_link(args: argparse.Namespace) -> None:
     from src.reconstruction.linkage import (
         run_census_household_linkage, print_household_linkage_report,
@@ -558,6 +596,9 @@ def _cmd_link(args: argparse.Namespace) -> None:
     )
     conn = open_db(args.db)
     check_version(conn)
+
+    force = getattr(args, "force", False)
+    _check_place_id_null_rate(conn, force=force)
 
     debug_log = getattr(args, "debug_log", None)
 
@@ -577,23 +618,115 @@ def _cmd_link(args: argparse.Namespace) -> None:
     print_summary(conn)
 
 
+def _cmd_reset(args: argparse.Namespace) -> None:
+    """
+    Wipe the database back to a clean state ready for re-ingest.
+
+    Default (no flag): preserves place_authority; wipes all evidence and
+    conclusions (record, recorded_person, person, relationship, event,
+    person_record, place_record, training_labels, and all junction tables).
+
+    --all: full wipe including place_authority. Use only when reseeding
+    places from scratch.
+    """
+    conn = open_db(args.db)
+    check_version(conn)
+
+    wipe_all = getattr(args, "all", False)
+
+    # Tables to always wipe (evidence + conclusions + linkage artefacts).
+    # Ordered to respect FK constraints: children before parents.
+    evidence_tables = [
+        "training_labels",
+        "person_record",
+        "place_record",
+        "relationship_event",
+        "person_event",
+        "event",
+        "relationship",
+        "person",
+        "recorded_person",
+        "record",
+    ]
+
+    place_tables = ["place_authority"]
+
+    tables_to_wipe = evidence_tables + (place_tables if wipe_all else [])
+
+    if wipe_all:
+        warning = (
+            "\n  WARNING: --all will wipe place_authority. "
+            "You will need to re-seed places before running the pipeline.\n"
+        )
+        print(warning)
+
+    print("Resetting database...")
+    with conn:
+        for table in tables_to_wipe:
+            try:
+                conn.execute(f"DELETE FROM {table}")
+            except sqlite3.OperationalError:
+                # Table may not exist in all schema versions — skip silently
+                pass
+
+    scope = "all tables including place_authority" if wipe_all else "evidence + conclusions (place_authority preserved)"
+    print(f"  Reset complete — {scope}.")
+    print(f"  Database is ready for re-ingest.\n")
+
+
+def _cmd_rebuild_consensus(args: argparse.Namespace) -> None:
+    from src.reconstruction.scoring import rebuild_consensus, print_rebuild_consensus_report
+    conn = open_db(args.db)
+    check_version(conn)
+    print("\nRebuilding event consensus (post-linkage)...")
+    result = rebuild_consensus(conn)
+    print_rebuild_consensus_report(result)
+
+
 def _cmd_reconstruct(args: argparse.Namespace) -> None:
     from src.reconstruction import (
         run_place_resolution, print_place_resolution_report,
         run_household_inference, print_household_inference_report,
     )
+    from src.reconstruction.linkage import (
+        run_census_household_linkage, print_household_linkage_report,
+        run_census_linkage, print_census_linkage_report,
+    )
+    from src.reconstruction.scoring import rebuild_consensus, print_rebuild_consensus_report
     conn = open_db(args.db)
     check_version(conn)
 
+    force = getattr(args, "force", False)
+    debug_log = getattr(args, "debug_log", None)
+
     print("\nRunning reconstruction pipeline (all sources)...")
 
-    print("\n[1/2] Place resolution")
+    print("\n[1/4] Place resolution")
     place_result = run_place_resolution(conn)
     print_place_resolution_report(place_result)
 
-    print("\n[2/2] Household structure inference")
+    print("\n[2/4] Household structure inference")
     inference_result = run_household_inference(conn)
     print_household_inference_report(inference_result)
+
+    print("\n[3/4] Cross-census linkage")
+    _check_place_id_null_rate(conn, force=force)
+
+    print("\n  [3a] Household linkage (Pass 1: Splink; Pass 2: person resolution)...")
+    hh_result = run_census_household_linkage(conn, debug_log=debug_log)
+    print_household_linkage_report(hh_result)
+
+    print("\n  [3b] Cross-census person linkage...")
+    person_result = run_census_linkage(
+        conn,
+        already_merged=hh_result.merged_person_ids,
+        debug_log=debug_log,
+    )
+    print_census_linkage_report(person_result)
+
+    print("\n[4/4] Rebuild event consensus")
+    consensus_result = rebuild_consensus(conn)
+    print_rebuild_consensus_report(consensus_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
@@ -608,6 +741,15 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("init", help="Initialise a new database")
+
+    p_reset = sub.add_parser(
+        "reset",
+        help="Wipe evidence + conclusions; preserve place_authority (use --all to wipe everything)",
+    )
+    p_reset.add_argument(
+        "--all", action="store_true", default=False,
+        help="Full wipe including place_authority (use only when reseeding places from scratch)",
+    )
 
     p_ingest = sub.add_parser("ingest", help="Ingest a source CSV into the evidence layer")
     p_ingest.add_argument("--source", required=True, help="Source ID (e.g. 4 for Census 1911)")
@@ -628,23 +770,43 @@ def main() -> None:
         metavar="PATH",
         help="Write a plain-text debug log to PATH (optional)",
     )
+    p_link.add_argument(
+        "--force", action="store_true", default=False,
+        help="Run linkage even if place_id null rate exceeds the 15%% threshold",
+    )
 
     sub.add_parser(
+        "rebuild-consensus",
+        help="Stage 5: rebuild event consensus after linkage (marks is_primary on Event)",
+    )
+
+    p_reconstruct = sub.add_parser(
         "reconstruct",
-        help="Convenience: run place resolution + household inference (stages 2+3)",
+        help="Full post-ingest pipeline: place-resolve → household → link → rebuild-consensus",
+    )
+    p_reconstruct.add_argument(
+        "--debug-log", dest="debug_log", default=None,
+        metavar="PATH",
+        help="Write a plain-text debug log to PATH (optional)",
+    )
+    p_reconstruct.add_argument(
+        "--force", action="store_true", default=False,
+        help="Run linkage even if place_id null rate exceeds the 15%% threshold",
     )
 
     args = parser.parse_args()
 
     dispatch = {
-        "init":          _cmd_init,
-        "ingest":        _cmd_ingest,
-        "seed-places":   _cmd_seed_places,
-        "summary":       _cmd_summary,
-        "place-resolve": _cmd_place_resolve,
-        "household":     _cmd_household,
-        "link":          _cmd_link,
-        "reconstruct":   _cmd_reconstruct,
+        "init":               _cmd_init,
+        "reset":              _cmd_reset,
+        "ingest":             _cmd_ingest,
+        "seed-places":        _cmd_seed_places,
+        "summary":            _cmd_summary,
+        "place-resolve":      _cmd_place_resolve,
+        "household":          _cmd_household,
+        "link":               _cmd_link,
+        "rebuild-consensus":  _cmd_rebuild_consensus,
+        "reconstruct":        _cmd_reconstruct,
     }
     dispatch[args.command](args)
 
