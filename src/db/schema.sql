@@ -4,6 +4,7 @@
 --
 -- Changes from v2.8:
 --   - training_labels added (linkage proposals + researcher review workflow)
+--   - event.is_primary added (consensus arbitration; set by rebuild-consensus stage)
 --
 -- Changes from v2.7:
 --   - recorded_event merged into record (1:1 relationship formalised)
@@ -187,6 +188,7 @@ CREATE TABLE event (
     date_qualifier  TEXT,
     place_id        INTEGER REFERENCES place_authority (place_id),
     relationship_id INTEGER REFERENCES relationship (relationship_id),
+    is_primary      INTEGER NOT NULL DEFAULT 1 CHECK (is_primary IN (0, 1)),
     notes           TEXT,
 
     CHECK (type IN (

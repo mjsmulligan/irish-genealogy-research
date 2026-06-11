@@ -979,27 +979,43 @@ def write_person_debug_log(
             )
 
         # ── Surname frequency risk ──────────────────────────────────────────
+        # TF adjustment is already enabled in _build_settings() for both
+        # surname_norm and forename_norm. This section checks whether the
+        # adjustment is sufficient — i.e. whether high-frequency surnames
+        # still appear in suspicious merges despite TF downweighting.
         high_freq = [(s, c) for s, c in debug.surname_freq if c >= 10]
         if high_freq:
             names_str = ", ".join(f"'{s}' ({c})" for s, c in high_freq[:5])
-            issues.append(
-                f"High-frequency surnames detected: {names_str}. "
-                f"In a small townland community, dominant surnames create many same-surname "
-                f"candidate pairs. Without Splink term-frequency (TF) adjustment, a surname "
-                f"match carries the same discriminating weight regardless of frequency, "
-                f"inflating match probabilities for ambiguous pairs "
-                f"(reconstruction_algorithms.md §4.4)."
+            positives.append(
+                f"High-frequency surnames detected ({names_str}) — "
+                f"term-frequency adjustment is active for surname_norm and forename_norm "
+                f"(reconstruction_algorithms.md §4.4). TF downweighting is applied automatically "
+                f"by Splink during EM training from the feature DataFrame."
             )
-            actions.append(
-                "Enable Splink term-frequency adjustment for surname_norm. In _build_settings(), "
-                "configure the JaroWinklerAtThresholds comparison for surname_norm with "
-                "term_frequency_adjustments=True. The frequency table is computed automatically "
-                "from the feature DataFrame by Splink's EM training."
-            )
+            # Only flag as an issue if there are suspicious cross-place merges —
+            # those are the signature of TF adjustment failing to suppress false positives.
+            cross_place_merges = [
+                p for p in debug.pairs
+                if p.band == "merged" and p.place_match is False
+            ]
+            if cross_place_merges:
+                issues.append(
+                    f"{len(cross_place_merges)} merged pair(s) do not share a resolved place_id. "
+                    f"With high-frequency surnames ({names_str}), cross-place merges are the "
+                    f"primary false-positive risk. TF adjustment is active but may not fully "
+                    f"suppress ambiguous same-surname pairs at this community scale "
+                    f"(reconstruction_algorithms.md §4.4)."
+                )
+                actions.append(
+                    "Inspect cross-place merged pairs in Section 2 (place=miss, band=merged). "
+                    "If they involve high-frequency surnames, consider raising "
+                    "AUTO_COMMIT_THRESHOLD to 0.90 or deferring TF adjustment until 3–4 DEDs "
+                    "are ingested for a representative frequency distribution (ROADMAP.md §4)."
+                )
         elif debug.surname_freq:
             positives.append(
                 "Surname frequency distribution looks reasonable — no surname exceeds 10 persons. "
-                "Term-frequency adjustment is not urgently needed at this scale."
+                "Term-frequency adjustment is active and not urgently needed at this scale."
             )
 
         # ── Score clustering near thresholds ───────────────────────────────
