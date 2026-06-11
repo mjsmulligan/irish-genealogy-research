@@ -21,7 +21,7 @@ import re
 import sqlite3
 from dataclasses import dataclass, field
 
-import jellyfish
+import rapidfuzz
 
 SCORE_VERSION = "place_v2.0"
 
