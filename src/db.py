@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import ast
 import csv
+import datetime
 import json
 import sys
 from collections import defaultdict
@@ -589,6 +590,22 @@ def _check_place_id_null_rate(conn: sqlite3.Connection, force: bool) -> None:
         print(f"  place_id null rate: {pct:.1f}% ({unresolved}/{total}) — within threshold.")
 
 
+def _make_debug_dir(db_path: str) -> Path:
+    """
+    Create and return a timestamped debug output directory next to the database.
+
+    Example: genealogy.db  →  genealogy_debug_20250611_143022/
+
+    All pipeline stage debug logs are written here.  Filenames are hardcoded
+    within each debug module — the caller passes only this directory path.
+    """
+    stem = Path(db_path).stem
+    ts   = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    d    = Path(db_path).parent / f"{stem}_debug_{ts}"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def _cmd_link(args: argparse.Namespace) -> None:
     from src.reconstruction.linkage import (
         run_census_household_linkage, print_household_linkage_report,
@@ -597,10 +614,16 @@ def _cmd_link(args: argparse.Namespace) -> None:
     conn = open_db(args.db)
     check_version(conn)
 
-    force = getattr(args, "force", False)
+    force     = getattr(args, "force", False)
+    debug     = getattr(args, "debug", False)
+    debug_dir = _make_debug_dir(args.db) if debug else None
+
+    if debug_dir:
+        print(f"\nDebug mode active — logs will be written to: {debug_dir}/")
+
     _check_place_id_null_rate(conn, force=force)
 
-    debug_log = getattr(args, "debug_log", None)
+    debug_log = str(debug_dir) if debug_dir else None
 
     print("\n[1/2] Household linkage (Pass 1: Splink; Pass 2: person resolution)...")
     hh_result = run_census_household_linkage(conn, debug_log=debug_log)
@@ -616,6 +639,11 @@ def _cmd_link(args: argparse.Namespace) -> None:
 
     print("\nLinkage complete. Running summary...\n")
     print_summary(conn)
+
+    if debug_dir:
+        print(f"\nDebug logs: {debug_dir}/")
+        for log in sorted(debug_dir.glob("*.log")):
+            print(f"  {log.name}")
 
 
 def _cmd_reset(args: argparse.Namespace) -> None:
@@ -678,9 +706,33 @@ def _cmd_rebuild_consensus(args: argparse.Namespace) -> None:
     from src.reconstruction.scoring import rebuild_consensus, print_rebuild_consensus_report
     conn = open_db(args.db)
     check_version(conn)
+
+    debug     = getattr(args, "debug", False)
+    debug_dir = _make_debug_dir(args.db) if debug else None
+
+    if debug_dir:
+        print(f"\nDebug mode active — logs will be written to: {debug_dir}/")
+
     print("\nRebuilding event consensus (post-linkage)...")
-    result = rebuild_consensus(conn)
+
+    consensus_debug = None
+    if debug_dir:
+        from src.reconstruction.consensus_debug import (
+            ConsensusDebugLog, write_consensus_debug_log,
+        )
+        consensus_debug = ConsensusDebugLog(
+            run_ts=datetime.datetime.now().isoformat(timespec="seconds"),
+            score_version="consensus_v1.0",
+        )
+
+    result = rebuild_consensus(conn, debug=consensus_debug)
     print_rebuild_consensus_report(result)
+
+    if debug_dir and consensus_debug is not None:
+        write_consensus_debug_log(str(debug_dir), consensus_debug, result)
+        print(f"\nDebug logs: {debug_dir}/")
+        for log in sorted(debug_dir.glob("*.log")):
+            print(f"  {log.name}")
 
 
 def _cmd_reconstruct(args: argparse.Namespace) -> None:
@@ -696,8 +748,12 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     conn = open_db(args.db)
     check_version(conn)
 
-    force = getattr(args, "force", False)
-    debug_log = getattr(args, "debug_log", None)
+    force     = getattr(args, "force", False)
+    debug     = getattr(args, "debug", False)
+    debug_dir = _make_debug_dir(args.db) if debug else None
+
+    if debug_dir:
+        print(f"\nDebug mode active — logs will be written to: {debug_dir}/")
 
     print("\nRunning reconstruction pipeline (all sources)...")
 
@@ -712,6 +768,8 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     print("\n[3/4] Cross-census linkage")
     _check_place_id_null_rate(conn, force=force)
 
+    debug_log = str(debug_dir) if debug_dir else None
+
     print("\n  [3a] Household linkage (Pass 1: Splink; Pass 2: person resolution)...")
     hh_result = run_census_household_linkage(conn, debug_log=debug_log)
     print_household_linkage_report(hh_result)
@@ -725,11 +783,30 @@ def _cmd_reconstruct(args: argparse.Namespace) -> None:
     print_census_linkage_report(person_result)
 
     print("\n[4/4] Rebuild event consensus")
-    consensus_result = rebuild_consensus(conn)
+
+    consensus_debug = None
+    if debug_dir:
+        from src.reconstruction.consensus_debug import (
+            ConsensusDebugLog, write_consensus_debug_log,
+        )
+        consensus_debug = ConsensusDebugLog(
+            run_ts=datetime.datetime.now().isoformat(timespec="seconds"),
+            score_version="consensus_v1.0",
+        )
+
+    consensus_result = rebuild_consensus(conn, debug=consensus_debug)
     print_rebuild_consensus_report(consensus_result)
+
+    if debug_dir and consensus_debug is not None:
+        write_consensus_debug_log(str(debug_dir), consensus_debug, consensus_result)
 
     print("\nReconstruction complete. Running summary...\n")
     print_summary(conn)
+
+    if debug_dir:
+        print(f"\nDebug logs: {debug_dir}/")
+        for log in sorted(debug_dir.glob("*.log")):
+            print(f"  {log.name}")
 
 
 def main() -> None:
@@ -766,18 +843,21 @@ def main() -> None:
 
     p_link = sub.add_parser("link", help="Stage 4: cross-census Splink person linkage")
     p_link.add_argument(
-        "--debug-log", dest="debug_log", default=None,
-        metavar="PATH",
-        help="Write a plain-text debug log to PATH (optional)",
+        "--debug", action="store_true", default=False,
+        help="Write per-stage debug logs to a timestamped directory next to the database",
     )
     p_link.add_argument(
         "--force", action="store_true", default=False,
         help="Run linkage even if place_id null rate exceeds the 15%% threshold",
     )
 
-    sub.add_parser(
+    p_rebuild = sub.add_parser(
         "rebuild-consensus",
         help="Stage 5: rebuild event consensus after linkage (marks is_primary on Event)",
+    )
+    p_rebuild.add_argument(
+        "--debug", action="store_true", default=False,
+        help="Write consensus debug log to a timestamped directory next to the database",
     )
 
     p_reconstruct = sub.add_parser(
@@ -785,9 +865,8 @@ def main() -> None:
         help="Full post-ingest pipeline: place-resolve → household → link → rebuild-consensus",
     )
     p_reconstruct.add_argument(
-        "--debug-log", dest="debug_log", default=None,
-        metavar="PATH",
-        help="Write a plain-text debug log to PATH (optional)",
+        "--debug", action="store_true", default=False,
+        help="Write per-stage debug logs to a timestamped directory next to the database",
     )
     p_reconstruct.add_argument(
         "--force", action="store_true", default=False,
