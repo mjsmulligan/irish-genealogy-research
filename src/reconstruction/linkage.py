@@ -59,7 +59,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import jellyfish
+import rapidfuzz 
 import pandas as pd
 import splink.comparison_library as cl
 import splink.comparison_level_library as cll
@@ -644,7 +644,7 @@ def _jaro_winkler(a: str | None, b: str | None) -> float:
     if not a or not b:
         return 0.0
     try:
-        return jellyfish.jaro_winkler_similarity(a, b)
+        return rapidfuzz.jaro_winkler_similarity(a, b)
     except Exception:
         return 0.0
 
