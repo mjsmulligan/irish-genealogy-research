@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 import sqlite3
 
-SCHEMA_VERSION = 29
+SCHEMA_VERSION = 30
 DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "db" / "schema.sql"
 SEED_SQL = Path(__file__).parent / "db" / "seed.sql"
@@ -218,13 +218,20 @@ def _normalize_census_1926_row(row: dict) -> dict:
     }
 
 
-def _map_role(relation: str) -> tuple[str, str | None]:
+def _map_role(relation: str) -> tuple[str | None, str | None]:
+    """Map a raw census relationship string to a normalised role.
+
+    Returns (role, warning_note) where:
+      - role is None if the source field was blank (genuine data gap)
+      - role is 'unknown' if a value was present but not in the vocabulary
+      - warning_note is non-None only for the 'unknown' case
+    """
+    if not relation.strip():
+        return None, None
     role = _CENSUS_ROLE_MAP.get(relation)
     if role:
         return role, None
-    if not relation.strip():
-        return "principal", "blank relation_to_head; mapped to principal"
-    return "principal", f"unmapped relation '{relation}'; mapped to principal"
+    return "unknown", f"unmapped relation {relation!r}"
 
 
 def ingest_census(
