@@ -65,7 +65,7 @@ import splink.comparison_library as cl
 import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
-from src.reconstruction.features.census import (
+from src.pipeline.features.census import (
     build_census_features,
     build_census_household_features,
 )
@@ -148,7 +148,7 @@ class CensusLinkageResult:
 # Debug log — accumulators, helpers, and writers
 # ---------------------------------------------------------------------------
 
-from src.reconstruction.debug import (
+from src.pipeline.debug import (
     AUTO_COMMIT_THRESHOLD,
     PROPOSE_FLOOR,
     SCORE_VERSION_PERSON,
