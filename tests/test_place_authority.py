@@ -17,7 +17,7 @@ from src.fetch_places import (
     VALID_PLACE_TYPES, _API_TYPE_MAP,
 )
 from src.seed_places import seed_places
-from src.reconstruction.place_resolution import (
+from src.pipeline.place_resolution import (
     run_place_resolution, _normalise,
     EXACT_SCORE, FUZZY_SCORE, JW_THRESHOLD,
 )
