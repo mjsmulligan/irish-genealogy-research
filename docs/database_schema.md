@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Database Schema
 
-*Version 2.8 — June 2026*
+*Version 2.10 — June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ---
@@ -184,7 +184,7 @@ CREATE TABLE recorded_person (
     recorded_person_id      INTEGER PRIMARY KEY,
     record_id               INTEGER NOT NULL REFERENCES record (record_id),
     name_as_recorded        TEXT    NOT NULL CHECK (trim(name_as_recorded) != ''),
-    role                    TEXT    NOT NULL,
+    role                    TEXT,   -- NULL = blank in source; 'unknown' = value present but not mappable
     age_as_recorded         TEXT,   -- verbatim; may be "about 30", "inf", etc.
     age                     INTEGER,
     sex_as_recorded         TEXT,
@@ -192,13 +192,15 @@ CREATE TABLE recorded_person (
     place_as_recorded       TEXT,
     notes                   TEXT,
 
-    CHECK (role IN (
+    CHECK (role IS NULL OR role IN (
         -- Census roles (NAI download mapping)
         'head', 'spouse', 'son', 'daughter',
         'sibling', 'grandchild', 'in_law',
         'niece_nephew', 'aunt_uncle', 'cousin',
         'mother', 'father',
         'servant', 'visitor', 'boarder',
+        -- Unmapped / missing source data
+        'unknown',
         -- Event roles (civil registration, parish register, other)
         'principal', 'groom', 'bride',
         'father_of_groom', 'father_of_bride',
@@ -412,7 +414,7 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R02 | Required fields on Source | `NOT NULL` + `CHECK (trim(...) != '')` on title | Yes |
 | R03 | raw_text required on Record | `NOT NULL` + `CHECK (trim(raw_text) != '')` | Yes |
 | R04 | Required fields on RecordedEvent | **Retired** — event fields now on `record`; R03 covers them | N/A |
-| R05 | Required fields on RecordedPerson | `NOT NULL` + `CHECK` on name_as_recorded, role | Yes |
+| R05 | Required fields on RecordedPerson | `NOT NULL` + `CHECK` on name_as_recorded; role is nullable (NULL = blank in source) | Yes |
 | R06 | Required fields on Person | `NOT NULL` + `CHECK` on label | Yes |
 | R07 | Required fields on Relationship | `NOT NULL` on type, person_id_1, person_id_2 | Yes |
 | R08 | Required fields on Event | `NOT NULL` on type | Yes |
@@ -602,12 +604,12 @@ def init_db(path: str) -> sqlite3.Connection:
 
 ```python
 # Record schema version on init
-conn.execute("PRAGMA user_version = 26")  # version 2.6
+conn.execute("PRAGMA user_version = 30")  # version 2.10
 
 # Check version on open
 version = conn.execute("PRAGMA user_version").fetchone()[0]
-if version != 26:
-    raise RuntimeError(f"Schema version mismatch: expected 25, got {version}")
+if version != 30:
+    raise RuntimeError(f"Schema version mismatch: expected 30, got {version}")
 ```
 
 ---
@@ -617,12 +619,12 @@ if version != 26:
 ```
 /
   schema.sql              — complete DDL (CREATE TABLE + CREATE INDEX statements)
-  irish_genealogy.db      — SQLite database file (gitignored)
+  genealogy.db            — SQLite database file (gitignored)
   src/
     db.py                 — open_db(), init_db(), build_record_url(), DataStore read/write methods
 ```
 
-`irish_genealogy.db` must be added to `.gitignore`. The database is a build artefact derived from `schema.sql` plus ingested data. The source of truth for schema structure is `schema.sql`; the source of truth for data is the raw ingest files plus the session logs.
+`genealogy.db` must be added to `.gitignore`. The database is a build artefact derived from `schema.sql` plus ingested data. The source of truth for schema structure is `schema.sql`; the source of truth for data is the raw ingest files plus the session logs.
 
 ---
 
@@ -638,9 +640,11 @@ if version != 26:
 | 2.6 | May 2026 | Made `score` and `score_version` nullable on all four linkage junction tables. Null score represents a manually-asserted linkage (OD-01 resolved). Updated partial indexes to exclude null-score rows. Added migration script `src/db/migrations/migrate_25_to_26.sql`. Schema user_version bumped to 26. |
 | 2.7 | May 2026 | Added `place_authority` table (flat denormalised schema seeded from logainm.ie). Replaced `place` conclusion table. `event.place_id` now references `place_authority`. |
 | 2.8 | June 2026 | Merged `recorded_event` into `record` (inline event fields). Dropped `event_recorded_event`, `person_relationship`, `relationship_event`, `event_person`. Retained `person_event` for both person↔event directions with added `idx_person_event_event` index. Junction table count reduced from 9 to 5. Added `idx_place_authority_logainm` and `idx_place_authority_type`. Schema user_version bumped to 28. Migration script `src/db/migrations/migrate_27_to_28.sql`. |
+| 2.9 | June 2026 | Added `training_labels` table (linkage proposals + researcher review workflow). Added `event.is_primary BOOLEAN DEFAULT true` (consensus arbitration; set by rebuild-consensus stage). Schema user_version bumped to 29. Migration script `src/db/migrations/migrate_28_to_29.sql`. |
+| 2.10 | June 2026 | Made `recorded_person.role` nullable (NULL = blank in source data). Added `'unknown'` to role CHECK vocabulary (value present in source but not mappable). Removed `NOT NULL` constraint from `recorded_person.role`. Updated R05. Schema user_version bumped to 30. Migration script `src/db/migrations/migrate_29_to_30.sql`. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 
-*Schema version: 2.5 — May 2026*
+*Schema version: 2.10 — June 2026*
