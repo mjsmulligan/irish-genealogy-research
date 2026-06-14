@@ -1,13 +1,11 @@
 """
 GRA — Census ingest for NAI downloads (Sources 3, 4, 5).
 
-Extracted from src/db/__init__.py (Commit 2 refactor).
-
 Public API
 ----------
 ingest_census(conn, csv_path, source_id) → dict
 
-The returned dict keys:
+Returned dict keys:
     source_id, source_title, csv_path, rows_in_csv, households,
     records_committed, persons_committed, parse_notes,
     townlands, townland_count, deds
@@ -22,7 +20,7 @@ import sqlite3
 from collections import defaultdict
 from pathlib import Path
 
-from src.db.connection import check_version
+from src.db.db import check_version
 
 # ---------------------------------------------------------------------------
 # Vocabulary tables
@@ -239,7 +237,6 @@ def ingest_census(
             townland = persons[0].get("townland_clean", "") or persons[0].get("townland", "")
             census_date = _CENSUS_DATES.get(source_id, "")
 
-            # Single INSERT — event fields now live directly on record
             conn.execute(
                 "INSERT INTO record "
                 "(record_id, source_id, record_parameters, raw_text, "
