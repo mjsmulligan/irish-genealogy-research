@@ -65,7 +65,7 @@ import splink.comparison_library as cl
 import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
-from src.pipeline.features.census import (
+from src.ingest.census import (
     build_census_features,
     build_census_household_features,
 )
