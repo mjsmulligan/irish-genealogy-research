@@ -7,13 +7,13 @@ Can also export to CSV for inspection or manual editing before DB import.
 
 CLI usage:
     # Fetch and write directly to DB
-    python -m src.fetch_places --logainm-id 111482 --db genealogy.db
+    python -m src.cli fetch-places --logainm-id 111482 --db genealogy.db
 
     # Fetch and export to CSV only (no DB write)
-    python -m src.fetch_places --logainm-id 111482 --csv output.csv
+    python -m src.cli fetch-places --logainm-id 111482 --csv output.csv
 
     # Fetch, export CSV, and write to DB
-    python -m src.fetch_places --logainm-id 111482 --db genealogy.db --csv output.csv
+    python -m src.cli fetch-places --logainm-id 111482 --db genealogy.db --csv output.csv
 
 The logainm ID is the numeric ID from the logainm.ie URL, e.g.:
     https://www.logainm.ie/en/111482  →  111482 (Tullynaught DED)
@@ -537,7 +537,7 @@ def write_to_csv(rows: list[PlaceRow], csv_path: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="python -m src.fetch_places",
+        prog="python -m src.cli fetch-places",
         description="Fetch place authority data from logainm.ie and load into GRA database.",
     )
     parser.add_argument(
@@ -604,7 +604,7 @@ def main() -> None:
 
     # Write DB
     if args.db:
-        from src.db import open_db, check_version
+        from src.db.db import open_db, check_version
         conn = open_db(args.db)
         check_version(conn)
         inserted, skipped = write_to_db(conn, rows)
