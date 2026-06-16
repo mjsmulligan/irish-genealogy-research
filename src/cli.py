@@ -213,7 +213,7 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
 
 
 def _cmd_seed_places(args: argparse.Namespace) -> None:
-    from src.pipeline.seed_places import seed_places, print_seed_places_report
+    from src.db.seed_places import seed_places, print_seed_places_report
     conn = open_db(args.db)
     check_version(conn)
     result = seed_places(conn, args.file)
@@ -223,7 +223,7 @@ def _cmd_seed_places(args: argparse.Namespace) -> None:
 
 
 def _cmd_fetch_places(args: argparse.Namespace) -> None:
-    from src.pipeline.fetch_places import main as fetch_places_main
+    from src.db.fetch_places import main as fetch_places_main
     fetch_places_main()
 
 
@@ -456,3 +456,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
