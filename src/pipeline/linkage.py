@@ -65,7 +65,7 @@ import splink.comparison_library as cl
 import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
-from src.ingest.census import (
+from src.pipeline.features.census import (
     build_census_features,
     build_census_household_features,
 )
@@ -1561,3 +1561,5 @@ def print_census_linkage_report(result: CensusLinkageResult) -> None:
             print(f"    {entry}")
         if len(result.merge_log) > 20:
             print(f"    ... and {len(result.merge_log) - 20} more")
+
+
