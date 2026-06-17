@@ -1,3 +1,4 @@
+
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
 *16 June 2026 — v1.7*
@@ -14,7 +15,7 @@
 | `docs/data_dictionary.md` | v2.6 | ✅ Complete | RecordedEvent removed; event fields inline on Record |
 | `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
 | `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
-| `docs/database_schema.md` | v2.8 | ✅ Complete | RecordedEvent merged into Record; junction table count 9→5; migration v2.7→v2.8 |
+| `docs/database_schema.md` | v3.0 | ✅ Complete | `training_labels` + `event.is_primary` added (v2.9); `recorded_person.role` made nullable (v3.0) |
 | `docs/reconstruction_algorithms.md` | v1.2 | ✅ Complete | Updated for schema v2.8; event linkage simplified |
 | `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
 | `docs/service_api.md` | v1.0 | ✅ Complete | Service layer API; flag/lead tables still needed in schema |
@@ -27,7 +28,7 @@
 |---|---|---|---|
 | CLI entry point | `src/cli.py` | ✅ Complete | Sole entry point; argparse + dispatch only; `score-evidence` and `validate` commands added |
 | Database layer | `src/db/db.py` | ✅ Complete | Connection, init, schema version check; no CLI |
-| Schema DDL | `src/db/schema.sql` | ✅ Complete | v3.0 — is_primary on Event |
+| Schema DDL | `src/db/schema.sql` | ✅ Complete | v3.0 — `event.is_primary` (v2.9); `recorded_person.role` nullable (v3.0) |
 | Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources, 8 repositories |
 | Census ingest | `src/ingest/census.py` | ✅ Complete | ingest_census — NAI CSV → DB (sources 3, 4, 5) |
 | DAL — places | `src/dal/place_repo.py` | ✅ Complete | place_authority, place_record queries |
@@ -88,3 +89,24 @@ python -m src.cli score-evidence      # stage 5 — rebuild event consensus
 # 5. Inspect and validate
 python -m src.cli summary
 python -m src.cli validate
+```
+
+---
+
+## 3. Documentation Drift Remediation Queue
+
+*Opened 17 June 2026, following a full doc-vs-code review. One item per session; update status here as each is resolved.*
+
+> **Note:** §3 Release Plan, §4 Work Queue, §5 Open Decisions, and §6 Version History that previously followed this point in ROADMAP.md are missing — the file was found truncated mid-§2 (open code fence, no content after it) during this review, likely from an interrupted prior edit. Restoring those sections should be treated as urgent, not just item 8 below — they're load-bearing for session bootstrap.
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Schema version numbering: `schema.sql` / `database_schema.md` labelled `SCHEMA_VERSION = 30` as "2.10"; corrected to "3.0" to match `db.py`'s actual display convention and README's top-line claim. | ✅ Resolved 17 June 2026 |
+| 2 | Missing migration scripts: `database_schema.md`'s changelog references `migrate_28_to_29.sql` and `migrate_29_to_30.sql`, but only `migrate_27_to_28.sql` exists in `src/db/migrations/`. No upgrade path from a v2.8 database. | 🔜 Next |
+| 3 | `service_api.md` still listed as "✅ v1.0 Complete" in README's and ROADMAP's doc tables, with no deprecation note, despite `src/service.py` being marked "🚫 Removed" in this ROADMAP's own implementation table. | 🔜 |
+| 4 | `future_ideas.md` §1.3 targets the flag/lead schema additions at "schema v2.10" — that slot is now spent (v3.0, nullable role). Target version needs to be reset once the next version number is decided. | 🔜 |
+| 5 | Path drift: README's and ROADMAP's repository-structure trees place `fetch_places.py` / `seed_places.py` under `src/pipeline/`; actual location (confirmed via `cli.py` imports) is `src/db/`. `reset_pipeline.py` exists, is orphaned (not wired into `cli.py`, duplicates `_cmd_reset`), and is undocumented anywhere. | 🔜 |
+| 6 | `genealogical_constraints.md` listed as v1.2 in README's and ROADMAP's doc tables; the file's own title and changelog show v1.1, with no 1.2 entry recorded. | 🔜 |
+| 7 | Stale schema-version footers: `reconstruction_algorithms.md` ("2.1, pending v2.4 updates"), `session_bootstrap.md` ("2.1"), `service_api.md` ("2.4") — none reflect the doc bodies' actual target schema state. | 🔜 |
+| 8 | ROADMAP.md self-corruption: `[span_0](start_span)...` citation-artifact debris in the "Verified against real data" / "Housekeeping" bullets, plus the truncation noted above. Fence closed and this section appended 17 June 2026; span debris and full §3–§6 restoration still outstanding. | 🟡 Partially addressed |
+| 9 | Stale CLI examples in `conceptual_model.md` and `repositories.md`: `python -m src.fetch_places`, `python -m src.db seed-places` instead of the current `python -m src.cli fetch-places` / `seed-places`. | 🔜 |

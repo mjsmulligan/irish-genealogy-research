@@ -1,3 +1,4 @@
+
 # Genealogy Research Assistant (GRA)
 
 *grá — Irish for love*
@@ -22,7 +23,7 @@ Schema version: **3.0** (June 2026)
 | `docs/data_dictionary.md` | ✅ v2.6 | Field-level definitions; flat PlaceAuthority schema; full NAI census role mapping |
 | `docs/repositories.md` | ✅ v1.5 | 13 sources across 8 repositories; logainm.ie added |
 | `docs/validation_rules.md` | ✅ v2.6 | 46 rules (R01–R46) |
-| `docs/database_schema.md` | ✅ v2.8 | SQLite DDL; RecordedEvent merged into Record; 5 junction tables |
+| `docs/database_schema.md` | ✅ v3.0 | SQLite DDL; `training_labels` + `event.is_primary` added (v2.9); `recorded_person.role` made nullable (v3.0) |
 | `docs/reconstruction_algorithms.md` | ✅ v1.2 | Record linkage scoring; role-pair rules; sibling inference; updated for v2.8 |
 | `docs/genealogical_constraints.md` | ✅ v1.2 | 22 domain constraints (GC01–GC22) |
 | `docs/service_api.md` | ✅ v1.0 | Service layer API |
