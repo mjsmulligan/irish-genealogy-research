@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Genealogical Constraints
 
-*Version 1.1 — May 2026*
+*Version 1.2 — May 2026*
 *Audience: Developers, data engineers, and reasoning sessions. This document defines the domain knowledge constraints that govern probabilistic record linkage and researcher recommendations. Read `conceptual_model.md`, `data_dictionary.md`, `reconstruction_algorithms.md`, and `repositories.md` first.*
 
 ---
@@ -211,28 +211,59 @@ Where two Persons are linked by a `sibling` Relationship and both have concluded
 
 These constraints apply in incremental linkage mode only, where the relationship graph is populated.
 
-### 6.1 Parent-child co-residency expectation
+The central principle of this section is that census household composition is a **relationship discovery tool** as much as a consistency check. A child appearing in a household other than their parents' is not simply an anomaly to explain away — it is a positive signal pointing toward extended family connections that may not yet be concluded. The system should treat unexpected household placements as leads, not flags.
 
-Where two Persons are linked by a `parent_child` Relationship and both have Records from the same census source, there is a high prior probability that the child appears in the parent's household if the child is under approximately 12 years of age at the census date.
+### 6.1 Child household placement
 
-A parent-child Relationship where census Records exist for both Persons but they do not appear in the same household Record is **reduced probability** when the child's concluded age at the census date is under 12. The threshold of 12 reflects Irish domestic service practice — children entered service or left the household for other reasons from as young as 12, making absence from the parental household increasingly normal from that age upward.
+Where a concluded child (a Person in a `parent_child` Relationship as the child) has a census Record, their household placement falls into one of three cases. Each has a distinct inference and recommendation path.
 
-Absence may indicate:
-- A merge error (the child Record has been linked to the wrong Person)
-- The child was in domestic service, schooling, or otherwise absent from the household
-- The parent's census Record has not yet been ingested
+**Case 1 — Nuclear household (expected).**
+The child appears in the same census household as a concluded parent. This is the expected pattern for children under approximately 12 years of age. No flag or recommendation is generated.
 
-The system should surface this as a recommendation for researcher attention rather than a hard flag.
+For children aged 12 and over, absence from the parental household is increasingly normal due to domestic service, farm labour, or schooling and should not be flagged. The threshold of 12 reflects Irish practice — children entered service from as young as this age, particularly daughters placed in nearby households.
+
+**Case 2 — Extended family household (positive signal).**
+The child appears in a census household where the head is not a concluded parent, but where the head has a concluded Relationship to a concluded parent — i.e., the head is a grandparent, aunt, uncle, or other concluded relative of the child.
+
+This is an **increased probability** signal and should be treated as a positive finding rather than an anomaly. Extended family placement was common in 19th and early 20th century Ireland for a variety of reasons: inheritance and land consolidation arrangements, the death or emigration of one or both parents, economic pressure, or the care of an elderly relative who needed a child's company in their household. The placement strengthens the concluded Relationships involved and may surface additional Relationship candidates.
+
+The system should surface this as a positive recommendation: "child [name] appears in the household of [head], consistent with the concluded [relationship type] between [head] and [parent] — this placement supports the existing relationship graph."
+
+**Case 3 — Unresolved household placement (discovery signal).**
+The child appears in a census household where no concluded Relationship exists between the head and any concluded parent of the child.
+
+This is a high-value **relationship discovery signal**. The placement may indicate:
+- An unresolved family Relationship between the household head and the child's parents — a grandparent, aunt, uncle, or cousin not yet concluded
+- A non-family arrangement — informal fostering, lodging, or domestic service placement
+- A merge error — the child Record may have been linked to the wrong Person
+
+The system should surface this as a priority recommendation: "child [name] appears in the household of [head] — no concluded relationship between [head] and [parent] exists. Investigate possible family connection."
+
+Where the child's name matches the expected generational naming pattern relative to the household head (see GC18), the recommendation should note this as supporting evidence for a family connection.
 
 ### 6.2 Couple co-residency expectation
 
-Where two Persons are linked by a `couple` Relationship and Records from the same census source exist for both, there is a high prior probability that they appear in the same household Record unless one spouse has a concluded death Event predating the census.
+Where two Persons are linked by a `couple` Relationship and Records from the same census source exist for both, there is a high prior probability that they appear in the same household Record. The following cases apply:
 
-A couple Relationship where both Persons have census Records from the same year but in different households is **reduced probability** unless a death Event accounts for the separation. The system should surface this as a recommendation.
+**Both spouses alive at census date and in same household** — expected. No flag.
 
-### 6.3 Household membership consistency
+**Both spouses alive at census date but in different households** — **reduced probability**. Warrants researcher attention. Possible explanations include: seasonal or work-related separation, a concluded death Event with an incorrect date, or a merge error in one of the census linkages. The system should surface this as a recommendation.
 
-Where a census Record is linked to a Person as `head`, the other RecordedPersons in that Record (spouse, children, boarders) should resolve to Persons who have concluded Relationships with the head. Unresolved household members — RecordedPersons in a head's census Record with no linked Person conclusion — represent high-value linkage targets and should be surfaced as recommendations.
+**One spouse has a concluded death Event predating the census** — expected. The surviving spouse should appear as head or as a member of another household (see §6.3 below). No flag on the couple co-residency constraint, but GC15 Case 1–3 applies to any children.
+
+**Surviving spouse absorbed into a child's household** — expected and common. A widow or widower appearing in a census household headed by one of their own concluded children is a normal post-widowhood arrangement in Irish records. This pattern should be recognised explicitly: the system should not flag this as a co-residency anomaly. Instead it should surface it as a positive confirmation: "widow/widower [name] appears in the household of concluded child [head] — consistent with post-widowhood household absorption pattern."
+
+### 6.3 Household membership consistency and relationship discovery
+
+Where a census Record is linked to a Person as `head`, the other RecordedPersons in that Record represent a relationship map of the household at that census date. The system should evaluate each non-head RecordedPerson against the existing conclusion layer and generate recommendations accordingly.
+
+**Resolved members with concluded Relationships** — no action needed. The household composition is consistent with the conclusion layer.
+
+**Resolved members without a concluded Relationship to the head** — a Person conclusion exists for this RecordedPerson but no Relationship has been concluded between them and the head. This warrants a recommendation: the census household role (spouse, child, boarder, servant) provides strong evidence for a Relationship type. The system should propose the Relationship for researcher review.
+
+**Unresolved members** — RecordedPersons in the household with no linked Person conclusion. These are high-value linkage targets regardless of their role. The system should surface them as recommendations, prioritised by role: `spouse` and `child` are higher priority than `boarder` or `servant`.
+
+**Non-family members as relationship signals** — boarders and servants in a household are sometimes family members listed under an occupational designation. Where a boarder or servant shares a surname with the head, this is a weak positive signal for a family connection and should be noted as a recommendation rather than ignored.
 
 ---
 
@@ -384,9 +415,9 @@ The following table summarises all constraints, their type, and their implementa
 | GC12 | Minimum and maximum parent age | Biological | Score penalty; validation rule candidate |
 | GC13 | Minimum marriage age | Biological | Score penalty; validation rule candidate |
 | GC14 | Sibling birth spacing | Biological | Score penalty |
-| GC15 | Parent-child co-residency | Co-residency | Researcher recommendation (incremental mode only) |
-| GC16 | Couple co-residency | Co-residency | Researcher recommendation (incremental mode only) |
-| GC17 | Household membership consistency | Co-residency | Linkage target recommendation (incremental mode only) |
+| GC15 | Child household placement | Co-residency | Positive finding (Case 2); relationship discovery recommendation (Case 3); incremental mode only |
+| GC16 | Couple co-residency | Co-residency | Researcher recommendation; widow absorption pattern recognition; incremental mode only |
+| GC17 | Household membership consistency and relationship discovery | Co-residency | Linkage target recommendation; Relationship proposal; incremental mode only |
 | GC18 | Naming pattern consistency | Community | Inference recommendation; disambiguation signal (incremental mode only) |
 | GC19 | Witness and godparent network | Community | Linkage target recommendation (incremental mode only) |
 | GC20 | Occupation consistency | Community | Researcher flag |
@@ -401,6 +432,7 @@ The following table summarises all constraints, their type, and their implementa
 |---|---|---|
 | 1.0 | May 2026 | Initial version — GC01–GC17 |
 | 1.1 | May 2026 | Added adult baptism carve-out to GC02. Added short widowhood interval signal to GC03 (§3.3). Clarified occupier role scope in GC09 and §4.1 eligibility table. Added Tithe amplification note to GC10. Added Catholic non-compliance context to GC11 and §4.1. Added maximum maternal and paternal age thresholds to GC12. Revised co-residency age threshold in GC15 from 15 to 12 years to reflect domestic service practice. Split §7 (previously Source Coverage) into §7 Community and Network Constraints, §8 Record-Specific Inference Constraints, and §9 Source Coverage and Completeness. Added GC18 (naming pattern consistency), GC19 (witness and godparent network), GC20 (occupation consistency), GC21 (death registration informant), GC22 (geographical coherence). Made source priority ranking in §9.4 conditional on birth year, with parish registers ranked highest for pre-1864 persons. Added cross-references to `reconstruction_algorithms.md` for GC03 and GC18. |
+| 1.2 | May 2026 | Rewrote §6 (Co-Residency Constraints) to adopt a three-case model for child household placement (GC15): nuclear household, extended family placement as positive signal, and unresolved placement as relationship discovery signal. Expanded GC16 (couple co-residency) to explicitly recognise and handle the widow/widower absorption pattern. Expanded GC17 (household membership consistency) to cover resolved members without concluded Relationships, unresolved members by role priority, and same-surname boarders as weak family connection signals. Updated constraint summary table for GC15–GC17. |
 
 ---
 
