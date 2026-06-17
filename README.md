@@ -16,7 +16,7 @@ Schema version: 3.0 (June 2026)
 
 ## Repository Structure
 
-
+```text
 irish-genealogy-research/
 │
 ├── archive/                           # Deprecated/Inactive documentation
