@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*17 June 2026 — v1.7*
+*17 June 2026*
 
 ---
 
@@ -8,17 +8,17 @@
 
 ### Documentation
 
-| Document | Version | Status | Notes |
-|---|---|---|---|
-| `docs/conceptual_model.md` | v2.4 | ✅ Complete | RecordedEvent merged into Record |
-| `docs/data_dictionary.md` | v2.6 | ✅ Complete | RecordedEvent removed; event fields inline on Record |
-| `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
-| `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
-| `docs/database_schema.md` | v3.0 | ✅ Complete | `training_labels` + `event.is_primary` added; `recorded_person.role` nullable |
-| `docs/reconstruction_algorithms.md` | v1.2 | ✅ Complete | Updated for schema v2.8; event linkage simplified |
-| `docs/genealogical_constraints.md` | v1.1 | ✅ Complete | 22 GC-coded constraints |
-| `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | v1.7 | ✅ Complete | Updated structure and remediation queue |
+| Document | Status | Notes |
+|---|---|---|
+| `docs/conceptual_model.md` | ✅ Complete | RecordedEvent merged into Record |
+| `docs/data_dictionary.md` | ✅ Complete | RecordedEvent removed; event fields inline on Record |
+| `docs/repositories.md` | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
+| `docs/validation_rules.md` | ✅ Complete | R40–R46 implemented; retired rules updated |
+| `docs/database_schema.md` | ✅ Complete | v3.0 DDL; `training_labels` + `event.is_primary` added |
+| `docs/reconstruction_algorithms.md` | ✅ Complete | Updated for schema v2.8; event linkage simplified |
+| `docs/genealogical_constraints.md` | ✅ Complete | 22 GC-coded constraints (v1.1) |
+| `docs/session_bootstrap.md` | ✅ Complete | Ingest and update knowledge session protocols |
+| `ROADMAP.md` | ✅ Complete | Updated structure and remediation queue |
 
 ---
 
@@ -60,6 +60,9 @@
 
 ## 6. Version History
 
-* **1.7 (17 June 2026):** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and corrected constraint versioning.
-* **1.6 (16 June 2026):** Schema v3.0 finalized (`event.is_primary`, nullable roles).
-* **1.5 (Early June 2026):** Integration of `logainm.ie` place authority.
+| Date | Milestone / Change |
+|---|---|
+| 17 June 2026 | **Consolidation:** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and corrected constraint versioning. |
+| 16 June 2026 | **Schema v3.0:** Finalized (`event.is_primary`, nullable roles). Linkage correctness pass: `link_only`, `_UnionFind`, Positional pairing, Per-merge transactions. |
+| 4th June 2026 | **Schema v2.8:** RecordedEvent merged into Record; junction tables 9→5. First full linkage test (3881 persons, 264 merged). Relationship features added. |
+| 24 May 2026 | **Foundation & R1-1:** Initial GRA roadmap/rename established. Tier 1/2 complete; Tullynaught 1911 verified. Implemented place resolution and household inference (R1-1); established Release Plan (R1–R3). |
