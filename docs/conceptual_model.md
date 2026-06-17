@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Conceptual Data Model
 
-*Version 2.5 — 17 June 2026*
+*Version 2.6 — 17 June 2026*
 *Audience: All roles. This document defines the what and why of the data model. It contains no implementation detail.*
 
 ---
@@ -144,7 +144,7 @@ An algorithmic comparison between two Records — for example, a Splink score su
 
 ### 4.9 Person — Conclusion
 
-A concluded identity representing a real-world individual as asserted by the researcher. Constituted by associated Events and Relationships, supported by linked Records.
+A concluded identity representing a real-world individual as asserted by the researcher. Constituted by associated Events and Relationships, supported by linked RecordedPerson rows — the same evidentiary correspondence Relationship has to RecordedRelationship (Rule 2).
 
 Person has no primary/alternate variant — unlike Event, exactly one Person represents a given concluded identity. Every other conclusion and linkage in the model is anchored to a `person_id`, so allowing competing Person conclusions would fork everything downstream of it. Uncertainty about identity must be resolved before a Person is concluded, not represented afterward.
 
@@ -152,7 +152,7 @@ Person has no primary/alternate variant — unlike Event, exactly one Person rep
 
 ### 4.10 Relationship — Conclusion
 
-A concluded assertion about a connection between two specific Persons. Independent of any single Event — accumulates evidence from multiple Records (or, more precisely, multiple RecordedRelationship rows) over time.
+A concluded assertion about a connection between two specific Persons. Independent of any single Event — accumulates evidence from multiple RecordedRelationship rows over time.
 
 Like Person, Relationship does not currently support primary/alternate variants. This is a scope decision rather than a structural necessity: conflicting relationship-type evidence (a source implying both `sibling` and `cousin` for the same pair) is judged rare enough not to warrant the added complexity, unlike Person, where a single identity is structurally load-bearing.
 
@@ -182,10 +182,10 @@ EVIDENCE
                                             no conclusion-layer counterpart)
 
 CONCLUSION
-  Record                ──► Person            (this Record is about this Person)
-  Record                ──► Event             (this Record documents this Event)
-  RecordedRelationship  ──► Relationship      (this RecordedRelationship evidences this Relationship)
-  Record                ──► PlaceAuthority    (this Record's place string refers to this authority)
+  RecordedPerson         ──► Person            (this RecordedPerson is about this Person)
+  Record                 ──► Event              (this Record documents this Event)
+  RecordedRelationship   ──► Relationship       (this RecordedRelationship evidences this Relationship)
+  Record                 ──► PlaceAuthority     (this Record's place string refers to this authority)
 
 PlaceAuthority  ←── logainm.ie API / manual CSV
   (hierarchy expressed as flat columns: ded_id, county_id, barony_id, civil_parish_id)
@@ -199,7 +199,7 @@ The Record/RecordedPerson pair remains the pivot of the evidence layer: everythi
 
 **Rule 1 — Evidence cohesion.** Event fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier`, `place_as_recorded`) and RecordedPerson rows are the structured evidence content of a Record. Event fields live directly on the Record; RecordedPersons are child rows keyed to the Record. RecordedRelationship (between RecordedPersons) and RecordSimilarity (between Records) are likewise evidence-layer content. None of these carry foreign keys to conclusion-layer objects.
 
-**Rule 2 — Record as evidence unit.** All conclusion-layer objects point to Records — directly, or through a more specific evidence object such as RecordedRelationship — as their justifying evidence.
+**Rule 2 — Evidence correspondence.** Each conclusion-layer object points to the evidence object that most specifically corresponds to it: Person to RecordedPerson, Relationship to RecordedRelationship. Event points to Record directly, since event fields are captured on the Record itself (Rule 1, Rule 3) rather than on a separate per-event evidence row — there is no more specific object to point to.
 
 **Rule 3 — One event per Record.** Each Record documents exactly one event. The event fields on the Record express this directly. A physical source entry documenting two discrete events is modelled as two Records.
 
@@ -230,3 +230,4 @@ The Record/RecordedPerson pair remains the pivot of the evidence layer: everythi
 | 2.3 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §4.3 PlaceAuthority with flat hierarchy design rationale. Removed PlaceMembership (flat schema adopted). Updated §3 object summary, §5 data flow, §6 Rule 8. Added logainm.ie seeding workflow. Event.place_id now references PlaceAuthority. |
 | 2.4 | June 2026 | Merged RecordedEvent into Record (schema v2.8). RecordedEvent removed as a first-class object. §1 symmetry principle updated. §3 object summary updated. §4.5 rewritten to describe inline event fields. §5 data flow updated. §6 Rules 1 and 3 updated. |
 | 2.5 | 17 June 2026 | Added RecordedRelationship and RecordSimilarity as new Evidence-layer objects, recording relationships and algorithmic similarity between evidence units without requiring a conclusion to exist (§1, §2, §3, §4.7, §4.8). Added Event consensus arbitration as Rule 9 — competing Events of the same type may coexist per Person, with exactly one marked `is_primary`; Person and Relationship explicitly excluded from this mechanism, for different reasons (§1, §4.9, §4.10, §4.11, §6). Added Rule 10 (relationship evidence precedes identity) and Rule 11 (comparison is not conclusion). Retired `training_labels` as a considered-and-built-then-rejected path, alongside the existing PlaceMembership note (§3). Corrected object count from eleven (stale, did not match the actual object list) to ten. Updated §1 Symmetry between layers to include the RecordedRelationship/Relationship mirror and the deliberate RecordSimilarity asymmetry. Updated §2 Evidence Layer description. Updated §5 data flow diagram and explanatory paragraph. Fixed stale CLI invocation examples in §4.3 seeding workflow (`python -m src.cli fetch-places` / `seed-places`, previously incorrectly given as `src.fetch_places` / `src.db seed-places`). |
+| 2.6 | 17 June 2026 (session 3) | Generalised Rule 2 from "Records as evidence unit" to an evidence-correspondence principle: Person points to RecordedPerson, Relationship to RecordedRelationship, Event continues to point to Record directly since event fields are inline on the Record (Rule 1, Rule 3). This resolves the Relationship evidence-FK item left open at the end of the v2.5 session — settled in favour of RecordedRelationship — and, on the same principle, corrects Person's evidence target from Record to RecordedPerson, which §1's symmetry principle had already implied but §5/§6 had not carried through. Updated §5 data flow diagram (`Record──►Person` → `RecordedPerson──►Person`), §4.9 Person and §4.10 Relationship wording to match; removed the now-resolved "Records (or, more precisely, RecordedRelationship rows)" hedge from §4.10. |
