@@ -16,7 +16,7 @@
 | `docs/validation_rules.md` | ✅ Complete | R40–R46 implemented; retired rules updated |
 | `docs/database_schema.md` | ✅ Complete | v3.0 DDL; `training_labels` + `event.is_primary` added |
 | `docs/reconstruction_algorithms.md` | ✅ Complete | Updated for schema v2.8; event linkage simplified |
-| `docs/genealogical_constraints.md` | ✅ Complete | 22 GC-coded constraints (v1.1) |
+| `docs/genealogical_constraints.md` | ✅ Complete | 22 GC-coded constraints (v1.2) |
 | `docs/session_bootstrap.md` | ✅ Complete | Ingest and update knowledge session protocols |
 | `ROADMAP.md` | ✅ Complete | Updated structure and remediation queue |
 
@@ -46,7 +46,7 @@
 |---|---|---|
 | 2 | Migration scripts: `migrate_28_to_29.sql` / `migrate_29_to_30.sql` created. | ✅ Resolved (17 Jun) |
 | 5 | Path drift: `fetch_places.py` / `seed_places.py` / `reset_pipeline.py` location corrected to `src/db/`. | ✅ Resolved (17 Jun) |
-| 6 | genealogical_constraints.md version: Corrected to v1.1. | ✅ Resolved (17 Jun) |
+| 6 | genealogical_constraints.md version: Sync to v1.2. | ✅ Resolved (17 Jun) |
 | 7 | Update stale schema footers: Audit all `docs/` files to reflect v3.0. | 🔜 |
 
 ---
@@ -62,7 +62,7 @@
 
 | Date | Milestone / Change |
 |---|---|
-| 17 June 2026 | **Consolidation:** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and corrected constraint versioning. |
+| 17 June 2026 | **Consolidation:** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and sync'd constraint versioning to v1.2. |
 | 16 June 2026 | **Schema v3.0:** Finalized (`event.is_primary`, nullable roles). Linkage correctness pass: `link_only`, `_UnionFind`, Positional pairing, Per-merge transactions. |
-| 4th June 2026 | **Schema v2.8:** RecordedEvent merged into Record; junction tables 9→5. First full linkage test (3881 persons, 264 merged). Relationship features added. |
+| Early June 2026 | **Schema v2.8:** RecordedEvent merged into Record; junction tables 9→5. First full linkage test (3881 persons, 264 merged). Relationship features added. |
 | 24 May 2026 | **Foundation & R1-1:** Initial GRA roadmap/rename established. Tier 1/2 complete; Tullynaught 1911 verified. Implemented place resolution and household inference (R1-1); established Release Plan (R1–R3). |
