@@ -17,7 +17,6 @@
 | `docs/database_schema.md` | ✅ Complete | v3.0 DDL; `training_labels` + `event.is_primary` added |
 | `docs/reconstruction_algorithms.md` | ✅ Complete | Updated for schema v2.8; event linkage simplified |
 | `docs/genealogical_constraints.md` | ✅ Complete | 22 GC-coded constraints (v1.2) |
-| `docs/session_bootstrap.md` | ✅ Complete | Ingest and update knowledge session protocols |
 | `ROADMAP.md` | ✅ Complete | Updated structure and remediation queue |
 
 ---
