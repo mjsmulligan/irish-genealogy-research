@@ -1,5 +1,6 @@
+
 -- GRA — Genealogy Research Assistant
--- Schema version 2.10 — June 2026
+-- Schema version 3.0 — 17 June 2026
 -- SQLite 3.35.0+ required
 --
 -- Changes from v2.9:
