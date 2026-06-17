@@ -4,19 +4,18 @@
 
 A probabilistic genealogy research platform combining a SQLite knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: **3.0** (June 2026)
+Schema version: 3.0 (June 2026)
 
 ---
 
 ## Project Status
 
-> **→ See [`ROADMAP.md`](ROADMAP.md) for current work queue, open decisions, and what to focus on next.**
+> → See ROADMAP.md for current work queue, open decisions, and what to focus on next.
 
 ---
 
 ## Repository Structure
 
-```
 irish-genealogy-research/
 │
 ├── archive/                           # Deprecated/Inactive documentation
@@ -59,7 +58,6 @@ irish-genealogy-research/
 │
 └── tests/
     └── test_place_authority.py
-```
 
 ---
 
@@ -93,16 +91,14 @@ python -m src.cli validate
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5). Additional sources planned for Release 2.
 
-**Logainm API key:** Required for `fetch-places`. Set via `LOGAINM_API_KEY` environment variable or `--api-key` argument.
+**Logainm API key:** Required for fetch-places. Set via LOGAINM_API_KEY environment variable or --api-key argument.
 
 ---
 
 ## requirements.txt
 
-```
 splink>=4.0
 rapidfuzz>=3.0
 pandas>=2.0
 jsonschema>=4.0
 pytest>=8...
-```
