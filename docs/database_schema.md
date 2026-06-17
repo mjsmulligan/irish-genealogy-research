@@ -1,6 +1,7 @@
+
 # Irish Genealogy Research — Database Schema
 
-*Version 2.10 — June 2026*
+*Version 3.0 — 17 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ---
@@ -604,7 +605,7 @@ def init_db(path: str) -> sqlite3.Connection:
 
 ```python
 # Record schema version on init
-conn.execute("PRAGMA user_version = 30")  # version 2.10
+conn.execute("PRAGMA user_version = 30")  # version 3.0
 
 # Check version on open
 version = conn.execute("PRAGMA user_version").fetchone()[0]
@@ -641,10 +642,10 @@ if version != 30:
 | 2.7 | May 2026 | Added `place_authority` table (flat denormalised schema seeded from logainm.ie). Replaced `place` conclusion table. `event.place_id` now references `place_authority`. |
 | 2.8 | June 2026 | Merged `recorded_event` into `record` (inline event fields). Dropped `event_recorded_event`, `person_relationship`, `relationship_event`, `event_person`. Retained `person_event` for both person↔event directions with added `idx_person_event_event` index. Junction table count reduced from 9 to 5. Added `idx_place_authority_logainm` and `idx_place_authority_type`. Schema user_version bumped to 28. Migration script `src/db/migrations/migrate_27_to_28.sql`. |
 | 2.9 | June 2026 | Added `training_labels` table (linkage proposals + researcher review workflow). Added `event.is_primary BOOLEAN DEFAULT true` (consensus arbitration; set by rebuild-consensus stage). Schema user_version bumped to 29. Migration script `src/db/migrations/migrate_28_to_29.sql`. |
-| 2.10 | June 2026 | Made `recorded_person.role` nullable (NULL = blank in source data). Added `'unknown'` to role CHECK vocabulary (value present in source but not mappable). Removed `NOT NULL` constraint from `recorded_person.role`. Updated R05. Schema user_version bumped to 30. Migration script `src/db/migrations/migrate_29_to_30.sql`. |
+| 3.0 | 17 June 2026 | Made `recorded_person.role` nullable (NULL = blank in source data). Added `'unknown'` to role CHECK vocabulary (value present in source but not mappable). Removed `NOT NULL` constraint from `recorded_person.role`. Updated R05. Schema user_version bumped to 30. Migration script `src/db/migrations/migrate_29_to_30.sql`. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 
-*Schema version: 2.10 — June 2026*
+*Schema version: 3.0 — 17 June 2026*
