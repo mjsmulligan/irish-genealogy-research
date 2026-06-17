@@ -58,7 +58,6 @@ irish-genealogy-research/
 │           └── census.py              # Splink feature extractor
 │
 └── tests/
-    └── test_place_authority.py
 
 ---
 
