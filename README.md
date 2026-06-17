@@ -10,7 +10,7 @@ Schema version: 3.0 (June 2026)
 
 ## Project Status
 
-> → See ROADMAP.md for current work queue, open decisions, and what to focus on next.
+> → See [`ROADMAP.md`](ROADMAP.md) for current work queue, open decisions, and what to focus on next.
 
 ---
 
