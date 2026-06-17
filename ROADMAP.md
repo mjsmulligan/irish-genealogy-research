@@ -16,7 +16,7 @@
 | `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
 | `docs/database_schema.md` | v3.0 | ✅ Complete | `training_labels` + `event.is_primary` added; `recorded_person.role` nullable |
 | `docs/reconstruction_algorithms.md` | v1.2 | ✅ Complete | Updated for schema v2.8; event linkage simplified |
-| `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
+| `docs/genealogical_constraints.md` | v1.1 | ✅ Complete | 22 GC-coded constraints |
 | `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
 | `ROADMAP.md` | v1.7 | ✅ Complete | Updated structure and remediation queue |
 
@@ -46,7 +46,7 @@
 |---|---|---|
 | 2 | Migration scripts: `migrate_28_to_29.sql` / `migrate_29_to_30.sql` created. | ✅ Resolved (17 Jun) |
 | 5 | Path drift: `fetch_places.py` / `seed_places.py` / `reset_pipeline.py` location corrected to `src/db/`. | ✅ Resolved (17 Jun) |
-| 6 | Update `genealogical_constraints.md` metadata: Correct version to v1.2. | 🔜 |
+| 6 | genealogical_constraints.md version: Corrected to v1.1. | ✅ Resolved (17 Jun) |
 | 7 | Update stale schema footers: Audit all `docs/` files to reflect v3.0. | 🔜 |
 
 ---
@@ -60,6 +60,6 @@
 
 ## 6. Version History
 
-* **1.7 (17 June 2026):** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, and archived inactive documentation.
+* **1.7 (17 June 2026):** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and corrected constraint versioning.
 * **1.6 (16 June 2026):** Schema v3.0 finalized (`event.is_primary`, nullable roles).
 * **1.5 (Early June 2026):** Integration of `logainm.ie` place authority.
