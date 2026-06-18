@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Validation Rules
 
-*Version 2.6 — June 2026*
+*Version 2.8 — 18 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, `database_schema.md`, and `genealogical_constraints.md`.*
 
 ---
@@ -18,7 +18,7 @@ Rules are annotated with their enforcement locus:
 - **[DB + Python]** — the database enforces what it can; Python enforces the remainder or validates before write.
 - **[Retired]** — the rule is no longer meaningful in the relational model and has been removed.
 
-The Python validator's role has shifted from *checking a loaded dataset for consistency* to *validating objects before they are written to the database*. The two entry points reflect this: `DataStore.validate()` for full dataset checks, and `DataStore.validate_object()` for pre-write single-object checks.
+The Python validator's role has shifted from *checking a loaded dataset for consistency* to *validating objects before they are written to the database*. The two entry points reflect this: `validate(conn)` for full dataset checks, and pre-write structural checks on individual objects before insert.
 
 ### Rule categories
 
@@ -93,14 +93,17 @@ Python enforcement: covered by R03 pre-write validation and R36 date format chec
 
 ### R05 — Required fields present on RecordedPerson `[DB + Python]`
 
-Every RecordedPerson must have `recorded_person_id`, `record_id`, `name_as_recorded`, and `role`. Both `name_as_recorded` and `role` must be non-null and non-empty after stripping whitespace.
+**Updated in v3.0.** `role` is now nullable on the `recorded_person` table. A blank role field in the source CSV is ingested as `NULL` (genuinely absent); a field that is present in the source but does not map to any recognised role vocabulary value is ingested as `'unknown'`. Neither `NULL` nor `'unknown'` constitutes a structural violation.
 
-DB enforcement: `NOT NULL` and `CHECK` constraints on the `recorded_person` table.
-Python enforcement: pre-write validation via `validate_object()`.
+Every RecordedPerson must have `recorded_person_id`, `record_id`, and `name_as_recorded`. `name_as_recorded` must be non-null and non-empty after stripping whitespace. `role`, when non-null, is subject to vocabulary validation under R31.
+
+DB enforcement: `NOT NULL` on `recorded_person_id`, `record_id`, `name_as_recorded`; `role` column is nullable with no `NOT NULL` constraint.
+Python enforcement: pre-write structural check on required non-nullable fields only.
+
+**Known code bug:** The existing `validate_object()` implementation in `validator.py` still treats `role` as required and raises `[R05] RecordedPerson {id}: role is absent or empty` for null roles. This is incorrect as of v3.0 schema. The error message should be suppressed for null roles pending a fix to the validator code. The correct behaviour is documented here; the code has not yet been updated.
 
 ```
 [R05] RecordedPerson {id}: name_as_recorded is absent or empty
-[R05] RecordedPerson {id}: role is absent or empty
 [R05] RecordedPerson {id}: required field '{field}' is absent or null
 ```
 
@@ -145,15 +148,15 @@ Python enforcement: pre-write validation via `validate_object()`.
 
 ---
 
-### R09 — Required fields present on Place `[DB + Python]`
+### R09 — Required fields present on PlaceAuthority `[DB + Python]`
 
-Every Place must have `place_id` and `name`. `name` must be non-null and non-empty.
+**Updated in v2.7 (schema).** The conclusion-layer `Place` object has been retired. `place_authority` is the structural place table, seeded from logainm.ie. Every PlaceAuthority entry must have `place_authority_id`, `logainm_id`, and `name_en` or `name_ga` (at least one non-null name field). `logainm_id` must be non-null.
 
-DB enforcement: `NOT NULL` and `CHECK (trim(name) != '')` on the `place` table.
-Python enforcement: pre-write validation via `validate_object()`.
+DB enforcement: `NOT NULL` on `place_authority_id` and `logainm_id`; at minimum one name column constrained non-null by schema convention.
+Python enforcement: pre-write validation via structural check before insert.
 
 ```
-[R09] Place {id}: required field '{field}' is absent or empty
+[R09] PlaceAuthority {id}: required field '{field}' is absent or empty
 ```
 
 ---
@@ -170,7 +173,7 @@ In the relational schema, all single-column foreign keys are enforced by `REFERE
 
 All junction table foreign keys are likewise enforced at the DB level — an attempt to insert a row referencing a non-existent primary key is rejected immediately.
 
-Python's residual responsibility in this section is **pre-write validation**: before constructing INSERT statements, `validate_object()` should confirm that referenced IDs exist in the DataStore. This catches errors earlier and produces friendlier error messages than raw SQLite constraint errors.
+Python's residual responsibility in this section is **pre-write validation**: before constructing INSERT statements, the repo layer should confirm that referenced IDs exist in the database. This catches errors earlier and produces friendlier error messages than raw SQLite constraint errors.
 
 ### R11 — Repository → (no upstream FK) `[N/A]`
 
@@ -264,14 +267,15 @@ DB enforcement: `REFERENCES place_authority` and `REFERENCES relationship` on th
 
 ---
 
-### R19 — Place foreign keys `[DB + Python]`
+### R19 — PlaceAuthority foreign keys `[DB + Python]`
 
-Each entry in `Place.record_ids`, when present, must resolve to an existing Record.
+**Updated in v2.7 (schema).** The conclusion-layer `Place` object has been retired; `place_authority` is now the canonical place table. The `place_record` junction table remains: each `place_authority_id` in `place_record` must resolve to an existing `place_authority` entry. Each `record_id` in `place_record` must resolve to an existing Record.
 
-DB enforcement: `REFERENCES record` on junction table `place_record`.
+DB enforcement: `REFERENCES place_authority` and `REFERENCES record` on junction table `place_record`.
 
 ```
-[R19] Place {id}: record_id={val} does not resolve to a Record
+[R19] place_record (place_authority_id={pid}, record_id={rid}): place_authority_id does not resolve to a PlaceAuthority entry
+[R19] place_record (place_authority_id={pid}, record_id={rid}): record_id does not resolve to a Record
 ```
 
 ---
@@ -382,11 +386,15 @@ DB enforcement: `CHECK (date_qualifier IS NULL OR date_qualifier IN (...))` on b
 
 ### R31 — RecordedPerson role controlled vocabulary `[DB + Python]`
 
-`RecordedPerson.role` must be one of the values defined in §6.4 of the data dictionary.
+**Updated in v3.0.** `role` is nullable (see R05). When non-null, `role` must be one of the values defined in §6.4 of the data dictionary.
 
-Valid values: `principal`, `head`, `spouse`, `child`, `groom`, `bride`, `father`, `mother`, `father_of_groom`, `father_of_bride`, `godfather`, `godmother`, `witness`, `informant`, `officiator`, `occupier`, `lessor`, `deceased`.
+Valid values: `principal`, `head`, `spouse`, `child`, `groom`, `bride`, `father`, `mother`, `father_of_groom`, `father_of_bride`, `godfather`, `godmother`, `witness`, `informant`, `officiator`, `occupier`, `lessor`, `deceased`, `unknown`.
 
-DB enforcement: `CHECK (role IN (...))` on the `recorded_person` table.
+The value `'unknown'` is used during census ingest when the source field is non-blank but does not map to any other vocabulary term (e.g. an unrecognised `relation_to_head_updated` value). It is not an error — it is a signal that the source value was present but unclassified.
+
+A null `role` is not a vocabulary violation and is not checked by this rule.
+
+DB enforcement: `CHECK (role IS NULL OR role IN (...))` on the `recorded_person` table.
 
 ```
 [R31] RecordedPerson {id}: role='{val}' is not a valid role
@@ -488,7 +496,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 
 These rules formalise the hardest constraints from `genealogical_constraints.md` — those flagged as near-zero probability violations — as Python validation rules. They are the counterpart to the probabilistic scoring constraints: where the constraint engine adjusts scores and queues recommendations, these rules generate explicit error-level flags for violations that are strong enough to be treated as merge error candidates regardless of Splink scores.
 
-All rules in this section are **[Python]** only. They require cross-object lookups against the existing conclusion layer and cannot be expressed as SQLite constraints. They run as part of `DataStore.validate()` and are also callable individually for targeted post-linkage checks.
+All rules in this section are **[Python]** only. They require cross-object lookups against the existing conclusion layer and cannot be expressed as SQLite constraints. They run as part of `validate(conn)` and are also callable individually for targeted post-linkage checks.
 
 **Relationship to `genealogical_constraints.md`:** Each rule cites the GC code of the constraint it formalises. The GC document is the authoritative source for the genealogical rationale; this document is the authoritative source for the validation implementation.
 
@@ -496,24 +504,38 @@ All rules in this section are **[Python]** only. They require cross-object looku
 
 ---
 
-### R40 — Birth Event singularity `[Python]` *(GC04)*
+### R40 — Birth Event `is_primary` cardinality `[Python]` *(GC04)*
 
-A concluded `Person` may not be linked to more than one birth `Event` via `person_event`. Multiple birth Events on the same Person indicate a conclusion-layer merge error — most commonly two Records from different sources (e.g. a civil birth registration and a baptism) have been incorrectly concluded as separate birth Events rather than synthesised into one.
+**Updated in v2.8 (rules).** The conceptual model (v2.5) permits multiple birth Events per Person as competing conclusions — for example, a civil birth registration and a baptism record may each generate a birth Event before they are synthesised. Exactly one of these must be marked `is_primary = True` by the `rebuild-consensus` step. R40 therefore enforces `is_primary` cardinality, not raw Event count.
 
-This rule queries `person_event` joined to `event` to count birth-type Events per Person. A count greater than one triggers the warning.
+This rule queries `person_event` joined to `event` to count Events of type `birth` where `is_primary = True`, per Person. The valid count is exactly 1. Deviations in either direction are flagged as merge error candidates:
+
+- **Zero primaries** — no birth Event is marked primary. This indicates `rebuild-consensus` has not run, or no birth Records are linked to this Person. Flagged as a data completeness warning.
+- **Multiple primaries** — more than one birth Event is marked primary. This is a data integrity error: the `is_primary` mechanism is broken or two conflicting consensus passes have fired for the same Person.
+
+The total count of birth Events (primary + non-primary) is not itself a violation — non-primary birth Events represent legitimate alternative conclusions pending researcher review.
+
+**Scope note:** An analogous rule for Relationship-scoped Event cardinality is not defined. The `event` table's `is_primary` column is scoped to Person conclusions; Relationship objects carry no primary/alternate mechanism.
 
 ```
-[R40] Person {id}: has {n} birth Events — maximum 1 permitted; probable merge error
+[R40] Person {id}: has 0 birth Events marked is_primary — exactly 1 required; rebuild-consensus may not have run
+[R40] Person {id}: has {n} birth Events marked is_primary — exactly 1 permitted; probable data integrity error
 ```
 
 ---
 
-### R41 — Death Event singularity `[Python]` *(GC05)*
+### R41 — Death Event `is_primary` cardinality `[Python]` *(GC05)*
 
-A concluded `Person` may not be linked to more than one death `Event` via `person_event`. A burial Event linked to the same Person is permitted and expected — this rule checks only Events of type `death`.
+**Updated in v2.8 (rules).** Same reasoning as R40. Multiple death Events per Person are permitted as competing conclusions; exactly one must be marked `is_primary = True`. A burial Event linked to the same Person is permitted and expected — this rule checks only Events of type `death`.
+
+This rule queries `person_event` joined to `event` to count Events of type `death` where `is_primary = True`, per Person. A Person with no linked death Records produces a count of zero — this is not a violation (death Records are not available for all Persons). The rule fires only when at least one death Event exists for the Person and the `is_primary` count deviates from 1.
+
+- **Zero primaries, at least one death Event linked** — primary not yet determined; rebuild-consensus has not run or has not propagated to this Person.
+- **Multiple primaries** — data integrity error.
 
 ```
-[R41] Person {id}: has {n} death Events — maximum 1 permitted; probable merge error
+[R41] Person {id}: has {n} death Events but none marked is_primary — exactly 1 required when death Events exist; rebuild-consensus may not have run
+[R41] Person {id}: has {n} death Events marked is_primary — exactly 1 permitted; probable data integrity error
 ```
 
 ---
@@ -534,58 +556,85 @@ This rule queries `person_record` joined to `record` and `source` to count unver
 
 ### R43 — Life event sequence `[Python]` *(GC02)*
 
-For any concluded `Person`, the dates of their concluded life Events must follow chronological order where those dates are non-null and their uncertainty ranges do not overlap. Confirmed sequence violations indicate a merge error.
+**Updated in v2.8 (rules).** Redesigned to specify the full qualifier-aware comparison that GC02 requires, and to document the gap between this specification and the current placeholder implementation in `validator.py`.
+
+For any concluded `Person`, the dates of their concluded life Events must follow chronological order where those dates are non-null and their uncertainty intervals do not overlap. Confirmed sequence violations indicate a merge error.
 
 **Checks performed:**
 
 | Check | Condition flagged |
 |---|---|
-| Birth before baptism | Baptism date is more than 2 years before birth date (excluding adult baptism — see below) |
-| Birth before all other events | Any non-birth, non-baptism Event date precedes birth date (net of tolerance) |
-| Marriage before death | Death date precedes any marriage Event date the Person participated in (net of tolerance) |
-| Death before burial | Burial date precedes death date (net of tolerance) |
-| Events after death | Any census, residence, valuation, tithe, or military Event date follows death date (net of tolerance) |
+| Birth before baptism | Baptism date interval ends before birth date interval begins (excluding adult baptism — see below) |
+| Birth before all other Events | Any non-birth, non-baptism Event date interval ends before the birth date interval begins |
+| Marriage before death | Marriage date interval begins after death date interval ends |
+| Death before burial | Burial date interval begins before death date interval ends |
+| Events after death | Any census, residence, valuation, tithe, or military Event date interval begins after death date interval ends |
 
-**Tolerance:** Where an event date carries a qualifier of `about`, `estimated`, or `calculated`, a tolerance of ±2 years is applied before flagging. A sequence violation is only confirmed if the uncertainty ranges of the two dates do not overlap.
+**Date interval construction:** Each date is converted to an interval based on its qualifier before comparison. A violation is confirmed only when the two intervals do not overlap — i.e. one ends strictly before the other begins.
 
-**Adult baptism exception:** Where the baptism Record's linked RecordedPerson has a recorded age greater than 1 year, the birth-before-baptism interval check is suppressed for that Event pair.
+| Qualifier | Interval construction |
+|---|---|
+| `exact` or null | Point interval: `[date, date]` |
+| `about` | `[date − 2yr, date + 2yr]` |
+| `estimated` | `[date − 2yr, date + 2yr]` |
+| `calculated` | `[date − 2yr, date + 2yr]` |
+| `before` | `(−∞, date − 1yr]` — treat as right-bounded; comparison only fires for checks where the `before` date is the *later* event |
+| `after` | `[date + 1yr, +∞)` — treat as left-bounded; comparison only fires for checks where the `after` date is the *earlier* event |
+| `between` | Not directly representable as a point; treat as `[date − 2yr, date + 2yr]` pending a structured `between` representation |
 
-**Date qualifier precedence:** `exact` dates are compared directly. All other qualifiers trigger the ±2 year tolerance.
+When a date has a `before` or `after` qualifier and the comparison is in the direction where the bound is unbounded (e.g. checking whether a `before`-qualified death date follows a marriage date — if death is "before 1900," the comparison cannot confirm whether the marriage precedes death), the check is **skipped** and noted rather than flagged as a violation.
+
+**Adult baptism exception:** The birth-before-baptism check is suppressed for a given baptism Event if the RecordedPerson linked to the baptism Record — i.e. the RecordedPerson whose `record_id` points to the Record linked via `event_record` to that baptism Event — has a non-null `age_as_recorded` value greater than 1. This targets adult converts and immigrants baptised late, where the source evidence itself establishes the sequence anomaly is genuine.
+
+**Implementation gap:** The current `validator.py` implementation does not yet apply qualifier-aware interval logic. It performs a simplified point-date comparison with a flat ±2-year tolerance, does not implement the `before`/`after`/`between` qualifier handling, and does not implement the adult baptism exception correctly. This specification is the authoritative design; the code is a placeholder. The gap should be resolved before genealogical validation is relied upon in research outputs.
 
 ```
-[R43] Person {id}: sequence violation — {event_type_1} date {date_1} precedes {event_type_2} date {date_2} (net of tolerance)
+[R43] Person {id}: sequence violation — {event_type_1} date {date_1} ({qualifier_1}) precedes {event_type_2} date {date_2} ({qualifier_2}); intervals do not overlap; probable merge error
+[R43] Person {id}: sequence check {check_name} skipped — qualifier '{qualifier}' on Event {eid} does not bound the comparison in the required direction
 ```
 
 ---
 
-### R44 — Minimum parent age `[Python]` *(GC12)*
+### R44 — Parent age range `[Python]` *(GC12)*
 
-For any `parent_child` Relationship, the gap between the parent's concluded birth year and the child's concluded birth year must be at least 15 years, net of age tolerances on both. A gap below 15 years is a near-zero probability biological violation and is flagged as a merge error candidate.
+**Updated in v2.8 (rules).** Title changed from "Minimum parent age" to "Parent age range" to reflect that both a minimum and a maximum apply, and that the maximum varies by parent gender.
 
-Additionally, for a female parent (where `Person.gender = 'female'`), a gap greater than 50 years is also flagged.
+For any `parent_child` Relationship, the gap between the parent's birth year and the child's birth year must fall within the biologically and historically plausible range. Violations are flagged as merge error candidates.
 
-This rule requires both Persons in the Relationship to have a concluded birth Event or an estimated birth year derivable from their linked Records. Where neither Person has a birth year, the rule is skipped and noted as unevaluated.
+**Birth year sourcing:** Each Person's birth year is taken from their `is_primary = True` birth Event where one exists. Where no primary birth Event is available, the birth year is estimated from the Person's linked Records (the earliest age-as-recorded field, adjusted to the record year). Where no birth year can be established for either Person in the Relationship, the rule is skipped and noted as unevaluated.
 
-**Tolerance:** ±2 years applied to both parent and child birth year estimates before computing the gap.
+**Gap calculation:** `gap = child_birth_year − parent_birth_year`. Tolerance of ±2 years is applied to both estimates before computing the gap — i.e. the gap check fires only when it holds outside the combined ±4-year uncertainty window.
+
+**Minimum gap (all parents):** Gap below 15 years is a near-zero probability biological violation.
+
+**Maximum gap (female parent):** For `Person.gender = 'female'`, a gap greater than 50 years is flagged. A woman giving birth at age 50+ is a near-zero probability event in historical Irish records.
+
+**Maximum gap (male parent):** For `Person.gender = 'male'`, a gap greater than 65 years is flagged. A man fathering a child at age 65+ is a near-zero probability event in historical Irish records. This cap is softer than the maternal cap — late paternity is documented in the historical record more often — but gaps above 65 years are sufficiently unusual to warrant researcher review as probable merge error candidates.
+
+**Gender unknown:** Where `Person.gender` is null or `'unknown'` for the parent, only the minimum gap check is applied; the gender-specific maximum is skipped and noted.
 
 ```
 [R44] Relationship {id} (parent_child): parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years is below minimum of 15; probable merge error
 [R44] Relationship {id} (parent_child): female parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years exceeds maternal maximum of 50; probable merge error
+[R44] Relationship {id} (parent_child): male parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years exceeds paternal maximum of 65; probable merge error
+[R44] Relationship {id} (parent_child): parent gender unknown — maximum age check skipped
 ```
 
 ---
 
 ### R45 — Minimum marriage age `[Python]` *(GC13)*
 
-For any Person linked to a marriage `Event` via `person_event`, the gap between the Person's concluded birth year and the marriage Event date must be at least 15 years, net of age tolerance. A gap below 15 years is flagged as a merge error candidate.
+For any Person linked to a marriage `Event` via `person_event`, the gap between the Person's birth year and the marriage Event date must be at least 15 years, net of age tolerance. A gap below 15 years is flagged as a merge error candidate.
 
-Where the Person has no concluded birth year derivable from their linked Records, the rule is skipped and noted as unevaluated.
+**Birth year sourcing:** The Person's birth year is taken from their `is_primary = True` birth Event where one exists. Where no primary birth Event is available, the birth year is estimated from the Person's linked Records (the earliest age-as-recorded field, adjusted to the record year). Where no birth year can be established by either route, the rule is skipped and noted as unevaluated.
 
 **Tolerance:** ±2 years applied to birth year estimate before computing the gap.
 
 ```
-[R45] Person {id}: marriage Event {eid} dated {marriage_date} — concluded birth year {by} places Person at age {age} at marriage; minimum age is 15; probable merge error
+[R45] Person {id}: marriage Event {eid} dated {marriage_date} — birth year {by} (from {source}) places Person at age {age} at marriage; minimum age is 15; probable merge error
 ```
+
+*`{source}` is `'is_primary birth Event'` or `'estimated from Records'` to make the derivation traceable in the warning output.*
 
 ---
 
@@ -594,20 +643,81 @@ Where the Person has no concluded birth year derivable from their linked Records
 For any Person linked to a Record via `person_record`, the `record.date` of that Record must fall within the Person's concluded lifespan. A record date more than 5 years outside the lifespan bounds is flagged regardless of the linkage score.
 
 **Lifespan bounds:**
-- Lower bound: concluded birth Event date, or baptism Event date where no birth Event exists, or estimated birth year derived from linked Records.
-- Upper bound: concluded death Event date where known; otherwise unbounded.
+- Lower bound: the date of the Person's `is_primary = True` birth Event; or, where no primary birth Event exists, the date of the Person's `is_primary = True` baptism Event; or, where neither exists, a birth year estimated from the Person's linked Records (earliest age-as-recorded adjusted to record year). The source of the lower bound is included in the warning output for traceability.
+- Upper bound: the date of the Person's `is_primary = True` death Event where known; otherwise unbounded.
 
-**Tolerance:** ±5 years applied to both bounds before flagging.
+**Tolerance:** ±5 years applied to both bounds before flagging. This accommodates dating uncertainty on the Event itself without suppressing genuine boundary violations.
 
-Where neither a lower nor upper bound can be established from the Person's concluded Events, the rule is skipped and noted as unevaluated.
+Where neither a lower nor an upper bound can be established from the Person's concluded Events or linked Records, the rule is skipped and noted as unevaluated.
 
 ```
-[R46] person_record (person_id={pid}, record_id={rid}): record date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}]; probable merge error
+[R46] person_record (person_id={pid}, record_id={rid}): record date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}] (lower from {source}); probable merge error
+```
+
+*`{source}` is `'is_primary birth Event'`, `'is_primary baptism Event'`, or `'estimated from Records'`.*
+
+---
+
+## 7. Pending Rules — New Evidence-Layer Objects
+
+The following rules cover `recorded_relationship`, `record_similarity`, and `training_labels`. These tables are present in the v3.0 schema but their validation rules have not yet been formally specified. Rules are marked **[Pending]** — they are placeholders that document intent; no Python enforcement exists yet.
+
+---
+
+### R47 — Required fields present on RecordedRelationship `[Pending]`
+
+Every RecordedRelationship must have `recorded_relationship_id`, `recorded_person_id_1`, `recorded_person_id_2`, and `type`. Both FK columns must resolve to existing RecordedPersons (R48 covers referential integrity). `type` must be non-null and draw from the Relationship type vocabulary (couple, parent_child, sibling) extended with a similarity type for Splink-derived scores.
+
+RecordedPersons linked by a RecordedRelationship may belong to the same Record or to different Records (the cross-census case). No DB constraint currently enforces the vocabulary on `type`; Python enforcement is the sole gate.
+
+```
+[R47] RecordedRelationship {id}: required field '{field}' is absent or null
+[R47] RecordedRelationship {id}: type='{val}' is not a valid recorded relationship type
 ```
 
 ---
 
-## 7. Rule Summary Table
+### R48 — RecordedRelationship foreign keys `[Pending]`
+
+`RecordedRelationship.recorded_person_id_1` and `recorded_person_id_2` must each resolve to an existing RecordedPerson. The self-reference prohibition from R22 applies by analogy: the two RecordedPerson IDs must not be equal.
+
+DB enforcement: `REFERENCES recorded_person` on both FK columns (if the table carries these constraints); `CHECK (recorded_person_id_1 != recorded_person_id_2)`.
+
+```
+[R48] RecordedRelationship {id}: recorded_person_id_1={val} does not resolve to a RecordedPerson
+[R48] RecordedRelationship {id}: recorded_person_id_2={val} does not resolve to a RecordedPerson
+[R48] RecordedRelationship {id}: recorded_person_id_1 and recorded_person_id_2 must not be equal
+```
+
+---
+
+### R49 — Required fields present on RecordSimilarity `[Pending]`
+
+Every RecordSimilarity must have `record_similarity_id`, `record_id_1`, `record_id_2`, and `score`. `score` must be a real number in [0.0, 1.0] (null is not permitted — a RecordSimilarity without a score is meaningless). `record_id_1` and `record_id_2` must not be equal.
+
+RecordSimilarity has no conclusion-layer counterpart. It records an algorithmic measurement between two Records, not an assertion about Persons. No FK to the conclusion layer is required or permitted.
+
+```
+[R49] RecordSimilarity {id}: required field '{field}' is absent or null
+[R49] RecordSimilarity {id}: score={val} is not in valid range [0.0–1.0]
+[R49] RecordSimilarity {id}: record_id_1 and record_id_2 must not be equal
+```
+
+---
+
+### R50 — training_labels integrity `[Pending]`
+
+`training_labels` was built to support Splink EM training and has been retired at the conceptual level (see `conceptual_model.md` v2.5 §3). The table remains in the v3.0 schema pending removal in the implementation phase; no new rows should be written to it. This rule is a placeholder to flag any unexpected writes.
+
+When the table is removed from the schema, R50 will be retired alongside it.
+
+```
+[R50] training_labels: unexpected row (unique_id_l={l}, unique_id_r={r}) — table is retired; no new rows should be written
+```
+
+---
+
+## 8. Rule Summary Table
 
 The following table summarises all rules, their description, and their enforcement locus.
 
@@ -617,11 +727,11 @@ The following table summarises all rules, their description, and their enforceme
 | R02 | Required fields on Source | DB + Python |
 | R03 | Required fields on Record | DB + Python |
 | R04 | Required fields on Record event fields | DB + Python (via R03/R36) |
-| R05 | Required fields on RecordedPerson | DB + Python |
+| R05 | Required fields on RecordedPerson (role nullable from v3.0) | DB + Python |
 | R06 | Required fields on Person | DB + Python |
 | R07 | Required fields on Relationship | DB + Python |
 | R08 | Required fields on Event | DB + Python |
-| R09 | Required fields on Place | DB + Python |
+| R09 | Required fields on PlaceAuthority | DB + Python |
 | R10 | Name object completeness | **Retired** |
 | R11 | Repository has no upstream FK | N/A |
 | R12 | Source → Repository FK | DB + Python |
@@ -631,7 +741,7 @@ The following table summarises all rules, their description, and their enforceme
 | R16 | Person FK arrays | DB + Python |
 | R17 | Relationship FK arrays | DB + Python |
 | R18 | Event FK arrays | DB + Python |
-| R19 | Place FK arrays | DB + Python |
+| R19 | PlaceAuthority / place_record FKs | DB + Python |
 | R20 | One event per Record | DB (structural) |
 | R21 | At least one RecordedPerson per Record | Python only |
 | R22 | Relationship self-reference prohibition | DB only |
@@ -643,7 +753,7 @@ The following table summarises all rules, their description, and their enforceme
 | R28 | Source type vocabulary | DB + Python |
 | R29 | Event type vocabulary | DB + Python |
 | R30 | Date qualifier vocabulary | DB + Python |
-| R31 | RecordedPerson role vocabulary | DB + Python |
+| R31 | RecordedPerson role vocabulary (includes `unknown`; null exempt) | DB + Python |
 | R32 | Person gender vocabulary | DB + Python |
 | R33 | Name type vocabulary | **Retired** |
 | R34 | Relationship type vocabulary | DB + Python |
@@ -652,29 +762,35 @@ The following table summarises all rules, their description, and their enforceme
 | R37 | record_parameters keys match record_parameter_names | Python only |
 | R38 | Linkage score range [0.0–1.0] or null (manual assertion) | DB + Python |
 | R39 | Verified flag values {0, 1} | DB + Python |
-| R40 | Birth Event singularity | Python only (GC04) |
-| R41 | Death Event singularity | Python only (GC05) |
+| R40 | Birth Event `is_primary` cardinality (exactly 1) | Python only (GC04) |
+| R41 | Death Event `is_primary` cardinality (exactly 1 when death Events exist) | Python only (GC05) |
 | R42 | Census Record singularity per source | Python only (GC07) |
-| R43 | Life event sequence | Python only (GC02) |
-| R44 | Minimum and maximum parent age | Python only (GC12) |
-| R45 | Minimum marriage age | Python only (GC13) |
-| R46 | Lifespan boundary | Python only (GC01) |
+| R43 | Life event sequence (qualifier-aware interval comparison) | Python only (GC02) |
+| R44 | Parent age range (minimum 15yr; maternal max 50yr; paternal max 65yr) | Python only (GC12) |
+| R45 | Minimum marriage age (birth year from is_primary Event) | Python only (GC13) |
+| R46 | Lifespan boundary (bounds from is_primary Events) | Python only (GC01) |
+| R47 | Required fields on RecordedRelationship | **Pending** |
+| R48 | RecordedRelationship FK integrity | **Pending** |
+| R49 | Required fields on RecordSimilarity | **Pending** |
+| R50 | training_labels write guard (retired table) | **Pending** |
 
 **Python-only rules** (require active Python enforcement): R21, R36, R37, R40, R41, R42, R43, R44, R45, R46.
 **Retired rules** (no longer meaningful in the relational model): R10, R14, R23, R24, R25, R26, R27, R33, R35.
 **DB-only rule** (no Python action needed): R22.
+**Pending rules** (intent documented; no Python enforcement yet): R47, R48, R49, R50.
 
 ---
 
-## 8. Execution Order and Dependency
+## 9. Execution Order and Dependency
 
 Rules are executed in the following order. Later rules depend on earlier ones having passed.
 
-1. **Structural rules (R01–R09)** — object well-formedness. No cross-object lookups. Safe to run in isolation via `validate_object()`.
+1. **Structural rules (R01–R09)** — object well-formedness. No cross-object lookups. Safe to run in isolation as pre-write checks.
 2. **Referential integrity rules (R12–R19)** — pre-write checks that referenced IDs exist. In normal operation the DB enforces these; Python checks them to produce actionable error messages before attempting an insert.
 3. **Consistency rules (R21–R22)** — cross-object invariants. R20 is now structural (DB-enforced); R26 is retired.
 4. **Vocabulary and format rules (R28–R39)** — controlled values, date formats, and scoring column constraints. Run last among the schema rules to separate structural problems from vocabulary problems in the error output.
 5. **Genealogical constraint rules (R40–R46)** — domain knowledge checks. Run after all schema rules are clean. Depend on the conclusion layer being populated; skipped for objects with unresolved birth year or lifespan bounds. Produce warnings rather than hard errors.
+6. **Pending rules (R47–R50)** — not yet enforced. See §7 for intent.
 
 When a referential integrity error is present, downstream consistency rules that would traverse the broken reference are skipped for the affected object:
 
@@ -690,17 +806,19 @@ When a birth year or lifespan bound cannot be established for a Person, genealog
 
 ---
 
-## 9. Validation Entry Points
+## 10. Validation Entry Points
 
-**`DataStore.validate() -> list[str]`** — full validation of all Python-only rules against the current database state. Queries the database directly. Returns a flat list of error strings. An empty list means the dataset is valid with respect to all Python-enforced rules. (DB-enforced rules are assumed to hold if the database was written through the normal Python layer with `PRAGMA foreign_keys = ON`.)
+**`validate(conn) -> list[str]`** — full validation of all Python-only rules against the current database state. `conn` is an open SQLite connection. Queries the database directly. Returns a flat list of error strings. An empty list means the dataset is valid with respect to all Python-enforced rules. (DB-enforced rules are assumed to hold if the database was written through the normal Python layer with `PRAGMA foreign_keys = ON`.)
 
-**`DataStore.validate_object(obj_type: str, obj: dict) -> list[str]`** — structural and vocabulary validation of a single object in isolation, without referential integrity, consistency, or genealogical constraint checks. Used during interactive ingestion to give immediate feedback before a new object is committed to the store.
+**Pre-write structural checks** — structural and vocabulary validation of a single object in isolation, without referential integrity, consistency, or genealogical constraint checks. Used during ingestion to give immediate feedback before a new object is committed to the database. Currently implemented as inline checks in repo functions rather than a dedicated single-entry-point function; this may be consolidated in a future refactor.
 
-**`DataStore.validate_genealogical(person_id: int) -> list[str]`** — runs all genealogical constraint rules (R40–R46) for a single Person and their associated Events, Relationships, and linked Records. Returns a flat list of warning strings. Called by the Person Browser to surface merge error candidates and anomalies alongside the source coverage display. Can also be run in batch across all Persons via `DataStore.validate()`.
+**Known code bug:** The existing pre-write check for `RecordedPerson` still treats `role` as required and will flag null roles as an error. This is incorrect as of v3.0. See R05 for details.
+
+**`validate_genealogical(conn, person_id: int) -> list[str]`** — runs all genealogical constraint rules (R40–R46) for a single Person and their associated Events, Relationships, and linked Records. `conn` is an open SQLite connection. Returns a flat list of warning strings. Can be run in batch across all Persons via `validate(conn)` (which calls this function per Person in the conclusion layer). Formerly described as `DataStore.validate_genealogical()`; the `DataStore` class has been removed.
 
 ---
 
-## 10. Validation Error Format
+## 11. Validation Error Format
 
 Every error string follows a fixed format:
 
@@ -715,9 +833,15 @@ Examples:
 [R13] Record 47: source_id=999 does not resolve to a Source
 [R29] Record 88: event_type='occupation' is not a valid event type
 [R36] Record 12: date='April 1890' is not a valid ISO 8601 partial date
-[R40] Person 23: has 2 birth Events — maximum 1 permitted; probable merge error
-[R43] Person 23: sequence violation — marriage date 1878 precedes birth date 1880 (net of tolerance)
+[R40] Person 23: has 0 birth Events marked is_primary — exactly 1 required; rebuild-consensus may not have run
+[R40] Person 23: has 2 birth Events marked is_primary — exactly 1 permitted; probable data integrity error
+[R41] Person 31: has 2 death Events but none marked is_primary — exactly 1 required when death Events exist; rebuild-consensus may not have run
+[R43] Person 23: sequence violation — marriage date 1878 (exact) precedes birth date 1880 (exact); intervals do not overlap; probable merge error
+[R43] Person 56: sequence check birth-before-baptism skipped — qualifier 'before' on Event 14 does not bound the comparison in the required direction
 [R44] Relationship 7 (parent_child): parent Person 12 birth year 1870 — child Person 23 birth year 1858 — gap of -12 years is below minimum of 15; probable merge error
+[R44] Relationship 9 (parent_child): male parent Person 4 birth year 1820 — child Person 88 birth year 1890 — gap of 70 years exceeds paternal maximum of 65; probable merge error
+[R45] Person 44: marriage Event 19 dated 1872 — birth year 1860 (from is_primary birth Event) places Person at age 12 at marriage; minimum age is 15; probable merge error
+[R46] person_record (person_id=12, record_id=203): record date 1901 is more than 5 years outside Person lifespan bounds [1800–1895] (lower from is_primary birth Event); probable merge error
 ```
 
 The `[Rnn]` prefix is machine-parseable. The object type and id are always present so errors can be correlated back to database rows. Genealogical constraint warnings (R40–R46) are distinguishable from schema errors by their rule code range.
@@ -736,9 +860,11 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 | 2.6 | May 2026 | Updated R38 (linkage score range) to permit null scores for manually-asserted linkages. Updated rule text, DB enforcement expression, and rule summary table. |
 | 2.7 (schema) | May 2026 | No validation rule changes for place_authority addition. |
 | 2.8 (schema) | June 2026 | Retired R14 (`recorded_event` removed) and R26 (`event_recorded_event` removed). R04 merged into R03/R36. R20 reclassified as DB-structural. R23 updated (no `person_relationship` table). R25 updated (no `relationship_event` table). R29, R30, R36, R43, R46 updated to reference `record.event_type` / `record.date` instead of `recorded_event` fields. Rule summary table and Python-only/retired rule lists updated. |
+| 2.7 (rules) | 18 June 2026 | R05 updated: `role` nullable from schema v3.0; `validate_object()` over-strictness flagged as known code bug; "role is absent or empty" error message retired. R09 and R19 updated: `place` conclusion object retired; `place_authority` is now the structural place table; R09 rewritten for PlaceAuthority required fields; R19 rewritten for `place_record` FK integrity against `place_authority`. R31 updated: `'unknown'` added to role vocabulary; null role explicitly exempt from vocabulary check; DB `CHECK` expression updated to `role IS NULL OR role IN (...)`. §1 overview entry point reference updated to remove DataStore class. §9 (Validation Entry Points) rewritten: `DataStore.` prefix removed; `validate(conn)` and `validate_genealogical(conn, person_id)` correct signatures documented; pre-write check described as inline repo-level rather than single-function; known code bug for null role noted. §7 (Pending Rules) added: R47 (RecordedRelationship structural), R48 (RecordedRelationship FK integrity), R49 (RecordSimilarity structural), R50 (training_labels write guard). Rule summary table extended with R47–R50; pending rule classification list added. Execution order updated to reference pending rules. Sections renumbered: former §7–§10 are now §8–§11. |
+| 2.8 (rules) | 18 June 2026 | R40 rewritten: "birth Event singularity" replaced by "birth Event `is_primary` cardinality" — rule now checks that exactly one birth Event is marked `is_primary`, not that at most one birth Event exists; two- and zero-primary cases produce distinct messages; relationship-scoped scope note added. R41 rewritten: same restructuring as R40 for death Events; fire condition restricted to Persons with at least one death Event linked. R43 redesigned: qualifier-aware interval table added covering all seven qualifier values; `before`/`after` asymmetric handling and skip logic documented; adult baptism exception clarified to specify which RecordedPerson is checked; implementation gap between this specification and the current `validator.py` placeholder explicitly flagged; new error message format includes qualifier in output. R44 updated: title changed to "Parent age range"; paternal maximum of 65 years added alongside existing maternal maximum of 50 years; gender-unknown skip case documented; `is_primary` birth Event sourcing specified. R45 updated: birth year sourcing changed to `is_primary` birth Event with Record-estimated fallback; error message format updated to include derivation source. R46 updated: lifespan bounds changed to source from `is_primary` birth/baptism/death Events explicitly; error message format updated to include bound source. §8 rule summary table updated for R40, R41, R43, R44, R45, R46. §11 error format examples extended for R40, R41, R43, R44, R45, R46. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `reconstruction_algorithms.md`, `genealogical_constraints.md`*
 
-*Schema version: 2.4 — May 2026*
+*Schema version: 3.0 — 18 June 2026 (rules v2.8)*
