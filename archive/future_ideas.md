@@ -1,6 +1,6 @@
 # GRA — Future Ideas and Deferred Features
 
-*16 June 2026 — v1.1*
+*19 June 2026 — v1.2*
 *Audience: Researcher and developer. This document collects features, capabilities, and design ideas that are not currently implemented and are not in the active work queue. Items here are not forgotten — they represent the considered direction of the system — but they are explicitly deferred to avoid scope creep in the current release cycle.*
 
 *The primary project mandate values data analysis pipeline capabilities over reviewer UX and interface layer maintenance.*
@@ -13,7 +13,7 @@
 
 The `ResearchService` class specified in `docs/service_api.md` is intended as the single interface through which downstream consumers read from and write to the knowledge base. It is fully designed but completely deferred.
 
-**Prerequisite:** `flag` and `lead` tables must be added to `database_schema.md` and `schema.sql` before a service layer can be built. The DDL is specified in `service_api.md §10.3`.
+**Prerequisite:** `flag` and `lead` tables must be added to `database_schema.md` and `schema.sql` before a service layer can be built. The DDL design is deferred — `service_api.md` is archived and no longer an active reference; the flag/lead schema will be specified when this work is unblocked.
 
 **Scope of the service layer:**
 - Research scope management (surname + townland + period filters)
@@ -34,7 +34,7 @@ Three planned consumers, all depending on the deferred service layer:
 
 ### 1.3 Flag and lead tables
 
-The `flag` and `lead` schema additions specified in `service_api.md §10.3` are needed before a service layer can surface contradictions and research suggestions. The DDL is ready; it will eventually be incorporated into `database_schema.md` and `schema.sql` as schema v2.10.
+The `flag` and `lead` schema additions are needed before a service layer can surface contradictions and research suggestions. The DDL design is deferred — `service_api.md` is archived and no longer an active reference; the flag/lead schema will be specified and incorporated into `database_schema.md` and `schema.sql` when this work is unblocked.
 
 ### 1.4 Reviewer UX and Person Browser (R1-4)
 
