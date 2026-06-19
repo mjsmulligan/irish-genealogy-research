@@ -1,4 +1,4 @@
-jellyfish>=1.0
+rapidfuzz
 jsonschema>=4.0
 pytest>=8.0
 black

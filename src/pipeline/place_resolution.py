@@ -21,7 +21,7 @@ import re
 import sqlite3
 from dataclasses import dataclass, field
 
-import jellyfish
+import rapidfuzz
 
 SCORE_VERSION = "place_v2.0"
 
@@ -163,7 +163,7 @@ def _best_match(
     best_score = 0.0
     for auth in authorities:
         for auth_norm in auth["norms"]:
-            score = jellyfish.jaro_winkler_similarity(norm, auth_norm)
+            score = rapidfuzz.jaro_winkler_similarity(norm, auth_norm)
             if score > best_score:
                 best_score = score
                 best_auth = auth

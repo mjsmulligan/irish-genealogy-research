@@ -1,6 +1,12 @@
+
 -- GRA — Genealogy Research Assistant
--- Schema version 2.9 — June 2026
+-- Schema version 3.0 — 17 June 2026
 -- SQLite 3.35.0+ required
+--
+-- Changes from v2.9:
+--   - recorded_person.role made nullable (NULL = blank in source data)
+--   - 'unknown' added to role CHECK (value present in source but not mappable)
+--   - NOT NULL constraint removed from recorded_person.role
 --
 -- Changes from v2.8:
 --   - training_labels added (linkage proposals + researcher review workflow)
@@ -112,7 +118,7 @@ CREATE TABLE recorded_person (
     recorded_person_id      INTEGER PRIMARY KEY,
     record_id               INTEGER NOT NULL REFERENCES record (record_id),
     name_as_recorded        TEXT    NOT NULL CHECK (trim(name_as_recorded) != ''),
-    role                    TEXT    NOT NULL,
+    role                    TEXT,   -- NULL = blank in source; 'unknown' = value present but not mappable
     age_as_recorded         TEXT,
     age                     INTEGER,
     sex_as_recorded         TEXT,
@@ -120,13 +126,15 @@ CREATE TABLE recorded_person (
     place_as_recorded       TEXT,
     notes                   TEXT,
 
-    CHECK (role IN (
+    CHECK (role IS NULL OR role IN (
         -- Census roles (NAI download mapping)
         'head', 'spouse', 'son', 'daughter',
         'sibling', 'grandchild', 'in_law',
         'niece_nephew', 'aunt_uncle', 'cousin',
         'mother', 'father',
         'servant', 'visitor', 'boarder',
+        -- Unmapped / missing source data
+        'unknown',
         -- Event roles (civil registration, parish register, other)
         'principal', 'groom', 'bride',
         'father_of_groom', 'father_of_bride',
@@ -345,4 +353,4 @@ CREATE INDEX idx_training_labels_person_id_2 ON training_labels (person_id_2);
 -- SCHEMA VERSION
 -- ---------------------------------------------------------------------------
 
-PRAGMA user_version = 29;
+PRAGMA user_version = 30;

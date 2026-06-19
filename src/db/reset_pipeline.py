@@ -17,7 +17,7 @@ Use this to iterate on household_inference.py and linkage.py without
 re-running the stable ingest and place-seeding steps.
 
 CLI usage:
-    python reset_reconstruction.py [--db PATH] [--dry-run]
+    python reset_pipeline.py [--db PATH] [--dry-run]
 
 Defaults to genealogy.db in the current directory.
 """

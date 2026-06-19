@@ -48,7 +48,7 @@ import pandas as pd
 
 if TYPE_CHECKING:
     # Only needed for type annotations — avoids the circular import at runtime.
-    from src.reconstruction.linkage import HouseholdLinkageResult, CensusLinkageResult
+    from src.pipeline.linkage import HouseholdLinkageResult, CensusLinkageResult
 
 # ---------------------------------------------------------------------------
 # Shared constants — imported by linkage.py

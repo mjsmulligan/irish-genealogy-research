@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.6 — June 2026*
+*Version 2.7 — 17 June 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
 ---
@@ -136,7 +136,7 @@ The following fields on `record` carry the event data:
 | recorded_person_id | integer | YES | Primary key |
 | record_id | integer | YES | Foreign key to Record |
 | name_as_recorded | string | YES | Verbatim name including original spelling |
-| role | string | YES | Role in the record — see §6.4 |
+| role | string | NO | Role in the record — see §6.4. Nullable since schema v3.0 (some sources do not state a role) |
 | age_as_recorded | string | NO | Verbatim age |
 | age | integer | NO | Normalised integer age |
 | sex_as_recorded | string | NO | Sex exactly as recorded |
@@ -146,7 +146,38 @@ The following fields on `record` carry the event data:
 
 ---
 
-### 3.4 NameVariant — Evidence (derived)
+### 3.4 RecordedRelationship
+
+A relationship between two RecordedPerson rows, asserted directly by a source (a stated census household role pairing) or computed by an algorithm (a cross-census candidate-match score). Requires no Person to exist on either side. See conceptual_model.md §4.7.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| recorded_relationship_id | integer | YES | Primary key |
+| recorded_person_id_1 | integer | YES | Foreign key to RecordedPerson |
+| recorded_person_id_2 | integer | YES | Foreign key to RecordedPerson. May belong to the same Record as `recorded_person_id_1` (a stated household role pairing) or to a different Record entirely (a cross-census candidate match) |
+| type | string | YES | Relationship type — see §6.7. `couple` / `parent_child` / `sibling` for source-stated relationships; `similarity` for an algorithmic candidate-match comparison |
+| score | real | CONDITIONAL | Required when `type = similarity`; null otherwise |
+| score_version | string | CONDITIONAL | Algorithm version that produced `score`; null when `score` is null |
+| notes | string | NO | Free text notes |
+
+---
+
+### 3.5 RecordSimilarity
+
+An algorithmic comparison between two Records — for example, a score suggesting the same household's return appears in two different census years. Has no conclusion-layer counterpart: it records a measurement, not an assertion. See conceptual_model.md §4.8.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| record_similarity_id | integer | YES | Primary key |
+| record_id_1 | integer | YES | Foreign key to Record |
+| record_id_2 | integer | YES | Foreign key to Record being compared against `record_id_1` |
+| score | real | YES | Similarity score in [0.0, 1.0] |
+| score_version | string | YES | Algorithm version that produced `score` |
+| notes | string | NO | Free text notes |
+
+---
+
+### 3.6 NameVariant — Evidence (derived)
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -169,7 +200,7 @@ The following fields on `record` carry the event data:
 | label | string | YES | Researcher convenience label |
 | gender | string | NO | Concluded gender — see §6.5 |
 | names | array[object] | NO | Typed name array — stored in `person_name` table |
-| record_ids | array[integer] | NO | Foreign keys to Records (via `person_record`) |
+| recorded_person_ids | array[integer] | NO | Foreign keys to RecordedPersons (via `person_recorded_person`) — Person's evidence correspondence per conceptual_model.md v2.6 Rule 2 |
 | event_ids | array[integer] | NO | Foreign keys to Events (via `person_event`) |
 | relationship_ids | array[integer] | NO | Foreign keys to Relationships — queried via `relationship.person_id_1` / `person_id_2` |
 | private | boolean | NO | Whether Person is flagged for limited display |
@@ -185,7 +216,7 @@ The following fields on `record` carry the event data:
 | type | string | YES | Relationship type — see §6.7 |
 | person_id_1 | integer | YES | For ParentChild: the parent. For Couple: either person. |
 | person_id_2 | integer | YES | For ParentChild: the child. For Couple: either person. |
-| record_ids | array[integer] | NO | Foreign keys to Records evidencing this Relationship |
+| recorded_relationship_ids | array[integer] | NO | Foreign keys to RecordedRelationships (via `relationship_recorded_relationship`) evidencing this Relationship |
 | event_ids | array[integer] | NO | Foreign keys to Events associated with this Relationship |
 | notes | string | NO | Researcher reasoning |
 
@@ -197,6 +228,7 @@ The following fields on `record` carry the event data:
 |---|---|---|---|
 | event_id | integer | YES | Primary key |
 | type | string | YES | Event type — see §6.2 |
+| is_primary | boolean | YES | Whether this Event is the current best-estimate conclusion among possibly-competing Events of the same type for the same Person; exactly one true per (person, type) pair, re-derived idempotently as evidence changes (Rule 9) |
 | date | date | NO | Concluded ISO 8601 date |
 | date_qualifier | string | NO | Date qualifier — see §6.3 |
 | place_id | integer | NO | Foreign key to PlaceAuthority (not a conclusion — an authority reference) |
@@ -211,15 +243,15 @@ The following fields on `record` carry the event data:
 
 | Conclusion object | Evidence linkage | Description |
 |---|---|---|
-| Person.record_ids | → Record | Records concluded to be about this Person |
+| Person.recorded_person_ids | → RecordedPerson | RecordedPersons concluded to be about this Person |
 | Event.record_ids | → Record | Records concluded to document this Event |
 | Event.place_id | → PlaceAuthority | Authoritative place for this Event |
-| Relationship.record_ids | → Record | Records evidencing this Relationship |
+| Relationship.recorded_relationship_ids | → RecordedRelationship | RecordedRelationships concluded to evidence this Relationship |
 | place_record | Record → PlaceAuthority | Scored conclusion: this recorded place string refers to this authority |
 
 ### Scoring columns on linkage junction tables
 
-The four primary linkage junction tables (`person_record`, `event_record`, `relationship_record`, `place_record`) carry:
+The four primary linkage junction tables (`person_recorded_person`, `event_record`, `relationship_recorded_relationship`, `place_record`) carry:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
@@ -277,6 +309,12 @@ The four primary linkage junction tables (`person_record`, `event_record`, `rela
 | `calculated` | Calculated from other known facts |
 
 ### 6.4 RecordedPerson Roles
+
+**General:**
+
+| Code | Description |
+|---|---|
+| `unknown` | Role could not be determined from the source (e.g. illegible or unstated relation-to-head) |
 
 **Census roles (NAI relation_to_head mapping):**
 
@@ -341,6 +379,8 @@ The four primary linkage junction tables (`person_record`, `event_record`, `rela
 | `parent_child` | person_id_1 = parent, person_id_2 = child | Parent to child |
 | `sibling` | Symmetric | Sibling pair |
 
+**RecordedRelationship extension:** `RecordedRelationship.type` additionally accepts `similarity` — an algorithmic candidate-match score between two RecordedPersons, carried in `score`/`score_version` (see §3.4). `similarity` is evidence-layer only and is not a valid value for the conclusion-layer `Relationship.type`.
+
 ### 6.8 Confidence Levels
 
 **Retired as a stored field.** Aggregate confidence is derived at query time from the distribution of `score` values on linkage junction rows.
@@ -379,3 +419,4 @@ The four primary linkage junction tables (`person_record`, `event_record`, `rela
 | 2.4 | May 2026 | Expanded RecordedPerson roles for full NAI census vocabulary |
 | 2.5 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §2.3 PlaceAuthority with full flat-schema field table. Added §6.10 Place Types vocabulary. Updated §5 linkage summary to reflect place_record → PlaceAuthority. Added source type `place_authority` to §6.1. Removed PlaceMembership (flat schema adopted). |
 | 2.6 | June 2026 | Merged RecordedEvent into Record (schema v2.8). §3.2 replaced with inline event fields on `record`. Removed `Event.recorded_event_ids` from §4.3 and §5. Updated `Person.relationship_ids` description to reflect removal of `person_relationship` junction table. |
+| 2.7 | 17 June 2026 | Aligned with conceptual_model.md v2.6. Added §3.4 RecordedRelationship and §3.5 RecordSimilarity field tables (renumbered NameVariant to §3.6). Added `event.is_primary` (§4.3, Rule 9). Fixed `recorded_person.role` Required marker from YES to NO (nullable since schema v3.0) and added `unknown` to §6.4. Per the Rule 2 evidence-correspondence resolution: renamed `Person.record_ids` → `Person.recorded_person_ids` (via `person_recorded_person`) and `Relationship.record_ids` → `Relationship.recorded_relationship_ids` (via `relationship_recorded_relationship`); `Event.record_ids` unchanged. Updated §5 linkage summary and scoring-columns junction table list accordingly. Added `similarity` as a RecordedRelationship-only extension to §6.7 Relationship Types. |

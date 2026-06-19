@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*June 2026 — v1.8*
+*19 June 2026*
 
 ---
 
@@ -8,160 +8,83 @@
 
 ### Documentation
 
-| Document | Version | Status | Notes |
-|---|---|---|---|
-| `docs/conceptual_model.md` | v2.4 | ✅ Complete | RecordedEvent merged into Record |
-| `docs/data_dictionary.md` | v2.6 | ✅ Complete | RecordedEvent removed; event fields inline on Record |
-| `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
-| `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
-| `docs/database_schema.md` | v2.9 | ✅ Complete | event.is_primary added; training_labels added; RecordedEvent merged into Record |
-| `docs/reconstruction_algorithms.md` | v1.5 | ✅ Complete | rebuild-consensus algorithm documented |
-| `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
-| `docs/service_api.md` | v1.0 | 🔜 Designed | Service layer API designed, not yet implemented; flag/lead tables still needed in schema |
-| `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
-| `docs/future_ideas.md` | v1.0 | ✅ Complete | Deferred features: service layer, GEDCOM, event linkage, incremental mode |
-| `ROADMAP.md` | v1.8 | ✅ This document | — |
-
-### Implementation
-
-| Module | File(s) | Status | Notes |
-|---|---|---|---|
-| Database layer | `src/db.py` | ✅ Complete | Schema v2.9; `reset`, `rebuild-consensus` added; `reconstruct` now runs full pipeline (stages 2–5) |
-| Schema DDL | `src/db/schema.sql` | ✅ Complete | v2.9 — event.is_primary added; training_labels added |
-| Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources, 8 repositories |
-| Migration | `src/db/migrations/migrate_27_to_28.sql` | ✅ Complete | Merges recorded_event into record; drops redundant junction tables |
-| Place fetcher | `src/fetch_places.py` | ✅ Complete | logainm API → DB direct write or CSV export |
-| Place seeder | `src/seed_places.py` | ✅ Complete | CSV → place_authority; idempotent |
-| Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | v2.0 — authority-based Jaro-Winkler matching |
-| Household inference | `src/reconstruction/household_inference.py` | ✅ Complete | Census role-pair rules → Person/Relationship/Event conclusions |
-| Census feature extractor | `src/reconstruction/features/census.py` | ✅ Complete | Name, birth year, place_id, **spouse name, child names, sibling names** (relationship features added) |
-| Cross-census linkage | `src/reconstruction/linkage.py` | ✅ Complete | Splink DuckDBAPI; merge contract; spouse/child/sibling comparisons; 1:1 bipartite gate |
-| Linkage debug utilities | `src/reconstruction/debug.py` | ✅ Complete | Debug log writer; shared threshold constants |
-| Rebuild-consensus | `src/reconstruction/scoring.py` | ✅ Complete | Post-linkage event arbitration; plurality voting; is_primary marked by record vote count |
-| Validator | `src/validator.py` | ✅ Complete | R40–R46 genealogical constraint rules implemented |
-| Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; flag/lead tables needed first |
-| Test suite | `tests/test_place_authority.py` | ✅ 33/33 passing | Place authority: normalisation, CSV, DB, resolution, hierarchy |
-
-**Verified against real data (Tullynaught DED):**
-- Tullynaught DED: 1 DED + 33 townlands loaded; 17 townlands correctly store NULL barony/civil_parish
-- Census 1901, 1911, and 1926 NAI downloads ingest correctly
-- Place resolution matches "Straniss" → "Straness" via Jaro-Winkler
-- Cross-census linkage first test run: 3881 persons across 3 sources; 264 auto-committed at mean score 0.918; 3291 proposals queued
-- Full pipeline retest with relationship features and rebuild-consensus pending (next test run)
-
-**Development environment:** VSCode with GitHub integration. Repository: https://github.com/mjsmulligan/irish-genealogy-research
-
-**Housekeeping:** `genealogy.db` should be removed from git tracking — run `git rm --cached genealogy.db`.
+| Document | Status | Notes |
+|---|---|---|
+| `docs/conceptual_model.md` | ✅ Complete (v2.7) | RecordedRelationship + RecordSimilarity added as Evidence-layer objects; Event consensus arbitration (`is_primary`) formalised as Rule 9; `training_labels` retired; Rule 2 generalised to an evidence-correspondence principle (Person→RecordedPerson, Relationship→RecordedRelationship, Event→Record), resolving the Relationship evidence-FK open decision and correcting Person's evidence target to match |
+| `docs/data_dictionary.md` | ✅ Complete (v2.7) | Aligned with conceptual_model.md v2.7: added §3.4 RecordedRelationship, §3.5 RecordSimilarity; added `event.is_primary`; fixed `recorded_person.role` Required marker and added `unknown` to role vocab; renamed `Person.record_ids`→`recorded_person_ids` and `Relationship.record_ids`→`recorded_relationship_ids` with matching junction-table renames |
+| `docs/database_schema.md` | ✅ Complete (v3.1) | Full DDL pass: `schema.sql` drift resolved (`place_authority` restored, obsolete `place` table removed, `event.is_primary` and `training_labels` + indexes added to the DDL). §6 rewritten to describe the actual `src/dal/` repo-per-table pattern (no `DataStore` class exists). Carries forward v2.7 target design not yet in code, marked `[target]`: `recorded_relationship`/`record_similarity` tables; `person_record`→`person_recorded_person` and `relationship_record`→`relationship_recorded_relationship` renames (FK target also changes, per Rule 2). `training_labels`'s conceptual retirement documented without removing it from the DDL |
+| `docs/repositories.md` | ⚠️ Drift identified (v1.5) | Repository 8 (logainm.ie) and Source 13 (place_authority) added. Two stale CLI commands in §4 remain unfixed — see Work Queue item 12 |
+| `docs/validation_rules.md` | ✅ Complete (v2.8) | DataStore API reference removed from §10; correct entry points (`validate(conn)`, `validate_genealogical(conn, person_id)`) documented. Known code bug in `validate_object()` (role still treated as required) documented at R05 and §10 — fix is a code task, not a doc task; see Work Queue item 16 |
+| `docs/reconstruction_algorithms.md` | ✅ Complete (v1.3) | Items 17–20 resolved: §2 Place Resolution rewritten to remove retired Place-conclusion concept (now `place_authority` + `place_record` pattern throughout); Jellyfish replaced by rapidfuzz; phonetic blocking removed; co-occupant overlap changed from Jaccard to Szymkiewicz–Simpson; junction table DDL example updated to v3.1 rename targets with cross-reference note |
+| `docs/genealogical_constraints.md` | ✅ Complete (v1.3) | 22 GC-coded constraints |
+| `ROADMAP.md` | ✅ Complete | Doc table corrected (19 June); new Work Queue items 16–21 added from doc audit |
 
 ---
 
-## 2. Workflow
+## 2. Implementation Table
 
-```bash
-# First-time setup
-python -m src.db init
-python -m src.db seed-places --file tullynaught_places.csv   # or via fetch_places
-
-# Ingest census records
-python -m src.db ingest --source 3 --file 1901_Tullynaught.csv
-python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
-python -m src.db ingest --source 5 --file 1926_Tullynaught.csv
-
-# Full reconstruction pipeline (stages 2–5)
-python -m src.db reconstruct
-
-# Inspect
-python -m src.db summary
-
-# Re-run pipeline (place_authority preserved)
-python -m src.db reset
-# re-ingest and reconstruct as above
-
-# Explicit stages (finer control)
-python -m src.db place-resolve
-python -m src.db household
-python -m src.db link
-python -m src.db rebuild-consensus
-```
+| Module | File(s) | Status | Notes |
+|---|---|---|---|
+| Place fetcher | `src/db/fetch_places.py` | ✅ Complete | Moved to `src/db/` |
+| Place seeder | `src/db/seed_places.py` | ✅ Complete | Moved to `src/db/` |
+| Pipeline reset | `src/db/reset_pipeline.py` | ✅ Complete | Utility added to `src/db/` |
+| Household inference | `src/pipeline/household_inference.py` | ⚠️ Pending redesign | Current implementation creates Person + Relationship eagerly from census role-pairs and links a census Event to those Persons in one pass. Per conceptual_model.md v2.7, role-pair relationship inference is superseded by ingest-time RecordedRelationship capture; Person-creation timing needs a more intentional redesign; census Event creation needs a home once it can't assume Persons already exist. Not yet implemented — design only. |
 
 ---
 
 ## 3. Release Plan
 
-### Release 1 — Full census pipeline (1901, 1911, 1926)
-
-| # | Milestone | Status |
-|---|---|---|
-| R1-0 | Place authority seeding (logainm API + CSV) | ✅ Complete |
-| R1-1 | Place resolution + household inference | ✅ Complete |
-| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | ✅ Complete — relationship features added; 1:1 bipartite gate enforced |
-| R1-3 | Rebuild-consensus: post-linkage event arbitration (is_primary by vote count) | ✅ Complete — pending full pipeline retest |
-| R1-4 | Person Browser basics (source coverage, merge error flags) | 🔜 Next — depends on service layer and flag/lead tables |
-
-### Release 2 — Civil registration and parish registers
-
-Civil registration sources (birth, marriage, death) and Catholic parish registers. Planned modules:
-- `src/reconstruction/core.py` — shared Person/Relationship/Event commit logic extracted from `household_inference.py`
-- `src/reconstruction/registration_inference.py`
-- `src/reconstruction/parish_inference.py`
-
-### Release 3 and beyond
-
-Land records, military sources, folklore, service layer, consumer front ends.
+* **v1.x (Current):** Stabilize schema (v3.0), complete documentation drift remediation, and verify pipeline against Tullynaught DED test data.
+  * **Architecture rebuild (started 17 June 2026):** Multi-session pass rebuilding from conceptual model → data layer → implementation, in that order, incorporating everything learned from R1 so far. Conceptual model phase complete (v2.7). Data layer phase complete: `data_dictionary.md` (v2.7) and `database_schema.md` (v3.1) both done. `reconstruction_algorithms.md` now fully aligned (v1.3). **Implementation phase is next** — see Work Queue item 15.
+* **v2.0 (Target):** Implementation of full-scale Irish Census (1901–1926) ingestion and analysis.
+* **v3.0 (Long-term):** Analysis layer: community queries, graph traversal, and automated GEDCOM export.
 
 ---
 
 ## 4. Work Queue
 
-### Tier 3 — Reconstruction pipeline
-
-**Full pipeline retest** 🔜 — first priority:
-```bash
-python -m src.db reset
-python -m src.db ingest --source 3 --file tests/1901_Tullynaught.csv
-python -m src.db ingest --source 4 --file tests/1911_Tullynaught.csv
-python -m src.db ingest --source 5 --file tests/1926_Tullynaught.csv
-python -m src.db reconstruct
-python -m src.db summary
-```
-Verify: correct is_primary marking; no person has >1 is_primary=true event per type; birth year delta violations reduced from 16.
-
-**Linkage quality review** 🔜 — following retest:
-- Review near-commit proposals (score 0.80–0.85) — if ≥80% correct, consider lowering AUTO_COMMIT_THRESHOLD to 0.82
-- Term-frequency adjustment for `surname_norm` — deferred until 3–4 DEDs ingested for representative frequency distribution
-
-**fix `review.py` proposal query** 🔜 — must read `training_labels WHERE decision='proposed'` (not `person_record WHERE verified=0`)
-
-### Tier 4 — Service layer
-
-**flag and lead tables** — DDL specified in `service_api.md` §10.3; needed before service layer can be built. `score` column on `person_record` also needs to be nullable for manual researcher assertions.
-
-`src/service.py` — ResearchService class. Depends on flag/lead tables in schema.
-
-### Tier 5 — Consumers
-
-Claude consumer, Lovable UI, MCP server.
+| # | Item | Status |
+|---|---|---|
+| 2 | Migration scripts: `migrate_28_to_29.sql` / `migrate_29_to_30.sql` created. | ✅ Resolved (17 Jun) |
+| 5 | Path drift: `fetch_places.py` / `seed_places.py` / `reset_pipeline.py` location corrected to `src/db/`. | ✅ Resolved (17 Jun) |
+| 6 | `genealogical_constraints.md` version: Sync to v1.2. | ✅ Resolved (17 Jun) |
+| 7 | Update stale schema-version footers: audit all `docs/` files and update date/version lines to reflect current versions. | 🔜 |
+| 8 | `conceptual_model.md`: RecordedRelationship, RecordSimilarity, Event consensus arbitration (Rule 9), Person/Relationship singularity rationale, `training_labels` retirement, stale CLI fix. | ✅ Resolved (17 Jun) |
+| 9 | `data_dictionary.md`: align with conceptual_model.md v2.5 — add `event.is_primary`, document RecordedRelationship/RecordSimilarity, fix `recorded_person.role` Required marker, add `unknown` to role vocab. | ✅ Resolved (17 Jun) |
+| 10 | `database_schema.md`: full DDL pass to match `schema.sql` (`place_authority` CREATE TABLE, remove obsolete `place` table, `event.is_primary`, `training_labels` table + indexes, rewrite §6 DataStore section to reflect the actual `src/dal/` repo-per-table pattern, fix worked example, rename `person_record`→`person_recorded_person` and `relationship_record`→`relationship_recorded_relationship` per the v2.7 evidence-correspondence rename, add `recorded_relationship` and `record_similarity` tables). | ✅ Resolved (18 Jun) |
+| 11 | Remove `training_labels` from `schema.sql`, `linkage.py`, and `training_repo.py`. | 🔜 (deferred to implementation phase) |
+| 12 | `repositories.md` §4: fix two stale CLI commands (`python -m src.fetch_places` → `python -m src.cli fetch-places`; `python -m src.db seed-places` → `python -m src.cli seed-places`). | 🔜 |
+| 13 | `validation_rules.md`: assign R-numbers to the `recorded_relationship`/`record_similarity` CHECK constraints documented but unnumbered in `database_schema.md` v3.1 §5. | 🔜 |
+| 14 | `conceptual_model.md` v2.6: generalised Rule 2 to an evidence-correspondence principle; resolved the Relationship evidence-FK open decision. | ✅ Resolved (17 Jun) |
+| 15 | Implementation phase: build the v3.1 target schema in code — add `recorded_relationship` and `record_similarity` to `schema.sql`, write `migrate_30_to_31.sql`, rename `person_record`→`person_recorded_person` and `relationship_record`→`relationship_recorded_relationship` (including the FK target change from `record_id` to `recorded_person_id`/`recorded_relationship_id`), update `person_repo.py`/`relationship_repo.py` and the `household_inference.py`/`linkage.py` callers accordingly. | 🔜 (next phase — do items 17 and 18 first) |
+| 16 | Fix `validate_object()` in `src/pipeline/validator.py`: remove `role` from `_REQUIRED` and `_NON_EMPTY` for `recorded_person` (role is nullable since schema v3.0); remove dead `'place'` obj_type entry (Place conclusion retired — `place_authority` is the structural table). | 🔜 |
+| 17 | `reconstruction_algorithms.md` §2 (Place Resolution): rewrite to remove retired Place-conclusion concept. Replace all "Place conclusion" language with `place_authority` + `place_record` pattern. Specific fixes: §2.1 output description; §2.4 `place.name` → `place_authority.name_en`; §2.5 "new Place conclusion is created" → `place_record` row linking to existing `place_authority` entry; §1.1 pipeline sequence step 2. **Must precede the place resolution implementation session.** | ✅ Resolved (19 Jun) |
+| 18 | `reconstruction_algorithms.md` §1.5 (Library stack): replace Jellyfish with rapidfuzz throughout; update `pip install` example. | ✅ Resolved (19 Jun) |
+| 19 | `reconstruction_algorithms.md` §3 (Person linkage): confirm whether co-occupant overlap score should use Szymkiewicz–Simpson rather than Jaccard (same departure-asymmetry rationale as the name-set change made in R1-2). Update if confirmed. | ✅ Resolved (19 Jun) |
+| 20 | `reconstruction_algorithms.md`: add cross-reference note in §1 pointing to `database_schema.md` §1 for v3.1 junction rename targets (`person_record`→`person_recorded_person`, `relationship_record`→`relationship_recorded_relationship`). | ✅ Resolved (19 Jun) |
+| 21 | `archive/future_ideas.md` §1.1 and §1.3: update references to `service_api.md §10.3` (now archived) — note that the flag/lead schema design is simply deferred, not documented in any active reference. | 🔜 |
 
 ---
 
 ## 5. Open Decisions
 
-### OD-02 — Derived confidence function
-
-Provisional placeholder (record count → low/medium/high) in place. Real multi-source scored linkages now available after R1-2. Revisit after reviewing linkage quality from full pipeline retest.
+* **Pipeline Reset:** Decide if `reset_pipeline.py` should be exposed via `src.cli` or kept as a standalone utility.
+* **Source Expansion:** Prioritize Griffith's Valuation vs. Tithe Applotment for the next ingest module.
+* **Person-creation timing:** When/how should a Person conclusion be minted, now that `household_inference`'s immediate-creation-after-ingest approach is judged too eager? Needs a deliberate, more intentional design (conceptual model session, 17 June 2026).
+* **Census Event creation:** Once Person creation is no longer automatic and immediate, where does census Event creation (currently bundled into `household_inference`) live, and how does it eventually link to Persons?
 
 ---
 
 ## 6. Version History
 
-| Version | Date | Change |
-|---|---|---|
-| 1.0 | May 2026 | Initial ROADMAP |
-| 1.1 | May 2026 | Tier 1 and 2 complete; Tullynaught 1911 tested |
-| 1.2 | May 2026 | R1-1 complete; Release Plan added; R1-2 as next milestone |
-| 1.3 | May 2026 | Schema v2.6 (OD-01 resolved); census date fixes; 1926 normaliser corrected; migration added |
-| 1.4 | May 2026 | Place authority redesign complete. PlaceAuthority added to foundational layer (flat schema, logainm.ie source). `src/fetch_places.py` and updated `src/seed_places.py` implemented. `src/reconstruction/place_resolution.py` v2.0. Schema v2.7. 33 tests passing. |
-| 1.5 | June 2026 | Schema v2.8: RecordedEvent merged into Record; junction tables reduced from 9 to 5. R1-2 and R1-3 (validator) complete. Linkage first test run completed (3881 persons, 264 merged). Relationship features added to census feature extractor. Explicit `place-resolve`, `household`, `link` CLI commands added; `reconstruct` retained as convenience. OD-04 resolved (DuckDBAPI). TF adjustment deferred to multi-DED scale. |
-| 1.6 | June 2026 | Evidence scoring design locked. Event-based consensus model: persons = conclusion entities; events = alternatives; is_primary marks plurality winner. rebuild-consensus algorithm specified in `evidence_scoring_design.md` v1.0. |
-| 1.7 | June 2026 | Schema v2.9: event.is_primary added; training_labels added. `src/reconstruction/scoring.py` implemented (rebuild_consensus). CLI refactored: `reset` added; `reconstruct` now runs full pipeline (stages 2–5 including rebuild-consensus); `place-resolve` and `household` retained as explicit stages. |
-| 1.8 | June 2026 | README and ROADMAP updated to reflect v2.9 schema, refactored CLI, and R1-3 completion. Full pipeline retest pending. |
+| Date | Milestone / Change |
+|---|---|
+| 19 June 2026 (session 6) | **`reconstruction_algorithms.md` v1.3.** Resolved Work Queue items 17–20. §2 Place Resolution fully rewritten: removed all Place-conclusion language, reframed resolution as linking Records to the pre-seeded `place_authority` table via `place_record`; §2.5 now describes the unresolved-string flagging workflow (fetch-places / manual add / re-run) instead of conclusion creation. §1.5 library stack updated: Jellyfish replaced by rapidfuzz throughout (`rapidfuzz.distance.JaroWinkler.similarity`); phonetic (Soundex/Metaphone) blocking removed from §4.1 normalisation pipeline, §5.1 blocking rule 2 (now surname Jaro-Winkler fallback), and §9.1 Splink sketch. §5.3 co-occupant overlap score changed from Jaccard to Szymkiewicz–Simpson with departure-asymmetry rationale. §1.6 junction table DDL example updated to v3.1 rename targets with cross-reference note. Opportunistic fixes: §5.2 comparison table, §7.2 place language, §6.1 prose reference annotated, §8.1 SQL examples noted as pre-v3.1, §9.2 entry points updated (`DataStore` → `conn`). §3 release plan gating clause removed (items 17 and 18 no longer block implementation phase). |
+| 19 June 2026 (session 5) | **Doc audit.** Full read of all docs against code (repomix export). Findings: `reconstruction_algorithms.md` §2 has a blocking issue (Place-conclusion language throughout, despite the Place conclusion object being retired); §1.5 names Jellyfish rather than rapidfuzz; Jaccard used for co-occupant overlap (likely should be Szymkiewicz–Simpson). `validate_object()` in `validator.py` still treats `role` as required and carries a dead `'place'` obj_type entry. `repositories.md` §4 has two stale CLI commands (pre-existing item 12). `validation_rules.md` DataStore issue was already resolved in v2.8 — ROADMAP status corrected from ⚠️ to ✅. `conceptual_model.md` version corrected from v2.6 to v2.7 in ROADMAP table. New work queue items 16–21 added. |
+| 18 June 2026 (session 4) | **Data layer rebuild complete — `database_schema.md` v3.1.** Pulled the actual `schema.sql` and `src/dal/*.py` from the repo to ground the rewrite rather than guessing: confirmed `place_authority` already exists in code (the doc's DDL just never carried it), confirmed `training_labels` is fully implemented with the exact decision-lifecycle/index DDL now reflected in §3, and discovered along the way that `name_variant` is defined in schema but has no DAL writer anywhere — flagged in §1 and §6 rather than silently fixed. Resolved all `database_schema.md` drift items: restored `place_authority`, removed the obsolete `place` table, added `event.is_primary` and `training_labels` to the DDL, rewrote §6 to describe the real `src/dal/` repo-per-table pattern in place of the nonexistent `DataStore` class. Carried the v2.6/v2.7 target design (RecordedRelationship, RecordSimilarity, the Person/Relationship evidence-correspondence rename) into the DDL, marked `[target]` throughout and called out explicitly in §1 and §9 as not yet reflected in `PRAGMA user_version`. Data layer phase of the architecture rebuild (conceptual model → data dictionary → database schema) is now complete; implementation phase is next (Work Queue item 15). |
+| 17 June 2026 (session 3) | **Data layer alignment:** Resolved the open Relationship evidence-FK decision in favour of RecordedRelationship, generalised as Rule 2 (evidence correspondence) and applied symmetrically to Person→RecordedPerson; conceptual_model.md bumped to v2.6. Aligned data_dictionary.md to v2.7: added RecordedRelationship/RecordSimilarity field tables, `event.is_primary`, fixed `recorded_person.role` nullability and `unknown` vocab, renamed `Person`/`Relationship` evidence FKs and their junction tables to match. Data layer phase of the architecture rebuild now complete for `data_dictionary.md`; `database_schema.md` is next. |
+| 17 June 2026 (session 2) | **Conceptual model v2.5:** Added RecordedRelationship and RecordSimilarity as Evidence-layer objects, recording relationships and algorithmic similarity between evidence units without requiring a conclusion. Formalised Event consensus arbitration as Rule 9 — competing Events of the same type may coexist per Person, exactly one marked `is_primary`; Person and Relationship explicitly excluded, for different reasons. Retired `training_labels` as a considered-and-built-then-rejected path. Fixed stale CLI examples and the stale "eleven objects" count. Identified that `database_schema.md`'s prior "Complete" status was inaccurate (DDL out of sync with `schema.sql`) and corrected it here. Started the multi-session architecture rebuild: conceptual model → data layer → implementation. |
+| 17 June 2026 | **Consolidation:** Resolved path drift, implemented migration scripts (v2.8→v3.0), restored roadmap structure, archived inactive documentation, and sync'd constraint versioning to v1.2. |
+| 16 June 2026 | **Schema v3.0:** Finalized (`event.is_primary`, nullable roles). Linkage correctness pass: `link_only`, `_UnionFind`, Positional pairing, Per-merge transactions. |
+| Early June 2026 | **Schema v2.8:** RecordedEvent merged into Record; junction tables 9→5. First full linkage test (3881 persons, 264 merged). Relationship features added. |
+| 24 May 2026 | **Foundation & R1-1:** Initial GRA roadmap/rename established. Tier 1/2 complete; Tullynaught 1911 verified. Implemented place resolution and household inference (R1-1); established Release Plan (R1–R3). |
