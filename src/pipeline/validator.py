@@ -754,12 +754,13 @@ def _print_warnings(warnings: list[str], label: str) -> None:
             print(f"    {w}")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """CLI entry point — invoked via src.cli 'validate' subcommand."""
     import argparse
-    from src.db import open_db, check_version
+    from src.db.db import open_db, check_version
 
     parser = argparse.ArgumentParser(
-        prog="python -m src.validator",
+        prog="python -m src.cli validate",
         description="GRA validation — run genealogical constraint rules",
     )
     parser.add_argument("--db", default="genealogy.db", help="Database path")

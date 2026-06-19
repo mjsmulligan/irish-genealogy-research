@@ -59,13 +59,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import jellyfish
+import rapidfuzz 
 import pandas as pd
 import splink.comparison_library as cl
 import splink.comparison_level_library as cll
 from splink import DuckDBAPI, Linker, SettingsCreator, block_on
 
-from src.reconstruction.features.census import (
+from src.pipeline.features.census import (
     build_census_features,
     build_census_household_features,
 )
@@ -148,7 +148,7 @@ class CensusLinkageResult:
 # Debug log — accumulators, helpers, and writers
 # ---------------------------------------------------------------------------
 
-from src.reconstruction.debug import (
+from src.pipeline.debug import (
     AUTO_COMMIT_THRESHOLD,
     PROPOSE_FLOOR,
     SCORE_VERSION_PERSON,
@@ -644,7 +644,7 @@ def _jaro_winkler(a: str | None, b: str | None) -> float:
     if not a or not b:
         return 0.0
     try:
-        return jellyfish.jaro_winkler_similarity(a, b)
+        return rapidfuzz.jaro_winkler_similarity(a, b)
     except Exception:
         return 0.0
 
@@ -1561,3 +1561,5 @@ def print_census_linkage_report(result: CensusLinkageResult) -> None:
             print(f"    {entry}")
         if len(result.merge_log) > 20:
             print(f"    ... and {len(result.merge_log) - 20} more")
+
+

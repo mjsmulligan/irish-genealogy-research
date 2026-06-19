@@ -7,7 +7,7 @@ Designed for two use cases:
      (e.g. church parishes, historically-named features)
 
 CLI usage:
-    python -m src.db seed-places --file PATH [--db PATH]
+    python -m src.cli seed-places --file PATH [--db PATH]
 
 CSV schema: matches place_authority table columns exactly.
 Required columns: place_id, name_en, place_type
@@ -23,7 +23,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from src.fetch_places import (
+from src.db.fetch_places import (
     VALID_PLACE_TYPES, CSV_FIELDNAMES,
     load_from_csv, write_to_db, PlaceRow,
 )
@@ -72,3 +72,5 @@ def print_seed_places_report(result: dict) -> None:
     skipped = result['skipped']
     if skipped:
         print(f"    Already present:  {skipped:>6}  (idempotent skip)")
+
+
