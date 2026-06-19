@@ -23,7 +23,7 @@
 
 ## 2. Implmentation Rebuild
 
-This section outlines the plan for a complete rebuild of the code based on the updated docs and changes to the logic.  This supercedes work items mentioned below as the rebuild may result in entire python modules being rewritten or replaced.
+This section outlines the plan for a complete rebuild of the code based on the updated docs and changes to the logic.  This supercedes work items mentioned in Section 4 Work Queue as the rebuild may result in entire python modules being rewritten or replaced.
 
 The rebuild will follow the three layer architecture of gra - foundation, evidence, conclusions. We should also implement the code in such a way that we could call each layer as a seperate task, e.g. foundation runs once (apart from places) but `cli add_evidence` would essentially replace `cli ingest` and `cli conclusions` would run conclusion steps in the pipeline.
 
