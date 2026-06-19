@@ -29,7 +29,7 @@ The rebuild will follow the three layer architecture of gra - foundation, eviden
 
 2.1 Foundation & Database management
 
-The foundation layer is the most stable in gra. It's purpose is straightforward which is loading the info regarding repositories and sources.  The only dynamic part of the foundation layer is seeding places from logainm.  This is considered an 'on demand' seeding as preloading all 51000 townlands in Ireland is an unnecessary overhead.
+The foundation layer is the most stable in gra. It's purpose is straightforward which is loading the info regarding repositories and sources.  The only dynamic part of the foundation layer is seeding places from logainm.  This is considered an 'on demand' seeding as preloading all 51000 townlands in Ireland is an unnecessary (and expensive) overhead.
 
 It also is responsible for the database setup. This makes sense as database setup is a prerequisite for seeding.
 
