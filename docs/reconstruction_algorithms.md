@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Reconstruction Algorithms
 
-*Version 1.2 — June 2026*
+*Version 1.3 — 19 June 2026*
 *Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `validation_rules.md` first.*
 
 ---
@@ -9,20 +9,21 @@
 
 ### 1.1 The reconstruction problem
 
-Reconstruction is the process of building conclusion-layer objects (Person, Event, Relationship, Place) from evidence-layer objects (Record, RecordedPerson). It answers four related questions:
+Reconstruction is the process of building conclusion-layer objects (Person, Event, Relationship) from evidence-layer objects (Record, RecordedPerson). It answers three related questions:
 
-- **Record-to-Place:** Does this verbatim place string refer to an existing Place conclusion, or does it warrant a new one?
 - **Record-to-Person:** Is this Record about an existing Person, or does it warrant a new Person conclusion?
 - **Record-to-Event:** Does this Record document an existing Event conclusion, or does it warrant a new one?
 - **Relationship inference:** Given that this Record involves Person A and Person B in specific roles, what Relationship assertion does that support?
 
-These questions are not independent. Place resolution must precede Person linkage because resolved Place conclusions are the primary blocking anchor for candidate generation. Relationship inference is downstream of Person linkage — it operates on concluded Persons, not on candidate pairs. Event linkage depends on both Place resolution and Person linkage being sufficiently complete to make event-level convergence meaningful.
+Place is not a conclusion-layer object in this system. The place authority (`place_authority`) is a pre-seeded reference table populated from logainm.ie before reconstruction begins. Place resolution links Records to existing `place_authority` entries via the `place_record` junction table — it does not create new conclusion objects.
+
+These questions are not independent. Place resolution must precede Person linkage because resolved `place_authority` entries are the primary blocking anchor for candidate generation. Relationship inference is downstream of Person linkage — it operates on concluded Persons, not on candidate pairs. Event linkage depends on both Place resolution and Person linkage being sufficiently complete to make event-level convergence meaningful.
 
 The reconstruction pipeline therefore executes in the following order:
 
 ```
 1. Ingest         → Evidence layer complete (Records with inline event fields, RecordedPersons)
-2. Place          → Place conclusions established; townland variants collapsed
+2. Place          → Records linked to place_authority entries; unresolved strings flagged
 3. Person         → Person conclusions constructed; Records linked to Persons
 4. Relationship   → Relationship assertions derived from Person linkages and roles
 5. Event          → Event conclusions constructed; Records linked to Events
@@ -97,14 +98,14 @@ The reconstruction pipeline is built on three components:
 
 **Splink** — the probabilistic linkage engine. Splink implements the Fellegi-Sunter model of record linkage with an Expectation-Maximisation algorithm for unsupervised parameter estimation — no labelled training data is required. It operates directly on the SQLite backend, executing linkage workloads as SQL against `irish_genealogy.db` without an ETL step. Splink produces pairwise match probabilities for candidate record pairs and clusters predictions into entity groups. It supports term frequency adjustments, which is the mechanism used to handle high-frequency Irish surnames (see §4.4).
 
-**Jellyfish** — string similarity at the feature level. Jellyfish provides Jaro-Winkler similarity, Soundex, and Metaphone. It is called during feature extraction to produce numeric similarity scores for name pairs and place string pairs before those scores are passed to Splink as comparison features.
+**rapidfuzz** — string similarity at the feature level. rapidfuzz provides Jaro-Winkler similarity via `rapidfuzz.distance.JaroWinkler.similarity`, which returns a value in the 0.0–1.0 range. It is called during feature extraction to produce numeric similarity scores for name pairs and place string pairs before those scores are passed to Splink as comparison features. rapidfuzz is preferred over jellyfish for its pure-Python installation path (no Rust compilation required) and consistent 0–1 return range.
 
 **Irish-specific logic** — custom Python code implementing the domain knowledge that general-purpose libraries cannot provide: the name variant table, the townland normalisation pipeline, the source-specific feature extractors, the patronymic signal, and the role-pair relationship inference rules. This layer runs as pre-processing before Splink and as post-processing after it.
 
 **Installation:**
 
 ```
-pip install splink jellyfish
+pip install splink rapidfuzz
 ```
 
 ---
@@ -116,18 +117,20 @@ This document introduces additions to the schema specified in `database_schema.m
 **Junction table additions** — `score` and `verified` columns are added to all evidence-to-conclusion junction tables:
 
 ```sql
--- Person.record_ids — extended
-CREATE TABLE person_record (
-    person_id       INTEGER NOT NULL REFERENCES person (person_id),
-    record_id       INTEGER NOT NULL REFERENCES record (record_id),
-    score           REAL,       -- Splink match probability 0.0–1.0; null for manually-asserted linkages
-    score_version   TEXT,       -- model run identifier; null for manually-asserted linkages
-    verified        INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
-    PRIMARY KEY (person_id, record_id)
+-- Person.recorded_person_ids — extended
+CREATE TABLE person_recorded_person (
+    person_id             INTEGER NOT NULL REFERENCES person (person_id),
+    recorded_person_id    INTEGER NOT NULL REFERENCES recorded_person (recorded_person_id),
+    score                 REAL,       -- Splink match probability 0.0–1.0; null for manually-asserted linkages
+    score_version         TEXT,       -- model run identifier; null for manually-asserted linkages
+    verified              INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0, 1)),
+    PRIMARY KEY (person_id, recorded_person_id)
 );
 ```
 
-The same additions apply to `event_record`, `relationship_record`, and `place_record`. The `person_event` structural junction is not modified — it expresses conclusion-to-conclusion participation and carries no score. The dropped tables (`person_relationship`, `relationship_event`, `event_recorded_event`, `event_person`) are not present in schema v2.8.
+The same additions apply to `event_record` and `relationship_recorded_relationship`. The `person_event` structural junction is not modified — it expresses conclusion-to-conclusion participation and carries no score.
+
+**Note on junction table naming:** The junction tables above reflect the v3.1 target design documented in `database_schema.md §1`. The renames from earlier schema versions (`person_record` → `person_recorded_person`, `relationship_record` → `relationship_recorded_relationship`) and the corresponding FK target changes (`record_id` → `recorded_person_id` / `recorded_relationship_id`) are tracked as Work Queue item 15 and are not yet reflected in the code. See `database_schema.md §1` for the full v3.1 target DDL.
 
 **Conclusion table changes** — `confidence TEXT` is removed from the `relationship` and `event` tables. Confidence is now always derived, never stored. The `CHECK (confidence IN (...))` constraint is removed accordingly.
 
@@ -155,22 +158,24 @@ CREATE INDEX idx_name_variant_canonical ON name_variant (canonical);
 
 ### 2.1 Role of Place resolution
 
-Place resolution is the prerequisite stage for all subsequent reconstruction. Its output — a set of Place conclusions with townland-level granularity, each linked to the Records that contain evidence for it — provides the primary blocking anchor for Person linkage. Without resolved Place conclusions, Person candidate generation degenerates to a full cross-product of all Records, which is computationally expensive and produces low-quality results.
+Place resolution is the prerequisite stage for all subsequent reconstruction. Its output — Records linked to `place_authority` entries at townland-level granularity — provides the primary blocking anchor for Person linkage. Without resolved place references, Person candidate generation degenerates to a full cross-product of all Records, which is computationally expensive and produces low-quality results.
 
-Place resolution is also the highest-confidence conclusion type in the system. Because Place conclusions are community-level conclusions rather than person-level conclusions, the evidence base for a townland conclusion is typically the entire community dataset — many Records across multiple sources all containing variants of the same place string. Convergence at this scale makes Place conclusions effectively certain, and they can be auto-committed with high confidence and low verification burden.
+Place resolution does not create conclusion objects. The `place_authority` table is a pre-seeded reference populated from logainm.ie before any reconstruction begins (via `python -m src.cli seed-places` and `python -m src.cli fetch-places`). Resolution links a Record's place string to an existing `place_authority` entry by inserting a row into the `place_record` junction table. If no authority entry matches above threshold, the place string is flagged as unresolved and deferred for researcher attention — no new authority entry is created automatically.
+
+Because `place_authority` is seeded at community scale before resolution runs, the evidence base for a given townland entry is typically the entire community dataset — many Records across multiple sources all containing variants of the same place string. Convergence at this scale makes resolution effectively certain and the linkage can be auto-committed with high confidence and low verification burden.
 
 ### 2.2 The townland as atomic unit
 
-Place conclusions are always at **townland granularity**. The townland is the common atomic unit of geographical reference across all twelve sources in the closed source set:
+Place resolution always targets **townland granularity**. The townland is the common atomic unit of geographical reference across all twelve sources in the closed source set:
 
 - Griffith's Valuation and Tithe Applotment Books are organised by townland
 - Census records (1901, 1911, 1926) carry an explicit townland column
 - Civil birth, marriage, and death registrations carry place of event at townland or near-townland precision
 - Catholic Parish Registers typically carry parish name plus townland of residence for principals
 
-Higher-level administrative units — DED, civil parish, barony, county — are derivable from the townland via townlands.ie and are not stored as separate Place conclusions. A Record that specifies only a higher-level unit (e.g. "Co. Donegal" or "Kilbarron parish") is treated as partial evidence, not as a basis for a separate Place conclusion at the coarser level.
+Higher-level administrative units — DED, civil parish, barony, county — are derivable from the townland via the `place_authority` hierarchy columns and are not stored as separate entries. A Record that specifies only a higher-level unit (e.g. "Co. Donegal" or "Kilbarron parish") is treated as partial evidence; its place string is flagged as unresolved rather than linked at a coarser level.
 
-**Important:** Administrative boundaries do not align across sources. The DEDs used by the census administration and the parishes used by church records cover overlapping but non-identical geographies. Tullynaught DED and Tawnawilly Catholic parish, for example, cover similar communities but with different boundary lines. Place resolution bridges these boundary mismatches by resolving to the townland, which is stable across all source types. The researcher's judgment — expressed as a Place conclusion linking Records from different administrative contexts — is what resolves the boundary discrepancy. The algorithm supports this judgment; it does not make it automatically.
+**Important:** Administrative boundaries do not align across sources. The DEDs used by the census administration and the parishes used by church records cover overlapping but non-identical geographies. Tullynaught DED and Tawnawilly Catholic parish, for example, cover similar communities but with different boundary lines. Place resolution bridges these boundary mismatches by resolving to the townland, which is stable across all source types. The researcher's judgment — expressed via `place_record` linkages that connect Records from different administrative contexts to the same `place_authority` entry — is what resolves the boundary discrepancy. The algorithm supports this judgment; it does not make it automatically.
 
 ### 2.3 Townland normalisation pipeline
 
@@ -182,25 +187,25 @@ Before any string matching occurs, all `place_as_recorded` strings are passed th
 4. **Strip administrative suffixes** — remove "townland", "td", "civil parish", "DED", "barony" and equivalents
 5. **Normalise whitespace** — collapse multiple spaces to single space, strip leading/trailing
 
-The result is a normalised place token suitable for fuzzy comparison. The original `place_as_recorded` string is always preserved verbatim in the `record.place_as_recorded` column or `recorded_person.place_as_recorded` column — normalisation is a comparison artefact, never a data modification.
+The result is a normalised place token suitable for fuzzy comparison. The original `place_as_recorded` string is always preserved verbatim in the `record.place_as_recorded` column — normalisation is a comparison artefact, never a data modification.
 
 ### 2.4 Place candidate scoring
 
-For each distinct normalised place token in the dataset, the algorithm scores it against all existing Place conclusions using Jaro-Winkler similarity on the normalised `place.name` value. A score at or above 0.88 is treated as a candidate match for researcher review or auto-commit.
+For each distinct normalised place token in the dataset, the algorithm scores it against all `place_authority` entries using Jaro-Winkler similarity on the normalised `place_authority.name_en` value. A score at or above 0.88 is treated as a candidate match for auto-commit or researcher review.
 
-For initial construction (no existing Place conclusions), the algorithm clusters normalised place tokens by Jaro-Winkler similarity to generate candidate Place conclusion groups. Tokens with pairwise similarity above 0.88 are proposed as variants of the same Place.
+The 0.88 threshold for place matching is set higher than the general auto-commit threshold (0.85) because place string matching is simpler than person matching — there are no confounding factors like age drift or name change — and false positive place merges (linking Records to the wrong townland authority) cause significant downstream damage to Person linkage.
 
-The 0.88 threshold for place matching is set higher than the general auto-commit threshold (0.85) because place string matching is simpler than person matching — there are no confounding factors like age drift or name change — and false positive place merges (concluding that two different townlands are the same) cause significant downstream damage to Person linkage.
+### 2.5 Linking Records to place_authority
 
-### 2.5 Place conclusion creation
+When a normalised place token matches a `place_authority` entry at or above the 0.88 threshold, a `place_record` row is inserted linking the Record to that authority entry with the match score.
 
-A new Place conclusion is created when a place token does not match any existing Place conclusion above threshold. The researcher provides:
+When no `place_authority` entry matches above threshold, the place string is flagged as unresolved. The researcher resolves unresolved strings by:
 
-- `name` — the working name for this Place (typically the canonical townland spelling)
-- `townland_ie_url` — the townlands.ie permalink, which provides the full administrative hierarchy
-- `logainm_id` and `logainm_url` — the logainm.ie reference for Irish language name and historical variants
+1. Checking whether the missing townland should be fetched from logainm.ie (`python -m src.cli fetch-places`)
+2. Manually adding an entry to `place_authority` if the townland is not in logainm (e.g. an anglicised variant not yet indexed)
+3. Re-running place resolution after the authority table is extended
 
-The supporting Records are linked via the `place_record` junction table with scores from the normalisation and matching pipeline.
+No `place_authority` entry is ever created automatically by the resolution algorithm. The authority table is a curated reference; resolution is a linking step only.
 
 ---
 
@@ -236,7 +241,7 @@ Each source type has a dedicated feature extractor that reads the RecordedPerson
     "forename_norm":    str,        # normalised forename (see §4.1)
     "birth_year_est":   int | None, # estimated birth year
     "birth_year_range": int | None, # ± uncertainty in years
-    "place_id":         int | None, # resolved Place conclusion id
+    "place_id":         int | None, # place_authority_id of the resolved place_authority entry
     "place_raw":        str | None, # normalised place token (fallback if unresolved)
     "occupation_norm":  str | None, # normalised occupation string
     "co_persons":       list[str],  # normalised names of co-occurring persons
@@ -261,7 +266,7 @@ All name strings are normalised before comparison. The pipeline applies in order
 4. **Strip particles** — remove "O'", "Mc", "Mac" as separate tokens for phonetic comparison (preserved in the full normalised string for Jaro-Winkler)
 5. **Normalise whitespace**
 
-Normalisation produces two outputs: a `full_norm` string used for Jaro-Winkler comparison, and a `soundex` code used for phonetic blocking.
+Normalisation produces a `full_norm` string used for Jaro-Winkler comparison.
 
 ### 4.2 The name variant table
 
@@ -316,10 +321,10 @@ Blocking is the step that restricts the candidate pair space before scoring. Wit
 Two blocking rules are applied in order. A Record must pass at least one blocking rule to generate candidates.
 
 **Blocking rule 1 — Place anchor (primary):**
-Candidate pairs are generated between a new Record and existing Person conclusions where both share the same resolved Place conclusion (`place_id`). This is the primary blocking rule and covers the majority of cases in a One Place Study context.
+Candidate pairs are generated between a new Record and existing Person conclusions where both share the same resolved `place_authority` entry (`place_id`). This is the primary blocking rule and covers the majority of cases in a One Place Study context.
 
-**Blocking rule 2 — Phonetic name fallback:**
-For Records whose place string is unresolved or coarser than townland level, candidates are generated where the Soundex code of the normalised surname matches. This catches cases where a Record mentions only a parish or county, or where a place string could not be resolved to an existing Place conclusion.
+**Blocking rule 2 — Surname fallback:**
+For Records whose place string is unresolved or coarser than townland level, candidates are generated where the normalised surname matches above a Jaro-Winkler threshold (default 0.85). This catches cases where a Record mentions only a parish or county, or where a place string could not be resolved to an existing `place_authority` entry.
 
 Records that pass neither blocking rule generate no candidates and are flagged for researcher attention.
 
@@ -332,7 +337,7 @@ Within each candidate pair, Splink computes the following comparison features:
 | Surname | Variant table → Jaro-Winkler; term frequency adjusted | High |
 | Forename | Variant table → Jaro-Winkler | High |
 | Birth year | Absolute difference, with ±2 year tolerance for derived years | High |
-| Place | Resolved Place conclusion match (exact on `place_id`) | High |
+| Place | Resolved `place_authority` entry match (exact on `place_id`) | High |
 | Occupation | Jaro-Winkler on normalised occupation string | Medium |
 | Co-occurring persons | Overlap score between co-person name lists | Medium |
 | Source type | Compatibility score between source types (see §5.3) | Low |
@@ -343,7 +348,7 @@ Feature weights are initial estimates. Splink's EM algorithm will refine these w
 
 Co-occurring persons — household members, parents, witnesses, sponsors — are a powerful disambiguating feature that generic record linkage systems typically ignore. In the Irish context, a Record containing "John Mulligan, head" with co-occurring persons "Mary Mulligan, spouse" and "Patrick Mulligan, child" can be matched against an existing Person conclusion for John Mulligan not just on John's own features, but on the presence of a Mary Mulligan and a Patrick Mulligan in the expected roles in the existing relationship graph.
 
-The co-occurring person overlap score is computed as the Jaccard similarity between the set of normalised co-person name strings in the new Record and the set of names of Persons in the existing conclusion's relationship graph.
+The co-occurring person overlap score is computed as the Szymkiewicz–Simpson similarity between the set of normalised co-person name strings in the new Record and the set of names of Persons in the existing conclusion's relationship graph. Szymkiewicz–Simpson (`|A∩B| / min(|A|, |B|)`) is used rather than Jaccard because household composition is expected to change across census years — children leave, members die — so the smaller of the two sets is the correct denominator. A 1911 household that is a genuine subset of the 1901 household should score high, not be penalised for the departures.
 
 This feature is only available in incremental linkage mode — in initial construction, no relationship graph exists yet. During initial construction, co-person names are stored in the feature dictionary but the overlap score is set to null and excluded from Splink's comparison.
 
@@ -431,7 +436,7 @@ Relationship assertions are derived from the roles of RecordedPersons within a R
 
 **Occupier/lessor pairs** in Griffith's or Tithe records describe a land tenure relationship, not a personal relationship, and are not modelled as Relationships.
 
-Prior scores reflect the strength of the role-pair evidence alone. Sibling inference scores (0.75–0.80) are lower than parent_child scores because sibling relationships in census records depend on a shared parent conclusion being correctly established first — the inference is one step removed from the direct evidence. These scores are stored on the `relationship_record` junction table and contribute to derived confidence.
+Prior scores reflect the strength of the role-pair evidence alone. Sibling inference scores (0.75–0.80) are lower than parent_child scores because sibling relationships in census records depend on a shared parent conclusion being correctly established first — the inference is one step removed from the direct evidence. These scores are stored on the `relationship_recorded_relationship` junction table (pre-v3.1 code: `relationship_record`) and contribute to derived confidence.
 
 ### 6.2 Relationship deduplication
 
@@ -455,9 +460,9 @@ Two Records are candidates for the same Event if:
 
 - They share the same `event_type` (from `record.event_type`)
 - Their normalised dates are within a configurable tolerance (default ±1 year for `birth`, `baptism`, `death`, `burial`; ±0 years for `marriage` — marriage dates in this period are typically precise)
-- Their resolved Place conclusions are the same or geographically proximate
+- Their resolved `place_authority` entries are the same or geographically proximate
 
-Geographic proximity between Place conclusions is not currently modelled beyond exact match on `place_id`. Records with unresolved place strings that fall within the same inferred DED or parish are treated as a weak positive signal but not a definitive match. Full geographic proximity modelling is a future extension.
+Geographic proximity between `place_authority` entries is not currently modelled beyond exact match on `place_id`. Records with unresolved place strings that fall within the same inferred DED or parish are treated as a weak positive signal but not a definitive match. Full geographic proximity modelling is a future extension.
 
 ### 7.3 Record to Event linkage
 
@@ -470,6 +475,8 @@ When a Record is linked to an existing Event conclusion, the Record is added to 
 ### 8.1 Population queries
 
 Once the conclusion layer is populated for a community, the following aggregate queries become available. These are expressed as SQL against the SQLite database.
+
+**Note:** The queries below use the current code-level junction table name `person_record`. Once the v3.1 rename to `person_recorded_person` is implemented (Work Queue item 15), these queries should be updated accordingly.
 
 **Total concluded Persons in the community:**
 ```sql
@@ -555,10 +562,10 @@ import splink.comparison_library as cl
 from splink import block_on
 
 settings = SettingsCreator(
-    link_type="link_and_dedupe",
+    link_type="link_only",
     blocking_rules_to_generate_predictions=[
-        block_on("place_id"),                                    # primary: same resolved Place
-        block_on("soundex_surname"),                             # fallback: phonetic surname
+        block_on("place_id"),                                    # primary: same resolved place_authority entry
+        block_on("surname_norm"),                                # fallback: normalised surname
     ],
     comparisons=[
         cl.JaroWinklerAtThresholds("surname_norm", [0.9, 0.8]),
@@ -576,7 +583,7 @@ settings = SettingsCreator(
 linker = Linker(df_records, settings, db_api=DuckDBAPI())
 linker.training.estimate_u_using_random_sampling(max_pairs=1e6)
 linker.training.estimate_parameters_using_expectation_maximisation(
-    block_on("soundex_surname")
+    block_on("surname_norm")
 )
 ```
 
@@ -587,23 +594,24 @@ Term frequency adjustments for surname are configured separately using the surna
 The reconstruction module exposes the following entry points in `reconstruction.py`:
 
 ```python
-def run_place_resolution(ds: DataStore) -> list[PlaceCandidate]:
-    """Run Place resolution across all unresolved place strings. Returns
-    candidate Place conclusions for researcher review."""
+def run_place_resolution(conn) -> list[dict]:
+    """Run Place resolution across all unresolved place strings. Inserts
+    place_record rows for matches above threshold; returns unresolved strings
+    flagged for researcher attention."""
 
-def run_initial_construction(ds: DataStore, source_ids: list[int]) -> ReconstructionResult:
+def run_initial_construction(conn, source_ids: list[int]) -> ReconstructionResult:
     """Run full initial construction pipeline for a set of sources.
     Returns proposed Person, Relationship, and Event conclusions."""
 
-def run_incremental_linkage(ds: DataStore, new_record_ids: list[int]) -> ReconstructionResult:
+def run_incremental_linkage(conn, new_record_ids: list[int]) -> ReconstructionResult:
     """Link new Records to the existing conclusion layer.
     Returns proposed linkages and flagged contradictions."""
 
-def compute_derived_confidence(ds: DataStore, obj_type: str, obj_id: int) -> str:
+def compute_derived_confidence(conn, obj_type: str, obj_id: int) -> str:
     """Compute provisional confidence band for a conclusion object
     from its junction table scores. Returns 'high', 'medium', or 'low'."""
 
-def export_gedcom(ds: DataStore, output_path: str) -> None:
+def export_gedcom(conn, output_path: str) -> None:
     """Export the full conclusion layer as a GEDCOM 5.5.1 file."""
 ```
 
@@ -671,10 +679,11 @@ The following entries seed the `name_variant` table for common Irish names encou
 |---|---|---|
 | 1.0 | May 2026 | Initial version |
 | 1.1 | May 2026 | Updated §6.1 role-pair rules to cover expanded census role vocabulary. Split table into marriage/registration roles and census household roles. Added `son`/`daughter` rows replacing generic `child`. Added `sibling` inference rows (head+sibling, and shared-child sibling pairs at 0.75–0.80 prior). Added `mother`/`father` census rows. Added grandchild inference note. Added godmother row. Documented roles that do not generate automatic assertions (`grandchild`, `in_law`, `niece_nephew`, `aunt_uncle`, `cousin`, `servant`, `visitor`, `boarder`). Updated §5.5 household structure inference to use `son`/`daughter` and include sibling provisional relationships. |
+| 1.3 | 19 June 2026 | Removed Place as conclusion-layer object throughout. §1.1: reframed Record-to-Place as linking to pre-seeded `place_authority` (not creating Place conclusions); pipeline step 2 label updated. §2 Place Resolution fully rewritten: §2.1 clarifies that `place_authority` is a pre-seeded reference and resolution is a linking step only; §2.4 updated to match against `place_authority.name_en`; §2.5 replaced "new Place conclusion created" with unresolved-string flagging workflow. §1.5 Library stack: Jellyfish replaced by rapidfuzz (`rapidfuzz.distance.JaroWinkler.similarity`); phonetic (Soundex/Metaphone) blocking removed. §4.1: Soundex output removed from normalisation pipeline description. §5.1 blocking rule 2: Soundex blocking replaced by normalised surname Jaro-Winkler fallback. §5.3: co-occupant overlap score changed from Jaccard to Szymkiewicz–Simpson, with rationale. §1.6: junction table DDL example updated to v3.1 rename targets (`person_recorded_person`, FK to `recorded_person_id`); cross-reference note added. §9.1 Splink sketch: `link_and_dedupe` → `link_only`; `soundex_surname` blocking replaced by `surname_norm`; EM training block updated to match. |
 | 1.2 | June 2026 | Updated for schema v2.8. §1.1 evidence layer description removes RecordedEvent. §1.6 junction table note updated to reflect dropped tables. §2.3 place_as_recorded field reference updated to `record.place_as_recorded`. §3.2 feature extractor description updated. §7.2 event candidate scoring uses `record.event_type`. §7.3 rewritten: `event_recorded_event` removed; Record-to-Event linkage via `event_record` only. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, `session_bootstrap.md`*
 
-*Schema version: 2.1 (pending v2.4 updates specified in §1.6) — May 2026*
+*Schema version: v3.1 target (see database_schema.md §1)*
