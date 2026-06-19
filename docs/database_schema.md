@@ -1,7 +1,7 @@
 
 # Irish Genealogy Research — Database Schema
 
-*Version 3.1 — 18 June 2026*
+*Version 3.2 — 19 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ---
@@ -609,11 +609,15 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 **Rules requiring Python-only enforcement:** R20 (lower bound), R21, R26, R36, R37.
 **Retired rules:** R23, R24, R25, R27, R33, R35.
 
-**Pending rule assignment** — the following DDL-level constraints exist on tables not yet covered by `validation_rules.md` (a separate, still-open drift item — ROADMAP §4 item 13). They are enforced today by the `CHECK` clauses shown in §3, but have no R-number yet:
-- `recorded_relationship.type` vocabulary, including the `similarity` extension
-- `recorded_relationship.score`/`score_version` conditional-on-type requirement
-- `record_similarity.score` range and `record_id_1 != record_id_2`
-- `training_labels.decision` vocabulary and the `person_id_1 < person_id_2` canonical-ordering constraint
+**Pending rules (R47–R50)** — the following DDL-level constraints exist on tables added after the main rule set was written. They have been assigned R-numbers in `validation_rules.md` §7 (as of v2.7 rules) and are included in the table above. No Python enforcement exists yet — DB `CHECK` clauses are the sole gate until the implementation phase:
+
+| Rule | Description | DB enforcement | Python enforcement |
+|---|---|---|---|
+| R47 | Required fields on RecordedRelationship; `type` vocabulary (couple, parent_child, sibling, similarity) | `NOT NULL`; `CHECK (type IN (...))` on `recorded_relationship` *(target)* | **Pending** |
+| R48 | RecordedRelationship FK integrity; self-reference prohibition | `REFERENCES recorded_person`; `CHECK (recorded_person_id_1 != recorded_person_id_2)` on `recorded_relationship` *(target)* | **Pending** |
+| R48 (score) | `score`/`score_version` conditional-on-type: required when `type = 'similarity'`, null otherwise; score range [0.0–1.0] | `CHECK ((type = 'similarity') = (score IS NOT NULL))`; `CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0))`; `CHECK ((score IS NULL) = (score_version IS NULL))` on `recorded_relationship` *(target)* | **Pending** |
+| R49 | Required fields on RecordSimilarity; score range [0.0–1.0]; self-reference prohibition | `NOT NULL` on score, score_version; `CHECK (score >= 0.0 AND score <= 1.0)`; `CHECK (record_id_1 != record_id_2)` on `record_similarity` *(target)* | **Pending** |
+| R50 | `training_labels` write guard (table is conceptually retired; no new rows should be written) | None — no DB-level barrier prevents inserts | **Pending** |
 
 ---
 
@@ -851,10 +855,11 @@ genealogy.db                — SQLite database file (gitignored)
 | 2.8 | June 2026 | Merged `recorded_event` into `record` (inline event fields). Dropped `event_recorded_event`, `person_relationship`, `relationship_event`, `event_person`. Junction table count reduced from 9 to 5. Migration `migrate_27_to_28.sql`. Schema user_version bumped to 28. |
 | 2.9 | June 2026 | Added `training_labels` table (linkage proposals + researcher review workflow). Added `event.is_primary BOOLEAN DEFAULT true`. Migration `migrate_28_to_29.sql`. Schema user_version bumped to 29. |
 | 3.0 | 17 June 2026 | Made `recorded_person.role` nullable. Added `'unknown'` to role CHECK vocabulary. Migration `migrate_29_to_30.sql`. Schema user_version bumped to 30. |
+| 3.2 | 19 June 2026 | **Item 13 resolved.** §5 Validation Rule Mapping: replaced the "pending rule assignment" bullet list with a proper R-number table. The constraints on `recorded_relationship` (type vocabulary, score conditional, self-reference) are now mapped to R47/R48; `record_similarity` constraints mapped to R49; `training_labels` write guard mapped to R50. All four were already assigned in `validation_rules.md` §7 (v2.7 rules); this entry backfills the cross-reference in the schema doc. |
 | 3.1 | 18 June 2026 | **Documentation rebuild — DDL pass.** Brought this document's DDL in line with the actual `schema.sql` for the first time since v2.7 drift was introduced: added the `place_authority` CREATE TABLE that had gone missing from this doc, removed the obsolete `place` table it had been left alongside, added the `event.is_primary` column and `training_labels` table + indexes that the v2.9/v3.0 changelog entries claimed but the DDL never carried. Rewrote §6 (renamed from "Python DataStore Mapping" to "Python DAL Mapping") to describe the actual `src/dal/` repository-per-table pattern, including the gaps found while grounding this against the live code (`repository` and `name_variant` have no DAL writer; `name_variant` is unused by any pipeline stage). Fixed the worked example to match. Carried forward the v2.6/v2.7 conceptual-model and data-dictionary target design not yet in code, marked `[target]` throughout: added `recorded_relationship` and `record_similarity` DDL (conceptual_model.md §4.7–4.8); renamed `person_record`→`person_recorded_person` and `relationship_record`→`relationship_recorded_relationship`, with the underlying FK changing from `record_id` to `recorded_person_id`/`recorded_relationship_id` per the Rule 2 evidence-correspondence resolution; documented `training_labels`'s conceptual retirement without removing it from the DDL, since removal is real engineering work sequenced separately. Data layer phase of the architecture rebuild (conceptual model → data dictionary → database schema) now complete; implementation phase is next. |
 
 ---
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 
-*Document version: 3.1 — 18 June 2026. Implemented schema version (`PRAGMA user_version`): 30 (v3.0) — see §1 and §9 for what's target vs. implemented.*
+*Document version: 3.2 — 19 June 2026. Implemented schema version (`PRAGMA user_version`): 30 (v3.0) — see §1 and §9 for what's target vs. implemented.*
