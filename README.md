@@ -4,7 +4,8 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 3.1 (June 2026)
+Schema version: 3.1 (June 2026)  
+Evidence layer: Complete and verified (21 June 2026)
 
 ---
 
@@ -78,15 +79,19 @@ irish-genealogy-research/
 python -m src.cli init
 
 # Seed place authority from logainm.ie (requires LOGAINM_API_KEY)
-python -m src.cli fetch-places --logainm-id 111482
+python -m src.cli fetch-places --logainm-id 111482 --api-key YOUR_KEY
 
 # Or seed from a pre-fetched CSV
 python -m src.cli seed-places --file tullynaught_places.csv
 
-# Add evidence: ingest census CSV + assign RecordedRelationships + run Splink similarity
-python -m src.cli add-evidence --source 3 --file tests/1901_Tullynaught.csv
-python -m src.cli add-evidence --source 4 --file tests/1911_Tullynaught.csv
-python -m src.cli add-evidence --source 5 --file tests/1926_Tullynaught.csv
+# Add evidence: Complete 4-step pipeline runs automatically
+# [1/4] Ingest CSV → record + recorded_person
+# [2/4] Assign role-pair RecordedRelationships
+# [3/4] Run place resolution (links records to place_authority)
+# [4/4] Run Splink similarity (cross-census household matching)
+python -m src.cli add-evidence --source 3 --file tests/tullynaught_1901.csv
+python -m src.cli add-evidence --source 4 --file tests/tullynaught_1911.csv
+python -m src.cli add-evidence --source 5 --file tests/tullynaught_1926.csv
 
 # Inspect
 python -m src.cli summary
@@ -98,7 +103,7 @@ python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves e
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5).
 
-**Environment:** Set `DATABASE_URL` in `.env` or environment before running any command. See `.env.example`.
+**Environment:** Set `DATABASE_URL` in `.env` before running any command. Format: `postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres`
 
 ---
 
