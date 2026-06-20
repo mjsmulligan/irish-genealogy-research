@@ -341,8 +341,50 @@ def _cmd_seed_places(args: argparse.Namespace) -> None:
 
 
 def _cmd_fetch_places(args: argparse.Namespace) -> None:
-    from src.db.fetch_places import main as fetch_places_main
-    fetch_places_main()
+    from src.db.fetch_places import fetch_places, write_to_db, write_to_csv, load_from_csv
+    import os
+    import sys
+
+    if not args.csv:
+        # Default: write to DB directly
+        args.csv = None
+
+    if not args.from_csv and args.logainm_id is None:
+        print("Error: --logainm-id is required when not using --from-csv.", file=sys.stderr)
+        sys.exit(1)
+
+    # Load rows
+    if args.from_csv:
+        print(f"Loading from CSV: {args.from_csv}")
+        rows = load_from_csv(args.from_csv)
+        print(f"  Loaded {len(rows)} rows.")
+        errors = []
+    else:
+        api_key = args.api_key or os.environ.get("LOGAINM_API_KEY")
+        if not api_key:
+            print("Error: No API key provided. Use --api-key or set LOGAINM_API_KEY environment variable.", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Fetching logainm ID {args.logainm_id}...")
+        result = fetch_places(args.logainm_id, api_key, args.rate_delay)
+        rows = result.rows
+        errors = result.errors
+        print(f"  Fetched {len(rows)} rows ({len(errors)} errors).")
+        if errors:
+            for e in errors:
+                print(f"  WARNING: {e}")
+
+    # Write CSV if requested
+    if args.csv:
+        write_to_csv(rows, args.csv)
+        print(f"  CSV written to: {args.csv}")
+
+    # Write to DB (always for this CLI flow)
+    conn = open_db()
+    check_version(conn)
+    inserted, skipped = write_to_db(conn, rows)
+    print(f"  DB: {inserted} inserted, {skipped} skipped (already present).")
+    conn.close()
 
 
 def _cmd_summary(args: argparse.Namespace) -> None:

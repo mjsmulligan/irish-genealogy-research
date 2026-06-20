@@ -67,17 +67,13 @@ def open_db() -> psycopg2.extensions.connection:
 
 def _execute_sql_file(cur: Any, sql: str) -> None:
     """
-    Execute a multi-statement SQL file one statement at a time.
+    Execute a multi-statement SQL file.
 
-    psycopg2's execute() raises ProgrammingError if given more than one
-    statement in a single call. This helper splits on ';' and executes each
-    non-empty statement individually — the correct replacement for SQLite's
-    executescript().
+    PostgreSQL allows executing multiple statements in one execute() call,
+    so we just pass the entire file contents. Comments are preserved and
+    handled correctly by the PostgreSQL parser.
     """
-    for statement in sql.split(";"):
-        stmt = statement.strip()
-        if stmt:
-            cur.execute(stmt)
+    cur.execute(sql)
 
 
 def init_db() -> psycopg2.extensions.connection:
