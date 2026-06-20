@@ -92,17 +92,17 @@ def get_recorded_persons(
 def next_record_id(conn: psycopg2.extensions.connection) -> int:
     """Return the next available record_id (MAX + 1)."""
     with conn.cursor() as cur:
-        cur.execute("SELECT COALESCE(MAX(record_id), 0) + 1 FROM record")
-        return cur.fetchone()["coalesce"]
+        cur.execute("SELECT COALESCE(MAX(record_id), 0) + 1 AS next_id FROM record")
+        return cur.fetchone()["next_id"]
 
 
 def next_recorded_person_id(conn: psycopg2.extensions.connection) -> int:
     """Return the next available recorded_person_id (MAX + 1)."""
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT COALESCE(MAX(recorded_person_id), 0) + 1 FROM recorded_person"
+            "SELECT COALESCE(MAX(recorded_person_id), 0) + 1 AS next_id FROM recorded_person"
         )
-        return cur.fetchone()["coalesce"]
+        return cur.fetchone()["next_id"]
 
 
 def insert_record(
