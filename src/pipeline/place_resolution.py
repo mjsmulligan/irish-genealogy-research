@@ -18,10 +18,9 @@ Entry point: run_place_resolution(conn) -> PlaceResolutionResult
 from __future__ import annotations
 
 import re
-import sqlite3
 from dataclasses import dataclass, field
 
-import rapidfuzz
+from rapidfuzz.distance import JaroWinkler
 
 SCORE_VERSION = "place_v2.0"
 
@@ -104,9 +103,9 @@ def _load_authorities(conn: sqlite3.Connection) -> list[dict]:
     non-empty barony_name, civil_parish_name, ded_name are not used as
     match candidates (they are parent names, not this place's name).
     """
-    rows = conn.execute(
-        "SELECT place_id, name_en, place_type FROM place_authority"
-    ).fetchall()
+    with conn.cursor() as cur:
+        cur.execute("SELECT place_id, name_en, place_type FROM place_authority")
+        rows = cur.fetchall()
 
     authorities = []
     for row in rows:
@@ -121,22 +120,25 @@ def _load_authorities(conn: sqlite3.Connection) -> list[dict]:
 
 
 def _collect_evidence_tokens(
-    conn: sqlite3.Connection,
+    conn,  # psycopg2.extensions.connection
 ) -> tuple[dict[str, dict], int]:
     """
     Collect all distinct place_as_recorded strings from record,
     grouped by normalised token.
     Returns (token_map, blank_count).
     """
-    rows = conn.execute(
-        "SELECT record_id, place_as_recorded FROM record "
-        "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
-    ).fetchall()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT record_id, place_as_recorded FROM record "
+            "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
+        )
+        rows = cur.fetchall()
 
-    blank_count = conn.execute(
-        "SELECT COUNT(*) FROM record "
-        "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
-    ).fetchone()[0]
+        cur.execute(
+            "SELECT COUNT(*) AS count FROM record "
+            "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
+        )
+        blank_count = cur.fetchone()["count"]
 
     token_map: dict[str, dict] = {}
     for row in rows:
@@ -163,7 +165,7 @@ def _best_match(
     best_score = 0.0
     for auth in authorities:
         for auth_norm in auth["norms"]:
-            score = rapidfuzz.jaro_winkler_similarity(norm, auth_norm)
+            score = JaroWinkler.similarity(norm, auth_norm)
             if score > best_score:
                 best_score = score
                 best_auth = auth
@@ -187,9 +189,9 @@ def run_place_resolution(conn: sqlite3.Connection) -> PlaceResolutionResult:
     """
     result = PlaceResolutionResult()
 
-    authority_count = conn.execute(
-        "SELECT COUNT(*) FROM place_authority"
-    ).fetchone()[0]
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) AS count FROM place_authority")
+        authority_count = cur.fetchone()["count"]
     if authority_count == 0:
         print(
             "  Place resolution: place_authority is empty.\n"
@@ -205,9 +207,9 @@ def run_place_resolution(conn: sqlite3.Connection) -> PlaceResolutionResult:
         print("  Place resolution: no place strings found in evidence layer.")
         return result
 
-    already_linked: set[int] = set(
-        row[0] for row in conn.execute("SELECT record_id FROM place_record").fetchall()
-    )
+    with conn.cursor() as cur:
+        cur.execute("SELECT record_id FROM place_record")
+        already_linked: set[int] = {row["record_id"] for row in cur.fetchall()}
 
     matches: list[PlaceMatch] = []
     unresolved: list[UnresolvedPlace] = []
@@ -238,17 +240,18 @@ def run_place_resolution(conn: sqlite3.Connection) -> PlaceResolutionResult:
             ))
 
     with conn:
-        for match in matches:
-            for record_id in match.record_ids:
-                if record_id in already_linked:
-                    result.records_already_linked += 1
-                    continue
-                conn.execute(
-                    "INSERT INTO place_record "
-                    "(place_id, record_id, score, score_version, verified) "
-                    "VALUES (?, ?, ?, ?, 0)",
-                    (match.place_id, record_id, match.score, SCORE_VERSION),
-                )
+        with conn.cursor() as cur:
+            for match in matches:
+                for record_id in match.record_ids:
+                    if record_id in already_linked:
+                        result.records_already_linked += 1
+                        continue
+                    cur.execute(
+                        "INSERT INTO place_record "
+                        "(place_id, record_id, score, score_version, verified) "
+                        "VALUES (%s, %s, %s, %s, 0)",
+                        (match.place_id, record_id, match.score, SCORE_VERSION),
+                    )
                 already_linked.add(record_id)
                 result.records_linked += 1
 

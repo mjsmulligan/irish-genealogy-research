@@ -232,11 +232,13 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
       1. Ingest CSV → record + recorded_person rows
       2. Assign RecordedRelationship rows from household role pairs
          (reconstruction_algorithms.md §6.1)
-      3. Run Splink household similarity across all census sources present
+      3. Run place resolution to link records to place_authority
+      4. Run Splink household similarity across all census sources present
          and write results to record_similarity
     """
     from src.ingest.census import ingest_census
     from src.evidence.role_relationships import assign_role_relationships
+    from src.pipeline.pipeline import run_place_resolve
     from src.evidence.similarity import (
         run_record_similarity,
         print_record_similarity_report,
@@ -250,10 +252,10 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\n[1/3] Ingesting CSV (source {source_id})...")
+    print(f"\n[1/4] Ingesting CSV (source {source_id})...")
     ingest_result = ingest_census(conn, args.file, source_id=source_id)
 
-    print("\n[2/3] Assigning role-pair RecordedRelationships...")
+    print("\n[2/4] Assigning role-pair RecordedRelationships...")
 
     # ingest_census commits its own transaction; role-relationship assignment
     # runs in a second transaction over the newly committed records.
@@ -273,7 +275,10 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
             rr_totals["skipped_null"] += rr.skipped_null_role_pairs
             rr_totals["skipped_no_rule"] += rr.skipped_no_rule
 
-    print("\n[3/3] Running record similarity (Splink across all census sources)...")
+    print("\n[3/4] Running place resolution...")
+    place_result = run_place_resolve(conn)
+
+    print("\n[4/4] Running record similarity (Splink across all census sources)...")
     similarity_result = run_record_similarity(conn)
 
     # --- Report ---
@@ -287,6 +292,15 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     print(f"  RecordedRelationships:     {rr_totals['created']}")
     print(f"    (skipped - null role):   {rr_totals['skipped_null']}")
     print(f"    (skipped - no rule):     {rr_totals['skipped_no_rule']}")
+
+    # Place resolution stats
+    pr = place_result.place_resolution
+    print(f"\n  PLACE RESOLUTION")
+    print(f"    Records linked:          {pr.records_linked}")
+    print(f"    Already linked:          {pr.records_already_linked}")
+    print(f"    Unresolved places:       {len(pr.unresolved)}")
+    print(f"    Blank place strings:     {pr.skipped_blank}")
+
     print_record_similarity_report(similarity_result)
 
     notes = ingest_result["parse_notes"]
