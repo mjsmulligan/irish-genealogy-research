@@ -2,9 +2,9 @@
 
 *grá — Irish for love*
 
-A probabilistic genealogy research platform combining a SQLite knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
+A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 3.0 (June 2026)
+Schema version: 3.1 (June 2026)
 
 ---
 
@@ -19,34 +19,43 @@ Schema version: 3.0 (June 2026)
 ```text
 irish-genealogy-research/
 │
-├── archive/                           # Deprecated/Inactive documentation
+├── archive/                           # Deprecated/inactive documentation
 │
 ├── docs/                              # Schema and system documentation
 │
 ├── src/
 │   ├── cli.py                         # Sole entry point — argparse + dispatch only
+│   ├── constants.py                   # Centralised constants (thresholds, score versions, source IDs)
 │   │
 │   ├── db/                            # Schema lifecycle and utilities
-│   │   ├── db.py                      # Connection, init, schema version check
-│   │   ├── schema.sql                 # Complete DDL (v3.0)
+│   │   ├── db.py                      # Connection (psycopg2/Supabase), init, schema version check
+│   │   ├── schema.sql                 # Complete DDL (v3.1, PostgreSQL)
 │   │   ├── seed.sql                   # Repository and source seed data
 │   │   ├── fetch_places.py            # logainm API fetcher → DB or CSV
 │   │   ├── seed_places.py             # CSV → place_authority loader
-│   │   ├── reset_pipeline.py          # Pipeline reset utility
+│   │   ├── reset_pipeline.py          # Pipeline reset utility (deprecated)
 │   │   └── migrations/
-│   │       ├── migrate_25_to_26.sql
-│   │       ├── migrate_26_to_27.sql
-│   │       ├── migrate_27_to_28.sql
-│   │       ├── migrate_28_to_29.sql
-│   │       └── migrate_29_to_30.sql
+│   │       └── archive_sqlite/        # SQLite migrations (retired)
 │   │
-│   ├── ingest/                        # Evidence layer population
-│   │   └── census.py                  # ingest_census — NAI CSV → DB
+│   ├── ingest/                        # Evidence layer: record ingestion
+│   │   └── census.py                  # ingest_census — NAI CSV → record + recorded_person
+│   │
+│   ├── evidence/                      # Evidence layer: post-ingest derivation
+│   │   ├── role_relationships.py      # Role-pair → RecordedRelationship (ingest-time)
+│   │   └── similarity.py             # Splink household similarity → RecordSimilarity
 │   │
 │   ├── dal/                           # Data access layer
-│   │   └── ...                        # (All repositories: place, record, person, event, relationship, training)
+│   │   ├── source_repo.py
+│   │   ├── record_repo.py
+│   │   ├── recorded_relationship_repo.py
+│   │   ├── record_similarity_repo.py
+│   │   ├── place_repo.py
+│   │   ├── person_repo.py
+│   │   ├── relationship_repo.py
+│   │   ├── event_repo.py
+│   │   └── training_repo.py
 │   │
-│   └── pipeline/                      # Post-ingest reconstruction stages
+│   └── pipeline/                      # Conclusion-layer reconstruction stages (legacy)
 │       ├── pipeline.py                # Stage orchestrator
 │       ├── place_resolution.py        # Stage 2: authority-based place matching
 │       ├── household_inference.py     # Stage 3: household structure → conclusions
@@ -55,50 +64,51 @@ irish-genealogy-research/
 │       ├── debug.py                   # Linkage and consensus debug logging
 │       ├── validator.py               # Genealogical constraint rules R40–R46
 │       └── features/
-│           └── census.py              # Splink feature extractor
+│           └── census.py              # Splink feature extractor (psycopg2)
 │
 └── tests/
+```
 
 ---
 
 ## CLI Usage
 
+```bash
+# Initialise database (Supabase/PostgreSQL — DATABASE_URL must be set)
+python -m src.cli init
+
 # Seed place authority from logainm.ie (requires LOGAINM_API_KEY)
-python -m src.cli fetch-places --logainm-id 111482 --db genealogy.db
+python -m src.cli fetch-places --logainm-id 111482
 
 # Or seed from a pre-fetched CSV
 python -m src.cli seed-places --file tullynaught_places.csv
 
-# Ingest census records
-python -m src.cli ingest --source 3 --file tests/1901_Tullynaught.csv
-python -m src.cli ingest --source 4 --file tests/1911_Tullynaught.csv
-python -m src.cli ingest --source 5 --file tests/1926_Tullynaught.csv
-
-# Full post-ingest pipeline (place resolution → household → linkage → consensus)
-python -m src.cli reconstruct
-
-# Or run stages individually
-python -m src.cli place-resolve
-python -m src.cli household
-python -m src.cli link
-python -m src.cli score-evidence
+# Add evidence: ingest census CSV + assign RecordedRelationships + run Splink similarity
+python -m src.cli add-evidence --source 3 --file tests/1901_Tullynaught.csv
+python -m src.cli add-evidence --source 4 --file tests/1911_Tullynaught.csv
+python -m src.cli add-evidence --source 5 --file tests/1926_Tullynaught.csv
 
 # Inspect
 python -m src.cli summary
 
-# Validate genealogical constraints
-python -m src.cli validate
+# Clear and re-run
+python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority
+python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves evidence
+```
 
-**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5). Additional sources planned for Release 2.
+**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5).
 
-**Logainm API key:** Required for fetch-places. Set via LOGAINM_API_KEY environment variable or --api-key argument.
+**Environment:** Set `DATABASE_URL` in `.env` or environment before running any command. See `.env.example`.
 
 ---
 
-## requirements.txt
+## Requirements
 
+```
+psycopg2-binary
+python-dotenv
 splink>=4.0
 rapidfuzz>=3.0
 pandas>=2.0
-jsonschema>=4.0
-pytest>=8...
+pytest>=8.0
+```

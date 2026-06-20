@@ -6,11 +6,11 @@ All SQL touching event, event_record, and person_event lives here.
 
 from __future__ import annotations
 
-import sqlite3
+import psycopg2.extensions
 
 
 def insert_event(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     event_id: int,
     event_type: str,
     date: str,
@@ -18,80 +18,87 @@ def insert_event(
     place_id: int | None,
 ) -> None:
     """Insert a new Event conclusion row."""
-    conn.execute(
-        "INSERT INTO event (event_id, type, date, date_qualifier, place_id) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (event_id, event_type, date, date_qualifier, place_id),
-    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO event (event_id, type, date, date_qualifier, place_id) "
+            "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s, %s)",
+            (event_id, event_type, date, date_qualifier, place_id),
+        )
 
 
 def insert_event_record(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     event_id: int,
     record_id: int,
     score: float,
     score_version: str,
 ) -> None:
     """Link an Event to a Record in the event_record junction table."""
-    conn.execute(
-        "INSERT INTO event_record "
-        "(event_id, record_id, score, score_version, verified) "
-        "VALUES (?, ?, ?, ?, 0)",
-        (event_id, record_id, score, score_version),
-    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO event_record "
+            "(event_id, record_id, score, score_version, verified) "
+            "VALUES (%s, %s, %s, %s, 0)",
+            (event_id, record_id, score, score_version),
+        )
 
 
 def insert_person_event(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     person_id: int,
     event_id: int,
 ) -> None:
     """Link a Person to an Event in the person_event junction table."""
-    conn.execute(
-        "INSERT INTO person_event (person_id, event_id) VALUES (?, ?)",
-        (person_id, event_id),
-    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO person_event (person_id, event_id) VALUES (%s, %s)",
+            (person_id, event_id),
+        )
 
 
 def get_events_for_person(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     person_id: int,
-) -> list[sqlite3.Row]:
+) -> list[dict]:
     """
     Return all Events for a Person via the person_event junction.
     Row keys: event_id, type
     Ordered by type then event_id (stable ordering for consensus arbitration).
     """
-    return conn.execute(
-        """
-        SELECT e.event_id, e.type
-        FROM event e
-        JOIN person_event pe ON pe.event_id = e.event_id
-        WHERE pe.person_id = ?
-        ORDER BY e.type, e.event_id
-        """,
-        (person_id,),
-    ).fetchall()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT e.event_id, e.type
+            FROM event e
+            JOIN person_event pe ON pe.event_id = e.event_id
+            WHERE pe.person_id = %s
+            ORDER BY e.type, e.event_id
+            """,
+            (person_id,),
+        )
+        return cur.fetchall()
 
 
 def get_vote_count_single(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     event_id: int,
 ) -> int:
     """
     Return the number of event_record rows for a single event_id.
     Used to detect orphaned events (vote_count == 0).
     """
-    return conn.execute(
-        "SELECT COUNT(*) FROM event_record WHERE event_id = ?",
-        (event_id,),
-    ).fetchone()[0]
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM event_record WHERE event_id = %s",
+            (event_id,),
+        )
+        return cur.fetchone()["count"]
 
 
 def get_vote_counts(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     event_ids: list[int],
-) -> list[sqlite3.Row]:
+) -> list[dict]:
     """
     For a list of event_ids, return vote counts from event_record.
     Row keys: event_id, vote_count
@@ -100,28 +107,34 @@ def get_vote_counts(
     Used by rebuild_consensus to arbitrate is_primary among multiple events
     of the same type for a single person.
     """
-    placeholders = ",".join("?" * len(event_ids))
-    return conn.execute(
-        f"""
-        SELECT e.event_id,
-               COUNT(er.record_id) AS vote_count
-        FROM event e
-        LEFT JOIN event_record er ON er.event_id = e.event_id
-        WHERE e.event_id IN ({placeholders})
-        GROUP BY e.event_id
-        ORDER BY vote_count DESC, e.event_id ASC
-        """,
-        event_ids,
-    ).fetchall()
+    # Build parameterised IN clause dynamically. The f-string controls only the
+    # number of %s placeholders (safe); actual values are passed as parameters
+    # to cur.execute() and never interpolated directly into the SQL string.
+    placeholders = ",".join(["%s"] * len(event_ids))
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT e.event_id,
+                   COUNT(er.record_id) AS vote_count
+            FROM event e
+            LEFT JOIN event_record er ON er.event_id = e.event_id
+            WHERE e.event_id IN ({placeholders})
+            GROUP BY e.event_id
+            ORDER BY vote_count DESC, e.event_id ASC
+            """,
+            event_ids,
+        )
+        return cur.fetchall()
 
 
 def set_is_primary(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     event_id: int,
     is_primary: int,
 ) -> None:
     """Set the is_primary flag on an Event row (1 = primary, 0 = alternative)."""
-    conn.execute(
-        "UPDATE event SET is_primary = ? WHERE event_id = ?",
-        (is_primary, event_id),
-    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE event SET is_primary = %s WHERE event_id = %s",
+            (is_primary, event_id),
+        )

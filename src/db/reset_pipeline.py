@@ -1,4 +1,9 @@
 """
+DEPRECATED (v3.1) — superseded by:
+    python -m src.cli clear-evidence
+    python -m src.cli clear-conclusions
+Retained for reference only. Do not use against a Postgres/Supabase database.
+---
 GRA — Reconstruction Reset
 Clears all reconstruction-layer outputs from the database, leaving:
   - place_authority  (logainm seed data)

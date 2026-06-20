@@ -6,10 +6,10 @@ All SQL touching the source table lives here.
 
 from __future__ import annotations
 
-import sqlite3
+import psycopg2.extensions
 
 
-def get_source(conn: sqlite3.Connection, source_id: int) -> sqlite3.Row | None:
+def get_source(conn: psycopg2.extensions.connection, source_id: int) -> dict | None:
     """
     Return the source row for source_id, or None if it does not exist.
 
@@ -17,7 +17,6 @@ def get_source(conn: sqlite3.Connection, source_id: int) -> sqlite3.Row | None:
     coverage_to, source_url, record_url_template, source_parameters,
     record_parameter_names, column_schema, citation, notes
     """
-    return conn.execute(
-        "SELECT * FROM source WHERE source_id = ?",
-        (source_id,),
-    ).fetchone()
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM source WHERE source_id = %s", (source_id,))
+        return cur.fetchone()
