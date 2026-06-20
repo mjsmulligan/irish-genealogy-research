@@ -52,6 +52,7 @@ SCORE_VERSION_CONSENSUS: str = "consensus_v1.0"
 SCORE_VERSION_PLACE: str = "place_v2.0"
 SCORE_VERSION_ROLE_PAIR: str = "role_pair_v1.0"
 SCORE_VERSION_RECORD_SIMILARITY: str = "record_similarity_v1.0"
+SCORE_VERSION_PERSON_SIMILARITY: str = "person_similarity_v1.0"
 
 # ---------------------------------------------------------------------------
 # Ingest-time assertion scores
@@ -84,3 +85,12 @@ SCORE_ROLE_SIBLING_INFERRED: float = 0.75    # son+son, daughter+daughter, son+d
 # None = unbatched (commit all pairs for a source-pair in one transaction).
 # Set to an integer (e.g. 5000) for large datasets to reduce transaction size.
 BATCH_SIZE_RECORD_SIMILARITY: int | None = None
+
+# ---------------------------------------------------------------------------
+# Person similarity (evidence-layer Splink)
+# ---------------------------------------------------------------------------
+
+# Maximum pairs to commit per transaction within a source-pair run.
+# None = unbatched (commit all pairs for a source-pair in one transaction).
+# Set to an integer (e.g. 5000) for large datasets to reduce transaction size.
+BATCH_SIZE_PERSON_SIMILARITY: int | None = None

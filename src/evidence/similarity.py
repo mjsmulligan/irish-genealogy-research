@@ -352,3 +352,266 @@ def print_record_similarity_report(result: RecordSimilarityResult) -> None:
         print("    Per source pair:")
         for label, count in sorted(result.source_pair_counts.items()):
             print(f"      {label}:  {count:>6}")
+
+
+# ===========================================================================
+# PERSON SIMILARITY (RecordedPerson-to-RecordedPerson)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Result type
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PersonSimilarityResult:
+    source_pairs_run: int = 0
+    pairs_written: int = 0
+    pairs_below_floor: int = 0
+    skipped: str = ""
+    source_pair_counts: dict[str, int] = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Splink settings (person-level, evidence layer)
+# ---------------------------------------------------------------------------
+
+def _build_person_settings() -> SettingsCreator:
+    """
+    Splink settings for evidence-layer person similarity.
+
+    link_type = "link_only": cross-source pairs only. Each census source is
+    a separate DataFrame; Splink generates cross-DataFrame pairs only.
+
+    Blocking:
+      Primary:  same resolved place_id (strongest geographic anchor)
+      Fallback: first 4 chars of surname_norm (phonetic-adjacent)
+
+    Comparisons:
+      - name_normalized (Jaro-Winkler with TF adjustment)
+      - birth_year_est (absolute difference bands: 0, <=2, <=5)
+      - sex_as_recorded (exact match)
+      - place_id (exact match)
+
+    Note: v1.0 does not include household similarity scores as a hierarchical
+    feature. This will be added in a future version (see ROADMAP).
+    """
+    return SettingsCreator(
+        link_type="link_only",
+        blocking_rules_to_generate_predictions=[
+            block_on("place_id"),
+            block_on("substr(surname_norm, 1, 4)"),
+        ],
+        comparisons=[
+            # Full name — JaroWinkler with TF adjustment for common names
+            cl.JaroWinklerAtThresholds(
+                "name_normalized", [0.92, 0.80],
+            ).configure(term_frequency_adjustments=True),
+
+            # Birth year — absolute difference bands
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("birth_year_est"),
+                    cll.ExactMatchLevel("birth_year_est"),
+                    cll.CustomLevel(
+                        "ABS(birth_year_est_l - birth_year_est_r) <= 2",
+                        label_for_charts="birth_year ±2",
+                    ),
+                    cll.CustomLevel(
+                        "ABS(birth_year_est_l - birth_year_est_r) <= 5",
+                        label_for_charts="birth_year ±5",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="birth_year_est",
+                comparison_description="Birth year estimated from age",
+            ),
+
+            # Sex — exact match
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("sex_as_recorded"),
+                    cll.ExactMatchLevel("sex_as_recorded"),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="sex_as_recorded",
+                comparison_description="Sex as recorded (M/F)",
+            ),
+
+            # Place ID — exact match
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("place_id"),
+                    cll.ExactMatchLevel("place_id"),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="place_id",
+                comparison_description="Place ID exact match",
+            ),
+        ],
+        retain_matching_columns=True,
+        retain_intermediate_calculation_columns=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Pair commit helper
+# ---------------------------------------------------------------------------
+
+def _commit_person_pairs(
+    conn: psycopg2.extensions.connection,
+    pairs: list[tuple[int, int, float]],
+    score_version: str,
+) -> None:
+    """
+    Insert a batch of (recorded_person_id_1, recorded_person_id_2, score) pairs
+    into recorded_relationship with type='similarity' within the caller's transaction.
+
+    Canonical ordering (recorded_person_id_1 < recorded_person_id_2) is enforced
+    here to prevent duplicate measurements from reversed orderings.
+    """
+    from src.dal.recorded_relationship_repo import insert_recorded_relationship
+    for rp_id_l, rp_id_r, score in pairs:
+        lo, hi = min(rp_id_l, rp_id_r), max(rp_id_l, rp_id_r)
+        insert_recorded_relationship(
+            conn,
+            recorded_person_id_1=lo,
+            recorded_person_id_2=hi,
+            rel_type="similarity",
+            score=score,
+            score_version=score_version,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def run_person_similarity(
+    conn: psycopg2.extensions.connection,
+) -> PersonSimilarityResult:
+    """
+    Run Splink person similarity across all census source pairs present
+    in the database and write results to recorded_relationship with type='similarity'.
+
+    Requires at least two census sources with RecordedPersons. Skips gracefully
+    if only one source is present.
+
+    Transaction boundary: one transaction per source-pair. Within each
+    source-pair, BATCH_SIZE_PERSON_SIMILARITY controls commit granularity
+    (None = all pairs in one transaction).
+
+    Only pairs with match_probability >= PROPOSE_FLOOR are written.
+    Canonical ordering (recorded_person_id_1 < recorded_person_id_2) is enforced on insert.
+
+    Returns a PersonSimilarityResult with counts per source-pair.
+    """
+    from src.constants import (
+        BATCH_SIZE_PERSON_SIMILARITY,
+        SCORE_VERSION_PERSON_SIMILARITY,
+    )
+    from src.pipeline.features.census_person import build_census_person_features
+
+    result = PersonSimilarityResult()
+
+    # Build person feature DataFrames from evidence layer
+    person_dfs = build_census_person_features(conn)
+
+    if len(person_dfs) < 2:
+        result.skipped = (
+            f"Only {len(person_dfs)} census source(s) have RecordedPersons; "
+            "person similarity requires at least 2."
+        )
+        return result
+
+    # Index DataFrames by source_id for pair iteration
+    df_by_source: dict[int, pd.DataFrame] = {}
+    for df in person_dfs:
+        source_id = int(df["source_id"].iloc[0])
+        df_by_source[source_id] = df
+
+    active_sources = sorted(df_by_source.keys())
+
+    # Iterate over all unordered source pairs
+    for source_id_l, source_id_r in itertools.combinations(active_sources, 2):
+        df_l = df_by_source[source_id_l]
+        df_r = df_by_source[source_id_r]
+        label = _pair_label(source_id_l, source_id_r)
+
+        # Run Splink for this source pair only
+        db_api   = DuckDBAPI()
+        settings = _build_person_settings()
+        linker   = Linker([df_l, df_r], settings, db_api=db_api)
+
+        linker.training.estimate_u_using_random_sampling(max_pairs=1e5)
+
+        linker.training.estimate_parameters_using_expectation_maximisation(
+            block_on("substr(surname_norm, 1, 4)")
+        )
+        linker.training.estimate_parameters_using_expectation_maximisation(
+            block_on("place_id")
+        )
+
+        predictions = linker.inference.predict(
+            threshold_match_probability=PROPOSE_FLOOR
+        )
+        pred_df: pd.DataFrame = predictions.as_pandas_dataframe()
+
+        if pred_df.empty:
+            result.source_pair_counts[label] = 0
+            result.source_pairs_run += 1
+            continue
+
+        pred_df = pred_df.sort_values("match_probability", ascending=False)
+
+        # Collect pairs above floor; track pairs below for reporting
+        pairs_to_write: list[tuple[int, int, float]] = []
+        for _, row in pred_df.iterrows():
+            rp_id_l = int(row["unique_id_l"])
+            rp_id_r = int(row["unique_id_r"])
+            score = float(row["match_probability"])
+            if rp_id_l == rp_id_r:
+                continue
+            if score >= PROPOSE_FLOOR:
+                pairs_to_write.append((rp_id_l, rp_id_r, score))
+            else:
+                result.pairs_below_floor += 1
+
+        # Commit within one transaction per source-pair, optionally batched
+        pair_count = 0
+        if BATCH_SIZE_PERSON_SIMILARITY is None:
+            # Single transaction for all pairs in this source-pair
+            with conn:
+                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY)
+            pair_count = len(pairs_to_write)
+        else:
+            # Batched commits within this source-pair
+            batch_size = BATCH_SIZE_PERSON_SIMILARITY
+            for i in range(0, len(pairs_to_write), batch_size):
+                batch = pairs_to_write[i : i + batch_size]
+                with conn:
+                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY)
+                pair_count += len(batch)
+
+        result.pairs_written += pair_count
+        result.source_pair_counts[label] = pair_count
+        result.source_pairs_run += 1
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Report printer
+# ---------------------------------------------------------------------------
+
+def print_person_similarity_report(result: PersonSimilarityResult) -> None:
+    print("\n  PERSON SIMILARITY (evidence-layer Splink)")
+    if result.skipped:
+        print(f"    Skipped: {result.skipped}")
+        return
+    print(f"    Source pairs run:    {result.source_pairs_run:>6}")
+    print(f"    Pairs written:       {result.pairs_written:>6}")
+    print(f"    Pairs below floor:   {result.pairs_below_floor:>6}")
+    if result.source_pair_counts:
+        print("    Per source pair:")
+        for label, count in sorted(result.source_pair_counts.items()):
+            print(f"      {label}:  {count:>6}")

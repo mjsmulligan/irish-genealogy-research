@@ -24,8 +24,8 @@
 | Layer | Status | Notes |
 |---|---|---|
 | Foundation | ✅ Complete (v3.1) | SQLite retired; PostgreSQL / Supabase; `constants.py`; new DAL files; `clear-evidence` / `clear-conclusions` CLI commands; place authority loading via logainm.ie API |
-| Evidence | ✅ Complete (v3.1) | `add-evidence` CLI complete: [1/4] ingest + [2/4] RecordedRelationship + [3/4] place resolution + [4/4] RecordSimilarity (Splink). Full PostgreSQL compatibility verified with test data. |
-| Conclusion | 🔜 Next | Design deferred pending evidence layer completion — ready to begin. |
+| Evidence | ✅ Complete (v3.1) | `add-evidence` CLI complete: [1/5] ingest + [2/5] RecordedRelationship + [3/5] place resolution + [4/5] RecordSimilarity (household-level) + [5/5] PersonSimilarity (person-level). Full PostgreSQL compatibility verified with test data. |
+| Conclusion | 🔜 Next | Design in progress (21 June 2026 session). Person Resolution strategy: batch creation after evidence linkage (Strategy B). |
 
 ---
 
@@ -50,13 +50,16 @@ The evidence layer has grown with the new logic and now takes on tasks that were
 1. Ingest record to database from CSV ✅
 2. Assign role relationships based on record ✅
 3. Run place resolution to link records to place_authority ✅
-4. Run Splink similarity across records ✅
+4. Run Splink similarity across records (household-level) ✅
+5. Run Splink similarity across recorded persons (person-level) ✅
 
-All four steps run automatically each time a new CSV is ingested via `cli add-evidence`, which replaces `cli ingest`. `cli clear-evidence` clears all evidence and conclusion objects.
+All five steps run automatically each time a new CSV is ingested via `cli add-evidence`, which replaces `cli ingest`. `cli clear-evidence` clears all evidence and conclusion objects.
 
-**Design fix (21 June 2026):** Place resolution was integrated into the evidence pipeline to run before Splink (step 3). This ensures place_id is populated for Splink's blocking rules, which require place data for optimal matching.
+**Design fixes:**
+- **21 June 2026 (step 3):** Place resolution was integrated into the evidence pipeline to run before Splink. This ensures place_id is populated for Splink's blocking rules, which require place data for optimal matching.
+- **21 June 2026 (step 5):** Person-level similarity added as final evidence step. Writes to `recorded_relationship` with `type='similarity'`. Person features: name, birth year, sex, place. Hierarchical household score feature deferred to v1.1 (ROADMAP item 12).
 
-**Evidence layer is complete.** RecordSimilarity output is ready for consumption by the conclusion layer. The conclusion layer redesign (§2.3) will determine how RecordSimilarity rows are promoted into Person and Relationship conclusions.
+**Evidence layer is complete.** RecordSimilarity and person-level similarity (via RecordedRelationship type='similarity') are ready for consumption by the conclusion layer. The conclusion layer redesign (§2.3) will use these similarity scores for Person Resolution (clustering RecordedPersons into Person conclusions).
 
 ### 2.3 Conclusion Layer
 
@@ -80,6 +83,7 @@ The conclusion layer is the most complex rebuild; a detailed plan will be produc
 | 2 | Test harness: integration tests covering all three layers (foundation → evidence → conclusion) using Tullynaught/Clogher CSV fixtures. One fixture, real Supabase connection, end-to-end pipeline exercised. Deferred until conclusion layer is complete. | 🔜 |
 | 7 | Update stale schema-version footers: audit all `docs/` files and update date/version lines to reflect current versions. | 🔜 |
 | 11 | Remove `training_labels` from `schema.sql`, `linkage.py`, and `training_repo.py`. | 🔜 (deferred to conclusion phase) |
+| 12 | Person similarity hierarchical feature: Add household similarity score as a Splink comparison level to boost person match confidence when households strongly match. Requires SQL-based derived column or pre-computation strategy. Deferred to v1.1 after conclusion layer is working. | 🔜 (v1.1 enhancement) |
 
 ---
 
@@ -94,6 +98,7 @@ The conclusion layer is the most complex rebuild; a detailed plan will be produc
 
 | Date | Milestone / Change |
 |---|---|
+| 21 June 2026 (session 10) | **Person-level similarity added as evidence step [5/5].** Created `src/pipeline/features/census_person.py` (person feature extractor from evidence layer: name, birth year, sex, place). Extended `src/evidence/similarity.py` with `run_person_similarity()` and `PersonSimilarityResult`. Splink person-level matching writes to `recorded_relationship` with `type='similarity'`. Wired into `cli add-evidence` as final step. `src/constants.py` updated: `SCORE_VERSION_PERSON_SIMILARITY`, `BATCH_SIZE_PERSON_SIMILARITY`. Hierarchical household score feature deferred to v1.1 (ROADMAP item 12). **Tested end-to-end:** Retroactive run on existing Tullynaught 1901↔1911 data produced 330 person similarity pairs (score range 0.30-0.68), all correctly stored. Sample matches show correct name/age progression across 10-year census gap. **Conclusion layer design session:** Person Resolution strategy confirmed as batch creation after evidence linkage (Strategy B). Person clustering via connected components on similarity scores (threshold 0.85). Ready to implement conclusion layer. |
 | 21 June 2026 | **Evidence layer verified complete with PostgreSQL.** PostgreSQL compatibility fixes applied across evidence pipeline: `record_repo.py` (column aliases for COALESCE), `role_relationships.py` (score=NULL for non-similarity types per CHECK constraint), `place_resolution.py` (cursor pattern, SQL placeholders, rapidfuzz JaroWinkler API). Place resolution integrated into `add-evidence` workflow as step [3/4] before Splink — design fix ensures place_id populated for Splink blocking rules. Test data restored from git history (tullynaught_1901/1911/1926.csv). Evidence pipeline fully tested end-to-end: 503 households, 2273 people, 4310 relationships, 503 place links (100% resolved), 138 cross-census similarities. **Evidence layer complete and production-ready.** |
 | 20 June 2026 | **Evidence layer implementation complete.** `src/evidence/similarity.py` created: Splink household-level similarity across all census source pairs, writing to `record_similarity` with per-source-pair transaction boundary and `BATCH_SIZE_RECORD_SIMILARITY` hook. `src/pipeline/features/census.py` rewritten for psycopg2 (DAL isolation). `src/constants.py` updated: `CHILD_DEPARTURE_AGE`, `SCORE_VERSION_RECORD_SIMILARITY`, `BATCH_SIZE_RECORD_SIMILARITY` added; `CENSUS_SOURCE_IDS` and `SOURCE_ID_*` regrouped. `cli add-evidence` wired: now runs all three evidence steps ([1/3] ingest, [2/3] role-relationships, [3/3] similarity). Known drift: `CENSUS_SOURCE_IDS` still locally defined in `linkage.py`, `household_inference.py`, `validator.py` — to be cleaned up when those files are next touched. |
 | 20 June 2026 | **Foundation implementation complete (v3.1).** SQLite retired; migrated to PostgreSQL / Supabase. New files: `src/constants.py`, `src/dal/recorded_relationship_repo.py`, `src/dal/record_similarity_repo.py`, `.env.example`. Rewritten: `src/db/schema.sql` (Postgres DDL; `recorded_relationship`, `record_similarity`, `gra_meta`; junction renames), `src/db/seed.sql` (Postgres syntax), `src/db/db.py` (psycopg2; `DATABASE_URL` from env), `src/cli.py` (`clear-evidence`/`clear-conclusions`; `--db` arg removed). All 7 DAL files: `conn.execute()` → cursor pattern; `?` → `%s`; junction renames applied; constants imported from `src/constants.py`. `reset_pipeline.py` flagged deprecated. SQLite migrations archived to `src/db/migrations/archive_sqlite/`. ROADMAP pruned: completed work queue items removed, version history consolidated. |
