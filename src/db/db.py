@@ -1,17 +1,16 @@
 """
-GRA — Database connection and schema management.
+GRA — Database connection and schema management (PostgreSQL / Supabase).
 
 Public API
 ----------
-open_db(path)       → sqlite3.Connection
-init_db(path)       → sqlite3.Connection
+open_db()           → psycopg2 connection  (reads DATABASE_URL from env)
+init_db()           → psycopg2 connection  (creates schema + seeds data)
 check_version(conn)
 build_record_url(source, record) → str | None
 
 Constants
 ---------
-SCHEMA_VERSION      int
-DEFAULT_DB          str
+SCHEMA_VERSION      int     (imported from src.constants)
 SCHEMA_SQL          Path
 SEED_SQL            Path
 """
@@ -19,18 +18,24 @@ SEED_SQL            Path
 from __future__ import annotations
 
 import json
-import sqlite3
+import os
 from pathlib import Path
 from typing import Any
 
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
+
+from src.constants import SCHEMA_VERSION
+
+load_dotenv()
+
 # ---------------------------------------------------------------------------
-# Schema version and paths
+# Paths
 # ---------------------------------------------------------------------------
 
-SCHEMA_VERSION = 30
-DEFAULT_DB = "genealogy.db"
 SCHEMA_SQL = Path(__file__).parent / "schema.sql"
-SEED_SQL = Path(__file__).parent / "seed.sql"
+SEED_SQL   = Path(__file__).parent / "seed.sql"
 
 
 # ---------------------------------------------------------------------------
@@ -38,35 +43,99 @@ SEED_SQL = Path(__file__).parent / "seed.sql"
 # ---------------------------------------------------------------------------
 
 
-def open_db(path: str = DEFAULT_DB) -> sqlite3.Connection:
-    """Open a connection with required PRAGMAs set."""
-    conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA synchronous = NORMAL")
-    conn.execute("PRAGMA temp_store = MEMORY")
-    return conn
+def open_db() -> psycopg2.extensions.connection:
+    """
+    Open a connection to the Supabase / PostgreSQL database.
 
+    Reads DATABASE_URL from the environment (or .env file).
+    Returns a psycopg2 connection using RealDictCursor as the default
+    cursor factory, so rows support dict-style key access: row["col"].
 
-def init_db(path: str = DEFAULT_DB) -> sqlite3.Connection:
-    """Initialise a fresh database: create schema then insert seed data."""
-    if Path(path).exists():
-        raise FileExistsError(
-            f"Database already exists at '{path}'. "
-            "Delete it manually before reinitialising."
+    Raises EnvironmentError if DATABASE_URL is not set.
+    """
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise EnvironmentError(
+            "DATABASE_URL is not set. "
+            "Add it to your .env file or environment before running GRA.\n"
+            "  Format: postgresql://postgres:[password]@[host]:5432/postgres"
         )
-    conn = open_db(path)
-    conn.executescript(SCHEMA_SQL.read_text())
-    conn.executescript(SEED_SQL.read_text())
-    conn.commit()
-    print(f"Initialised database at '{path}' (schema v{SCHEMA_VERSION // 10}.{SCHEMA_VERSION % 10}).")
+    conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn.autocommit = False
     return conn
 
 
-def check_version(conn: sqlite3.Connection) -> None:
-    """Raise if the database schema version does not match SCHEMA_VERSION."""
-    version = conn.execute("PRAGMA user_version").fetchone()[0]
+def _execute_sql_file(cur: Any, sql: str) -> None:
+    """
+    Execute a multi-statement SQL file one statement at a time.
+
+    psycopg2's execute() raises ProgrammingError if given more than one
+    statement in a single call. This helper splits on ';' and executes each
+    non-empty statement individually — the correct replacement for SQLite's
+    executescript().
+    """
+    for statement in sql.split(";"):
+        stmt = statement.strip()
+        if stmt:
+            cur.execute(stmt)
+
+
+def init_db() -> psycopg2.extensions.connection:
+    """
+    Initialise a fresh database: create schema, insert seed data, record version.
+
+    Safe to call on a blank Supabase project. Raises if gra_meta already exists
+    (indicates the database has already been initialised).
+
+    Rolls back and closes the connection on any failure so the caller is never
+    left with a half-initialised database or a dangling connection.
+    """
+    conn = open_db()
+    try:
+        with conn.cursor() as cur:
+            # Guard: refuse to re-initialise an existing GRA database.
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'gra_meta'
+                )
+            """)
+            if cur.fetchone()["exists"]:
+                raise RuntimeError(
+                    "Database already contains a gra_meta table — it appears to have been "
+                    "initialised already. Drop the schema manually before reinitialising."
+                )
+
+            _execute_sql_file(cur, SCHEMA_SQL.read_text())
+            _execute_sql_file(cur, SEED_SQL.read_text())
+            cur.execute(
+                "INSERT INTO gra_meta (key, value) VALUES (%s, %s)",
+                ("schema_version", str(SCHEMA_VERSION)),
+            )
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        conn.close()
+        raise
+
+    print(f"Initialised database (schema v{SCHEMA_VERSION // 10}.{SCHEMA_VERSION % 10}).")
+    return conn
+
+
+def check_version(conn: psycopg2.extensions.connection) -> None:
+    """Raise RuntimeError if the database schema version does not match SCHEMA_VERSION."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT value FROM gra_meta WHERE key = 'schema_version'")
+        row = cur.fetchone()
+
+    if row is None:
+        raise RuntimeError(
+            "gra_meta table is empty — cannot determine schema version. "
+            "Reinitialise the database with 'python -m src.cli init'."
+        )
+
+    version = int(row["value"])
     if version != SCHEMA_VERSION:
         raise RuntimeError(
             f"Schema version mismatch: expected {SCHEMA_VERSION}, got {version}. "
