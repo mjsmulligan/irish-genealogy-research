@@ -9,7 +9,7 @@ Commands:
     init                Initialise a new Supabase database (schema + seed data)
     clear-evidence      Wipe evidence + conclusions, preserving place_authority
     clear-conclusions   Wipe conclusion layer only (person, relationship, event)
-    add-evidence        Ingest a census CSV + assign role-pair RecordedRelationships
+    add-evidence        Run full evidence pipeline (5 steps): ingest CSV + role relationships + place resolution + record similarity + person similarity
     ingest              Ingest a census CSV into the evidence layer (legacy; prefer add-evidence)
     seed-places         Seed place_authority from a logainm CSV
     fetch-places        Fetch place authority from logainm.ie API
@@ -242,6 +242,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     from src.evidence.similarity import (
         run_record_similarity,
         print_record_similarity_report,
+        run_person_similarity,
+        print_person_similarity_report,
     )
 
     conn = open_db()
@@ -252,10 +254,10 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"\n[1/4] Ingesting CSV (source {source_id})...")
+    print(f"\n[1/5] Ingesting CSV (source {source_id})...")
     ingest_result = ingest_census(conn, args.file, source_id=source_id)
 
-    print("\n[2/4] Assigning role-pair RecordedRelationships...")
+    print("\n[2/5] Assigning role-pair RecordedRelationships...")
 
     # ingest_census commits its own transaction; role-relationship assignment
     # runs in a second transaction over the newly committed records.
@@ -275,11 +277,14 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
             rr_totals["skipped_null"] += rr.skipped_null_role_pairs
             rr_totals["skipped_no_rule"] += rr.skipped_no_rule
 
-    print("\n[3/4] Running place resolution...")
+    print("\n[3/5] Running place resolution...")
     place_result = run_place_resolve(conn)
 
-    print("\n[4/4] Running record similarity (Splink across all census sources)...")
-    similarity_result = run_record_similarity(conn)
+    print("\n[4/5] Running record similarity (Splink household-level across all census sources)...")
+    record_similarity_result = run_record_similarity(conn)
+
+    print("\n[5/5] Running person similarity (Splink person-level across all census sources)...")
+    person_similarity_result = run_person_similarity(conn)
 
     # --- Report ---
     print(f"\nadd-evidence complete — {ingest_result['source_title']}")
@@ -301,7 +306,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     print(f"    Unresolved places:       {len(pr.unresolved)}")
     print(f"    Blank place strings:     {pr.skipped_blank}")
 
-    print_record_similarity_report(similarity_result)
+    print_record_similarity_report(record_similarity_result)
+    print_person_similarity_report(person_similarity_result)
 
     notes = ingest_result["parse_notes"]
     if notes:
