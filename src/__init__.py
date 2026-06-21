@@ -1,31 +1,23 @@
 """
-GRA — Pipeline package.
+GRA — Genealogy Research Assistant
 
-Re-exports the public entry points for each pipeline stage so that
-callers can import from src.pipeline directly.
+Two-layer pipeline:
 
-Stage sequence:
-    1. ingest          — src.ingest.census.ingest_census
-    2. place-resolve   — run_place_resolution
-    3. household       — run_household_inference
-    4. link            — src.pipeline.linkage (two entry points)
-    5. rebuild-consensus — src.pipeline.scoring.rebuild_consensus
+Evidence layer (cli add-evidence, per CSV):
+    [1/5] Ingest           — src.evidence.census.ingest_census
+    [2/5] Relationships    — src.evidence.role_relationships
+    [3/5] Place resolution — src.evidence.place_resolution
+    [4/5] Record similarity — src.evidence.similarity.run_record_similarity
+    [5/5] Person similarity — src.evidence.similarity.run_person_similarity
 
-Orchestration across stages: src.pipeline.pipeline
+Conclusion layer (cli conclude):
+    [1/3] Person resolution      — src.conclusion.person_resolution
+    [2/3] Relationship resolution — src.conclusion.relationship_resolution
+    [3/3] Event resolution        — src.conclusion.event_resolution
+
+Review layer (cli review — planned):
+    Researcher-facing report module. Uses genealogical rules to surface areas
+    needing attention rather than enforcing hard constraints. Separate from the
+    pipeline; run independently after conclude.
+    — src.review.validator  (PostgreSQL port + redesign pending)
 """
-
-from src.pipeline.place_resolution import (
-    run_place_resolution,
-    print_place_resolution_report,
-)
-from src.pipeline.household_inference import (
-    run_household_inference,
-    print_household_inference_report,
-)
-
-__all__ = [
-    "run_place_resolution",
-    "print_place_resolution_report",
-    "run_household_inference",
-    "print_household_inference_report",
-]

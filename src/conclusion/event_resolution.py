@@ -9,22 +9,27 @@ Three types of Events created:
 1. Census Events (individual census appearance)
    - One per RecordedPerson who has a Person
    - type='census', date from Record, place from place_record
-   - is_primary=1 (census Events don't conflict)
+   - is_primary=1 (census Events record distinct moments in time; no conflict)
 
 2. Birth Events (calculated from age)
    - Derived from census age: birth_year = census_year - age
-   - date_qualifier='calculated'
-   - If Person appears in multiple censuses with different ages:
-     * Conflicting birth years → multiple birth Events
-     * Most common birth year gets is_primary=1
+   - date='YYYY-01-01', date_qualifier='calculated'
+   - place_id = census place (person likely born in same area)
+   - Collected per Person across all census appearances
+   - Birth years within ±2 years → ONE Event, is_primary=1
+   - Birth years diverging beyond ±2 → MULTIPLE Events (one per distinct year),
+     most common year gets is_primary=1 (by vote count); ties → earliest year wins
    - Guides research: "look for birth record ~1860"
 
 3. Marriage Events (from couple Relationships)
    - One per couple Relationship
-   - date=NULL (census doesn't record marriage date)
-   - relationship_id links to the couple
-   - Additive: later BMD ingestion updates this Event with actual date
-   - is_primary=1
+   - type='marriage', date=NULL (census doesn't record marriage date)
+   - date_qualifier=NULL, is_primary=1
+   - relationship_id links to the couple Relationship
+   - Linked to both Persons via person_event
+   - Linked to all Records that show the couple together via event_record
+   - Additive: later BMD ingestion adds a new Event with the actual date rather
+     than overwriting this one; a null date does not conflict with a dated record
 
 Entry point:
     run_event_resolution(conn) -> EventResolutionResult
@@ -40,6 +45,13 @@ import psycopg2.extensions
 
 
 # ---------------------------------------------------------------------------
+# Tolerance for collapsing birth years to a single Event
+# ---------------------------------------------------------------------------
+
+BIRTH_YEAR_TOLERANCE: int = 2   # years; within this range → one consensus Event
+
+
+# ---------------------------------------------------------------------------
 # Result type
 # ---------------------------------------------------------------------------
 
@@ -51,12 +63,12 @@ class EventResolutionResult:
     person_event_links: int = 0
     event_record_links: int = 0
     records_processed: int = 0
-    skipped_no_person: int = 0
-    birth_conflicts_detected: int = 0  # Persons with multiple birth Events
+    skipped_no_person: int = 0       # Records where no RecordedPerson has a Person
+    birth_conflicts_detected: int = 0  # Persons with multiple birth Events (diverged ages)
 
 
 # ---------------------------------------------------------------------------
-# Event creation
+# Generic event creation helpers
 # ---------------------------------------------------------------------------
 
 def _create_event(
@@ -69,10 +81,9 @@ def _create_event(
     is_primary: bool = True,
 ) -> int:
     """
-    Create an Event and return the generated event_id.
+    Create an Event row and return the generated event_id.
 
-    Generic event creator for all event types.
-    Uses RETURNING pattern for auto-generated ID.
+    Uses RETURNING pattern for the GENERATED ALWAYS AS IDENTITY PK.
     """
     with conn.cursor() as cur:
         cur.execute(
@@ -91,7 +102,7 @@ def _link_event_to_person(
     event_id: int,
     person_id: int,
 ) -> None:
-    """Link an Event to a Person via person_event junction."""
+    """Link an Event to a Person via person_event junction. ON CONFLICT DO NOTHING."""
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -121,44 +132,65 @@ def _link_event_to_record(
 
 
 # ---------------------------------------------------------------------------
-# Birth year calculation
+# Census Event creation
+# ---------------------------------------------------------------------------
+
+def _create_census_event(
+    conn: psycopg2.extensions.connection,
+    record_id: int,
+    date: str | None,
+    place_id: int | None,
+) -> int:
+    """
+    Create one census Event for a single census Record.
+
+    Census Events are always is_primary=1 — they record distinct moments in
+    time and do not conflict with each other.
+    """
+    return _create_event(
+        conn,
+        event_type="census",
+        date=date,
+        date_qualifier=None,
+        place_id=place_id,
+        relationship_id=None,
+        is_primary=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Birth Event creation
 # ---------------------------------------------------------------------------
 
 def _extract_census_year(date_str: str | None) -> int | None:
-    """Extract year from census date string (ISO format YYYY-MM-DD)."""
+    """Extract four-digit year from a census date string (ISO format YYYY-MM-DD)."""
     if not date_str:
         return None
-    match = re.match(r'^(\d{4})', date_str)
+    match = re.match(r"^(\d{4})", date_str)
     return int(match.group(1)) if match else None
 
 
-def _calculate_birth_year(census_year: int, age: int) -> int:
-    """Calculate birth year from census year and age."""
-    return census_year - age
-
-
-def _collect_birth_years_for_person(
+def _collect_birth_evidence_for_person(
     conn: psycopg2.extensions.connection,
     person_id: int,
-) -> list[tuple[int, int, int]]:
+) -> list[tuple[int, int, int | None]]:
     """
-    Collect all calculated birth years for a Person from their census appearances.
+    Collect (birth_year, record_id, place_id) tuples for a Person from all
+    their census appearances.
 
-    Returns list of (birth_year, record_id, place_id) tuples.
+    Returns only rows where age IS NOT NULL and census date IS NOT NULL.
     """
-    birth_years = []
-
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT
                 rp.age,
-                r.date as census_date,
+                r.date AS census_date,
                 r.record_id,
                 pr.place_id
             FROM person_recorded_person prp
             JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-            JOIN record r ON r.record_id = rp.record_id
+            JOIN record r           ON r.record_id = rp.record_id
             LEFT JOIN place_record pr ON pr.record_id = r.record_id
             WHERE prp.person_id = %s
               AND rp.age IS NOT NULL
@@ -168,27 +200,200 @@ def _collect_birth_years_for_person(
         )
         rows = cur.fetchall()
 
+    evidence = []
     for row in rows:
         census_year = _extract_census_year(row["census_date"])
-        if census_year and row["age"]:
-            birth_year = _calculate_birth_year(census_year, row["age"])
-            birth_years.append((birth_year, row["record_id"], row["place_id"]))
+        if census_year and row["age"] is not None:
+            birth_year = census_year - int(row["age"])
+            evidence.append((birth_year, row["record_id"], row["place_id"]))
+    return evidence
 
-    return birth_years
 
-
-def _determine_primary_birth_year(birth_years: list[int]) -> int:
+def _group_birth_evidence(
+    evidence: list[tuple[int, int, int | None]],
+) -> dict[int, list[tuple[int, int | None]]]:
     """
-    Determine which birth year should be marked is_primary.
+    Group birth evidence into buckets where years are within BIRTH_YEAR_TOLERANCE
+    of each other.  Each bucket key is the representative (canonical) birth year.
 
-    Uses most common birth year. If tie, uses earliest (more conservative).
+    Algorithm:
+      - Sort evidence by birth_year
+      - Greedily assign to the first open bucket whose representative year is
+        within BIRTH_YEAR_TOLERANCE of the current year
+      - If none fits, open a new bucket
+
+    Returns {canonical_year: [(record_id, place_id), ...]}
     """
-    if not birth_years:
-        return None
+    # Sort by birth year so we process in order
+    sorted_evidence = sorted(evidence, key=lambda t: t[0])
 
-    counter = Counter(birth_years)
-    most_common = counter.most_common(1)[0][0]
-    return most_common
+    # {canonical_year: [(record_id, place_id), ...]}
+    buckets: dict[int, list[tuple[int, int | None]]] = {}
+
+    for birth_year, record_id, place_id in sorted_evidence:
+        # Find a bucket whose canonical year is within tolerance
+        matched_key = None
+        for key in buckets:
+            if abs(birth_year - key) <= BIRTH_YEAR_TOLERANCE:
+                matched_key = key
+                break
+
+        if matched_key is not None:
+            buckets[matched_key].append((record_id, place_id))
+        else:
+            # New bucket — use this birth_year as canonical
+            buckets[birth_year] = [(record_id, place_id)]
+
+    return buckets
+
+
+def _create_birth_events_for_person(
+    conn: psycopg2.extensions.connection,
+    person_id: int,
+    evidence: list[tuple[int, int, int | None]],
+) -> tuple[int, int, int]:
+    """
+    Create birth Event(s) for a Person.
+
+    If all evidence groups into one bucket → one birth Event, is_primary=1.
+    If multiple buckets → one Event per bucket; the bucket with the most
+    supporting records gets is_primary=1 (ties: earliest year wins).
+
+    Returns (events_created, person_event_links, event_record_links).
+    """
+    if not evidence:
+        return 0, 0, 0
+
+    buckets = _group_birth_evidence(evidence)
+
+    # Determine which bucket is primary: largest count, tie → earliest year
+    primary_year = max(
+        buckets,
+        key=lambda y: (len(buckets[y]), -y),
+    )
+
+    events_created = 0
+    pe_links = 0
+    er_links = 0
+
+    for canonical_year, records in buckets.items():
+        is_primary = (canonical_year == primary_year)
+
+        # Choose place from most common place_id in this bucket (ignore None)
+        place_candidates = [pid for _, pid in records if pid is not None]
+        place_id: int | None = None
+        if place_candidates:
+            place_id = Counter(place_candidates).most_common(1)[0][0]
+
+        date_str = f"{canonical_year}-01-01"
+
+        event_id = _create_event(
+            conn,
+            event_type="birth",
+            date=date_str,
+            date_qualifier="calculated",
+            place_id=place_id,
+            relationship_id=None,
+            is_primary=is_primary,
+        )
+        events_created += 1
+
+        _link_event_to_person(conn, event_id, person_id)
+        pe_links += 1
+
+        for record_id, _ in records:
+            _link_event_to_record(conn, event_id, record_id)
+            er_links += 1
+
+    return events_created, pe_links, er_links
+
+
+# ---------------------------------------------------------------------------
+# Marriage Event creation
+# ---------------------------------------------------------------------------
+
+def _get_couple_relationships(
+    conn: psycopg2.extensions.connection,
+) -> list[dict]:
+    """
+    Return all couple Relationships with both Persons.
+
+    Row keys: relationship_id, person_id_1, person_id_2
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT relationship_id, person_id_1, person_id_2
+            FROM relationship
+            WHERE type = 'couple'
+            """
+        )
+        return cur.fetchall()
+
+
+def _get_records_for_couple(
+    conn: psycopg2.extensions.connection,
+    person_id_1: int,
+    person_id_2: int,
+) -> list[int]:
+    """
+    Return record_ids for all census Records that show person_id_1 and person_id_2
+    appearing together (i.e. both RecordedPersons within the same Record).
+
+    These become the provenance links on the marriage Event.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT rp1.record_id
+            FROM person_recorded_person prp1
+            JOIN recorded_person rp1 ON rp1.recorded_person_id = prp1.recorded_person_id
+            JOIN person_recorded_person prp2 ON prp2.person_id = %s
+            JOIN recorded_person rp2 ON rp2.recorded_person_id = prp2.recorded_person_id
+                AND rp2.record_id = rp1.record_id
+            WHERE prp1.person_id = %s
+            """,
+            (person_id_2, person_id_1),
+        )
+        return [row["record_id"] for row in cur.fetchall()]
+
+
+def _create_marriage_event(
+    conn: psycopg2.extensions.connection,
+    relationship_id: int,
+    person_id_1: int,
+    person_id_2: int,
+    supporting_record_ids: list[int],
+) -> tuple[int, int, int]:
+    """
+    Create one marriage Event for a couple Relationship.
+
+    date=NULL, date_qualifier=NULL (census doesn't record marriage date).
+    Linked to both Persons via person_event.
+    Linked to all supporting Records via event_record.
+
+    Returns (events_created, person_event_links, event_record_links).
+    """
+    event_id = _create_event(
+        conn,
+        event_type="marriage",
+        date=None,
+        date_qualifier=None,
+        place_id=None,
+        relationship_id=relationship_id,
+        is_primary=True,
+    )
+
+    _link_event_to_person(conn, event_id, person_id_1)
+    _link_event_to_person(conn, event_id, person_id_2)
+    pe_links = 2
+
+    er_links = 0
+    for record_id in supporting_record_ids:
+        _link_event_to_record(conn, event_id, record_id)
+        er_links += 1
+
+    return 1, pe_links, er_links
 
 
 # ---------------------------------------------------------------------------
@@ -199,45 +404,58 @@ def run_event_resolution(
     conn: psycopg2.extensions.connection,
 ) -> EventResolutionResult:
     """
-    Run Event Resolution: create census Events for RecordedPersons who have Persons.
+    Run Event Resolution: create census, birth, and marriage Events.
 
     Algorithm:
-      1. For each census Record:
-         - Get all RecordedPersons
-         - For each RecordedPerson with a Person:
-           - Create census Event with Record's date and place
-           - Link Event to Person
-           - Link Event to Record (evidence)
+
+    Pass 1 — Census Events:
+      For each census Record:
+        - Get all RecordedPersons that have a Person linkage
+        - For each: create a census Event, link to Person and Record
+
+    Pass 2 — Birth Events:
+      For each Person who appeared in at least one census:
+        - Collect (birth_year, record_id, place_id) tuples from all census ages
+        - Group into tolerance buckets (±2 years)
+        - One bucket → one birth Event, is_primary=1
+        - Multiple buckets → one Event per bucket; most-supported is primary
+
+    Pass 3 — Marriage Events:
+      For each couple Relationship:
+        - Create one marriage Event (date=NULL) linked to the Relationship
+        - Link to both Persons
+        - Link to Records that show them together (provenance)
 
     Returns EventResolutionResult with counts.
     """
     result = EventResolutionResult()
 
-    # Step 1: Get all census Records with their place linkage
+    # ------------------------------------------------------------------
+    # Pass 1: Census Events
+    # ------------------------------------------------------------------
+
+    # Fetch all census Records with their place linkage
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT
                 r.record_id,
                 r.date,
-                r.source_id,
                 pr.place_id
             FROM record r
-            JOIN source s ON s.source_id = r.source_id
-                AND s.type = 'census'
+            JOIN source s ON s.source_id = r.source_id AND s.type = 'census'
             LEFT JOIN place_record pr ON pr.record_id = r.record_id
             ORDER BY r.record_id
             """
         )
         records = cur.fetchall()
 
-    # Step 2: Process each Record
     for record in records:
         record_id = record["record_id"]
         date = record["date"]
         place_id = record["place_id"]
 
-        # Get RecordedPersons with Persons for this Record
+        # Get RecordedPersons that have been linked to a Person
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -251,37 +469,80 @@ def run_event_resolution(
                 """,
                 (record_id,),
             )
-            recorded_persons = cur.fetchall()
+            linked_persons = cur.fetchall()
 
-        if not recorded_persons:
-            # No Persons in this household - skip
+        if not linked_persons:
             result.skipped_no_person += 1
+            result.records_processed += 1
             continue
 
-        # Create Events within a transaction
         with conn:
-            for rp in recorded_persons:
-                person_id = rp["person_id"]
-
-                # Check if we have place (optional but recommended)
-                if not place_id:
-                    result.skipped_no_place += 1
-                    # Still create Event, but without place
-                    pass
-
-                # Create census Event
+            for rp in linked_persons:
                 event_id = _create_census_event(conn, record_id, date, place_id)
-                result.events_created += 1
+                result.census_events_created += 1
 
-                # Link Event to Person
-                _link_event_to_person(conn, event_id, person_id)
+                _link_event_to_person(conn, event_id, rp["person_id"])
                 result.person_event_links += 1
 
-                # Link Event to Record (evidence provenance)
                 _link_event_to_record(conn, event_id, record_id)
                 result.event_record_links += 1
 
         result.records_processed += 1
+
+    # ------------------------------------------------------------------
+    # Pass 2: Birth Events
+    # ------------------------------------------------------------------
+
+    # Get all Persons who have at least one RecordedPerson in a census Record
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT prp.person_id
+            FROM person_recorded_person prp
+            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+            JOIN record r ON r.record_id = rp.record_id
+            JOIN source s ON s.source_id = r.source_id AND s.type = 'census'
+            ORDER BY prp.person_id
+            """
+        )
+        person_ids = [row["person_id"] for row in cur.fetchall()]
+
+    for person_id in person_ids:
+        evidence = _collect_birth_evidence_for_person(conn, person_id)
+        if not evidence:
+            continue
+
+        with conn:
+            ev, pe, er = _create_birth_events_for_person(conn, person_id, evidence)
+
+        result.birth_events_created += ev
+        result.person_event_links += pe
+        result.event_record_links += er
+
+        if ev > 1:
+            result.birth_conflicts_detected += 1
+
+    # ------------------------------------------------------------------
+    # Pass 3: Marriage Events
+    # ------------------------------------------------------------------
+
+    couples = _get_couple_relationships(conn)
+
+    for couple in couples:
+        rel_id = couple["relationship_id"]
+        pid1 = couple["person_id_1"]
+        pid2 = couple["person_id_2"]
+
+        supporting_records = _get_records_for_couple(conn, pid1, pid2)
+
+        with conn:
+            ev, pe, er = _create_marriage_event(
+                conn, rel_id, pid1, pid2, supporting_records
+            )
+
+        result.marriage_events_created += ev
+        result.person_event_links += pe
+        result.event_record_links += er
 
     return result
 
@@ -293,9 +554,11 @@ def run_event_resolution(
 def print_event_resolution_report(result: EventResolutionResult) -> None:
     print("\n  EVENT RESOLUTION")
     print(f"    Records processed:       {result.records_processed:>6}")
-    print(f"    Events created:          {result.events_created:>6}")
+    print(f"    Skipped (no Person):     {result.skipped_no_person:>6}")
+    print(f"    Census events created:   {result.census_events_created:>6}")
+    print(f"    Birth events created:    {result.birth_events_created:>6}")
+    if result.birth_conflicts_detected:
+        print(f"    Birth conflicts (split): {result.birth_conflicts_detected:>6}")
+    print(f"    Marriage events created: {result.marriage_events_created:>6}")
     print(f"    Person-Event links:      {result.person_event_links:>6}")
     print(f"    Event-Record links:      {result.event_record_links:>6}")
-    print(f"    Skipped (no Person):     {result.skipped_no_person:>6}")
-    if result.skipped_no_place:
-        print(f"    Events w/o place:        {result.skipped_no_place:>6}")
