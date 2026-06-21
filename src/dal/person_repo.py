@@ -120,3 +120,54 @@ def get_all_person_ids(conn: psycopg2.extensions.connection) -> list[int]:
     with conn.cursor() as cur:
         cur.execute("SELECT person_id FROM person ORDER BY person_id")
         return [row["person_id"] for row in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Person Resolution functions (RETURNING pattern)
+# ---------------------------------------------------------------------------
+
+def create_person(
+    conn: psycopg2.extensions.connection,
+    label: str,
+    gender: str | None = None,
+) -> int:
+    """
+    Create a new Person and return the generated person_id.
+
+    Uses RETURNING pattern instead of pre-calculating IDs.
+    Suitable for person resolution and other conclusion-layer operations.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO person (label, gender) "
+            "VALUES (%s, %s) "
+            "RETURNING person_id",
+            (label, gender),
+        )
+        return cur.fetchone()["person_id"]
+
+
+def link_person_to_recorded_person(
+    conn: psycopg2.extensions.connection,
+    person_id: int,
+    recorded_person_id: int,
+    score: float | None,
+    score_version: str | None,
+    verified: bool = False,
+) -> None:
+    """
+    Link a Person to a RecordedPerson via person_recorded_person junction table.
+
+    score/score_version: Optional (None for clustering-based linkage)
+    verified: False by default (algorithm assertion); True for researcher-verified
+
+    ON CONFLICT DO NOTHING — safe for re-score passes or duplicate calls.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO person_recorded_person "
+            "(person_id, recorded_person_id, score, score_version, verified) "
+            "VALUES (%s, %s, %s, %s, %s) "
+            "ON CONFLICT (person_id, recorded_person_id) DO NOTHING",
+            (person_id, recorded_person_id, score, score_version, 1 if verified else 0),
+        )
