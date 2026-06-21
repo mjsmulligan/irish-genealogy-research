@@ -38,8 +38,19 @@ CHILD_DEPARTURE_AGE: int = 20
 # Linkage thresholds
 # ---------------------------------------------------------------------------
 
-AUTO_COMMIT_THRESHOLD: float = 0.85   # score >= this → auto-merge
+AUTO_COMMIT_THRESHOLD: float = 0.85   # score >= this → auto-merge (legacy linkage)
 PROPOSE_FLOOR: float = 0.30           # score >= this → queue as proposal
+
+# ---------------------------------------------------------------------------
+# Conclusion layer thresholds
+# ---------------------------------------------------------------------------
+
+# Person Resolution: clustering threshold for person-level similarity.
+# Lower than AUTO_COMMIT_THRESHOLD (0.85) because:
+#   - Person similarity scores in practice max out ~0.68 for clear matches
+#   - Relationship Resolution (step 2) will refine using primary evidence
+#   - 0.65 creates Persons for clearest matches, leaves ambiguous cases as orphans
+PERSON_RESOLUTION_THRESHOLD: float = 0.65
 
 # ---------------------------------------------------------------------------
 # Score versions — identify the algorithm run that produced a score
