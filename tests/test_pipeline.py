@@ -37,7 +37,9 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
@@ -51,6 +53,9 @@ import psycopg2.extras
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+
+LOG_DIR  = REPO_ROOT / "tests" / "logs"
+LOG_FILE = LOG_DIR / f"test_run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.log"
 
 from dotenv import load_dotenv
 load_dotenv(REPO_ROOT / ".env")
@@ -153,6 +158,8 @@ FLOOR_EVENTS            = 100   # TODO: replace with exact after first run
 
 _tests: list[tuple[str, Callable]] = []
 _results: dict[str, str] = {}
+_timings: dict[str, float] = {}    # test name → elapsed seconds
+_setup_timings: dict[str, float] = {}  # setup step label → elapsed seconds
 
 
 def test(fn: Callable) -> Callable:
@@ -161,33 +168,72 @@ def test(fn: Callable) -> Callable:
     return fn
 
 
+# ---------------------------------------------------------------------------
+# Logging — writes to stdout and to LOG_FILE simultaneously
+# ---------------------------------------------------------------------------
+
+_log_fh = None  # opened in __main__ once LOG_FILE path is known
+
+
+def _log(line: str = "") -> None:
+    """Print to stdout and append to log file."""
+    print(line)
+    if _log_fh is not None:
+        _log_fh.write(line + "\n")
+        _log_fh.flush()
+
+
 def _run_all(conn: psycopg2.extensions.connection) -> bool:
-    passed = failed = skipped = 0
+    passed = failed = 0
     for name, fn in _tests:
+        t0 = time.perf_counter()
         try:
             fn(conn)
+            elapsed = time.perf_counter() - t0
             _results[name] = "PASS"
+            _timings[name] = elapsed
             passed += 1
         except AssertionError as e:
+            elapsed = time.perf_counter() - t0
             _results[name] = f"FAIL: {e}"
+            _timings[name] = elapsed
             failed += 1
         except Exception as e:
+            elapsed = time.perf_counter() - t0
             _results[name] = f"ERROR: {e}\n{traceback.format_exc()}"
+            _timings[name] = elapsed
             failed += 1
 
-    print()
-    print("=" * 60)
-    print("  GRA INTEGRATION TEST RESULTS")
-    print("=" * 60)
+    total_test_time = sum(_timings.values())
+
+    _log()
+    _log("=" * 72)
+    _log("  GRA INTEGRATION TEST RESULTS")
+    _log("=" * 72)
     for name, result in _results.items():
-        icon = "✓" if result == "PASS" else "✗"
-        print(f"  {icon}  {name}")
+        icon    = "✓" if result == "PASS" else "✗"
+        elapsed = _timings.get(name, 0.0)
+        _log(f"  {icon}  {name:<55}  {elapsed:>6.2f}s")
         if result != "PASS":
             for line in result.splitlines():
-                print(f"       {line}")
-    print()
-    print(f"  {passed} passed  {failed} failed  {skipped} skipped")
-    print("=" * 60)
+                _log(f"       {line}")
+    _log()
+    _log(f"  {passed} passed  {failed} failed")
+    _log(f"  Total test execution:  {total_test_time:>7.2f}s")
+    _log()
+
+    if _setup_timings:
+        _log("  SETUP TIMINGS")
+        _log("  " + "-" * 50)
+        for step, elapsed in _setup_timings.items():
+            _log(f"  {step:<40}  {elapsed:>7.2f}s")
+        setup_total = sum(_setup_timings.values())
+        _log(f"  {'Total setup':<40}  {setup_total:>7.2f}s")
+        _log(f"  {'Grand total (setup + tests)':<40}  {setup_total + total_test_time:>7.2f}s")
+
+    _log("=" * 72)
+    if _log_fh is not None:
+        _log(f"\n  Log written to: {LOG_FILE}")
     return failed == 0
 
 
@@ -249,19 +295,22 @@ def setup(conn: psycopg2.extensions.connection) -> None:
         "recorded_person",
         "record",
     ]
-    print("\nSetup: clearing evidence + conclusion layers...")
+    _log("\nSetup: clearing evidence + conclusion layers...")
+    t0 = time.perf_counter()
     with conn:
         with conn.cursor() as cur:
             for table in clear_tables:
                 cur.execute(f"DELETE FROM {table}")
-    print("  cleared.")
+    _setup_timings["clear tables"] = time.perf_counter() - t0
+    _log(f"  cleared.  ({_setup_timings['clear tables']:.2f}s)")
 
     # --- Ingest all three sources ---
     for source_id, fixture_path in FIXTURES.items():
         if not fixture_path.exists():
             raise FileNotFoundError(f"Fixture not found: {fixture_path}")
 
-        print(f"  ingesting source {source_id} ({fixture_path.name})...")
+        _log(f"  ingesting source {source_id} ({fixture_path.name})...")
+        t0 = time.perf_counter()
         ingest_result = ingest_census(conn, str(fixture_path), source_id=source_id)
 
         # Fetch newly ingested record_ids (ingest_census commits its own transaction)
@@ -277,29 +326,51 @@ def setup(conn: psycopg2.extensions.connection) -> None:
         with conn:
             for rid in record_ids:
                 assign_role_relationships(conn, rid)
+        elapsed = time.perf_counter() - t0
+        _setup_timings[f"ingest + role_rels source {source_id}"] = elapsed
+        _log(f"    {ingest_result['records_committed']} records, "
+             f"{ingest_result['persons_committed']} persons  ({elapsed:.2f}s)")
 
     # --- Place resolution (once across all evidence) ---
-    print("  running place resolution...")
+    _log("  running place resolution...")
+    t0 = time.perf_counter()
     run_place_resolution(conn)
+    _setup_timings["place resolution"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['place resolution']:.2f}s)")
 
     # --- Similarity (once across all evidence) ---
-    print("  running record similarity...")
+    _log("  running record similarity...")
+    t0 = time.perf_counter()
     run_record_similarity(conn)
+    _setup_timings["record similarity (Splink)"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['record similarity (Splink)']:.2f}s)")
 
-    print("  running person similarity...")
+    _log("  running person similarity...")
+    t0 = time.perf_counter()
     run_person_similarity(conn)
+    _setup_timings["person similarity (Splink)"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['person similarity (Splink)']:.2f}s)")
 
     # --- Conclusion pipeline ---
-    print("  running person resolution...")
+    _log("  running person resolution...")
+    t0 = time.perf_counter()
     run_person_resolution(conn)
+    _setup_timings["person resolution"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['person resolution']:.2f}s)")
 
-    print("  running relationship resolution...")
+    _log("  running relationship resolution...")
+    t0 = time.perf_counter()
     run_relationship_resolution(conn)
+    _setup_timings["relationship resolution"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['relationship resolution']:.2f}s)")
 
-    print("  running event resolution...")
+    _log("  running event resolution...")
+    t0 = time.perf_counter()
     run_event_resolution(conn)
+    _setup_timings["event resolution"] = time.perf_counter() - t0
+    _log(f"    ({_setup_timings['event resolution']:.2f}s)")
 
-    print("Setup complete.\n")
+    _log("Setup complete.\n")
 
 
 # ---------------------------------------------------------------------------
@@ -1072,22 +1143,33 @@ except ImportError:
 
 
 if __name__ == "__main__":
-    print("GRA Integration Test Suite")
-    print("Connecting to database...")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _log_fh = LOG_FILE.open("w", encoding="utf-8")
+
+    run_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    _log(f"GRA Integration Test Suite")
+    _log(f"Run started: {run_ts}")
+    _log(f"Log file:    {LOG_FILE}")
+    _log()
+
+    _log("Connecting to database...")
     try:
         conn = get_conn()
     except Exception as e:
-        print(f"ERROR: Could not connect: {e}")
+        _log(f"ERROR: Could not connect: {e}")
+        _log_fh.close()
         sys.exit(1)
 
     try:
         setup(conn)
     except Exception as e:
-        print(f"ERROR during setup: {e}")
-        traceback.print_exc()
+        _log(f"ERROR during setup: {e}")
+        _log(traceback.format_exc())
         conn.close()
+        _log_fh.close()
         sys.exit(1)
 
     ok = _run_all(conn)
     conn.close()
+    _log_fh.close()
     sys.exit(0 if ok else 1)
