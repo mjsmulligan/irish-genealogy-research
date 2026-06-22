@@ -151,6 +151,81 @@ def insert_recorded_person(
         )
 
 
+def bulk_insert_records(
+    conn: psycopg2.extensions.connection,
+    records: list[dict],
+) -> None:
+    """
+    Bulk insert multiple Records in one statement.
+
+    Each dict must have keys: record_id, source_id, record_parameters, raw_text,
+    event_type, date_as_recorded, date, date_qualifier, place_as_recorded, notes
+    """
+    if not records:
+        return
+
+    with conn.cursor() as cur:
+        # Build VALUES clause with placeholders
+        values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        values_clause = ", ".join([values_template] * len(records))
+
+        # Flatten all record values into a single tuple
+        values = []
+        for r in records:
+            values.extend([
+                r["record_id"], r["source_id"], r["record_parameters"],
+                r["raw_text"], r["event_type"], r["date_as_recorded"],
+                r["date"], r["date_qualifier"], r["place_as_recorded"],
+                r["notes"]
+            ])
+
+        cur.execute(
+            f"INSERT INTO record "
+            f"(record_id, source_id, record_parameters, raw_text, event_type, "
+            f" date_as_recorded, date, date_qualifier, place_as_recorded, notes) "
+            f"OVERRIDING SYSTEM VALUE "
+            f"VALUES {values_clause}",
+            values
+        )
+
+
+def bulk_insert_recorded_persons(
+    conn: psycopg2.extensions.connection,
+    persons: list[dict],
+) -> None:
+    """
+    Bulk insert multiple RecordedPersons in one statement.
+
+    Each dict must have keys: recorded_person_id, record_id, name_as_recorded,
+    role, age_as_recorded, age, sex_as_recorded, occupation_as_recorded,
+    place_as_recorded, notes
+    """
+    if not persons:
+        return
+
+    with conn.cursor() as cur:
+        values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        values_clause = ", ".join([values_template] * len(persons))
+
+        values = []
+        for p in persons:
+            values.extend([
+                p["recorded_person_id"], p["record_id"], p["name_as_recorded"],
+                p["role"], p["age_as_recorded"], p["age"], p["sex_as_recorded"],
+                p["occupation_as_recorded"], p["place_as_recorded"], p["notes"]
+            ])
+
+        cur.execute(
+            f"INSERT INTO recorded_person "
+            f"(recorded_person_id, record_id, name_as_recorded, role, "
+            f" age_as_recorded, age, sex_as_recorded, occupation_as_recorded, "
+            f" place_as_recorded, notes) "
+            f"OVERRIDING SYSTEM VALUE "
+            f"VALUES {values_clause}",
+            values
+        )
+
+
 def get_recorded_persons_for_record(
     conn: psycopg2.extensions.connection,
     record_id: int,
