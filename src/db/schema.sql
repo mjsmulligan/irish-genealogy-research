@@ -150,12 +150,12 @@ CREATE TABLE recorded_person (
 
 -- Relationship between two RecordedPersons (Evidence layer).
 -- type vocabulary:
---   couple / parent_child / sibling — stated relationships derived from census roles
---   similarity                       — algorithmic cross-census candidate match (carries score)
+--   couple / parent_child / sibling — stated relationships derived from census roles (prior scores 0.75-0.90)
+--   similarity                       — algorithmic cross-census candidate match (Splink scores 0.0-1.0)
 --
 -- score / score_version:
---   Required when type = 'similarity'; NULL otherwise.
---   Enforced by CHECK below.
+--   All types carry scores per reconstruction_algorithms.md §6.1.
+--   Role-pair types use prior scores from the rule table; similarity uses Splink scores.
 CREATE TABLE recorded_relationship (
     recorded_relationship_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     recorded_person_id_1      INTEGER NOT NULL REFERENCES recorded_person (recorded_person_id),
@@ -167,8 +167,7 @@ CREATE TABLE recorded_relationship (
 
     CHECK (recorded_person_id_1 != recorded_person_id_2),
     CHECK (type IN ('couple', 'parent_child', 'sibling', 'similarity')),
-    -- score required iff type = 'similarity'
-    CHECK ((type = 'similarity') = (score IS NOT NULL)),
+    -- All types should have scores, but allow NULL for backward compatibility during migration
     CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
     CHECK ((score IS NULL) = (score_version IS NULL))
 );
