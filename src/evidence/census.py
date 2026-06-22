@@ -27,6 +27,8 @@ import psycopg2.extensions
 from src.dal.record_repo import (
     insert_record,
     insert_recorded_person,
+    bulk_insert_records,
+    bulk_insert_recorded_persons,
     next_record_id,
     next_recorded_person_id,
 )
@@ -292,112 +294,118 @@ def ingest_census(
     records_committed = 0
     persons_committed = 0
 
-    with conn:
-        for household_key, rows in households.items():
-            first_row = rows[0]
+    # Collect all records and persons for bulk insert
+    records_to_insert: list[dict] = []
+    persons_to_insert: list[dict] = []
 
-            townland = first_row.get(cfg["townland_col"]) or ""
-            if not townland and cfg["townland_fallback_col"]:
-                townland = first_row.get(cfg["townland_fallback_col"]) or ""
-            townland = townland.strip()
-            if townland:
-                townlands.add(townland)
+    for household_key, rows in households.items():
+        first_row = rows[0]
 
-            document_id = None
-            doc_note = None
-            if cfg["document_id_col"]:
-                document_id = (first_row.get(cfg["document_id_col"]) or "").strip() or None
-                if document_id is None:
-                    doc_note = "Empty document id column; document_id could not be derived"
-            else:
-                document_id, doc_note = _first_image_id(first_row.get(cfg["images_col"]))
+        townland = first_row.get(cfg["townland_col"]) or ""
+        if not townland and cfg["townland_fallback_col"]:
+            townland = first_row.get(cfg["townland_fallback_col"]) or ""
+        townland = townland.strip()
+        if townland:
+            townlands.add(townland)
 
+        document_id = None
+        doc_note = None
+        if cfg["document_id_col"]:
+            document_id = (first_row.get(cfg["document_id_col"]) or "").strip() or None
             if document_id is None:
-                document_id = f"household-{household_key}"
+                doc_note = "Empty document id column; document_id could not be derived"
+        else:
+            document_id, doc_note = _first_image_id(first_row.get(cfg["images_col"]))
 
-            if doc_note:
+        if document_id is None:
+            document_id = f"household-{household_key}"
+
+        if doc_note:
+            parse_notes.append({
+                "image_group": household_key,
+                "name": "",
+                "note": doc_note,
+            })
+
+        raw_lines = [",".join(fieldnames)] + [_row_to_line(fieldnames, r) for r in rows]
+        raw_text = "\n".join(raw_lines)
+
+        this_record_id = record_id
+        records_to_insert.append({
+            "record_id": this_record_id,
+            "source_id": source_id,
+            "record_parameters": json.dumps({"document_id": document_id}),
+            "raw_text": raw_text,
+            "event_type": "census",
+            "date_as_recorded": cfg["date_as_recorded"],
+            "date": cfg["census_date"],
+            "date_qualifier": "exact",
+            "place_as_recorded": townland or None,
+            "notes": doc_note,
+        })
+        record_id += 1
+        records_committed += 1
+
+        for row in rows:
+            forename = (row.get(cfg["forename_col"]) or "").strip()
+            surname = (row.get(cfg["surname_col"]) or "").strip()
+            name_as_recorded = f"{forename} {surname}".strip()
+
+            person_notes: list[str] = []
+            if not name_as_recorded:
+                name_as_recorded = "[unknown]"
+                person_notes.append("Both forename and surname were blank in source")
+
+            relation_raw = row.get(cfg["relation_col"])
+            if not relation_raw and cfg["relation_fallback_col"]:
+                relation_raw = row.get(cfg["relation_fallback_col"])
+            role, role_note = _map_role(relation_raw)
+            if role_note:
+                person_notes.append(role_note)
                 parse_notes.append({
                     "image_group": household_key,
-                    "name": "",
-                    "note": doc_note,
+                    "name": name_as_recorded,
+                    "note": role_note,
                 })
 
-            raw_lines = [",".join(fieldnames)] + [_row_to_line(fieldnames, r) for r in rows]
-            raw_text = "\n".join(raw_lines)
+            age_as_recorded = row.get(cfg["age_col"])
+            age, age_note = _parse_age(age_as_recorded)
+            if age_note:
+                person_notes.append(age_note)
+                parse_notes.append({
+                    "image_group": household_key,
+                    "name": name_as_recorded,
+                    "note": age_note,
+                })
 
-            this_record_id = record_id
-            insert_record(
-                conn,
-                record_id=this_record_id,
-                source_id=source_id,
-                record_parameters=json.dumps({"document_id": document_id}),
-                raw_text=raw_text,
-                event_type="census",
-                date_as_recorded=cfg["date_as_recorded"],
-                date=cfg["census_date"],
-                date_qualifier="exact",
-                place_as_recorded=townland or None,
-                notes=doc_note,
-            )
-            record_id += 1
-            records_committed += 1
+            occupation = None
+            if cfg["occupation_col"]:
+                occupation = (row.get(cfg["occupation_col"]) or "").strip() or None
+            if not occupation and cfg["occupation_fallback_col"]:
+                occupation = (row.get(cfg["occupation_fallback_col"]) or "").strip() or None
 
-            for row in rows:
-                forename = (row.get(cfg["forename_col"]) or "").strip()
-                surname = (row.get(cfg["surname_col"]) or "").strip()
-                name_as_recorded = f"{forename} {surname}".strip()
+            birthplace = (row.get(cfg["birthplace_col"]) or "").strip() or None
+            sex_as_recorded = (row.get(cfg["sex_col"]) or "").strip() or None
 
-                person_notes: list[str] = []
-                if not name_as_recorded:
-                    name_as_recorded = "[unknown]"
-                    person_notes.append("Both forename and surname were blank in source")
+            persons_to_insert.append({
+                "recorded_person_id": recorded_person_id,
+                "record_id": this_record_id,
+                "name_as_recorded": name_as_recorded,
+                "role": role,
+                "age_as_recorded": age_as_recorded,
+                "age": age,
+                "sex_as_recorded": sex_as_recorded,
+                "occupation_as_recorded": occupation,
+                "place_as_recorded": birthplace,
+                "notes": "; ".join(person_notes) or None,
+            })
+            recorded_person_id += 1
+            persons_committed += 1
 
-                relation_raw = row.get(cfg["relation_col"])
-                if not relation_raw and cfg["relation_fallback_col"]:
-                    relation_raw = row.get(cfg["relation_fallback_col"])
-                role, role_note = _map_role(relation_raw)
-                if role_note:
-                    person_notes.append(role_note)
-                    parse_notes.append({
-                        "image_group": household_key,
-                        "name": name_as_recorded,
-                        "note": role_note,
-                    })
-
-                age_as_recorded = row.get(cfg["age_col"])
-                age, age_note = _parse_age(age_as_recorded)
-                if age_note:
-                    person_notes.append(age_note)
-                    parse_notes.append({
-                        "image_group": household_key,
-                        "name": name_as_recorded,
-                        "note": age_note,
-                    })
-
-                occupation = None
-                if cfg["occupation_col"]:
-                    occupation = (row.get(cfg["occupation_col"]) or "").strip() or None
-                if not occupation and cfg["occupation_fallback_col"]:
-                    occupation = (row.get(cfg["occupation_fallback_col"]) or "").strip() or None
-
-                birthplace = (row.get(cfg["birthplace_col"]) or "").strip() or None
-                sex_as_recorded = (row.get(cfg["sex_col"]) or "").strip() or None
-
-                insert_recorded_person(
-                    conn,
-                    recorded_person_id=recorded_person_id,
-                    record_id=this_record_id,
-                    name_as_recorded=name_as_recorded,
-                    role=role,
-                    age_as_recorded=age_as_recorded,
-                    age=age,
-                    sex_as_recorded=sex_as_recorded,
-                    occupation_as_recorded=occupation,
-                    place_as_recorded=birthplace,
-                    notes="; ".join(person_notes) or None,
-                )
-                recorded_person_id += 1
-                persons_committed += 1
+    # Bulk insert all records and persons in one transaction
+    with conn:
+        bulk_insert_records(conn, records_to_insert)
+        bulk_insert_recorded_persons(conn, persons_to_insert)
 
     return {
         "source_title": source["title"],

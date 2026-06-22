@@ -133,6 +133,84 @@ def _link_event_to_record(
         )
 
 
+def _bulk_create_events(
+    conn: psycopg2.extensions.connection,
+    events: list[dict],
+) -> list[int]:
+    """
+    Bulk create Events and return list of generated event_ids.
+
+    Each dict must have keys: type, date, date_qualifier, place_id,
+    relationship_id, is_primary
+
+    Returns list of event_ids in same order as input.
+    """
+    if not events:
+        return []
+
+    with conn.cursor() as cur:
+        values_template = "(%s, %s, %s, %s, %s, %s)"
+        values_clause = ", ".join([values_template] * len(events))
+
+        values = []
+        for e in events:
+            values.extend([
+                e["type"], e["date"], e["date_qualifier"],
+                e["place_id"], e["relationship_id"],
+                1 if e["is_primary"] else 0
+            ])
+
+        cur.execute(
+            f"INSERT INTO event (type, date, date_qualifier, place_id, relationship_id, is_primary) "
+            f"VALUES {values_clause} "
+            f"RETURNING event_id",
+            values
+        )
+        return [row["event_id"] for row in cur.fetchall()]
+
+
+def _bulk_link_events_to_persons(
+    conn: psycopg2.extensions.connection,
+    links: list[tuple[int, int]],
+) -> None:
+    """Bulk insert person_event links. Expects (person_id, event_id) tuples. ON CONFLICT DO NOTHING."""
+    if not links:
+        return
+
+    with conn.cursor() as cur:
+        values_template = "(%s, %s)"
+        values_clause = ", ".join([values_template] * len(links))
+        values = [item for pair in links for item in pair]  # Flatten
+
+        cur.execute(
+            f"INSERT INTO person_event (person_id, event_id) "
+            f"VALUES {values_clause} "
+            f"ON CONFLICT DO NOTHING",
+            values
+        )
+
+
+def _bulk_link_events_to_records(
+    conn: psycopg2.extensions.connection,
+    links: list[tuple[int, int]],
+) -> None:
+    """Bulk insert event_record links."""
+    if not links:
+        return
+
+    with conn.cursor() as cur:
+        values_template = "(%s, %s, 0)"  # verified=0
+        values_clause = ", ".join([values_template] * len(links))
+        values = [item for pair in links for item in pair]  # Flatten
+
+        cur.execute(
+            f"INSERT INTO event_record (event_id, record_id, verified) "
+            f"VALUES {values_clause} "
+            f"ON CONFLICT DO NOTHING",
+            values
+        )
+
+
 # ---------------------------------------------------------------------------
 # Census Event creation
 # ---------------------------------------------------------------------------
@@ -458,6 +536,11 @@ def run_event_resolution(
         )
         records = cur.fetchall()
 
+    # Collect census event data for bulk creation
+    events_to_create = []
+    record_to_persons = {}  # Map record_id -> list of person_ids
+    record_ids_ordered = []  # Track order for matching with event_ids
+
     for record in records:
         record_id = record["record_id"]
         date = record["date"]
@@ -475,28 +558,46 @@ def run_event_resolution(
                 """,
                 (record_id,),
             )
-            linked_persons = cur.fetchall()
+            linked_persons = [row["person_id"] for row in cur.fetchall()]
 
         if not linked_persons:
             result.skipped_no_person += 1
             result.records_processed += 1
             continue
 
-        with conn:
-            # One census Event for the whole Record
-            event_id = _create_census_event(conn, record_id, date, place_id)
-            result.census_events_created += 1
-
-            # Link to the single Record (provenance)
-            _link_event_to_record(conn, event_id, record_id)
-            result.event_record_links += 1
-
-            # Link to every Person who appears in this household
-            for rp in linked_persons:
-                _link_event_to_person(conn, event_id, rp["person_id"])
-                result.person_event_links += 1
-
+        events_to_create.append({
+            "type": "census",
+            "date": date,
+            "date_qualifier": "exact",
+            "place_id": place_id,
+            "relationship_id": None,
+            "is_primary": True,
+        })
+        record_to_persons[record_id] = linked_persons
+        record_ids_ordered.append(record_id)
         result.records_processed += 1
+
+    # Bulk create all census events in one transaction
+    with conn:
+        event_ids = _bulk_create_events(conn, events_to_create)
+        result.census_events_created = len(event_ids)
+
+        # Build link lists
+        event_record_links = [(event_ids[i], record_ids_ordered[i])
+                              for i in range(len(event_ids))]
+
+        person_event_links = []
+        for i, event_id in enumerate(event_ids):
+            record_id = record_ids_ordered[i]
+            for person_id in record_to_persons[record_id]:
+                person_event_links.append((person_id, event_id))
+
+        # Bulk insert all links
+        _bulk_link_events_to_records(conn, event_record_links)
+        _bulk_link_events_to_persons(conn, person_event_links)
+
+        result.event_record_links += len(event_record_links)
+        result.person_event_links += len(person_event_links)
 
     # ------------------------------------------------------------------
     # Pass 2: Birth Events
@@ -516,26 +617,84 @@ def run_event_resolution(
         )
         person_ids = [row["person_id"] for row in cur.fetchall()]
 
+    # Collect all birth events to create
+    birth_events_to_create = []
+    birth_person_links = []  # (person_id, event_index_in_batch)
+    birth_record_links = []  # (record_id, event_index_in_batch)
+
     for person_id in person_ids:
         evidence = _collect_birth_evidence_for_person(conn, person_id)
         if not evidence:
             continue
 
-        with conn:
-            ev, pe, er = _create_birth_events_for_person(conn, person_id, evidence)
+        buckets = _group_birth_evidence(evidence)
+        if not buckets:
+            continue
 
-        result.birth_events_created += ev
-        result.person_event_links += pe
-        result.event_record_links += er
+        # Determine which bucket is primary
+        primary_year = max(buckets, key=lambda y: (len(buckets[y]), -y))
 
-        if ev > 1:
+        # Track if this person has multiple birth events (conflict)
+        if len(buckets) > 1:
             result.birth_conflicts_detected += 1
+
+        for canonical_year, records in buckets.items():
+            is_primary = (canonical_year == primary_year)
+
+            # Choose place from most common place_id in this bucket
+            place_candidates = [pid for _, pid in records if pid is not None]
+            place_id: int | None = None
+            if place_candidates:
+                place_id = Counter(place_candidates).most_common(1)[0][0]
+
+            date_str = f"{canonical_year}-01-01"
+
+            event_idx = len(birth_events_to_create)
+            birth_events_to_create.append({
+                "type": "birth",
+                "date": date_str,
+                "date_qualifier": "calculated",
+                "place_id": place_id,
+                "relationship_id": None,
+                "is_primary": is_primary,
+            })
+
+            # Track person link (will be filled with actual event_id later)
+            birth_person_links.append((person_id, event_idx))
+
+            # Track record links
+            for record_id, _ in records:
+                birth_record_links.append((record_id, event_idx))
+
+    # Bulk create all birth events
+    if birth_events_to_create:
+        with conn:
+            event_ids = _bulk_create_events(conn, birth_events_to_create)
+            result.birth_events_created = len(event_ids)
+
+            # Build actual link tuples using generated event_ids
+            person_event_links = [(person_id, event_ids[idx])
+                                  for person_id, idx in birth_person_links]
+            event_record_links = [(event_ids[idx], record_id)
+                                  for record_id, idx in birth_record_links]
+
+            # Bulk insert links
+            _bulk_link_events_to_persons(conn, person_event_links)
+            _bulk_link_events_to_records(conn, event_record_links)
+
+            result.person_event_links += len(person_event_links)
+            result.event_record_links += len(event_record_links)
 
     # ------------------------------------------------------------------
     # Pass 3: Marriage Events
     # ------------------------------------------------------------------
 
     couples = _get_couple_relationships(conn)
+
+    # Collect all marriage events to create
+    marriage_events_to_create = []
+    marriage_person_links = []  # (person_id, event_index_in_batch)
+    marriage_record_links = []  # (record_id, event_index_in_batch)
 
     for couple in couples:
         rel_id = couple["relationship_id"]
@@ -544,14 +703,42 @@ def run_event_resolution(
 
         supporting_records = _get_records_for_couple(conn, pid1, pid2)
 
-        with conn:
-            ev, pe, er = _create_marriage_event(
-                conn, rel_id, pid1, pid2, supporting_records
-            )
+        event_idx = len(marriage_events_to_create)
+        marriage_events_to_create.append({
+            "type": "marriage",
+            "date": None,
+            "date_qualifier": None,
+            "place_id": None,
+            "relationship_id": rel_id,
+            "is_primary": True,
+        })
 
-        result.marriage_events_created += ev
-        result.person_event_links += pe
-        result.event_record_links += er
+        # Track person links (both persons for this couple)
+        marriage_person_links.append((pid1, event_idx))
+        marriage_person_links.append((pid2, event_idx))
+
+        # Track record links
+        for record_id in supporting_records:
+            marriage_record_links.append((record_id, event_idx))
+
+    # Bulk create all marriage events
+    if marriage_events_to_create:
+        with conn:
+            event_ids = _bulk_create_events(conn, marriage_events_to_create)
+            result.marriage_events_created = len(event_ids)
+
+            # Build actual link tuples using generated event_ids
+            person_event_links = [(person_id, event_ids[idx])
+                                  for person_id, idx in marriage_person_links]
+            event_record_links = [(event_ids[idx], record_id)
+                                  for record_id, idx in marriage_record_links]
+
+            # Bulk insert links
+            _bulk_link_events_to_persons(conn, person_event_links)
+            _bulk_link_events_to_records(conn, event_record_links)
+
+            result.person_event_links += len(person_event_links)
+            result.event_record_links += len(event_record_links)
 
     return result
 

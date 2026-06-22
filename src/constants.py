@@ -95,7 +95,7 @@ SCORE_ROLE_SIBLING_INFERRED: float = 0.75    # son+son, daughter+daughter, son+d
 # Maximum pairs to commit per transaction within a source-pair run.
 # None = unbatched (commit all pairs for a source-pair in one transaction).
 # Set to an integer (e.g. 5000) for large datasets to reduce transaction size.
-BATCH_SIZE_RECORD_SIMILARITY: int | None = None
+BATCH_SIZE_RECORD_SIMILARITY: int | None = 5000
 
 # ---------------------------------------------------------------------------
 # Person similarity (evidence-layer Splink)
@@ -104,4 +104,4 @@ BATCH_SIZE_RECORD_SIMILARITY: int | None = None
 # Maximum pairs to commit per transaction within a source-pair run.
 # None = unbatched (commit all pairs for a source-pair in one transaction).
 # Set to an integer (e.g. 5000) for large datasets to reduce transaction size.
-BATCH_SIZE_PERSON_SIMILARITY: int | None = None
+BATCH_SIZE_PERSON_SIMILARITY: int | None = 5000
