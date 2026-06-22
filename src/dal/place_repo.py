@@ -26,41 +26,6 @@ def get_all_authorities(conn: psycopg2.extensions.connection) -> list[dict]:
         return cur.fetchall()
 
 
-def get_unlinked_place_tokens(
-    conn: psycopg2.extensions.connection,
-) -> tuple[dict[str, dict], int]:
-    """
-    Collect all distinct place_as_recorded strings from record,
-    grouped by raw value. Normalisation is the caller's responsibility
-    (place_resolution.py applies Jaro-Winkler normalisation before calling).
-
-    Returns:
-        token_map: {raw_string: {"raw": str, "record_ids": [int]}}
-        blank_count: number of records with null/blank place_as_recorded
-    """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT record_id, place_as_recorded FROM record "
-            "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
-        )
-        rows = cur.fetchall()
-
-        cur.execute(
-            "SELECT COUNT(*) FROM record "
-            "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
-        )
-        blank_count = cur.fetchone()["count"]
-
-    token_map: dict[str, dict] = {}
-    for row in rows:
-        raw = row["place_as_recorded"]
-        if raw not in token_map:
-            token_map[raw] = {"raw": raw, "record_ids": []}
-        token_map[raw]["record_ids"].append(row["record_id"])
-
-    return token_map, blank_count
-
-
 def get_linked_record_ids(conn: psycopg2.extensions.connection) -> set[int]:
     """Return the set of record_ids already present in place_record."""
     with conn.cursor() as cur:

@@ -39,14 +39,16 @@ def get_unprocessed_census_records(
 ) -> list[dict]:
     """
     Return all Records for source_id that have not yet been processed by
-    household inference (i.e. not yet present in person_recorded_person).
+    household inference (i.e. no RecordedPerson in the record has been linked
+    to a Person via person_recorded_person).
 
     Row keys: record_id, date, place_as_recorded
 
-    Performance note: the NOT IN correlated subquery is correct but will scan
-    both junction tables on every call. At Donegal scale (168K records) this
-    should be rewritten as NOT EXISTS or a LEFT JOIN ... WHERE IS NULL pattern.
-    Acceptable at Tullynaught scale; flag for the evidence layer session.
+    Implementation note: uses NOT EXISTS with a correlated subquery joining
+    recorded_person → person_recorded_person on recorded_person_id (not
+    record_id, which person_recorded_person does not have).  This is
+    correct and performs acceptably at Donegal scale (avoids the N² scan of
+    the previous NOT IN approach).
     """
     with conn.cursor() as cur:
         cur.execute(
@@ -54,11 +56,12 @@ def get_unprocessed_census_records(
             SELECT r.record_id, r.date, r.place_as_recorded
             FROM record r
             WHERE r.source_id = %s
-              AND r.record_id NOT IN (
-                  SELECT DISTINCT record_id
+              AND NOT EXISTS (
+                  SELECT 1
                   FROM recorded_person rp
                   JOIN person_recorded_person prp
                     ON prp.recorded_person_id = rp.recorded_person_id
+                  WHERE rp.record_id = r.record_id
               )
             ORDER BY r.record_id
             """,
@@ -67,21 +70,6 @@ def get_unprocessed_census_records(
         return cur.fetchall()
 
 
-def get_recorded_persons(
-    conn: psycopg2.extensions.connection,
-    record_id: int,
-) -> list[dict]:
-    """
-    Return all RecordedPerson rows for a given record, ordered by
-    recorded_person_id (i.e. original row order within the household).
-    """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT * FROM recorded_person WHERE record_id = %s "
-            "ORDER BY recorded_person_id",
-            (record_id,),
-        )
-        return cur.fetchall()
 
 
 # ---------------------------------------------------------------------------

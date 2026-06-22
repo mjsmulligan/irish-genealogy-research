@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import psycopg2.extensions
+from rapidfuzz.distance import JaroWinkler
 
 from src.constants import AUTO_COMMIT_THRESHOLD
 
@@ -103,14 +104,24 @@ def _get_household_members(
         return cur.fetchall()
 
 
-def _match_score(rp1: dict, rp2: dict) -> float:
+_NAME_JW_THRESHOLD: float = 0.85   # JaroWinkler threshold for name match
+
+
+def _match_score(rp1: dict, rp2: dict, census_gap: int) -> float:
     """
     Calculate match score between two RecordedPersons.
 
-    Considers: role, name similarity, age progression (10 years for 1901↔1911),
-    sex consistency.
+    Considers: role, name similarity (JaroWinkler ≥ 0.85), age progression
+    using the actual gap between census years, and sex consistency.
 
-    Returns score 0.0-1.0 where 1.0 = perfect match.
+    Args:
+        rp1: RecordedPerson dict from the earlier census.
+        rp2: RecordedPerson dict from the later census.
+        census_gap: Number of years between the two census dates (e.g. 10 for
+            1901↔1911, 25 for 1901↔1926). Used to set the expected age
+            progression window (gap ± 2 years).
+
+    Returns score 0.0–1.0 where 1.0 = perfect match.
     """
     score = 0.0
 
@@ -118,22 +129,26 @@ def _match_score(rp1: dict, rp2: dict) -> float:
     if rp1["role"] == rp2["role"]:
         score += 0.3
 
-    # Name similarity (0.3 weight) - simple exact match for now
-    name1 = (rp1["name_as_recorded"] or "").lower().strip()
-    name2 = (rp2["name_as_recorded"] or "").lower().strip()
-    if name1 and name2 and name1 == name2:
-        score += 0.3
+    # Name similarity (0.3 weight) — JaroWinkler handles NAI spelling variants
+    # (Brigid/Bridget, Michael/Micheal, Patrick/Patk, etc.)
+    name1 = (rp1["name_as_recorded"] or "").strip()
+    name2 = (rp2["name_as_recorded"] or "").strip()
+    if name1 and name2:
+        jw = JaroWinkler.similarity(name1, name2)
+        if jw >= _NAME_JW_THRESHOLD:
+            score += 0.3
 
     # Age progression (0.2 weight)
-    # Expect ~10 year difference for 1901↔1911, ~25 for 1901↔1926
+    # Expected difference is the census gap; allow ± 2 years for rounding /
+    # age heaping. Outer band ± 5 years gets partial credit.
     age1 = rp1["age"]
     age2 = rp2["age"]
     if age1 is not None and age2 is not None:
         age_diff = abs(age2 - age1)
-        # Ideal: 10 years; acceptable: 8-12 years
-        if 8 <= age_diff <= 12:
+        ideal = census_gap
+        if abs(age_diff - ideal) <= 2:
             score += 0.2
-        elif 5 <= age_diff <= 15:
+        elif abs(age_diff - ideal) <= 5:
             score += 0.1
 
     # Sex consistency (0.2 weight)
@@ -148,11 +163,21 @@ def _match_score(rp1: dict, rp2: dict) -> float:
     return score
 
 
-def _match_households(h1_members: list[dict], h2_members: list[dict]) -> list[tuple[dict, dict]]:
+def _match_households(
+    h1_members: list[dict],
+    h2_members: list[dict],
+    census_gap: int,
+) -> list[tuple[dict, dict]]:
     """
     Match RecordedPersons across two households using greedy algorithm.
 
-    Returns list of (rp1, rp2) pairs.
+    Args:
+        h1_members: Members of the earlier household.
+        h2_members: Members of the later household.
+        census_gap: Years between the two census dates — passed through to
+            _match_score() for dynamic age-progression window.
+
+    Returns list of (rp1, rp2) pairs where rp1 is from the earlier household.
     """
     matches = []
     used_h2 = set()
@@ -165,7 +190,7 @@ def _match_households(h1_members: list[dict], h2_members: list[dict]) -> list[tu
             if i in used_h2:
                 continue
 
-            score = _match_score(rp1, rp2)
+            score = _match_score(rp1, rp2, census_gap)
             if score > best_score:
                 best_score = score
                 best_match = (i, rp2)
@@ -268,11 +293,22 @@ def _ensure_relationship(
     rel_type: str,
 ) -> Optional[int]:
     """
-    Ensure a Relationship exists between two Persons.
+    Ensure a Relationship exists between two Persons and populate its evidence
+    provenance in relationship_recorded_relationship.
 
-    Returns relationship_id if created/found, None if it already exists.
+    Evidence lookup: find all RecordedRelationships of matching type whose two
+    RecordedPersons are linked to person_id_1 and person_id_2 respectively (in
+    either order).  These are the ingest-time role-pair rows created by
+    role_relationships.py.
+
+    Returns relationship_id if newly created, None if it already existed.
+    (Provenance rows are written either way for any new RecordedRelationships
+    not yet linked.)
     """
-    # Check if relationship already exists
+    from src.dal.relationship_repo import insert_relationship_recorded_relationship
+    from src.constants import SCORE_VERSION_ROLE_PAIR
+
+    # Check if relationship already exists (either direction)
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -287,19 +323,54 @@ def _ensure_relationship(
         existing = cur.fetchone()
 
     if existing:
-        return None  # Already exists
+        rel_id = existing["relationship_id"]
+        created = False
+    else:
+        # Create new Relationship
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO relationship (type, person_id_1, person_id_2)
+                VALUES (%s, %s, %s)
+                RETURNING relationship_id
+                """,
+                (rel_type, person_id_1, person_id_2),
+            )
+            rel_id = cur.fetchone()["relationship_id"]
+        created = True
 
-    # Create new Relationship
+    # Populate provenance: find RecordedRelationships of this type linking the
+    # two Persons' RecordedPersons, then write to relationship_recorded_relationship.
+    # ON CONFLICT DO NOTHING in the DAL function makes this idempotent.
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO relationship (type, person_id_1, person_id_2)
-            VALUES (%s, %s, %s)
-            RETURNING relationship_id
+            SELECT rr.recorded_relationship_id, rr.score
+            FROM recorded_relationship rr
+            JOIN person_recorded_person prp1
+                ON prp1.recorded_person_id = rr.recorded_person_id_1
+            JOIN person_recorded_person prp2
+                ON prp2.recorded_person_id = rr.recorded_person_id_2
+            WHERE rr.type = %s
+              AND (
+                  (prp1.person_id = %s AND prp2.person_id = %s)
+               OR (prp1.person_id = %s AND prp2.person_id = %s)
+              )
             """,
-            (rel_type, person_id_1, person_id_2),
+            (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
         )
-        return cur.fetchone()["relationship_id"]
+        rr_rows = cur.fetchall()
+
+    for rr in rr_rows:
+        insert_relationship_recorded_relationship(
+            conn,
+            relationship_id=rel_id,
+            recorded_relationship_id=rr["recorded_relationship_id"],
+            score=rr["score"] if rr["score"] is not None else 0.0,
+            score_version=SCORE_VERSION_ROLE_PAIR,
+        )
+
+    return rel_id if created else None
 
 
 def _create_relationships_from_household(
@@ -421,6 +492,21 @@ def _detect_spouse_triangulation_conflicts(
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _get_record_year(conn: psycopg2.extensions.connection, record_id: int) -> int | None:
+    """Return the four-digit census year for a record, or None if unavailable."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT date FROM record WHERE record_id = %s",
+            (record_id,),
+        )
+        row = cur.fetchone()
+    if not row or not row["date"]:
+        return None
+    import re
+    m = re.match(r"^(\d{4})", row["date"])
+    return int(m.group(1)) if m else None
+
+
 def run_relationship_resolution(
     conn: psycopg2.extensions.connection,
     household_threshold: float = AUTO_COMMIT_THRESHOLD,
@@ -431,9 +517,13 @@ def run_relationship_resolution(
 
     Algorithm:
       1. For each high-similarity household pair (>= threshold):
+         - Derive census_gap from the two record dates (items 21/22)
          - Match RecordedPersons by role/name/age
          - Create or link Persons for matches
-         - Create Relationships from family structure
+         - Re-fetch household members from DB after Person assignments so
+           relationship creation sees correct person_ids (item 23 fix)
+         - Create Relationships from household family structure; populate
+           relationship_recorded_relationship provenance (item 24 fix)
       2. Detect merge candidates (spouse triangulation, etc.)
       3. Return results with merge candidates for review
 
@@ -441,29 +531,49 @@ def run_relationship_resolution(
     """
     result = RelationshipResolutionResult()
 
-    # Step 1: Fetch high-similarity household pairs
+    # Step 1: Fetch high-similarity household pairs with their record dates
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT record_id_1, record_id_2, score
-            FROM record_similarity
-            WHERE score >= %s
-            ORDER BY score DESC
+            SELECT
+                rs.record_id_1,
+                rs.record_id_2,
+                rs.score,
+                r1.date AS date_1,
+                r2.date AS date_2
+            FROM record_similarity rs
+            JOIN record r1 ON r1.record_id = rs.record_id_1
+            JOIN record r2 ON r2.record_id = rs.record_id_2
+            WHERE rs.score >= %s
+            ORDER BY rs.score DESC
             """,
             (household_threshold,),
         )
         household_pairs = cur.fetchall()
 
     # Step 2: Process each household pair
+    import re as _re
+
+    def _year(date_str):
+        if not date_str:
+            return None
+        m = _re.match(r"^(\d{4})", date_str)
+        return int(m.group(1)) if m else None
+
     for pair in household_pairs:
         record_id_1 = pair["record_id_1"]
         record_id_2 = pair["record_id_2"]
 
+        # Derive census gap for dynamic age-progression window (item 21)
+        year_1 = _year(pair["date_1"])
+        year_2 = _year(pair["date_2"])
+        census_gap = abs(year_2 - year_1) if (year_1 and year_2) else 10  # fallback
+
         h1_members = _get_household_members(conn, record_id_1)
         h2_members = _get_household_members(conn, record_id_2)
 
-        # Match members
-        matches = _match_households(h1_members, h2_members)
+        # Match members using dynamic gap (items 21, 22)
+        matches = _match_households(h1_members, h2_members, census_gap)
 
         # Determine case type
         has_existing_persons = any(
@@ -491,13 +601,22 @@ def run_relationship_resolution(
                 _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
                 result.linkages_created += 2
 
-                # Update members with person_id for relationship creation
-                rp1["person_id"] = person_id
-                rp2["person_id"] = person_id
+                # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
+                # The in-memory dicts are from pre-assignment fetches; setting
+                # both to the same person_id would cause _create_relationships_from_household
+                # to see household members as identical Persons and skip all
+                # relationship creation.  Instead, re-fetch from DB below (item 23).
 
-            # Create Relationships from household structure
-            rels_created = _create_relationships_from_household(conn, h1_members)
-            rels_created += _create_relationships_from_household(conn, h2_members)
+            # Re-fetch household members so person_id reflects all DB writes
+            # made above.  This is the item 23 fix: relationship creation now
+            # sees correct, distinct person_ids rather than the mutated dicts.
+            h1_members_fresh = _get_household_members(conn, record_id_1)
+            h2_members_fresh = _get_household_members(conn, record_id_2)
+
+            # Create Relationships from household structure (item 24: provenance
+            # is populated inside _ensure_relationship)
+            rels_created = _create_relationships_from_household(conn, h1_members_fresh)
+            rels_created += _create_relationships_from_household(conn, h2_members_fresh)
             result.relationships_created += rels_created
 
         result.households_processed += 1

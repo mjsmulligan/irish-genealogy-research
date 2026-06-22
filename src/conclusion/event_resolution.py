@@ -6,10 +6,12 @@ of the conclusion pipeline.
 
 Three types of Events created:
 
-1. Census Events (individual census appearance)
-   - One per RecordedPerson who has a Person
+1. Census Events (household census appearance)
+   - One per Record (household) — all Persons in the household share the event
    - type='census', date from Record, place from place_record
    - is_primary=1 (census Events record distinct moments in time; no conflict)
+   - All Persons linked to RecordedPersons in the household are attached via
+     person_event; the Record is attached via event_record
 
 2. Birth Events (calculated from age)
    - Derived from census age: birth_year = census_year - age
@@ -410,8 +412,9 @@ def run_event_resolution(
 
     Pass 1 — Census Events:
       For each census Record:
-        - Get all RecordedPersons that have a Person linkage
-        - For each: create a census Event, link to Person and Record
+        - Get all distinct Persons linked (via any RecordedPerson) to this Record
+        - Create ONE census Event for the Record
+        - Link Event to the Record (provenance) and to each Person (person_event)
 
     Pass 2 — Birth Events:
       For each Person who appeared in at least one census:
@@ -433,6 +436,11 @@ def run_event_resolution(
     # ------------------------------------------------------------------
     # Pass 1: Census Events
     # ------------------------------------------------------------------
+    # Design intent (conceptual_model.md): one census Event per Record,
+    # capturing that "this household was enumerated."  All Persons linked
+    # to RecordedPersons in the household are attached via person_event.
+    # This replaces the previous per-RecordedPerson loop that created N
+    # duplicate Events for an N-person household (item 25 fix).
 
     # Fetch all census Records with their place linkage
     with conn.cursor() as cur:
@@ -455,13 +463,11 @@ def run_event_resolution(
         date = record["date"]
         place_id = record["place_id"]
 
-        # Get RecordedPersons that have been linked to a Person
+        # Get distinct Persons linked to this household (via any RecordedPerson)
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT
-                    rp.recorded_person_id,
-                    prp.person_id
+                SELECT DISTINCT prp.person_id
                 FROM recorded_person rp
                 JOIN person_recorded_person prp
                     ON prp.recorded_person_id = rp.recorded_person_id
@@ -477,15 +483,18 @@ def run_event_resolution(
             continue
 
         with conn:
-            for rp in linked_persons:
-                event_id = _create_census_event(conn, record_id, date, place_id)
-                result.census_events_created += 1
+            # One census Event for the whole Record
+            event_id = _create_census_event(conn, record_id, date, place_id)
+            result.census_events_created += 1
 
+            # Link to the single Record (provenance)
+            _link_event_to_record(conn, event_id, record_id)
+            result.event_record_links += 1
+
+            # Link to every Person who appears in this household
+            for rp in linked_persons:
                 _link_event_to_person(conn, event_id, rp["person_id"])
                 result.person_event_links += 1
-
-                _link_event_to_record(conn, event_id, record_id)
-                result.event_record_links += 1
 
         result.records_processed += 1
 
