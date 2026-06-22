@@ -11,6 +11,7 @@ Each row represents one RecordedPerson.  Columns:
     place_id            INTEGER  — resolved place_id from the parent Record, or NULL
     surname_norm        TEXT     — normalised surname (last token of name_as_recorded)
     forename_norm       TEXT     — normalised forenames (all tokens except last)
+    name_norm           TEXT     — forename_norm + " " + surname_norm (full name for Splink comparison)
     birth_year_est      INTEGER  — census_year − age (NULL if age is NULL)
     sex_as_recorded     TEXT     — 'm' / 'f' / NULL
 
@@ -104,13 +105,22 @@ def build_census_person_features(
             age = p["age"]
             birth_year_est = (census_year - int(age)) if (census_year and age is not None) else None
 
+            surname = _surname_from(p["name_as_recorded"])
+            forename = _forename_from(p["name_as_recorded"])
+            name_norm = (
+                f"{forename} {surname}".strip()
+                if forename
+                else surname
+            ) or None
+
             rows.append(
                 {
                     "unique_id": p["recorded_person_id"],
                     "source_id": source_id,
                     "place_id": p["place_id"],
-                    "surname_norm": _surname_from(p["name_as_recorded"]),
-                    "forename_norm": _forename_from(p["name_as_recorded"]),
+                    "surname_norm": surname,
+                    "forename_norm": forename,
+                    "name_norm": name_norm,
                     "birth_year_est": birth_year_est,
                     "sex_as_recorded": _norm(p["sex_as_recorded"]) or None,
                 }
