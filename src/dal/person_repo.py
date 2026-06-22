@@ -12,40 +12,6 @@ from __future__ import annotations
 import psycopg2.extensions
 
 
-def next_ids(conn: psycopg2.extensions.connection) -> dict[str, int]:
-    """
-    Return the next available primary key for each conclusion-layer table
-    that the household inference stage inserts into.
-
-    Keys: "person", "relationship", "event", "person_name"
-
-    Note: with GENERATED ALWAYS AS IDENTITY, explicit ID insertion is only
-    needed during bulk-load passes (household_inference). Normal single-row
-    inserts should use RETURNING to get the generated ID instead. This
-    function remains for compatibility with the current bulk-insert pattern.
-
-    Concurrency note: MAX(...) + 1 is not safe under concurrent access — two
-    callers can receive the same value. This is acceptable for the single-user
-    CLI pattern. If concurrent access is ever introduced (agent tier, UI), this
-    must be replaced with RETURNING or a sequence-backed approach.
-    """
-    with conn.cursor() as cur:
-        cur.execute("SELECT COALESCE(MAX(person_id), 0) + 1 FROM person")
-        person = cur.fetchone()["coalesce"]
-        cur.execute("SELECT COALESCE(MAX(relationship_id), 0) + 1 FROM relationship")
-        relationship = cur.fetchone()["coalesce"]
-        cur.execute("SELECT COALESCE(MAX(event_id), 0) + 1 FROM event")
-        event = cur.fetchone()["coalesce"]
-        cur.execute("SELECT COALESCE(MAX(person_name_id), 0) + 1 FROM person_name")
-        person_name = cur.fetchone()["coalesce"]
-    return {
-        "person": person,
-        "relationship": relationship,
-        "event": event,
-        "person_name": person_name,
-    }
-
-
 def insert_person(
     conn: psycopg2.extensions.connection,
     person_id: int,

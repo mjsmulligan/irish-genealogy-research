@@ -6,14 +6,14 @@ place_authority table in the GRA database.
 Can also export to CSV for inspection or manual editing before DB import.
 
 CLI usage:
-    # Fetch and write directly to DB
-    python -m src.cli fetch-places --logainm-id 111482 --db genealogy.db
+    # Fetch and write directly to DB (uses DATABASE_URL from environment)
+    python -m src.cli fetch-places --logainm-id 111482
 
     # Fetch and export to CSV only (no DB write)
     python -m src.cli fetch-places --logainm-id 111482 --csv output.csv
 
     # Fetch, export CSV, and write to DB
-    python -m src.cli fetch-places --logainm-id 111482 --db genealogy.db --csv output.csv
+    python -m src.cli fetch-places --logainm-id 111482 --csv output.csv
 
 The logainm ID is the numeric ID from the logainm.ie URL, e.g.:
     https://www.logainm.ie/en/111482  →  111482 (Tullynaught DED)
@@ -27,7 +27,6 @@ from __future__ import annotations
 import argparse
 import csv
 import os
-import sqlite3
 import sys
 import time
 from dataclasses import dataclass, field
@@ -535,17 +534,13 @@ def main() -> None:
         help="Numeric logainm.ie place ID (e.g. 111482 for Tullynaught DED). Required unless --from-csv is used.",
     )
     parser.add_argument(
-        "--db", default=None,
-        help="Path to GRA database. If provided, fetched rows are written to place_authority.",
-    )
-    parser.add_argument(
         "--csv", default=None,
-        help="Path to export CSV file. If provided, fetched rows are written to CSV.",
+        help="Path to export CSV file. If provided, fetched rows are also written to CSV.",
     )
     parser.add_argument(
         "--from-csv", default=None,
         help="Load from an existing CSV file instead of calling the API. "
-             "Use with --db to import a previously-exported or manually-edited file.",
+             "Use this to import a previously-exported or manually-edited file.",
     )
     parser.add_argument(
         "--api-key", default=None,
@@ -557,8 +552,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not args.db and not args.csv:
-        parser.error("At least one of --db or --csv is required.")
     if not args.from_csv and args.logainm_id is None:
         parser.error("--logainm-id is required when not using --from-csv.")
 
@@ -592,13 +585,12 @@ def main() -> None:
         write_to_csv(rows, args.csv)
         print(f"  CSV written to: {args.csv}")
 
-    # Write DB
-    if args.db:
-        from src.db.db import open_db, check_version
-        conn = open_db(args.db)
-        check_version(conn)
-        inserted, skipped = write_to_db(conn, rows)
-        print(f"  DB: {inserted} inserted, {skipped} skipped (already present).")
+    # Write to DB via DATABASE_URL
+    from src.db.db import open_db, check_version
+    conn = open_db()
+    check_version(conn)
+    inserted, skipped = write_to_db(conn, rows)
+    print(f"  DB: {inserted} inserted, {skipped} skipped (already present).")
 
 
 if __name__ == "__main__":

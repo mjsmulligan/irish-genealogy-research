@@ -20,8 +20,9 @@ import ast
 import csv
 import io
 import json
-import sqlite3
 from pathlib import Path
+
+import psycopg2.extensions
 
 from src.dal.record_repo import (
     insert_record,
@@ -226,7 +227,7 @@ def _row_to_line(fieldnames: list[str], row: dict) -> str:
 
 
 def ingest_census(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     file_path: str,
     source_id: int,
 ) -> dict:

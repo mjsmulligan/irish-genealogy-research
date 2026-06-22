@@ -7,7 +7,7 @@ Designed for two use cases:
      (e.g. church parishes, historically-named features)
 
 CLI usage:
-    python -m src.cli seed-places --file PATH [--db PATH]
+    python -m src.cli seed-places --file PATH
 
 CSV schema: matches place_authority table columns exactly.
 Required columns: place_id, name_en, place_type
@@ -20,7 +20,7 @@ call unless place_id already exists — use with care for manual entries.
 
 from __future__ import annotations
 
-import sqlite3
+import psycopg2.extensions
 from pathlib import Path
 
 from src.db.fetch_places import (
@@ -30,7 +30,7 @@ from src.db.fetch_places import (
 
 
 def seed_places(
-    conn: sqlite3.Connection,
+    conn: psycopg2.extensions.connection,
     csv_path: str,
 ) -> dict:
     """

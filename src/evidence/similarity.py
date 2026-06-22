@@ -2,9 +2,7 @@
 GRA — Evidence Layer: Record Similarity
 
 Runs Splink across census Records (households) and writes the results as
-RecordSimilarity rows. This is the evidence-layer complement to the
-conclusion-layer household linkage pass in src/pipeline/linkage.py, which
-that pass will eventually supersede.
+RecordSimilarity rows.
 
 Design decisions:
   - Unit of comparison: Record (household), not RecordedPerson. Households
@@ -18,15 +16,16 @@ Design decisions:
   - Canonical ordering: record_id_1 < record_id_2 enforced before insert to
     prevent duplicate measurements from reversed orderings.
 
-Splink settings mirror _build_household_settings() from pipeline/linkage.py:
+Splink settings:
   link_type = "link_only" — cross-source pairs only, never within-source.
   Blocking: place_id (primary), substr(household_surname_norm, 1, 4) (fallback).
   Comparisons: household_surname_norm (JaroWinkler + TF), adult_forenames_sorted
     (S–S), child_forenames_young (S–S), child_forenames_older (S–S), place_id
     (exact match).
 
-Entry point:
+Entry points:
     run_record_similarity(conn) -> RecordSimilarityResult
+    run_person_similarity(conn) -> PersonSimilarityResult
 """
 
 from __future__ import annotations
@@ -47,7 +46,7 @@ from src.constants import (
     SCORE_VERSION_RECORD_SIMILARITY,
 )
 from src.dal.record_similarity_repo import insert_record_similarity
-from src.pipeline.features.census import build_census_household_features
+from src.evidence.features.census import build_census_household_features
 
 
 # ---------------------------------------------------------------------------
@@ -85,11 +84,6 @@ def _ss_sql(col: str) -> str:
 def _build_settings() -> SettingsCreator:
     """
     Splink settings for evidence-layer household similarity.
-
-    Mirrors _build_household_settings() from pipeline/linkage.py. Using the
-    same feature set ensures that similarity scores are comparable and that
-    the conclusion layer can consume RecordSimilarity rows directly when the
-    old household linkage pass is retired.
 
     link_type = "link_only": cross-source pairs only. Each census source is
     a separate DataFrame; Splink generates cross-DataFrame pairs only.
@@ -509,7 +503,7 @@ def run_person_similarity(
         BATCH_SIZE_PERSON_SIMILARITY,
         SCORE_VERSION_PERSON_SIMILARITY,
     )
-    from src.pipeline.features.census_person import build_census_person_features
+    from src.evidence.features.census_person import build_census_person_features
 
     result = PersonSimilarityResult()
 
