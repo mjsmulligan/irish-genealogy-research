@@ -1,5 +1,5 @@
 -- GRA — Genealogy Research Assistant
--- Schema version 3.1 — 19 June 2026
+-- Schema version 3.2 — 22 June 2026
 -- PostgreSQL 15+ required
 --
 -- Changes from v3.0 (SQLite) → v3.1 (PostgreSQL):
