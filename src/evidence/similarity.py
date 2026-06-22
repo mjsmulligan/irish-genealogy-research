@@ -381,7 +381,7 @@ def _build_person_settings() -> SettingsCreator:
       Fallback: first 4 chars of surname_norm (phonetic-adjacent)
 
     Comparisons:
-      - name_normalized (Jaro-Winkler with TF adjustment)
+      - name_norm (Jaro-Winkler with TF adjustment; forename + surname concatenated)
       - birth_year_est (absolute difference bands: 0, <=2, <=5)
       - sex_as_recorded (exact match)
       - place_id (exact match)
@@ -396,9 +396,9 @@ def _build_person_settings() -> SettingsCreator:
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
-            # Full name — JaroWinkler with TF adjustment for common names
+            # Full name (forename + surname) — JaroWinkler with TF adjustment for common names
             cl.JaroWinklerAtThresholds(
-                "name_normalized", [0.92, 0.80],
+                "name_norm", [0.92, 0.80],
             ).configure(term_frequency_adjustments=True),
 
             # Birth year — absolute difference bands
