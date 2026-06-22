@@ -3,7 +3,7 @@
 *Version 2.7 — 18 June 2026*
 *Audience: All roles. This document defines the what and why of the data model. It contains no implementation detail.*
 
----
+______________________________________________________________________
 
 ## 1. Design Principles
 
@@ -27,7 +27,7 @@ This system is built around a strict separation between what historical sources 
 
 **GEDCOMx alignment.** Where GEDCOMx vocabulary and concepts apply, they are adopted. Custom types for Irish-specific concepts use the namespace `http://irishgenealogy.local/gedcomx/{TypeName}`.
 
----
+______________________________________________________________________
 
 ## 2. Three-Layer Architecture
 
@@ -45,7 +45,7 @@ Verbatim assertions extracted directly from historical sources, together with th
 
 The analytical layer where historical reality is synthesised by the researcher. Conclusions are evaluated, mutable assertions supported by evidence. They are subject to revision as new evidence emerges.
 
----
+______________________________________________________________________
 
 ## 3. Object Summary
 
@@ -59,7 +59,7 @@ Conclusion:     Person         Relationship       Event
 
 Two paths were considered, built, and rejected. PlaceMembership — a junction table for place hierarchy — was rejected in favour of the flat denormalised hierarchy on PlaceAuthority; see §4.3. `training_labels` — a table for Person-merge proposals awaiting researcher review — was implemented, used, and then retired as a dead end. The gap it leaves (recording a candidate match before committing to it) is now reached for differently: as a `similarity` type on RecordedRelationship, evidence-side rather than conclusion-side.
 
----
+______________________________________________________________________
 
 ## 4. Object Definitions
 
@@ -69,7 +69,7 @@ The physical or digital institution, archive, or library that holds historical s
 
 Examples: National Library of Ireland, General Register Office Ireland, National Archives of Ireland, Ancestry.com, logainm.ie.
 
----
+______________________________________________________________________
 
 ### 4.2 Source — Foundational
 
@@ -77,7 +77,7 @@ A specific document collection, register volume, or digital asset held by a Repo
 
 Source type `place_authority` is used for the logainm.ie source. This source type does not produce Records in the normal sense — PlaceAuthority entries are seeded directly into the foundational layer rather than processed through the evidence pipeline.
 
----
+______________________________________________________________________
 
 ### 4.3 PlaceAuthority — Foundational
 
@@ -102,31 +102,32 @@ Straness (townland)
 **The primary key** is a synthetic `place_id`. `logainm_id` is a unique nullable attribute — present for logainm-sourced entries, null for manually-added entries.
 
 **Seeding workflow:**
+
 1. Use `python -m src.cli fetch-places --logainm-id <DED_ID> --db genealogy.db` to fetch a DED and its townlands from the logainm API and write directly to the database.
-2. Alternatively, use `python -m src.cli fetch-places --logainm-id <DED_ID> --csv places.csv` to export for inspection, then `python -m src.cli seed-places --file places.csv` to load.
-3. For manual entries (church parishes), add rows to the CSV with `logainm_id` blank and import via seed-places.
+1. Alternatively, use `python -m src.cli fetch-places --logainm-id <DED_ID> --csv places.csv` to export for inspection, then `python -m src.cli seed-places --file places.csv` to load.
+1. For manual entries (church parishes), add rows to the CSV with `logainm_id` blank and import via seed-places.
 
 Place seeding must precede record ingest and reconstruction. Place resolution (stage 2 of reconstruction) matches `place_as_recorded` strings against the authority table — if the table is empty, resolution cannot run.
 
----
+______________________________________________________________________
 
 ### 4.4 Record — Evidence
 
 The core administrative and contextual boundary for data extraction. A Record represents a single entry in a source — one row of a register, one line of a valuation, one census household. It is the unit on which all evidence extraction operates and the unit to which all conclusions point as their justifying evidence.
 
----
+______________________________________________________________________
 
 ### 4.5 Record event fields — Evidence
 
 Each Record carries the event attributes of the occurrence it documents directly as columns: `event_type`, `date_as_recorded`, `date`, `date_qualifier`, and `place_as_recorded`. These are verbatim or normalised from the source without interpretation — the same semantics that RecordedEvent previously provided, now inline on the Record itself. Because every Record documents exactly one event (a design invariant), the separate RecordedEvent table added a mandatory join without adding information. Merging these fields into Record eliminates that join from every query in the reconstruction pipeline.
 
----
+______________________________________________________________________
 
 ### 4.6 RecordedPerson — Evidence
 
 One or more individuals documented within a parent Record. RecordedPerson captures the verbatim name spelling, stated age, and raw role exactly as the record states them.
 
----
+______________________________________________________________________
 
 ### 4.7 RecordedRelationship — Evidence
 
@@ -134,13 +135,13 @@ A relationship between two RecordedPerson rows, asserted either directly by a so
 
 Unlike Relationship, RecordedRelationship requires no Person to exist on either side: recording that a source states "X is recorded as wife of Y", or that two RecordedPersons score 0.91 on a Splink comparison, is evidence in its own right, independent of whether X or Y has yet been concluded to be a real-world individual.
 
----
+______________________________________________________________________
 
 ### 4.8 RecordSimilarity — Evidence
 
 An algorithmic comparison between two Records — for example, a Splink score suggesting the same household's return appears in two different census years, ahead of any household-level conclusion. RecordSimilarity has no conclusion-layer counterpart by design: it records a measurement, not an assertion about the world. It is the Record-pair complement to the `similarity` type on RecordedRelationship, which serves the equivalent purpose between two RecordedPersons.
 
----
+______________________________________________________________________
 
 ### 4.9 Person — Conclusion
 
@@ -148,7 +149,7 @@ A concluded identity representing a real-world individual as asserted by the res
 
 Person has no primary/alternate variant — unlike Event, exactly one Person represents a given concluded identity. Every other conclusion and linkage in the model is anchored to a `person_id`, so allowing competing Person conclusions would fork everything downstream of it. Uncertainty about identity must be resolved before a Person is concluded, not represented afterward.
 
----
+______________________________________________________________________
 
 ### 4.10 Relationship — Conclusion
 
@@ -156,7 +157,7 @@ A concluded assertion about a connection between two specific Persons. Independe
 
 Like Person, Relationship does not currently support primary/alternate variants. This is a scope decision rather than a structural necessity: conflicting relationship-type evidence (a source implying both `sibling` and `cousin` for the same pair) is judged rare enough not to warrant the added complexity, unlike Person, where a single identity is structurally load-bearing.
 
----
+______________________________________________________________________
 
 ### 4.11 Event — Conclusion
 
@@ -166,7 +167,7 @@ Unlike Person and Relationship, Event uses `is_primary` to identify the current 
 
 *Singular-per-lifetime types* (birth, death, baptism, burial) anchor to a Person: exactly one Event per `(Person, event_type)` is `is_primary`, determined by record-vote count. *Marriage* anchors to a Relationship via `event.relationship_id`: exactly one marriage Event per `(Relationship, event_type)` is `is_primary`, since one person may be party to more than one marriage. *Recurring types* (census, residence, valuation, tithe, military_service, pension, folklore, emigration) carry no cardinality constraint: each occurrence is a distinct real-world fact, not a competing conclusion, so every linked Event defaults `is_primary = true` with no voting.
 
----
+______________________________________________________________________
 
 ## 5. Data Flow
 
@@ -195,7 +196,7 @@ PlaceAuthority  ←── logainm.ie API / manual CSV
 
 The Record/RecordedPerson pair remains the pivot of the evidence layer: everything above is provenance, everything below is conclusion. RecordedRelationship and RecordSimilarity sit beside that pivot as evidence-to-evidence facts — a relationship between two RecordedPersons, or a similarity score between two Records — neither requiring a conclusion to exist. As with every other linkage in the model, the underlying foreign keys run from conclusion to evidence, never the reverse (Rule 5); the arrows above describe what each evidence object supports, not which table owns the foreign key. PlaceAuthority is foundational and sits outside this flow entirely — it is seeded before ingest begins.
 
----
+______________________________________________________________________
 
 ## 6. Core Operational Rules
 
@@ -229,7 +230,7 @@ Person and Relationship do not use this mechanism: Person because it is the anch
 
 **Rule 11 — Comparison is not conclusion.** A similarity score between two evidence units — two Records, or two RecordedPersons — is itself evidence, not a conclusion. RecordSimilarity (between Records) and the `similarity` type on RecordedRelationship (between RecordedPersons) record these algorithmic comparisons without asserting a match is real; turning that comparison into a conclusion still requires the Person or Relationship machinery to act on it.
 
----
+______________________________________________________________________
 
 ## Changelog
 

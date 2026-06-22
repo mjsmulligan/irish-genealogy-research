@@ -3,7 +3,7 @@
 *Version 2.7 — 17 June 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
----
+______________________________________________________________________
 
 ## 1. Conventions
 
@@ -32,7 +32,7 @@ Date fields accept ISO 8601 strings or partial dates: `YYYY`, `YYYY-MM`, or `YYY
 | `NO` | Field is optional |
 | `CONDITIONAL` | Required only when a specified condition is met |
 
----
+______________________________________________________________________
 
 ## 2. Foundational Layer
 
@@ -45,7 +45,7 @@ Date fields accept ISO 8601 strings or partial dates: `YYYY`, `YYYY-MM`, or `YYY
 | url | string | YES | Base URL of the repository website |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ### 2.2 Source
 
@@ -65,7 +65,7 @@ Date fields accept ISO 8601 strings or partial dates: `YYYY`, `YYYY-MM`, or `YYY
 | citation | string | NO | Formatted bibliographic citation |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ### 2.3 PlaceAuthority
 
@@ -97,7 +97,7 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 
 **Church parishes:** logainm.ie does not catalogue church (Catholic) parishes. These are added manually with `logainm_id = NULL`. Membership of a church parish is recorded by adding the townland rows with the `parent_type = 'church_parish'` where applicable — or more commonly queried via a researcher-maintained lookup outside the core schema.
 
----
+______________________________________________________________________
 
 ## 3. Evidence Layer
 
@@ -111,7 +111,7 @@ Authoritative place identities seeded from logainm.ie or added manually. Not res
 | raw_text | string | YES | Verbatim ingest string — sacrosanct, never modified |
 | notes | string | NO | Free text notes on ingest |
 
----
+______________________________________________________________________
 
 ### 3.2 Record event fields
 
@@ -127,7 +127,7 @@ The following fields on `record` carry the event data:
 | date_qualifier | string | NO | Date qualifier — see §6.3 |
 | place_as_recorded | string | NO | Verbatim place name exactly as it appears in the source |
 
----
+______________________________________________________________________
 
 ### 3.3 RecordedPerson
 
@@ -144,7 +144,7 @@ The following fields on `record` carry the event data:
 | place_as_recorded | string | NO | Place of origin or residence exactly as recorded |
 | notes | string | NO | Transcription observations |
 
----
+______________________________________________________________________
 
 ### 3.4 RecordedRelationship
 
@@ -160,7 +160,7 @@ A relationship between two RecordedPerson rows, asserted directly by a source (a
 | score_version | string | CONDITIONAL | Algorithm version that produced `score`; null when `score` is null |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ### 3.5 RecordSimilarity
 
@@ -175,7 +175,7 @@ An algorithmic comparison between two Records — for example, a score suggestin
 | score_version | string | YES | Algorithm version that produced `score` |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ### 3.6 NameVariant — Evidence (derived)
 
@@ -188,7 +188,7 @@ An algorithmic comparison between two Records — for example, a score suggestin
 | algorithm_version | string | YES | Version string of the producing algorithm |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ## 4. Conclusion Layer
 
@@ -206,7 +206,7 @@ An algorithmic comparison between two Records — for example, a score suggestin
 | private | boolean | NO | Whether Person is flagged for limited display |
 | notes | string | NO | Free text notes |
 
----
+______________________________________________________________________
 
 ### 4.2 Relationship
 
@@ -220,7 +220,7 @@ An algorithmic comparison between two Records — for example, a score suggestin
 | event_ids | array[integer] | NO | Foreign keys to Events associated with this Relationship |
 | notes | string | NO | Researcher reasoning |
 
----
+______________________________________________________________________
 
 ### 4.3 Event
 
@@ -237,7 +237,7 @@ An algorithmic comparison between two Records — for example, a score suggestin
 | record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event |
 | notes | string | NO | Researcher reasoning |
 
----
+______________________________________________________________________
 
 ## 5. Cross-Layer Linkage Summary
 
@@ -259,7 +259,7 @@ The four primary linkage junction tables (`person_recorded_person`, `event_recor
 | score_version | string | NO | Algorithm version that produced the score; null when score is null |
 | verified | boolean | YES | 0 = algorithm assertion; 1 = researcher-verified. Verified rows exempt from re-scoring. |
 
----
+______________________________________________________________________
 
 ## 6. Controlled Vocabularies
 
@@ -407,7 +407,7 @@ The four primary linkage junction tables (`person_recorded_person`, `event_recor
 | `church_parish` | Church/Catholic parish — not in logainm; manually added |
 | `town` | Town or village |
 
----
+______________________________________________________________________
 
 ## Changelog
 
