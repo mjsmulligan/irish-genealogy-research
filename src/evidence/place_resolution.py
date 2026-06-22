@@ -51,10 +51,23 @@ _SUFFIXES = re.compile(
 
 def _normalise(raw: str) -> str:
     s = raw.lower()
+
+    # Handle compound "X or Y" place names by taking the primary (first) name only.
+    # Historical census records often show "Tullyleague or Tullybrook" where
+    # enumerators were uncertain about townland boundaries.
+    if " or " in s:
+        s = s.split(" or ")[0].strip()
+
     s = re.sub(r"[,.\-]", " ", s)
     for pattern, replacement in _ABBREV.items():
         s = re.sub(pattern, replacement, s, flags=re.IGNORECASE)
     s = _SUFFIXES.sub(" ", s)
+
+    # Normalize double consonants to single for fuzzy matching.
+    # Handles historical spelling variants like "Drummenny" vs "Drumenny".
+    # Applied after tokenization to avoid affecting abbreviation expansion.
+    s = re.sub(r"([bcdfghjklmnpqrstvwxyz])\1+", r"\1", s)
+
     s = " ".join(s.split())
     return s
 

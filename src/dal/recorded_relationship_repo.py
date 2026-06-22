@@ -28,7 +28,8 @@ def insert_recorded_relationship(
     recorded_relationship_id.
 
     rel_type vocabulary: 'couple', 'parent_child', 'sibling', 'similarity'
-    score / score_version: required when rel_type = 'similarity'; None otherwise.
+    score: Prior score for role-pair types (0.75-0.90), Splink score for 'similarity'
+    score_version: Algorithm identifier for provenance tracking
     """
     with conn.cursor() as cur:
         cur.execute(

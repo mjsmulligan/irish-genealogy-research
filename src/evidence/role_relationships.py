@@ -132,14 +132,15 @@ def assign_role_relationships(
 
             rel_type, score, note = match
 
-            # score/score_version only for type='similarity', not role-pair types
+            # All RecordedRelationships get scores — role-pair types use the
+            # prior score from the rule table; similarity types use Splink scores.
             insert_recorded_relationship(
                 conn,
                 recorded_person_id_1=rp_a["recorded_person_id"],
                 recorded_person_id_2=rp_b["recorded_person_id"],
                 rel_type=rel_type,
-                score=None,
-                score_version=None,
+                score=score,
+                score_version=SCORE_VERSION_ROLE_PAIR,
                 notes=note,
             )
             result.relationships_created += 1
