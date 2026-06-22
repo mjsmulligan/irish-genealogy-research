@@ -3,7 +3,7 @@
 *Version 1.3 — 18 June 2026*
 *Audience: Developers, data engineers, and reasoning sessions. This document defines the domain knowledge constraints that govern probabilistic record linkage and researcher recommendations. Read `conceptual_model.md`, `data_dictionary.md`, `reconstruction_algorithms.md`, and `repositories.md` first.*
 
----
+______________________________________________________________________
 
 ## 1. Purpose and Scope
 
@@ -36,7 +36,7 @@ Some constraints only apply in **incremental linkage** mode, where an existing c
 
 The hardest constraints in this document — those with near-zero probability language — are strong enough to also warrant Python validation rules. These are flagged with **[→ Validation rule candidate]** and are proposed as R40+ additions to `validation_rules.md`.
 
----
+______________________________________________________________________
 
 ## 2. Chronological Constraints
 
@@ -45,6 +45,7 @@ The hardest constraints in this document — those with near-zero probability la
 A `Record` linkage to a `Person` carries **near-zero probability** if the Record's date falls outside the Person's concluded lifespan.
 
 Lifespan is bounded by:
+
 - Lower bound: the Person's concluded birth `Event` date (or estimated birth year). Where no birth Event exists but a baptism Event does, the baptism date is accepted as the lower bound proxy.
 - Upper bound: the Person's concluded death `Event` date (if known); otherwise unbounded.
 
@@ -84,7 +85,7 @@ A candidate pair whose age delta falls outside tolerance has a **significantly r
 
 *Cross-reference: this constraint is also specified in `reconstruction_algorithms.md` §5.6. The two specifications must be kept in sync. This document is the authoritative source for the genealogical rationale; `reconstruction_algorithms.md` is the authoritative source for the implementation.*
 
----
+______________________________________________________________________
 
 ## 3. Event Singularity Constraints
 
@@ -125,7 +126,7 @@ A concluded `Person` has a **near-zero probability** of being linked to more tha
 
 **Known exception:** Double enumeration did occur historically, most commonly for households near DED administrative boundaries. If the researcher verifies a second census linkage, the `verified` flag on the second junction row documents this judgment.
 
----
+______________________________________________________________________
 
 ## 4. Source Eligibility Constraints
 
@@ -163,8 +164,8 @@ This constraint applies to the `occupier` role only. It does not apply to `lesso
 A female `Person` linked to a Griffith's Valuation or Tithe Applotment Record in the `occupier` role is historically anomalous but not invalid. When verified, this linkage carries a strong positive inference chain:
 
 1. The female Person is very likely a widow at the time of the record.
-2. A deceased male spouse is strongly implied — a `couple` Relationship should exist or be created, with the spouse carrying a concluded death `Event` predating the land record date.
-3. If no `couple` Relationship exists for this Person, the system should surface this as a recommendation to the researcher.
+1. A deceased male spouse is strongly implied — a `couple` Relationship should exist or be created, with the spouse carrying a concluded death `Event` predating the land record date.
+1. If no `couple` Relationship exists for this Person, the system should surface this as a recommendation to the researcher.
 
 **Tithe amplification:** A female occupier in the Tithe Applotment Books (1823–1837) carries an even stronger widowhood signal than in Griffith's. Tithe records predate the Famine and female land occupancy at this period was extremely uncommon. The inference chain above applies with **increased probability** for Tithe source linkages.
 
@@ -182,7 +183,7 @@ For any Person born in Ireland after 1864, the civil registration sources (6, 7,
 
 These are expectations, not certainties. Non-compliance, index gaps, and transcription omissions are all historically documented. The system surfaces absent expected records as researcher recommendations, not as errors.
 
----
+______________________________________________________________________
 
 ## 5. Biological Plausibility Constraints
 
@@ -211,7 +212,7 @@ Where two Persons are linked by a `sibling` Relationship and both have concluded
 - A gap of less than 9 months is **near-zero probability** for biological siblings. **Exception:** a gap of 0 months (same birth date) is plausible for twins and should not be flagged if both Records show the same or near-identical date.
 - A gap of 9 to 12 months is **reduced probability**. Consecutive siblings within a year (sometimes called Irish twins) are historically attested and culturally recognised in Irish records of this period, but the frequency warrants researcher awareness rather than escalation.
 
----
+______________________________________________________________________
 
 ## 6. Co-Residency Constraints
 
@@ -239,6 +240,7 @@ The system should surface this as a positive recommendation: "child [name] appea
 The child appears in a census household where no concluded Relationship exists between the head and any concluded parent of the child.
 
 This is a high-value **relationship discovery signal**. The placement may indicate:
+
 - An unresolved family Relationship between the household head and the child's parents — a grandparent, aunt, uncle, or cousin not yet concluded
 - A non-family arrangement — informal fostering, lodging, or domestic service placement
 - A merge error — the child Record may have been linked to the wrong Person
@@ -271,7 +273,7 @@ Where a census Record is linked to a Person as `head`, the other RecordedPersons
 
 **Non-family members as relationship signals** — boarders and servants in a household are sometimes family members listed under an occupational designation. Where a boarder or servant shares a surname with the head, this is a weak positive signal for a family connection and should be noted as a recommendation rather than ignored.
 
----
+______________________________________________________________________
 
 ## 7. Community and Network Constraints
 
@@ -313,7 +315,7 @@ A Person's occupation as recorded across multiple sources should be broadly cons
 
 Occupation inconsistency is a weak signal and should only be applied when other features score well. Occupation reversal alone should never move a linkage to auto-reject. It is surfaced as a flag rather than a penalty in most cases.
 
----
+______________________________________________________________________
 
 ## 8. Record-Specific Inference Constraints
 
@@ -342,7 +344,7 @@ Contextual explanations that normalise geographical discontinuity include:
 
 The primary mechanism for this constraint is the Splink place match score — a Record with an unresolved or mismatched `place_id` already scores lower on the place comparison feature. This constraint adds the researcher recommendation layer: where a place discontinuity exists that is not explained by the above contexts, the system should surface it for researcher attention rather than silently penalising the score.
 
----
+______________________________________________________________________
 
 ## 9. Source Coverage and Completeness
 
@@ -386,20 +388,20 @@ The system generates actionable recommendations for each `eligible` source not y
 **For Persons with birth year before 1864 (pre-civil registration):**
 
 1. **Catholic Parish Registers (9)** — highest priority; primary source for baptism, marriage, and burial events in this period
-2. **Land record sources (1, 2)** — high priority; Griffith's and Tithe are the principal census substitutes
-3. **Census sources (3, 4, 5)** — high priority where the Person survived to census years
-4. **Civil registration sources (6, 7, 8)** — applicable only for events after 1864
+1. **Land record sources (1, 2)** — high priority; Griffith's and Tithe are the principal census substitutes
+1. **Census sources (3, 4, 5)** — high priority where the Person survived to census years
+1. **Civil registration sources (6, 7, 8)** — applicable only for events after 1864
 
 **For Persons with birth year 1864 or later (civil registration period):**
 
 1. **Civil registration sources (6, 7, 8)** — highest priority; structured, indexed, highly reliable
-2. **Census sources (3, 4, 5)** — high priority; provide household and relationship context
-3. **Catholic Parish Registers (9)** — high priority for baptism and marriage events where civil records are absent or incomplete
-4. **Land record sources (1, 2)** — applicable for persons born before ~1843 whose active years overlap with survey coverage
-5. **Military sources (10, 11)** — medium priority; only relevant where military service is evidenced or plausible
-6. **Folklore collection (12)** — low priority; low density of named individuals
+1. **Census sources (3, 4, 5)** — high priority; provide household and relationship context
+1. **Catholic Parish Registers (9)** — high priority for baptism and marriage events where civil records are absent or incomplete
+1. **Land record sources (1, 2)** — applicable for persons born before ~1843 whose active years overlap with survey coverage
+1. **Military sources (10, 11)** — medium priority; only relevant where military service is evidenced or plausible
+1. **Folklore collection (12)** — low priority; low density of named individuals
 
----
+______________________________________________________________________
 
 ## 10. Constraint Application Summary
 
@@ -430,7 +432,7 @@ The following table summarises all constraints, their type, and their implementa
 | GC21 | Death registration informant | Record-specific | Relationship candidate; linkage target recommendation |
 | GC22 | Geographical coherence | Record-specific | Researcher recommendation; score context |
 
----
+______________________________________________________________________
 
 ## Changelog
 
@@ -441,7 +443,7 @@ The following table summarises all constraints, their type, and their implementa
 | 1.2 | May 2026 | Rewrote §6 (Co-Residency Constraints) to adopt a three-case model for child household placement (GC15): nuclear household, extended family placement as positive signal, and unresolved placement as relationship discovery signal. Expanded GC16 (couple co-residency) to explicitly recognise and handle the widow/widower absorption pattern. Expanded GC17 (household membership consistency) to cover resolved members without concluded Relationships, unresolved members by role priority, and same-surname boarders as weak family connection signals. Updated constraint summary table for GC15–GC17. |
 | 1.3 | 18 June 2026 | GC01: removed stale `RecordedEvent` terminology (merged into `Record` at v2.8); replaced with `Record` throughout §2.1. GC04: rewritten around Rule 9 — constraint is now "exactly one `is_primary` birth Event" rather than "no more than one birth Event"; civil-registration-precedence reconciliation guidance preserved as `rebuild-consensus` weighting advice; validation rule candidate updated to cover both zero and multiple `is_primary` cases. GC05: same Rule 9 correction applied; simpler case, no reconciliation guidance needed. GC06: rescoped opening to the `couple` Relationship as the natural unit; reframed `is_primary` as per-Relationship; added `[→ Validation rule candidate]` tag (previously absent despite being as checkable as GC04/GC05); noted join path for implementation. GC02, GC03, GC07: swept for Rule-9-adjacent assumptions — none found; no changes. |
 
----
+______________________________________________________________________
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `repositories.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 

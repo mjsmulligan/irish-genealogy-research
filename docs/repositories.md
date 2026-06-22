@@ -3,7 +3,7 @@
 *Version 1.5 — May 2026*
 *Audience: All roles. This document is a practical reference for transcription and ingestion sessions. It defines the pre-populated global repository and source set.*
 
----
+______________________________________________________________________
 
 ## 1. Overview
 
@@ -13,7 +13,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Place authority** (Repository 8, Source 13) differs from all other sources: logainm data is loaded directly into `place_authority` via `src/fetch_places.py` or `src/db seed-places` and does not produce Records or RecordedEvents. See §4 below.
 
----
+______________________________________________________________________
 
 ## 2. Repositories
 
@@ -28,11 +28,11 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | 7 | Duchas.ie | duchas.ie |
 | 8 | Logainm.ie | logainm.ie |
 
----
+______________________________________________________________________
 
 ## 3. Sources
 
----
+______________________________________________________________________
 
 ### Source 1 — Griffith's Valuation
 
@@ -50,7 +50,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** Primary mid-nineteenth century land survey. Census substitute for the period. Static deep linking not supported — template executes a parameterised name and county search.
 
----
+______________________________________________________________________
 
 ### Source 2 — Tithe Applotment Books
 
@@ -68,7 +68,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** Pre-Famine agricultural occupiers. Double slash in URL path is mandatory.
 
----
+______________________________________________________________________
 
 ### Source 3 — Census 1901
 
@@ -88,7 +88,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** Same NAI download schema as 1911. Marital history fields (`marriage_years`, `children_born`, `children_living`) are absent — those columns are in the download schema but empty for 1901 entries.
 
----
+______________________________________________________________________
 
 ### Source 4 — Census 1911
 
@@ -108,7 +108,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** Gold standard NAI CSV format. `_updated` suffix fields are NAI-normalised and preferred over raw counterparts. One Record per household (`image_group`).
 
----
+______________________________________________________________________
 
 ### Source 5 — Census 1926
 
@@ -128,7 +128,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** First census of the Irish Free State. Different download schema from 1901/1911: no `occupation` column, no `house_number`, no `education`. Age is `updated_age` (integer). Birthplace is county-level only (`birthplace_county`). Ingest pipeline normalises 1926 rows into the shared census schema before processing.
 
----
+______________________________________________________________________
 
 ### Source 6 — Civil Birth Registrations
 
@@ -139,12 +139,12 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | type | birth_registration |
 | coverage | 1864–1925 |
 | source_url | https://www.irishgenealogy.ie |
-| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/birth_returns/births_{year}/{folder_id}/{image_id}.pdf |
+| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/birth_returns/births\_{year}/{folder_id}/{image_id}.pdf |
 | source_parameters | null |
 | record_parameter_names | year, folder_id, image_id |
 | column_schema | year, folder_id, image_id, registration_id, group_id, child_forename, child_surname, sex, date_of_birth, place_of_birth, father_name, father_occupation, mother_name, mother_maiden_name, informant_qualification, informant_address, registration_date, registrar_district, superintendent_district, county |
 
----
+______________________________________________________________________
 
 ### Source 7 — Civil Marriage Registrations
 
@@ -155,14 +155,14 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | type | marriage_registration |
 | coverage | 1845–1950 |
 | source_url | https://www.irishgenealogy.ie |
-| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/marriage_returns/marriages_{year}/{folder_id}/{image_id}.pdf |
+| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/marriage_returns/marriages\_{year}/{folder_id}/{image_id}.pdf |
 | source_parameters | null |
 | record_parameter_names | year, folder_id, image_id |
 | column_schema | year, folder_id, image_id, registration_id, group_id, date_of_marriage, groom_forename, groom_surname, groom_age, groom_condition, groom_occupation, groom_residence, groom_father_name, groom_father_occupation, bride_forename, bride_surname, bride_age, bride_condition, bride_occupation, bride_residence, bride_father_name, bride_father_occupation, place_of_celebration, witness_1_name, witness_2_name, celebrant, registrar_district, county |
 
 **Notes:** Non-Catholic marriages from 1 April 1845; all denominations from 1 January 1864.
 
----
+______________________________________________________________________
 
 ### Source 8 — Civil Death Registrations
 
@@ -173,12 +173,12 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | type | death_registration |
 | coverage | 1864–1975 |
 | source_url | https://www.irishgenealogy.ie |
-| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/deaths_returns/deaths_{year}/{folder_id}/{image_id}.pdf |
+| record_url_template | https://civilrecords.irishgenealogy.ie/churchrecords/images/deaths_returns/deaths\_{year}/{folder_id}/{image_id}.pdf |
 | source_parameters | null |
 | record_parameter_names | year, folder_id, image_id |
 | column_schema | year, folder_id, image_id, registration_id, group_id, deceased_forename, deceased_surname, sex, condition, age_at_death, estimated_birth_year, occupation, date_of_death, place_of_death, cause_of_death, duration_of_illness, informant_qualification, informant_address, registration_date, registrar_district, superintendent_district, county |
 
----
+______________________________________________________________________
 
 ### Source 9 — Catholic Parish Registers
 
@@ -189,14 +189,14 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | type | parish_register |
 | coverage | Typically 1820s–1880s |
 | source_url | https://registers.nli.ie |
-| record_url_template | https://registers.nli.ie/pages/{vtls_id}_{image_number} |
+| record_url_template | https://registers.nli.ie/pages/{vtls_id}\_{image_number} |
 | source_parameters | {"vtls_id": null} — set per ingest batch |
 | record_parameter_names | image_number |
 | column_schema | vtls_id, image_number, event_id, event_type, event_date, principal_1_forename, principal_1_surname, principal_2_forename, principal_2_surname, father_forename, father_surname, mother_forename, mother_surname, sponsor_1_name, sponsor_2_name, priest, parish_name, diocese, county |
 
 **Notes:** `vtls_id` is the microfilm identifier — constant per ingest batch (source-level parameter). A separate Source entry should be created per microfilm volume with `source_parameters` set to `{"vtls_id": <value>}`.
 
----
+______________________________________________________________________
 
 ### Source 10 — Bureau of Military History Witness Statements
 
@@ -212,7 +212,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | record_parameter_names | statement_number |
 | column_schema | statement_number, witness_surname, witness_forename, witness_address, witness_organisation, witness_rank, pages, date_of_statement, county |
 
----
+______________________________________________________________________
 
 ### Source 11 — Military Service Pensions Collection
 
@@ -230,7 +230,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Notes:** `release_id` is the digitisation batch identifier — constant per ingest batch.
 
----
+______________________________________________________________________
 
 ### Source 12 — Duchas Schools Collection
 
@@ -246,7 +246,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | record_parameter_names | volume_id, school_id, page_id |
 | column_schema | volume_id, school_id, page_id, story_title, collector_name, informant_name, informant_age, school_name, parish_name, county |
 
----
+______________________________________________________________________
 
 ## 4. Place Authority Source
 
@@ -259,7 +259,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 | URL | logainm.ie |
 | Notes | Official Irish placename authority operated by Foras na Gaeilge. Provides canonical English and Irish names, full administrative hierarchy (province, county, barony, civil parish, DED), and coordinates for all Irish placenames including townlands. |
 
----
+______________________________________________________________________
 
 ### Source 13 — logainm.ie Place Authority
 
@@ -280,7 +280,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 1. **API fetch:** `python -m src.fetch_places --logainm-id <ID> --db genealogy.db` — fetches the named entity and all child townlands. Requires `LOGAINM_API_KEY` environment variable. The `--logainm-id` argument is the numeric ID from the logainm.ie URL (e.g. `111482` for Tullynaught DED at `https://www.logainm.ie/en/111482`).
 
-2. **CSV import:** `python -m src.db seed-places --file places.csv` — loads a CSV matching the `column_schema` above. Used for pre-fetched data, offline workflows, or manually-added entities.
+1. **CSV import:** `python -m src.db seed-places --file places.csv` — loads a CSV matching the `column_schema` above. Used for pre-fetched data, offline workflows, or manually-added entities.
 
 **Church parishes:** logainm.ie does not catalogue Catholic church parishes. Add these manually by appending rows with `logainm_id` blank and `place_type = church_parish` to the CSV before import.
 
@@ -288,7 +288,7 @@ Deep links to individual records are constructed at runtime by the Python layer.
 
 **Idempotency:** Both loading mechanisms are idempotent. Re-running against a populated database skips rows whose `logainm_id` is already present (for logainm-sourced rows) or whose `(name_en, place_type)` pair is already present (for manually-added rows).
 
----
+______________________________________________________________________
 
 ## Changelog
 

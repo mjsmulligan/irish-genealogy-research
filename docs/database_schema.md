@@ -1,10 +1,9 @@
-
 # Irish Genealogy Research — Database Schema
 
 *Version 3.2 — 19 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
----
+______________________________________________________________________
 
 ## 1. Design Decisions
 
@@ -15,6 +14,7 @@ This rebuild pass brings the document's DDL in line with the actual `schema.sql`
 **Implemented** (`schema.sql`, `PRAGMA user_version = 30`): `repository`, `source`, `place_authority`, `record`, `recorded_person`, `name_variant`, `person`, `person_name`, `relationship`, `event` (including `is_primary`), `person_record`, `relationship_record`, `event_record`, `place_record`, `person_event`, `training_labels`.
 
 **Target, not yet implemented** — sequenced for the implementation phase of the architecture rebuild (ROADMAP §4, items 10–11):
+
 - `recorded_relationship` and `record_similarity` — new evidence-layer tables (conceptual_model.md §4.7–4.8).
 - Rename `person_record` → `person_recorded_person` and `relationship_record` → `relationship_recorded_relationship`. This is not a cosmetic rename: the foreign key target changes from `record_id` to `recorded_person_id` / `recorded_relationship_id` respectively, per the Rule 2 evidence-correspondence principle (Person points to RecordedPerson, Relationship points to RecordedRelationship — not to the whole Record).
 - Removal of `training_labels`, `training_repo.py`, and its callers in `linkage.py`. The table is conceptually retired (conceptual_model.md §3) but the code is deliberately untouched until this is sequenced as real implementation work — see the dedicated subsection below.
@@ -103,7 +103,7 @@ All primary keys are declared `INTEGER PRIMARY KEY`. In SQLite this is an alias 
 
 conceptual_model.md §3 documents it as a path that was "considered, built, and rejected" — the gap it was meant to fill (recording a candidate match before committing to it) is now reached for differently, as the `similarity` type on `recorded_relationship`, evidence-side rather than conclusion-side. The code and schema are left in place deliberately: removing `training_labels`, `src/dal/training_repo.py`, and its callers is real engineering work, not a documentation change, and is sequenced for the implementation phase (ROADMAP §4, item 11) rather than bundled into this rebuild. The DDL below reflects what is actually running; the retirement note is here so it isn't mistaken for part of the target design going forward.
 
----
+______________________________________________________________________
 
 ## 2. Schema Overview
 
@@ -151,7 +151,7 @@ Removed in earlier passes (v2.7–v2.8):
   event_person             — superseded by person_event (single table, both directions)
 ```
 
----
+______________________________________________________________________
 
 ## 3. DDL
 
@@ -219,7 +219,7 @@ CREATE TABLE place_authority (
 );
 ```
 
----
+______________________________________________________________________
 
 ### Evidence Layer
 
@@ -336,7 +336,7 @@ CREATE TABLE name_variant (
 );
 ```
 
----
+______________________________________________________________________
 
 ### Conclusion Layer
 
@@ -400,7 +400,7 @@ CREATE TABLE event (
 );
 ```
 
----
+______________________________________________________________________
 
 ### Junction Tables
 
@@ -469,7 +469,7 @@ CREATE TABLE person_event (
 );
 ```
 
----
+______________________________________________________________________
 
 ### Review / Training Layer
 
@@ -495,7 +495,7 @@ CREATE TABLE training_labels (
 );
 ```
 
----
+______________________________________________________________________
 
 ## 4. Indexes
 
@@ -562,7 +562,7 @@ CREATE INDEX idx_record_similarity_record1 ON record_similarity (record_id_1);
 CREATE INDEX idx_record_similarity_record2 ON record_similarity (record_id_2);
 ```
 
----
+______________________________________________________________________
 
 ## 5. Validation Rule Mapping
 
@@ -619,7 +619,7 @@ This table documents which validation rules (from `validation_rules.md`) are enf
 | R49 | Required fields on RecordSimilarity; score range [0.0–1.0]; self-reference prohibition | `NOT NULL` on score, score_version; `CHECK (score >= 0.0 AND score <= 1.0)`; `CHECK (record_id_1 != record_id_2)` on `record_similarity` *(target)* | **Pending** |
 | R50 | `training_labels` write guard (table is conceptually retired; no new rows should be written) | None — no DB-level barrier prevents inserts | **Pending** |
 
----
+______________________________________________________________________
 
 ## 6. Python DAL Mapping
 
@@ -636,6 +636,7 @@ There is no `DataStore` class — that description in earlier versions of this d
 | `training_repo.py` | `training_labels` | Conceptually retired (§1) but actively called by `linkage.py`; includes the merge-repointing logic (`get_stale_rows`, `reinsert_repointed`) that keeps proposals consistent across `_UnionFind` merges |
 
 **Gaps, as of this rebuild:**
+
 - `repository` has no dedicated DAL file — it is seeded once via `seed.sql` and never written by application code, so there has been nothing to put one.
 - `name_variant` has no DAL file — consistent with §1's note that nothing currently writes to this table.
 - `recorded_relationship` and `record_similarity` have no DAL file yet — they don't exist in `schema.sql`. A `recorded_relationship_repo.py` (or folding into `record_repo.py`, which already owns the evidence layer) is implementation-phase work once the target tables land.
@@ -644,7 +645,7 @@ On read, callers assemble a Person by joining `person` with `person_name` and th
 
 The deep link builder is `build_record_url(source: dict, record: dict) -> str | None` in `src/db/db.py`. It merges `source["source_parameters"]` (deserialised from JSON) with `record["record_parameters"]` (deserialised from JSON) and substitutes each `{placeholder}` in `source["record_url_template"]`. Returns `None` if `record_url_template` is null; raises `ValueError` if a placeholder remains unresolved after the merge.
 
----
+______________________________________________________________________
 
 ## 7. Worked Example — Marriage Record
 
@@ -757,7 +758,7 @@ INSERT INTO place_record VALUES (1, 1, 0.85, 'v1.0', 0);
 
 A single civil-registration record like this one has nothing to populate `record_similarity` with — that table only gets rows when two separate Records are being compared (e.g. a cross-census household match). It would appear in a worked example built from a pair of Tullynaught census returns instead.
 
----
+______________________________________________________________________
 
 ## 8. Connection Setup
 
@@ -780,7 +781,7 @@ def open_db(path: str = DEFAULT_DB) -> sqlite3.Connection:
 
 `journal_mode = WAL` is strongly recommended. It allows reads while a write transaction is open, which matters during ingestion sessions where validation queries run concurrently with batch inserts.
 
----
+______________________________________________________________________
 
 ## 9. Schema Initialisation
 
@@ -815,7 +816,7 @@ def check_version(conn: sqlite3.Connection) -> None:
 
 **Note on versioning:** `PRAGMA user_version` is currently `30` (schema v3.0), matching what's actually deployed. The target additions described throughout §3 (`recorded_relationship`, `record_similarity`, the two junction renames, `training_labels` removal) are not yet reflected in `schema.sql` and will not bump `SCHEMA_VERSION` until they're built as a real migration (`migrate_30_to_31.sql` or similar) — that's implementation-phase work, sequenced after this documentation rebuild, per ROADMAP §4 items 10–11.
 
----
+______________________________________________________________________
 
 ## 10. File Locations
 
@@ -839,7 +840,7 @@ genealogy.db                — SQLite database file (gitignored)
 
 `genealogy.db` must be (and is) in `.gitignore`. The database is a build artefact derived from `schema.sql` plus `seed.sql` plus ingested data. The source of truth for schema structure is `schema.sql`; the source of truth for data is the raw NAI CSV ingest files plus the session logs.
 
----
+______________________________________________________________________
 
 ## 11. Changelog
 
@@ -858,7 +859,7 @@ genealogy.db                — SQLite database file (gitignored)
 | 3.2 | 19 June 2026 | **Item 13 resolved.** §5 Validation Rule Mapping: replaced the "pending rule assignment" bullet list with a proper R-number table. The constraints on `recorded_relationship` (type vocabulary, score conditional, self-reference) are now mapped to R47/R48; `record_similarity` constraints mapped to R49; `training_labels` write guard mapped to R50. All four were already assigned in `validation_rules.md` §7 (v2.7 rules); this entry backfills the cross-reference in the schema doc. |
 | 3.1 | 18 June 2026 | **Documentation rebuild — DDL pass.** Brought this document's DDL in line with the actual `schema.sql` for the first time since v2.7 drift was introduced: added the `place_authority` CREATE TABLE that had gone missing from this doc, removed the obsolete `place` table it had been left alongside, added the `event.is_primary` column and `training_labels` table + indexes that the v2.9/v3.0 changelog entries claimed but the DDL never carried. Rewrote §6 (renamed from "Python DataStore Mapping" to "Python DAL Mapping") to describe the actual `src/dal/` repository-per-table pattern, including the gaps found while grounding this against the live code (`repository` and `name_variant` have no DAL writer; `name_variant` is unused by any pipeline stage). Fixed the worked example to match. Carried forward the v2.6/v2.7 conceptual-model and data-dictionary target design not yet in code, marked `[target]` throughout: added `recorded_relationship` and `record_similarity` DDL (conceptual_model.md §4.7–4.8); renamed `person_record`→`person_recorded_person` and `relationship_record`→`relationship_recorded_relationship`, with the underlying FK changing from `record_id` to `recorded_person_id`/`recorded_relationship_id` per the Rule 2 evidence-correspondence resolution; documented `training_labels`'s conceptual retirement without removing it from the DDL, since removal is real engineering work sequenced separately. Data layer phase of the architecture rebuild (conceptual model → data dictionary → database schema) now complete; implementation phase is next. |
 
----
+______________________________________________________________________
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 

@@ -3,7 +3,7 @@
 *Version 2.8 — 18 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, `database_schema.md`, and `genealogical_constraints.md`.*
 
----
+______________________________________________________________________
 
 ## 1. Overview
 
@@ -25,14 +25,14 @@ The Python validator's role has shifted from *checking a loaded dataset for cons
 Rules are grouped into five categories, executed in order:
 
 1. **Structural rules** — well-formedness of individual objects
-2. **Referential integrity rules** — foreign keys resolve to existing objects
-3. **Consistency rules** — cross-object invariants
-4. **Vocabulary and format rules** — controlled values and date formats
-5. **Genealogical constraint rules** — domain knowledge checks derived from `genealogical_constraints.md`; near-zero probability violations flagged as merge error candidates
+1. **Referential integrity rules** — foreign keys resolve to existing objects
+1. **Consistency rules** — cross-object invariants
+1. **Vocabulary and format rules** — controlled values and date formats
+1. **Genealogical constraint rules** — domain knowledge checks derived from `genealogical_constraints.md`; near-zero probability violations flagged as merge error candidates
 
 Each rule carries a code in the form `[Rnn]`. Error messages always include the rule code and the primary key of the offending object. The validator returns a flat list of error strings. A dataset is considered valid when the list is empty.
 
----
+______________________________________________________________________
 
 ## 2. Structural Rules
 
@@ -49,7 +49,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R01] Repository {id}: required field '{field}' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R02 — Required fields present on Source `[DB + Python]`
 
@@ -62,7 +62,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R02] Source {id}: required field '{field}' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R03 — Required fields present on Record `[DB + Python]`
 
@@ -76,7 +76,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R03] Record {id}: required field '{field}' is absent or null
 ```
 
----
+______________________________________________________________________
 
 ### R04 — Required fields present on Record event fields `[DB + Python]`
 
@@ -89,7 +89,7 @@ Python enforcement: covered by R03 pre-write validation and R36 date format chec
 [R03] Record {id}: required field 'event_type' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R05 — Required fields present on RecordedPerson `[DB + Python]`
 
@@ -107,7 +107,7 @@ Python enforcement: pre-write structural check on required non-nullable fields o
 [R05] RecordedPerson {id}: required field '{field}' is absent or null
 ```
 
----
+______________________________________________________________________
 
 ### R06 — Required fields present on Person `[DB + Python]`
 
@@ -120,7 +120,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R06] Person {id}: required field '{field}' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R07 — Required fields present on Relationship `[DB + Python]`
 
@@ -133,7 +133,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R07] Relationship {id}: required field '{field}' is absent or null
 ```
 
----
+______________________________________________________________________
 
 ### R08 — Required fields present on Event `[DB + Python]`
 
@@ -146,7 +146,7 @@ Python enforcement: pre-write validation via `validate_object()`.
 [R08] Event {id}: required field '{field}' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R09 — Required fields present on PlaceAuthority `[DB + Python]`
 
@@ -159,13 +159,13 @@ Python enforcement: pre-write validation via structural check before insert.
 [R09] PlaceAuthority {id}: required field '{field}' is absent or empty
 ```
 
----
+______________________________________________________________________
 
 ### R10 — Name object completeness `[Retired]`
 
 **Retired.** `Person.names` was previously stored as a JSON array in a TEXT column, making structural validation of individual name entries Python-only. Names are now stored in the `person_name` table, where `NOT NULL` and `CHECK (trim(value) != '')` enforce field presence, and `CHECK (type IN (...))` enforces vocabulary. Both R10 and R33 are superseded by the table structure.
 
----
+______________________________________________________________________
 
 ## 3. Referential Integrity Rules
 
@@ -179,7 +179,7 @@ Python's residual responsibility in this section is **pre-write validation**: be
 
 Repository is a root object with no foreign keys. No referential integrity rule applies.
 
----
+______________________________________________________________________
 
 ### R12 — Source → Repository `[DB + Python]`
 
@@ -191,7 +191,7 @@ DB enforcement: `REFERENCES repository (repository_id)` on the `source` table.
 [R12] Source {id}: repository_id={val} does not resolve to a Repository
 ```
 
----
+______________________________________________________________________
 
 ### R13 — Record → Source `[DB + Python]`
 
@@ -203,13 +203,13 @@ DB enforcement: `REFERENCES source (source_id)` on the `record` table.
 [R13] Record {id}: source_id={val} does not resolve to a Source
 ```
 
----
+______________________________________________________________________
 
 ### R14 — RecordedEvent → Record `[Retired]`
 
 **Retired in v2.8.** The `recorded_event` table has been removed. Event data is now inline on `record`. This rule no longer applies.
 
----
+______________________________________________________________________
 
 ### R15 — RecordedPerson → Record `[DB + Python]`
 
@@ -221,7 +221,7 @@ DB enforcement: `REFERENCES record (record_id)` on the `recorded_person` table.
 [R15] RecordedPerson {id}: record_id={val} does not resolve to a Record
 ```
 
----
+______________________________________________________________________
 
 ### R16 — Person foreign keys `[DB + Python]`
 
@@ -235,7 +235,7 @@ DB enforcement: `REFERENCES` constraints on `person_record` and `person_event`. 
 [R16] Person {id}: relationship_id={val} does not resolve to a Relationship
 ```
 
----
+______________________________________________________________________
 
 ### R17 — Relationship foreign keys `[DB + Python]`
 
@@ -250,7 +250,7 @@ DB enforcement: `REFERENCES person` on both FK columns; `REFERENCES` constraint 
 [R17] Relationship {id}: event_id={val} does not resolve to an Event
 ```
 
----
+______________________________________________________________________
 
 ### R18 — Event foreign keys `[DB + Python]`
 
@@ -265,7 +265,7 @@ DB enforcement: `REFERENCES place_authority` and `REFERENCES relationship` on th
 [R18] Event {id}: record_id={val} does not resolve to a Record
 ```
 
----
+______________________________________________________________________
 
 ### R19 — PlaceAuthority foreign keys `[DB + Python]`
 
@@ -278,7 +278,7 @@ DB enforcement: `REFERENCES place_authority` and `REFERENCES record` on junction
 [R19] place_record (place_authority_id={pid}, record_id={rid}): record_id does not resolve to a Record
 ```
 
----
+______________________________________________________________________
 
 ## 4. Consistency Rules
 
@@ -288,7 +288,7 @@ DB enforcement: `REFERENCES place_authority` and `REFERENCES record` on junction
 
 DB enforcement: event fields are columns on `record`; the constraint is structural.
 
----
+______________________________________________________________________
 
 ### R21 — At least one RecordedPerson per Record `[Python]`
 
@@ -298,7 +298,7 @@ Every Record must have at least one RecordedPerson whose `record_id` points to i
 [R21] Record {id}: has no RecordedPersons — at least 1 required
 ```
 
----
+______________________________________________________________________
 
 ### R22 — Relationship self-reference prohibition `[DB]`
 
@@ -306,37 +306,37 @@ Every Record must have at least one RecordedPerson whose `record_id` points to i
 
 *Documented here for completeness. No Python action required.*
 
----
+______________________________________________________________________
 
 ### R23 — Bidirectional consistency: Person ↔ Relationship `[Retired]`
 
 **Retired.** In the JSON model, `Person.relationship_ids` was a list maintained independently of the `Relationship` object. In the relational schema, `relationship.person_id_1` and `person_id_2` are the source of truth — no `person_relationship` junction table exists. Querying a person's relationships is a direct filter on the `relationship` table. The invariant is structurally enforced.
 
----
+______________________________________________________________________
 
 ### R24 — Bidirectional consistency: Person ↔ Event `[Retired]`
 
 **Retired.** Same reasoning as R23. The `person_event` junction table is the single source of truth. `Person.event_ids` and `Event.person_ids` are both derived by querying the same junction table rows; they cannot diverge.
 
----
+______________________________________________________________________
 
 ### R25 — Bidirectional consistency: Relationship ↔ Event `[Retired]`
 
 **Retired.** The `relationship_event` junction table has been removed. `event.relationship_id` is the sole expression of this association — a nullable FK on the `event` table. No bidirectionality inconsistency is possible.
 
----
+______________________________________________________________________
 
 ### R26 — RecordedEvent ↔ Event Record consistency `[Retired]`
 
 **Retired in v2.8.** Both `recorded_event` and `event_recorded_event` have been removed. `event_record` links an Event directly to a Record. Since a Record carries its event fields inline, linking the Record to an Event is equivalent to linking the event data — the split that R26 was protecting against no longer exists.
 
----
+______________________________________________________________________
 
 ### R27 — Evidence-layer objects contain no conclusion-layer foreign keys `[Retired]`
 
 **Retired.** In the JSON model, this rule detected cases where a conclusion-layer foreign key had been written into a RecordedEvent or RecordedPerson object. In the relational schema, neither `record` nor `recorded_person` carry foreign keys to conclusion-layer objects. The violation is architecturally impossible. No rule text is needed.
 
----
+______________________________________________________________________
 
 ## 5. Vocabulary and Format Rules
 
@@ -352,7 +352,7 @@ DB enforcement: `CHECK (type IN (...))` on the `source` table.
 [R28] Source {id}: type='{val}' is not a valid source type
 ```
 
----
+______________________________________________________________________
 
 ### R29 — Event type controlled vocabulary `[DB + Python]`
 
@@ -367,7 +367,7 @@ DB enforcement: `CHECK (event_type IN (...))` on the `record` table; `CHECK (typ
 [R29] Event {id}: type='{val}' is not a valid event type
 ```
 
----
+______________________________________________________________________
 
 ### R30 — Date qualifier controlled vocabulary `[DB + Python]`
 
@@ -382,7 +382,7 @@ DB enforcement: `CHECK (date_qualifier IS NULL OR date_qualifier IN (...))` on b
 [R30] Event {id}: date_qualifier='{val}' is not a valid date qualifier
 ```
 
----
+______________________________________________________________________
 
 ### R31 — RecordedPerson role controlled vocabulary `[DB + Python]`
 
@@ -400,7 +400,7 @@ DB enforcement: `CHECK (role IS NULL OR role IN (...))` on the `recorded_person`
 [R31] RecordedPerson {id}: role='{val}' is not a valid role
 ```
 
----
+______________________________________________________________________
 
 ### R32 — Person gender controlled vocabulary `[DB + Python]`
 
@@ -414,13 +414,13 @@ DB enforcement: `CHECK (gender IS NULL OR gender IN (...))` on the `person` tabl
 [R32] Person {id}: gender='{val}' is not a valid gender value
 ```
 
----
+______________________________________________________________________
 
 ### R33 — Name type controlled vocabulary `[Retired]`
 
 **Retired.** Name type vocabulary was previously Python-only because names were stored as a JSON array in a TEXT column. Names are now stored in the `person_name` table with a `CHECK (type IN (...))` constraint. Vocabulary enforcement is now DB-level, consistent with all other vocabulary rules.
 
----
+______________________________________________________________________
 
 ### R34 — Relationship type controlled vocabulary `[DB + Python]`
 
@@ -434,13 +434,13 @@ DB enforcement: `CHECK (type IN (...))` on the `relationship` table.
 [R34] Relationship {id}: type='{val}' is not a valid relationship type
 ```
 
----
+______________________________________________________________________
 
 ### R35 — Confidence controlled vocabulary `[Retired]`
 
 **Retired.** `Relationship.confidence` and `Event.confidence` have been removed from the schema. Confidence was a static scalar that could not capture the per-linkage granularity required by the reconstruction algorithm. Aggregate confidence, where needed for display, is derived at query time from the `score` values across all linked Records in the relevant junction table. The `CHECK` constraints on both tables have been dropped.
 
----
+______________________________________________________________________
 
 ### R36 — Date format `[Python]`
 
@@ -461,7 +461,7 @@ Text dates, circa prefixes, non-ISO separators, two-digit years, and day or mont
 [R36] Event {id}: date='{val}' is not a valid ISO 8601 partial date
 ```
 
----
+______________________________________________________________________
 
 ### R38 — Linkage score range `[DB + Python]`
 
@@ -470,6 +470,7 @@ Null score represents a manually-asserted linkage — one created via `assert_li
 Non-null score must fall within [0.0, 1.0].
 DB enforcement: `CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0))` on all four tables.
 Python enforcement: pre-write validation via `validate_object()`.
+
 ```
 
 ---
@@ -482,10 +483,12 @@ DB enforcement: `CHECK (verified IN (0, 1))` on all four tables.
 Python enforcement: pre-write validation via `validate_object()`.
 
 ```
+
 [R39] person_record (person_id={pid}, record_id={rid}): verified={val} must be 0 or 1
 [R39] event_record (event_id={eid}, record_id={rid}): verified={val} must be 0 or 1
 [R39] relationship_record (relationship_id={rid}, record_id={rec}): verified={val} must be 0 or 1
 [R39] place_record (place_id={pid}, record_id={rid}): verified={val} must be 0 or 1
+
 ```
 
 ---
@@ -518,8 +521,10 @@ The total count of birth Events (primary + non-primary) is not itself a violatio
 **Scope note:** An analogous rule for Relationship-scoped Event cardinality is not defined. The `event` table's `is_primary` column is scoped to Person conclusions; Relationship objects carry no primary/alternate mechanism.
 
 ```
+
 [R40] Person {id}: has 0 birth Events marked is_primary — exactly 1 required; rebuild-consensus may not have run
 [R40] Person {id}: has {n} birth Events marked is_primary — exactly 1 permitted; probable data integrity error
+
 ```
 
 ---
@@ -534,8 +539,10 @@ This rule queries `person_event` joined to `event` to count Events of type `deat
 - **Multiple primaries** — data integrity error.
 
 ```
+
 [R41] Person {id}: has {n} death Events but none marked is_primary — exactly 1 required when death Events exist; rebuild-consensus may not have run
 [R41] Person {id}: has {n} death Events marked is_primary — exactly 1 permitted; probable data integrity error
+
 ```
 
 ---
@@ -549,7 +556,9 @@ Linkages where `verified = 1` are excluded from this check — the researcher ha
 This rule queries `person_record` joined to `record` and `source` to count unverified Records per census source per Person. A count greater than one triggers the warning.
 
 ```
+
 [R42] Person {id}: has {n} unverified Records from census source {source_id} ('{source_title}') — maximum 1 expected; probable merge error or double enumeration
+
 ```
 
 ---
@@ -589,8 +598,10 @@ When a date has a `before` or `after` qualifier and the comparison is in the dir
 **Implementation gap:** The current `validator.py` implementation does not yet apply qualifier-aware interval logic. It performs a simplified point-date comparison with a flat ±2-year tolerance, does not implement the `before`/`after`/`between` qualifier handling, and does not implement the adult baptism exception correctly. This specification is the authoritative design; the code is a placeholder. The gap should be resolved before genealogical validation is relied upon in research outputs.
 
 ```
+
 [R43] Person {id}: sequence violation — {event_type_1} date {date_1} ({qualifier_1}) precedes {event_type_2} date {date_2} ({qualifier_2}); intervals do not overlap; probable merge error
 [R43] Person {id}: sequence check {check_name} skipped — qualifier '{qualifier}' on Event {eid} does not bound the comparison in the required direction
+
 ```
 
 ---
@@ -614,10 +625,12 @@ For any `parent_child` Relationship, the gap between the parent's birth year and
 **Gender unknown:** Where `Person.gender` is null or `'unknown'` for the parent, only the minimum gap check is applied; the gender-specific maximum is skipped and noted.
 
 ```
+
 [R44] Relationship {id} (parent_child): parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years is below minimum of 15; probable merge error
 [R44] Relationship {id} (parent_child): female parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years exceeds maternal maximum of 50; probable merge error
 [R44] Relationship {id} (parent_child): male parent Person {pid} birth year {py} — child Person {cid} birth year {cy} — gap of {gap} years exceeds paternal maximum of 65; probable merge error
 [R44] Relationship {id} (parent_child): parent gender unknown — maximum age check skipped
+
 ```
 
 ---
@@ -631,7 +644,9 @@ For any Person linked to a marriage `Event` via `person_event`, the gap between 
 **Tolerance:** ±2 years applied to birth year estimate before computing the gap.
 
 ```
+
 [R45] Person {id}: marriage Event {eid} dated {marriage_date} — birth year {by} (from {source}) places Person at age {age} at marriage; minimum age is 15; probable merge error
+
 ```
 
 *`{source}` is `'is_primary birth Event'` or `'estimated from Records'` to make the derivation traceable in the warning output.*
@@ -651,7 +666,9 @@ For any Person linked to a Record via `person_record`, the `record.date` of that
 Where neither a lower nor an upper bound can be established from the Person's concluded Events or linked Records, the rule is skipped and noted as unevaluated.
 
 ```
+
 [R46] person_record (person_id={pid}, record_id={rid}): record date {date} is more than 5 years outside Person lifespan bounds [{lower}–{upper}] (lower from {source}); probable merge error
+
 ```
 
 *`{source}` is `'is_primary birth Event'`, `'is_primary baptism Event'`, or `'estimated from Records'`.*
@@ -671,8 +688,10 @@ Every RecordedRelationship must have `recorded_relationship_id`, `recorded_perso
 RecordedPersons linked by a RecordedRelationship may belong to the same Record or to different Records (the cross-census case). No DB constraint currently enforces the vocabulary on `type`; Python enforcement is the sole gate.
 
 ```
+
 [R47] RecordedRelationship {id}: required field '{field}' is absent or null
 [R47] RecordedRelationship {id}: type='{val}' is not a valid recorded relationship type
+
 ```
 
 ---
@@ -684,9 +703,11 @@ RecordedPersons linked by a RecordedRelationship may belong to the same Record o
 DB enforcement: `REFERENCES recorded_person` on both FK columns (if the table carries these constraints); `CHECK (recorded_person_id_1 != recorded_person_id_2)`.
 
 ```
+
 [R48] RecordedRelationship {id}: recorded_person_id_1={val} does not resolve to a RecordedPerson
 [R48] RecordedRelationship {id}: recorded_person_id_2={val} does not resolve to a RecordedPerson
 [R48] RecordedRelationship {id}: recorded_person_id_1 and recorded_person_id_2 must not be equal
+
 ```
 
 ---
@@ -698,9 +719,11 @@ Every RecordSimilarity must have `record_similarity_id`, `record_id_1`, `record_
 RecordSimilarity has no conclusion-layer counterpart. It records an algorithmic measurement between two Records, not an assertion about Persons. No FK to the conclusion layer is required or permitted.
 
 ```
+
 [R49] RecordSimilarity {id}: required field '{field}' is absent or null
 [R49] RecordSimilarity {id}: score={val} is not in valid range [0.0–1.0]
 [R49] RecordSimilarity {id}: record_id_1 and record_id_2 must not be equal
+
 ```
 
 ---
@@ -712,7 +735,9 @@ RecordSimilarity has no conclusion-layer counterpart. It records an algorithmic 
 When the table is removed from the schema, R50 will be retired alongside it.
 
 ```
+
 [R50] training_labels: unexpected row (unique_id_l={l}, unique_id_r={r}) — table is retired; no new rows should be written
+
 ```
 
 ---
@@ -795,13 +820,17 @@ Rules are executed in the following order. Later rules depend on earlier ones ha
 When a referential integrity error is present, downstream consistency rules that would traverse the broken reference are skipped for the affected object:
 
 ```
+
 [SKIP] Consistency checks for {ObjectType} {id} skipped: unresolved foreign key(s) from R12–R19
+
 ```
 
 When a birth year or lifespan bound cannot be established for a Person, genealogical constraint rules that require it are skipped and noted:
 
 ```
+
 [SKIP] R{nn} for Person {id} skipped: birth year not determinable from concluded Events or linked Records
+
 ```
 
 ---
@@ -823,12 +852,15 @@ When a birth year or lifespan bound cannot be established for a Person, genealog
 Every error string follows a fixed format:
 
 ```
+
 [Rnn] {ObjectType} {id}: {human-readable description}
+
 ```
 
 Examples:
 
 ```
+
 [R03] Record 47: raw_text is absent or empty
 [R13] Record 47: source_id=999 does not resolve to a Source
 [R29] Record 88: event_type='occupation' is not a valid event type
@@ -842,6 +874,7 @@ Examples:
 [R44] Relationship 9 (parent_child): male parent Person 4 birth year 1820 — child Person 88 birth year 1890 — gap of 70 years exceeds paternal maximum of 65; probable merge error
 [R45] Person 44: marriage Event 19 dated 1872 — birth year 1860 (from is_primary birth Event) places Person at age 12 at marriage; minimum age is 15; probable merge error
 [R46] person_record (person_id=12, record_id=203): record date 1901 is more than 5 years outside Person lifespan bounds [1800–1895] (lower from is_primary birth Event); probable merge error
+
 ```
 
 The `[Rnn]` prefix is machine-parseable. The object type and id are always present so errors can be correlated back to database rows. Genealogical constraint warnings (R40–R46) are distinguishable from schema errors by their rule code range.
@@ -868,3 +901,4 @@ The `[Rnn]` prefix is machine-parseable. The object type and id are always prese
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `reconstruction_algorithms.md`, `genealogical_constraints.md`*
 
 *Schema version: 3.0 — 18 June 2026 (rules v2.8)*
+```

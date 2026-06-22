@@ -4,16 +4,16 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 3.1 (June 2026)  
+Schema version: 3.1 (June 2026)\
 Implementation: Complete — all three layers (foundation, evidence, conclusion)
 
----
+______________________________________________________________________
 
 ## Project Status
 
 > → See [`ROADMAP.md`](ROADMAP.md) for current work queue and version history.
 
----
+______________________________________________________________________
 
 ## Repository Structure
 
@@ -67,7 +67,7 @@ irish-genealogy-research/
     └── tullynaught_1926.csv
 ```
 
----
+______________________________________________________________________
 
 ## CLI Usage
 
@@ -109,7 +109,7 @@ python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves e
 
 **Environment:** Set `DATABASE_URL` in `.env` before running any command. Format: `postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres`
 
----
+______________________________________________________________________
 
 ## Requirements
 

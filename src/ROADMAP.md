@@ -2,7 +2,7 @@
 
 *21 June 2026*
 
----
+______________________________________________________________________
 
 ## 1. Current State
 
@@ -28,7 +28,7 @@
 | Conclusion | ✅ Complete | `conclude` CLI: [1/3] person resolution + [2/3] relationship resolution + [3/3] event resolution (census, birth, marriage events). Repository restructured: `src/pipeline/` removed; evidence modules live in `src/evidence/`, conclusion modules in `src/conclusion/`. `validator.py` moved to `src/review/` (review layer redesign pending — see work queue item 13). |
 | Review | 🔜 Planned | `src/review/` created. Researcher-facing report module: surfaces areas needing attention rather than enforcing hard constraints. Redesign planned for next session (item 13). |
 
----
+______________________________________________________________________
 
 ## 2. Implementation Rebuild
 
@@ -41,6 +41,7 @@ The rebuild follows the three-layer architecture of GRA — foundation, evidence
 The foundation layer is the most stable in GRA. Its purpose is straightforward: loading repository and source metadata, seeding places from logainm on demand, and managing database setup (a prerequisite for seeding).
 
 Changes introduced in this layer:
+
 - **Minor:** `src/constants.py` — centralises hardcoded values (score versions, thresholds, source IDs) previously scattered across pipeline modules.
 - **Major:** SQLite retired; migrated to PostgreSQL / Supabase. DAL isolation validated — no pipeline module required SQL changes.
 
@@ -49,14 +50,15 @@ Changes introduced in this layer:
 The evidence layer has grown with the new logic and now takes on tasks that were further downstream previously. What was previously a simple ingest is now a key part of the pipeline. The key steps (in pipeline running order):
 
 1. Ingest record to database from CSV (`src/evidence/census.py`) ✅
-2. Assign role relationships based on record ✅
-3. Run place resolution to link records to place_authority ✅
-4. Run Splink similarity across records (household-level) ✅
-5. Run Splink similarity across recorded persons (person-level) ✅
+1. Assign role relationships based on record ✅
+1. Run place resolution to link records to place_authority ✅
+1. Run Splink similarity across records (household-level) ✅
+1. Run Splink similarity across recorded persons (person-level) ✅
 
 All five steps run automatically each time a new CSV is ingested via `cli add-evidence`, which replaces `cli ingest`. `cli clear-evidence` clears all evidence and conclusion objects.
 
 **Design fixes:**
+
 - **21 June 2026 (step 3):** Place resolution was integrated into the evidence pipeline to run before Splink. This ensures place_id is populated for Splink's blocking rules, which require place data for optimal matching.
 - **21 June 2026 (step 5):** Person-level similarity added as final evidence step. Writes to `recorded_relationship` with `type='similarity'`. Person features: name, birth year, sex, place. Hierarchical household score feature deferred to v1.1 (ROADMAP item 12).
 
@@ -67,23 +69,24 @@ All five steps run automatically each time a new CSV is ingested via `cli add-ev
 The conclusion layer runs via `cli conclude` and produces Person, Relationship, and Event conclusions from the evidence layer in three steps:
 
 1. **Person Resolution** — clusters RecordedPersons into Person conclusions using person-level similarity scores (threshold 0.65) via connected-components / Union-Find. Orphans (no similarity matches above threshold) are passed to Relationship Resolution. ✅
-2. **Relationship Resolution** — uses high-similarity household pairs (RecordSimilarity ≥ 0.85) to create or link Persons for matched RecordedPersons, then creates Relationships (couple, parent_child, sibling) from household roles. Detects merge candidates (spouse triangulation). ✅
-3. **Event Resolution** — three passes: (a) one census Event per linked RecordedPerson; (b) calculated birth Events per Person from census ages (birth years within ±2 years collapse to one event; diverging years produce multiple events with is_primary arbitrated by vote count); (c) one marriage Event per couple Relationship (date=NULL, additive — BMD ingestion will add dated events later). ✅
+1. **Relationship Resolution** — uses high-similarity household pairs (RecordSimilarity ≥ 0.85) to create or link Persons for matched RecordedPersons, then creates Relationships (couple, parent_child, sibling) from household roles. Detects merge candidates (spouse triangulation). ✅
+1. **Event Resolution** — three passes: (a) one census Event per linked RecordedPerson; (b) calculated birth Events per Person from census ages (birth years within ±2 years collapse to one event; diverging years produce multiple events with is_primary arbitrated by vote count); (c) one marriage Event per couple Relationship (date=NULL, additive — BMD ingestion will add dated events later). ✅
 
 **Repository restructure (21 June 2026):** `src/pipeline/` removed entirely. Files redistributed:
+
 - `place_resolution.py`, `features/` → `src/evidence/`
 - `validator.py` → `src/review/` (review layer — redesign planned for v2.0, ROADMAP item 13)
 - `linkage.py`, `debug.py`, `household_inference.py`, `pipeline.py`, `scoring.py` → deleted (superseded by conclusion layer)
 
----
+______________________________________________________________________
 
 ## 3. Release Plan
 
-* **v1.x (Current):** Implementation rebuild complete — all three layers done (foundation 20 June, evidence 21 June, conclusion 21 June). Next: integration tests.
-* **v2.0 (Target):** Review layer (`src/review/`) — researcher report module redesign (ROADMAP item 13). Full-scale Irish Census (1901–1926) ingestion and analysis.
-* **v3.0 (Long-term):** Ingest of parish and civil BMD.
+- **v1.x (Current):** Implementation rebuild complete — all three layers done (foundation 20 June, evidence 21 June, conclusion 21 June). Next: integration tests.
+- **v2.0 (Target):** Review layer (`src/review/`) — researcher report module redesign (ROADMAP item 13). Full-scale Irish Census (1901–1926) ingestion and analysis.
+- **v3.0 (Long-term):** Ingest of parish and civil BMD.
 
----
+______________________________________________________________________
 
 ## 4. Work Queue
 
@@ -95,7 +98,7 @@ The conclusion layer runs via `cli conclude` and produces Person, Relationship, 
 | 12 | Person similarity hierarchical feature: Add household similarity score as a Splink comparison level to boost person match confidence when households strongly match. Deferred to v1.1 after integration tests pass. | 🔜 (v1.1) |
 | 13 | **Review layer redesign** (`src/review/`). Reframe `validator.py` from constraint enforcer to researcher report module. Rules should surface areas needing attention rather than flagging violations. Design notes: R40/R41/R43 now apply to primary Events only; R42 becomes a conclusion-pipeline guardrail rather than a post-hoc check; scope broadens to include flagged items from the conclusion layer (merge candidates, unresolved birth conflicts, unlinked places, persons with no birth event, etc.). Port to PostgreSQL as part of redesign. Add `review` CLI command. | 🔜 (v2.0) |
 
----
+______________________________________________________________________
 
 ## 5. Open Decisions
 
@@ -104,7 +107,7 @@ All open decisions from the conclusion layer design phase have been resolved:
 - **Person-creation timing:** Resolved. Persons are created in batch by `person_resolution.py` (clustering) and `relationship_resolution.py` (household matching), not eagerly at ingest time. `household_inference.py` deleted.
 - **Census Event creation:** Resolved. Census Events are created by `event_resolution.py` pass 1, after Persons exist. They are linked to Persons via `person_event` and to Records via `event_record`.
 
----
+______________________________________________________________________
 
 ## 6. Version History
 

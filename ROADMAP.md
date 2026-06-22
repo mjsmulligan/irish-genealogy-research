@@ -2,7 +2,7 @@
 
 *21 June 2026*
 
----
+______________________________________________________________________
 
 ## 1. Current State
 
@@ -29,7 +29,7 @@
 | Testing | ✅ Complete | `tests/test_pipeline.py`: 59 tests, fixed-fixture exact assertions |
 | Review | 🔜 Planned | `src/review/` redesign (item 13) |
 
----
+______________________________________________________________________
 
 ## 2. Implementation
 
@@ -40,24 +40,24 @@
 Five-step pipeline via `cli add-evidence`:
 
 1. Ingest CSV → record + recorded_person (`src/evidence/census.py`) ✅
-2. Assign role relationships from household role pairs (`src/evidence/role_relationships.py`) ✅
-3. Place resolution → place_record linkage (`src/evidence/place_resolution.py`) ✅
-4. Splink record similarity, household-level (`src/evidence/similarity.py`) ✅
-5. Splink person similarity, person-level (`src/evidence/similarity.py`) ✅
+1. Assign role relationships from household role pairs (`src/evidence/role_relationships.py`) ✅
+1. Place resolution → place_record linkage (`src/evidence/place_resolution.py`) ✅
+1. Splink record similarity, household-level (`src/evidence/similarity.py`) ✅
+1. Splink person similarity, person-level (`src/evidence/similarity.py`) ✅
 
 ### 2.3 Conclusion Layer ✅
 
 Three-step pipeline via `cli conclude`:
 
 1. **Person Resolution** — Union-Find clustering on person similarity ≥ 0.65 (`src/conclusion/person_resolution.py`) ✅
-2. **Relationship Resolution** — household matching → Person creation + Relationship conclusions (`src/conclusion/relationship_resolution.py`) ✅
-3. **Event Resolution** — census, calculated birth, and marriage Events (`src/conclusion/event_resolution.py`) ✅
+1. **Relationship Resolution** — household matching → Person creation + Relationship conclusions (`src/conclusion/relationship_resolution.py`) ✅
+1. **Event Resolution** — census, calculated birth, and marriage Events (`src/conclusion/event_resolution.py`) ✅
 
 ### 2.4 Integration Test Harness ✅
 
 `tests/test_pipeline.py` — 59 tests. See §4 for exact counts.
 
----
+______________________________________________________________________
 
 ## 3. Work Queue
 
@@ -92,7 +92,7 @@ Three-step pipeline via `cli conclude`:
 | 31 | **`person_repo.py` dead `next_ids()` function** — `next_ids()` pre-calculates IDs for person, relationship, event, and person_name tables and is linked to the old bulk-insert pattern. The new RETURNING pattern (used in `create_person()`) makes this unnecessary. Verify no callers remain, then remove. | Low | |
 | 32 | **`role_relationships.py` score/score_version always None** — role-pair RecordedRelationships insert `score=None, score_version=None` even though the relationship has a well-defined prior score (e.g. 0.90 for couple). The schema CHECK `(type = 'similarity') = (score IS NOT NULL)` enforces that non-similarity types must have NULL score — this is intentional, but it means the prior scores in `constants.py` are never persisted. Consider whether priors should live in the schema or stay as in-memory constants for the conclusion layer to reference. | Medium | Design decision needed |
 
----
+______________________________________________________________________
 
 ## 4. Test Harness Reference
 
@@ -116,13 +116,14 @@ Three-step pipeline via `cli conclude`:
 | Birth year plausibility | 1807–1928 | Max age 92 in 1901 → born 1809 − 2 = 1807; age 0 in 1926 + 2 = 1928 |
 
 **Authoritative place data (logainm, 21 June 2026):**
+
 - 33 townlands total; `Croaghnakern` and `Rooney's Island` uninhabited
 - `Drumenny Upper` is logainm canonical; census uses `Drummenny Upper` (double-m); JW=0.987
 
 **Floor counts (pin after first clean run — item 15):**
 `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS`
 
----
+______________________________________________________________________
 
 ## 5. Code Review Findings (21 June 2026)
 
@@ -139,6 +140,7 @@ Full review of all active `src/` modules. Dead code in `src/pipeline/` excluded 
 ### 5.3 `record_repo.py` issues
 
 `get_unprocessed_census_records()` has two problems:
+
 - **Performance:** Uses `NOT IN (SELECT ... FROM person_recorded_person)` — flagged in its own docstring. At Donegal scale (168K records, ~800K persons) this will be very slow. Rewrite as `NOT EXISTS` before scale-up (item 18).
 - **Potential join bug:** The subquery joins `person_recorded_person` on `record_id` but `person_recorded_person` has no `record_id` column — it links via `recorded_person_id`. The join path is `recorded_person.record_id` → `person_recorded_person.recorded_person_id`. Verify this produces correct results; the join condition may be silently wrong (item 18).
 
@@ -173,7 +175,7 @@ Multiple DAL functions (`insert_record`, `insert_recorded_person`, `insert_perso
 
 `fetch_places.main()` handles `--db` by calling `open_db(args.db)` with a path argument. But `open_db()` no longer accepts any arguments — it reads `DATABASE_URL` from the environment. The `--db` argument is silently ignored and the function either works (if `DATABASE_URL` is set) or raises `EnvironmentError` (if not), regardless of the `--db` value. The `--db` argument should be removed from the standalone parser since it is meaningless, or `open_db()` should be documented as `DATABASE_URL`-only (item 28).
 
----
+______________________________________________________________________
 
 ## 6. Release Plan
 
@@ -181,7 +183,7 @@ Multiple DAL functions (`insert_record`, `insert_recorded_person`, `insert_perso
 - **v2.0 (Target):** Review layer (`src/review/`) redesign (item 13). Full-scale Irish Census ingestion.
 - **v3.0 (Long-term):** Parish and civil BMD ingest.
 
----
+______________________________________________________________________
 
 ## 7. Version History
 

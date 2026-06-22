@@ -3,7 +3,7 @@
 *Version 1.3 — 19 June 2026*
 *Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `validation_rules.md` first.*
 
----
+______________________________________________________________________
 
 ## 1. Foundations
 
@@ -32,7 +32,7 @@ The reconstruction pipeline therefore executes in the following order:
 
 Each stage feeds the next. Stages 3–5 may iterate as new sources are ingested.
 
----
+______________________________________________________________________
 
 ### 1.2 Two operational modes
 
@@ -44,7 +44,7 @@ The reconstruction pipeline operates in two distinct modes depending on whether 
 
 The distinction matters because incremental linkage can exploit the existing conclusion layer as prior knowledge. If a Person conclusion for "John Mulligan, Tullynaught, b. ~1852" already exists with three supporting Records, a new Record containing "John Mulligan, Tullynaught, age 49" from a 1901 census is evaluated against that prior — the algorithm is not starting from scratch.
 
----
+______________________________________________________________________
 
 ### 1.3 Scoring and the verified flag
 
@@ -68,7 +68,7 @@ Thresholds are configurable per source type. A source with clean, structured dat
 
 The researcher sets `verified = 1` by reviewing and confirming a linkage in the application. Verification can be applied to any linkage regardless of how it was committed.
 
----
+______________________________________________________________________
 
 ### 1.4 Derived confidence
 
@@ -90,7 +90,7 @@ The precise form of this function — how mean score, record count, and source d
 
 This placeholder is explicitly labelled as provisional in the codebase and replaced once the derivation function is specified.
 
----
+______________________________________________________________________
 
 ### 1.5 Library stack
 
@@ -108,7 +108,7 @@ The reconstruction pipeline is built on three components:
 pip install splink rapidfuzz
 ```
 
----
+______________________________________________________________________
 
 ### 1.6 Schema changes driven by this document
 
@@ -152,7 +152,7 @@ CREATE INDEX idx_name_variant_variant ON name_variant (variant);
 CREATE INDEX idx_name_variant_canonical ON name_variant (canonical);
 ```
 
----
+______________________________________________________________________
 
 ## 2. Place Resolution
 
@@ -182,10 +182,10 @@ Higher-level administrative units — DED, civil parish, barony, county — are 
 Before any string matching occurs, all `place_as_recorded` strings are passed through a normalisation pipeline:
 
 1. **Lowercase** — case-fold the entire string
-2. **Strip punctuation** — remove commas, full stops, hyphens used as separators
-3. **Expand abbreviations** — "Co." → "county", "Par." → "parish", "Bal." → "bally"
-4. **Strip administrative suffixes** — remove "townland", "td", "civil parish", "DED", "barony" and equivalents
-5. **Normalise whitespace** — collapse multiple spaces to single space, strip leading/trailing
+1. **Strip punctuation** — remove commas, full stops, hyphens used as separators
+1. **Expand abbreviations** — "Co." → "county", "Par." → "parish", "Bal." → "bally"
+1. **Strip administrative suffixes** — remove "townland", "td", "civil parish", "DED", "barony" and equivalents
+1. **Normalise whitespace** — collapse multiple spaces to single space, strip leading/trailing
 
 The result is a normalised place token suitable for fuzzy comparison. The original `place_as_recorded` string is always preserved verbatim in the `record.place_as_recorded` column — normalisation is a comparison artefact, never a data modification.
 
@@ -202,12 +202,12 @@ When a normalised place token matches a `place_authority` entry at or above the 
 When no `place_authority` entry matches above threshold, the place string is flagged as unresolved. The researcher resolves unresolved strings by:
 
 1. Checking whether the missing townland should be fetched from logainm.ie (`python -m src.cli fetch-places`)
-2. Manually adding an entry to `place_authority` if the townland is not in logainm (e.g. an anglicised variant not yet indexed)
-3. Re-running place resolution after the authority table is extended
+1. Manually adding an entry to `place_authority` if the townland is not in logainm (e.g. an anglicised variant not yet indexed)
+1. Re-running place resolution after the authority table is extended
 
 No `place_authority` entry is ever created automatically by the resolution algorithm. The authority table is a curated reference; resolution is a linking step only.
 
----
+______________________________________________________________________
 
 ## 3. Feature Extraction by Source Type
 
@@ -252,7 +252,7 @@ Each source type has a dedicated feature extractor that reads the RecordedPerson
 
 Co-occurring persons are the other RecordedPersons in the same Record — household members, parents, witnesses, sponsors. They are included as a list of normalised name strings. Their presence as a matching feature is described in §5.3.
 
----
+______________________________________________________________________
 
 ## 4. Name Matching
 
@@ -261,10 +261,10 @@ Co-occurring persons are the other RecordedPersons in the same Record — househ
 All name strings are normalised before comparison. The pipeline applies in order:
 
 1. **Lowercase** — case-fold
-2. **Strip fada for comparison** — remove Irish language diacritics (á→a, é→e, í→i, ó→o, ú→u). The original spelling is always preserved in `name_as_recorded`
-3. **Expand standard abbreviations** — Wm→william, Thos→thomas, Jas→james, Jno→john, Chas→charles, Mgt/Marg→margaret, Pat/Pk→patrick, Brid/Bgt→bridget, Michl→michael
-4. **Strip particles** — remove "O'", "Mc", "Mac" as separate tokens for phonetic comparison (preserved in the full normalised string for Jaro-Winkler)
-5. **Normalise whitespace**
+1. **Strip fada for comparison** — remove Irish language diacritics (á→a, é→e, í→i, ó→o, ú→u). The original spelling is always preserved in `name_as_recorded`
+1. **Expand standard abbreviations** — Wm→william, Thos→thomas, Jas→james, Jno→john, Chas→charles, Mgt/Marg→margaret, Pat/Pk→patrick, Brid/Bgt→bridget, Michl→michael
+1. **Strip particles** — remove "O'", "Mc", "Mac" as separate tokens for phonetic comparison (preserved in the full normalised string for Jaro-Winkler)
+1. **Normalise whitespace**
 
 Normalisation produces a `full_norm` string used for Jaro-Winkler comparison.
 
@@ -310,7 +310,7 @@ This means surname frequency weighting is automatic and self-calibrating — it 
 
 Forename is a weak but useful gender signal. "Mary", "Bridget", "Catherine" are reliably female; "Patrick", "Michael", "John" are reliably male. Where `Person.gender` is already concluded, a forename that contradicts the concluded gender is a strong negative signal against a proposed match. This check is applied as a hard filter before scoring — a male Person is never proposed as a candidate match for a Record whose principal RecordedPerson has a reliably female forename, regardless of surname similarity.
 
----
+______________________________________________________________________
 
 ## 5. Person Linkage
 
@@ -367,15 +367,15 @@ The pipeline treats 1926 as a first-class census source by normalising its QA-cl
 The household inference algorithm operates on census Records before the general Person linkage pipeline:
 
 1. For each census Record, extract all RecordedPersons with their roles and ages
-2. Group RecordedPersons by household (all share the same `record_id`)
-3. Create provisional Person conclusions for each RecordedPerson in the household
-4. Create provisional Relationship conclusions based on role pairs:
+1. Group RecordedPersons by household (all share the same `record_id`)
+1. Create provisional Person conclusions for each RecordedPerson in the household
+1. Create provisional Relationship conclusions based on role pairs:
    - `head` + `spouse` → `couple` Relationship (high prior)
    - `head` + `son` or `daughter` → `parent_child` Relationship (high prior, head is parent)
    - `spouse` + `son` or `daughter` → `parent_child` Relationship (medium prior, spouse is parent)
    - `head` + `sibling` → `sibling` Relationship (medium prior)
    - `son` + `son`, `daughter` + `daughter`, `son` + `daughter` → `sibling` Relationship (medium-low prior, inferred via shared parents)
-5. Score these provisional conclusions at `score = 0.90` (household structure is high-confidence evidence)
+1. Score these provisional conclusions at `score = 0.90` (household structure is high-confidence evidence)
 
 These provisional conclusions become the seed for cross-source linkage in the subsequent pipeline stage. Cross-census linkage (1901 → 1911 → 1926) then attempts to link the same Person across the three census years using the age-drift model described in §5.6.
 
@@ -393,7 +393,7 @@ For the three census years available:
 
 A candidate pair whose age delta falls within tolerance receives full credit on the birth year comparison feature. A delta outside tolerance is a strong negative signal but not an automatic disqualification — informant errors on age are common enough that the other features can compensate if they score strongly.
 
----
+______________________________________________________________________
 
 ## 6. Relationship Inference
 
@@ -444,7 +444,7 @@ Before a new Relationship assertion is committed, the algorithm checks whether a
 
 A Relationship is considered equivalent if `type`, `person_id_1`, and `person_id_2` match (ignoring direction for symmetric types).
 
----
+______________________________________________________________________
 
 ## 7. Event Linkage
 
@@ -468,7 +468,7 @@ Geographic proximity between `place_authority` entries is not currently modelled
 
 When a Record is linked to an existing Event conclusion, the Record is added to `event_record`. Because event data is now inline on the Record, this single insertion is sufficient — there is no separate `event_recorded_event` junction to maintain. Rule R26 (which enforced consistency between those two tables) has been retired in schema v2.8.
 
----
+______________________________________________________________________
 
 ## 8. Community-Level Analysis
 
@@ -479,6 +479,7 @@ Once the conclusion layer is populated for a community, the following aggregate 
 **Note:** The queries below use the current code-level junction table name `person_record`. Once the v3.1 rename to `person_recorded_person` is implemented (Work Queue item 15), these queries should be updated accordingly.
 
 **Total concluded Persons in the community:**
+
 ```sql
 SELECT COUNT(DISTINCT p.person_id)
 FROM person p
@@ -489,6 +490,7 @@ WHERE s.repository_id IN (/* target repositories */);
 ```
 
 **Persons spanning two or more census years:**
+
 ```sql
 SELECT p.person_id, p.label, COUNT(DISTINCT s.source_id) AS census_count
 FROM person p
@@ -502,6 +504,7 @@ ORDER BY census_count DESC;
 ```
 
 **Linkage confidence distribution — how many Person-Record links are at each score band:**
+
 ```sql
 SELECT
     CASE
@@ -517,6 +520,7 @@ GROUP BY band;
 ```
 
 **Unverified high-score linkages — candidates for efficient researcher review:**
+
 ```sql
 SELECT p.label, r.record_id, pr.score, s.title AS source_title
 FROM person_record pr
@@ -548,7 +552,7 @@ The `verified` flag is exported as a custom `_VERF` tag on each relevant record,
 
 GEDCOM export specification and implementation details are out of scope for this document and will be specified separately.
 
----
+______________________________________________________________________
 
 ## 9. Implementation Notes
 
@@ -615,7 +619,7 @@ def export_gedcom(conn, output_path: str) -> None:
     """Export the full conclusion layer as a GEDCOM 5.5.1 file."""
 ```
 
----
+______________________________________________________________________
 
 ## Appendix A — Name Variant Starter Fixture
 
@@ -671,7 +675,7 @@ The following entries seed the `name_variant` table for common Irish names encou
 | mcdermott | macdermott | spelling |
 | mcdermott | dermott | spelling |
 
----
+______________________________________________________________________
 
 ## Changelog
 
@@ -682,7 +686,7 @@ The following entries seed the `name_variant` table for common Irish names encou
 | 1.3 | 19 June 2026 | Removed Place as conclusion-layer object throughout. §1.1: reframed Record-to-Place as linking to pre-seeded `place_authority` (not creating Place conclusions); pipeline step 2 label updated. §2 Place Resolution fully rewritten: §2.1 clarifies that `place_authority` is a pre-seeded reference and resolution is a linking step only; §2.4 updated to match against `place_authority.name_en`; §2.5 replaced "new Place conclusion created" with unresolved-string flagging workflow. §1.5 Library stack: Jellyfish replaced by rapidfuzz (`rapidfuzz.distance.JaroWinkler.similarity`); phonetic (Soundex/Metaphone) blocking removed. §4.1: Soundex output removed from normalisation pipeline description. §5.1 blocking rule 2: Soundex blocking replaced by normalised surname Jaro-Winkler fallback. §5.3: co-occupant overlap score changed from Jaccard to Szymkiewicz–Simpson, with rationale. §1.6: junction table DDL example updated to v3.1 rename targets (`person_recorded_person`, FK to `recorded_person_id`); cross-reference note added. §9.1 Splink sketch: `link_and_dedupe` → `link_only`; `soundex_surname` blocking replaced by `surname_norm`; EM training block updated to match. |
 | 1.2 | June 2026 | Updated for schema v2.8. §1.1 evidence layer description removes RecordedEvent. §1.6 junction table note updated to reflect dropped tables. §2.3 place_as_recorded field reference updated to `record.place_as_recorded`. §3.2 feature extractor description updated. §7.2 event candidate scoring uses `record.event_type`. §7.3 rewritten: `event_recorded_event` removed; Record-to-Event linkage via `event_record` only. |
 
----
+______________________________________________________________________
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, `session_bootstrap.md`*
 
