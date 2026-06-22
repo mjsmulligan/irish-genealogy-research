@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Database Schema
 
-*Version 3.2 — 19 June 2026*
+*Version 3.2 — 23 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for the SQLite database schema. It translates the data model defined in `data_dictionary.md` into concrete DDL. Read `conceptual_model.md` and `data_dictionary.md` first.*
 
 ______________________________________________________________________
