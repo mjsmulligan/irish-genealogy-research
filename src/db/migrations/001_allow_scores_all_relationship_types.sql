@@ -23,7 +23,7 @@ ALTER TABLE recorded_relationship
     ADD CONSTRAINT recorded_relationship_check1
     CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0));
 
--- Update version
-UPDATE gra_meta SET value = '3.2' WHERE key = 'schema_version';
+-- Update version (stored as integer: 32 represents v3.2)
+UPDATE gra_meta SET value = '32' WHERE key = 'schema_version';
 
 COMMIT;
