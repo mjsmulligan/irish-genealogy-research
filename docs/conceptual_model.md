@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Conceptual Data Model
 
-*Version 2.7 — 18 June 2026*
+*Version 2.8 — 23 June 2026*
 *Audience: All roles. This document defines the what and why of the data model. It contains no implementation detail.*
 
 ______________________________________________________________________
@@ -232,6 +232,60 @@ Person and Relationship do not use this mechanism: Person because it is the anch
 
 ______________________________________________________________________
 
+## 7. Review Layer
+
+### 7.1 The Reviewer
+
+A **Reviewer** is any agent that creates or modifies conclusion-layer objects. The model defines three types:
+
+- **pipeline** — an automated pipeline run (person_resolution, relationship_resolution, event_resolution). The first and most prolific author of conclusions.
+- **human** — a named researcher interacting via CLI, web interface, or any other modality.
+- **ai** — a Claude session or MCP-connected agent operating on behalf of a researcher.
+
+The Reviewer is a first-class entity in the data model, not merely a string in a log. This is what makes concurrent reviewers, conflict attribution, and future voting or arbitration mechanisms tractable. The modality of review — CLI, web, MCP, concurrent sessions — is not encoded in the Reviewer type; it is captured in `session_ref` on each log entry.
+
+### 7.2 The Conclusion Log
+
+Every creation, modification, or deletion of a conclusion-layer object is recorded in an append-only **conclusion log**. The log is the authoritative audit trail for the entire conclusion layer. Conclusion rows themselves hold current state; the log holds history.
+
+Key properties:
+
+- **Append-only.** Log entries are never updated or deleted. Once written, a log entry is permanent.
+- **Granular.** Each field change on a conclusion object produces its own log entry, with `old_value` and `new_value` recorded as text. A compound researcher action (e.g. reassigning a RecordedPerson from one Person to another) produces multiple log entries sharing a `change_group_id`.
+- **Change grouping.** A `change_group_id` (UUID) groups all log entries that belong to a single logical researcher action. This is what ties together the delete-link / create-link pair when a RecordedPerson is moved between Persons, or the chain of mutations when a Person is flagged for deletion.
+- **Covers all conclusion objects.** Logged entity types are: `person`, `relationship`, `event`, and the four primary linkage junction tables (`person_recorded_person`, `relationship_recorded_relationship`, `event_record`, `place_record`).
+- **Named actions.** The `action` field uses a controlled vocabulary: `create`, `update`, `delete`, `verify`, `flag`. `verify` and `flag` are named explicitly because they are the two most common review-specific operations — confirming a linkage (`verified=1`) and flagging something for attention — and deserve distinct log entries rather than being encoded as generic field updates.
+
+The pipeline uses two seeded Reviewers: `pipeline:system` (reviewer_id=1) for all automated conclusion creation, and `human:unknown` (reviewer_id=2) as a fallback for any edit without explicit attribution.
+
+### 7.3 Conclusion Lifecycle
+
+Conclusion-layer objects (`person`, `relationship`, `event`) carry a `status` field governing their lifecycle:
+
+```
+active          →  pending_delete  →  (physical deletion)
+```
+
+- **`active`** — the normal operational state. All pipeline operations, reports, and health checks filter to `active` only.
+- **`pending_delete`** — the object has been flagged for deletion by a reviewer. It is excluded from all pipeline operations and health reports but remains physically present, visible in the bin view. A `pending_delete_at` timestamp records when the flag was set, enabling a configurable auto-deletion window (target: 90 days).
+
+Physical deletion is the intended endpoint, not a soft-deleted permanent state. The `conclusion_log` preserves the full history of what existed and why it was removed; the data row itself does not need to be retained for audit purposes. A bin-review step allows a reviewer to confirm deletion before it executes, or to restore an object to `active` if the deletion was in error.
+
+**Cascading pending_delete:** When a Person is flagged `pending_delete`, any Relationships and Events that become orphaned as a result are also flagged `pending_delete` as part of the same change group. The researcher reviews the full set before physical deletion executes.
+
+### 7.4 The Reporting Surface
+
+The review layer's second responsibility is surfacing areas of the conclusion database that warrant researcher attention. This is distinct from the audit trail — it is prospective rather than retrospective.
+
+Two categories of finding:
+
+- **Health findings** — things that are anomalous or inconsistent in existing conclusions: genealogical constraint violations (birth singularity, lifespan boundary, parent age plausibility), probable merge errors, orphaned conclusions.
+- **Research prompts** — things the system has noticed that have not yet become conclusions: strong evidence pairs just below the auto-commit threshold, unresolved birth-year conflicts, Persons appearing in only one census, unlinked RecordedPersons, unresolved place strings.
+
+The reporting surface produces **structured data first** — a `Report` with typed `ReportItem` entries — and renders second. This ensures that CLI, web, MCP, and AI consumers all receive the same information in a queryable form, regardless of how they choose to present it.
+
+______________________________________________________________________
+
 ## Changelog
 
 | Version | Date | Change |
@@ -243,3 +297,4 @@ ______________________________________________________________________
 | 2.5 | 17 June 2026 | Added RecordedRelationship and RecordSimilarity as new Evidence-layer objects, recording relationships and algorithmic similarity between evidence units without requiring a conclusion to exist (§1, §2, §3, §4.7, §4.8). Added Event consensus arbitration as Rule 9 — competing Events of the same type may coexist per Person, with exactly one marked `is_primary`; Person and Relationship explicitly excluded from this mechanism, for different reasons (§1, §4.9, §4.10, §4.11, §6). Added Rule 10 (relationship evidence precedes identity) and Rule 11 (comparison is not conclusion). Retired `training_labels` as a considered-and-built-then-rejected path, alongside the existing PlaceMembership note (§3). Corrected object count from eleven (stale, did not match the actual object list) to ten. Updated §1 Symmetry between layers to include the RecordedRelationship/Relationship mirror and the deliberate RecordSimilarity asymmetry. Updated §2 Evidence Layer description. Updated §5 data flow diagram and explanatory paragraph. Fixed stale CLI invocation examples in §4.3 seeding workflow (`python -m src.cli fetch-places` / `seed-places`, previously incorrectly given as `src.fetch_places` / `src.db seed-places`). |
 | 2.6 | 17 June 2026 (session 3) | Generalised Rule 2 from "Records as evidence unit" to an evidence-correspondence principle: Person points to RecordedPerson, Relationship to RecordedRelationship, Event continues to point to Record directly since event fields are inline on the Record (Rule 1, Rule 3). This resolves the Relationship evidence-FK item left open at the end of the v2.5 session — settled in favour of RecordedRelationship — and, on the same principle, corrects Person's evidence target from Record to RecordedPerson, which §1's symmetry principle had already implied but §5/§6 had not carried through. Updated §5 data flow diagram (`Record──►Person` → `RecordedPerson──►Person`), §4.9 Person and §4.10 Relationship wording to match; removed the now-resolved "Records (or, more precisely, RecordedRelationship rows)" hedge from §4.10. |
 | 2.7 | 18 June 2026 | Rule 9 scoping amendment: replaced the flat `(Person, event_type)` constraint with a three-way event-type taxonomy. Singular-per-lifetime types (birth, death, baptism, burial) retain `(Person, event_type)` arbitration with record-vote consensus. Marriage is scoped to `(Relationship, event_type)` via `event.relationship_id` — consistent with GC06; `relationship_id` is a committed schema-phase addition. Recurring types (census, residence, valuation, tithe, military_service, pension, folklore, emigration) carry no cardinality constraint; each occurrence is a distinct real-world fact, `is_primary` defaults `true`, rebuild-consensus skips these types. Updated §1 "Conflicting evidence" principle, §4.11 Event description, and Rule 9. |
+| 2.8 | 23 June 2026 | Added §7 Review Layer. Introduces the Reviewer as a first-class entity (§7.1: three types — pipeline, human, ai); the conclusion log as an append-only audit trail covering all conclusion-layer mutations (§7.2: change grouping via `change_group_id`, named actions create/update/delete/verify/flag); the conclusion lifecycle with `status` and `pending_delete_at` on Person, Relationship, and Event (§7.3: active → pending_delete → physical deletion, 90-day auto-deletion target, cascading pending_delete on orphan detection); and the reporting surface producing structured ReportItems for health findings and research prompts (§7.4). These additions correspond to schema v4.0. |

@@ -22,3 +22,12 @@ INSERT INTO source OVERRIDING SYSTEM VALUE VALUES (5,  1, 'Census 1926', 'census
 INSERT INTO source OVERRIDING SYSTEM VALUE VALUES (13, 8, 'logainm.ie Place Authority', 'place_authority', NULL, NULL, 'https://www.logainm.ie', 'https://www.logainm.ie/en/{logainm_id}', NULL, '["logainm_id"]', '["place_id","logainm_id","name_en","place_type","parent_name","parent_id","parent_type","ded_name","ded_id","county_name","county_id","barony_name","barony_id","civil_parish_name","civil_parish_id","latitude","longitude","logainm_url","notes"]', NULL, 'logainm.ie Place Authority. Foras na Gaeilge. logainm.ie. Accessed May 2026.');
 
 SELECT setval('source_source_id_seq', 13);
+
+-- Review layer: two system reviewers seeded at init time.
+-- reviewer_id=1 (pipeline:system) is used by all automated pipeline conclusion creation.
+-- reviewer_id=2 (human:unknown) is the fallback for unattributed manual edits.
+INSERT INTO reviewer OVERRIDING SYSTEM VALUE VALUES
+    (1, 'pipeline:system', 'pipeline', 'Automated pipeline — initial conclusion creation', NOW()),
+    (2, 'human:unknown',   'human',    'Manual edits with no identified reviewer',          NOW());
+
+SELECT setval('reviewer_reviewer_id_seq', 2);

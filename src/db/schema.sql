@@ -1,6 +1,13 @@
 -- GRA — Genealogy Research Assistant
--- Schema version 3.2 — 22 June 2026
+-- Schema version 4.0 — 23 June 2026
 -- PostgreSQL 15+ required
+--
+-- Changes from v3.2 → v4.0 (Review Layer):
+--   - reviewer table added (first-class entity: pipeline / human / ai)
+--   - conclusion_log table added (append-only audit trail for all conclusion mutations)
+--   - person, relationship, event: status + pending_delete_at columns added
+--     (lifecycle: active → pending_delete → physical deletion)
+--   - Two system reviewers seeded: pipeline:system (id=1), human:unknown (id=2)
 --
 -- Changes from v3.0 (SQLite) → v3.1 (PostgreSQL):
 --   - Migrated from SQLite to PostgreSQL (Supabase)
@@ -202,13 +209,17 @@ CREATE TABLE name_variant (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE person (
-    person_id   INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    label       TEXT    NOT NULL CHECK (trim(label) != ''),
-    gender      TEXT,
-    private     INTEGER NOT NULL DEFAULT 0 CHECK (private IN (0, 1)),
-    notes       TEXT,
+    person_id           INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    label               TEXT        NOT NULL CHECK (trim(label) != ''),
+    gender              TEXT,
+    private             INTEGER     NOT NULL DEFAULT 0 CHECK (private IN (0, 1)),
+    status              TEXT        NOT NULL DEFAULT 'active',
+    pending_delete_at   TIMESTAMPTZ,
+    notes               TEXT,
 
-    CHECK (gender IS NULL OR gender IN ('male', 'female', 'unknown'))
+    CHECK (gender IS NULL OR gender IN ('male', 'female', 'unknown')),
+    CHECK (status IN ('active', 'pending_delete')),
+    CHECK (status = 'active' OR pending_delete_at IS NOT NULL)
 );
 
 CREATE TABLE person_name (
@@ -221,25 +232,31 @@ CREATE TABLE person_name (
 );
 
 CREATE TABLE relationship (
-    relationship_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    type            TEXT    NOT NULL,
-    person_id_1     INTEGER NOT NULL REFERENCES person (person_id),
-    person_id_2     INTEGER NOT NULL REFERENCES person (person_id),
-    notes           TEXT,
+    relationship_id     INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    type                TEXT        NOT NULL,
+    person_id_1         INTEGER     NOT NULL REFERENCES person (person_id),
+    person_id_2         INTEGER     NOT NULL REFERENCES person (person_id),
+    status              TEXT        NOT NULL DEFAULT 'active',
+    pending_delete_at   TIMESTAMPTZ,
+    notes               TEXT,
 
     CHECK (person_id_1 != person_id_2),
-    CHECK (type IN ('couple', 'parent_child', 'sibling'))
+    CHECK (type IN ('couple', 'parent_child', 'sibling')),
+    CHECK (status IN ('active', 'pending_delete')),
+    CHECK (status = 'active' OR pending_delete_at IS NOT NULL)
 );
 
 CREATE TABLE event (
-    event_id        INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    type            TEXT    NOT NULL,
-    date            TEXT,   -- normalised ISO 8601; validated by Python (R36)
-    date_qualifier  TEXT,
-    place_id        INTEGER REFERENCES place_authority (place_id),
-    relationship_id INTEGER REFERENCES relationship (relationship_id),
-    is_primary      INTEGER NOT NULL DEFAULT 1 CHECK (is_primary IN (0, 1)),
-    notes           TEXT,
+    event_id            INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    type                TEXT        NOT NULL,
+    date                TEXT,       -- normalised ISO 8601; validated by Python (R36)
+    date_qualifier      TEXT,
+    place_id            INTEGER     REFERENCES place_authority (place_id),
+    relationship_id     INTEGER     REFERENCES relationship (relationship_id),
+    is_primary          INTEGER     NOT NULL DEFAULT 1 CHECK (is_primary IN (0, 1)),
+    status              TEXT        NOT NULL DEFAULT 'active',
+    pending_delete_at   TIMESTAMPTZ,
+    notes               TEXT,
 
     CHECK (type IN (
         'birth', 'baptism', 'marriage', 'death', 'burial',
@@ -248,7 +265,9 @@ CREATE TABLE event (
     )),
     CHECK (date_qualifier IS NULL OR date_qualifier IN (
         'exact', 'about', 'before', 'after', 'between', 'estimated', 'calculated'
-    ))
+    )),
+    CHECK (status IN ('active', 'pending_delete')),
+    CHECK (status = 'active' OR pending_delete_at IS NOT NULL)
 );
 
 -- ---------------------------------------------------------------------------
@@ -341,6 +360,50 @@ CREATE TABLE training_labels (
 );
 
 -- ---------------------------------------------------------------------------
+-- REVIEW LAYER
+-- ---------------------------------------------------------------------------
+-- Reviewer: any agent that creates or modifies conclusion-layer objects.
+-- ConclusionLog: append-only audit trail. Entries are never updated or deleted.
+
+CREATE TABLE reviewer (
+    reviewer_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name         TEXT        NOT NULL CHECK (trim(name) != ''),
+    type         TEXT        NOT NULL,
+    notes        TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (type IN ('pipeline', 'human', 'ai'))
+);
+
+-- Append-only. All conclusion-layer creates, updates, deletes, verifications,
+-- and flags are recorded here. change_group_id (UUID) groups the entries
+-- belonging to a single logical researcher action.
+CREATE TABLE conclusion_log (
+    log_id           INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    reviewer_id      INTEGER     NOT NULL REFERENCES reviewer (reviewer_id),
+    action           TEXT        NOT NULL,
+    entity_type      TEXT        NOT NULL,
+    entity_id        INTEGER     NOT NULL,
+    field_name       TEXT,               -- NULL for create/delete; column name for update
+    old_value        TEXT,               -- NULL on create
+    new_value        TEXT,               -- NULL on delete
+    reason           TEXT,
+    change_group_id  TEXT,               -- UUID; groups related entries for one logical action
+    session_ref      TEXT,               -- pipeline commit hash, Claude session ID, etc.
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (action IN ('create', 'update', 'delete', 'verify', 'flag')),
+    CHECK (entity_type IN (
+        'person', 'relationship', 'event',
+        'person_recorded_person',
+        'relationship_recorded_relationship',
+        'event_record',
+        'place_record'
+    )),
+    CHECK (action != 'update' OR field_name IS NOT NULL)
+);
+
+-- ---------------------------------------------------------------------------
 -- INDEXES
 -- ---------------------------------------------------------------------------
 
@@ -405,3 +468,21 @@ CREATE INDEX idx_record_similarity_record2 ON record_similarity (record_id_2);
 CREATE INDEX idx_training_labels_decision    ON training_labels (decision);
 CREATE INDEX idx_training_labels_person_id_1 ON training_labels (person_id_1);
 CREATE INDEX idx_training_labels_person_id_2 ON training_labels (person_id_2);
+
+-- Reviewer
+CREATE INDEX idx_reviewer_type ON reviewer (type);
+
+-- Conclusion log — primary access patterns
+CREATE INDEX idx_conclusion_log_reviewer     ON conclusion_log (reviewer_id);
+CREATE INDEX idx_conclusion_log_entity       ON conclusion_log (entity_type, entity_id);
+CREATE INDEX idx_conclusion_log_created_at   ON conclusion_log (created_at);
+CREATE INDEX idx_conclusion_log_change_group ON conclusion_log (change_group_id)
+    WHERE change_group_id IS NOT NULL;
+
+-- Bin view — pending_delete rows only
+CREATE INDEX idx_person_pending_delete        ON person (pending_delete_at)
+    WHERE status = 'pending_delete';
+CREATE INDEX idx_relationship_pending_delete  ON relationship (pending_delete_at)
+    WHERE status = 'pending_delete';
+CREATE INDEX idx_event_pending_delete         ON event (pending_delete_at)
+    WHERE status = 'pending_delete';
