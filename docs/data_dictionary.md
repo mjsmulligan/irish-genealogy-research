@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.7 — 17 June 2026*
+*Version 2.8 — 23 June 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
 ______________________________________________________________________
@@ -204,6 +204,8 @@ ______________________________________________________________________
 | event_ids | array[integer] | NO | Foreign keys to Events (via `person_event`) |
 | relationship_ids | array[integer] | NO | Foreign keys to Relationships — queried via `relationship.person_id_1` / `person_id_2` |
 | private | boolean | NO | Whether Person is flagged for limited display |
+| status | string | YES | Lifecycle state — see §6.11. Default `active`. |
+| pending_delete_at | date | NO | Timestamp when `status` was set to `pending_delete`. Used to enforce the auto-deletion window. Null when `status = active`. |
 | notes | string | NO | Free text notes |
 
 ______________________________________________________________________
@@ -218,6 +220,8 @@ ______________________________________________________________________
 | person_id_2 | integer | YES | For ParentChild: the child. For Couple: either person. |
 | recorded_relationship_ids | array[integer] | NO | Foreign keys to RecordedRelationships (via `relationship_recorded_relationship`) evidencing this Relationship |
 | event_ids | array[integer] | NO | Foreign keys to Events associated with this Relationship |
+| status | string | YES | Lifecycle state — see §6.11. Default `active`. |
+| pending_delete_at | date | NO | Timestamp when `status` was set to `pending_delete`. Null when `status = active`. |
 | notes | string | NO | Researcher reasoning |
 
 ______________________________________________________________________
@@ -235,7 +239,48 @@ ______________________________________________________________________
 | person_ids | array[integer] | NO | Foreign keys to Persons who participated |
 | relationship_id | integer | NO | Foreign key to Relationship — principal connection |
 | record_ids | array[integer] | NO | Foreign keys to Records evidencing this Event |
+| status | string | YES | Lifecycle state — see §6.11. Default `active`. |
+| pending_delete_at | date | NO | Timestamp when `status` was set to `pending_delete`. Null when `status = active`. |
 | notes | string | NO | Researcher reasoning |
+
+______________________________________________________________________
+
+## 4a. Review Layer
+
+### 4a.1 Reviewer
+
+A first-class entity representing any agent that creates or modifies conclusion-layer objects. See conceptual_model.md §7.1.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| reviewer_id | integer | YES | Primary key |
+| name | string | YES | Human-readable identifier. Conventions: `pipeline:person_resolution`, `human:Mike`, `ai:claude-sonnet-4-6` |
+| type | string | YES | Reviewer type — see §6.12 |
+| notes | string | NO | Free text notes |
+| created_at | timestamp | YES | When this Reviewer was registered. Default `NOW()`. |
+
+Two Reviewers are seeded at `init` time: `pipeline:system` (reviewer_id=1) for all automated pipeline conclusions, and `human:unknown` (reviewer_id=2) as a fallback for unattributed edits.
+
+______________________________________________________________________
+
+### 4a.2 ConclusionLog
+
+An append-only record of every creation, modification, or deletion of a conclusion-layer object. The log is permanent; individual entries are never updated or deleted. See conceptual_model.md §7.2.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| log_id | integer | YES | Primary key |
+| reviewer_id | integer | YES | Foreign key to Reviewer — who made this change |
+| action | string | YES | Action taken — see §6.13 |
+| entity_type | string | YES | The conclusion object type affected — see §6.14 |
+| entity_id | integer | YES | Primary key of the affected object |
+| field_name | string | NO | Column name affected. Null for `create` and `delete` actions; required for `update`. |
+| old_value | string | NO | Previous value serialised as text. Null on `create`. |
+| new_value | string | NO | New value serialised as text. Null on `delete`. |
+| reason | string | NO | Free-text explanation. Required culturally for `human` and `ai` reviewers; may be null for `pipeline` creates where the reason is implicit in the algorithm. |
+| change_group_id | string | NO | UUID grouping all log entries that form a single logical researcher action. For example: moving a RecordedPerson from one Person to another produces a delete entry and a create entry sharing the same `change_group_id`. Null for isolated single-entry actions. |
+| session_ref | string | NO | Lightweight session identifier. A pipeline run may store its git commit hash; a Claude session its session ID; a human session a date string or note. Does not reference a separate session table. |
+| created_at | timestamp | YES | When this log entry was written. Default `NOW()`. |
 
 ______________________________________________________________________
 
@@ -394,6 +439,45 @@ ______________________________________________________________________
 | `phonetic` | Phonetic encoding (Soundex or Metaphone) |
 | `normalised` | Lowercased, stripped of diacritics and punctuation |
 
+### 6.11 Conclusion Lifecycle Status
+
+Applies to `person`, `relationship`, and `event`.
+
+| Code | Description |
+|---|---|
+| `active` | Normal operational state. Included in all pipeline operations, reports, and health checks. |
+| `pending_delete` | Flagged for deletion by a reviewer. Excluded from pipeline operations and health reports. Visible in the bin view. Physical deletion executes on explicit reviewer confirmation or after the auto-deletion window (target: 90 days from `pending_delete_at`). |
+
+### 6.12 Reviewer Types
+
+| Code | Description |
+|---|---|
+| `pipeline` | Automated pipeline run (person_resolution, relationship_resolution, event_resolution) |
+| `human` | Named human researcher |
+| `ai` | AI agent — Claude session or MCP-connected assistant |
+
+### 6.13 Conclusion Log Actions
+
+| Code | Description |
+|---|---|
+| `create` | A new conclusion object or linkage row was created |
+| `update` | A field on an existing conclusion object was changed |
+| `delete` | A conclusion object or linkage row was physically removed |
+| `verify` | A linkage junction row was marked `verified=1` by a reviewer |
+| `flag` | An object or linkage was flagged for researcher attention |
+
+### 6.14 Conclusion Log Entity Types
+
+| Code | Description |
+|---|---|
+| `person` | A Person conclusion |
+| `relationship` | A Relationship conclusion |
+| `event` | An Event conclusion |
+| `person_recorded_person` | Linkage between a Person and a RecordedPerson |
+| `relationship_recorded_relationship` | Linkage between a Relationship and a RecordedRelationship |
+| `event_record` | Linkage between an Event and a Record |
+| `place_record` | Linkage between a PlaceAuthority and a Record |
+
 ### 6.10 Place Types
 
 | Code | Description |
@@ -420,3 +504,4 @@ ______________________________________________________________________
 | 2.5 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §2.3 PlaceAuthority with full flat-schema field table. Added §6.10 Place Types vocabulary. Updated §5 linkage summary to reflect place_record → PlaceAuthority. Added source type `place_authority` to §6.1. Removed PlaceMembership (flat schema adopted). |
 | 2.6 | June 2026 | Merged RecordedEvent into Record (schema v2.8). §3.2 replaced with inline event fields on `record`. Removed `Event.recorded_event_ids` from §4.3 and §5. Updated `Person.relationship_ids` description to reflect removal of `person_relationship` junction table. |
 | 2.7 | 17 June 2026 | Aligned with conceptual_model.md v2.6. Added §3.4 RecordedRelationship and §3.5 RecordSimilarity field tables (renumbered NameVariant to §3.6). Added `event.is_primary` (§4.3, Rule 9). Fixed `recorded_person.role` Required marker from YES to NO (nullable since schema v3.0) and added `unknown` to §6.4. Per the Rule 2 evidence-correspondence resolution: renamed `Person.record_ids` → `Person.recorded_person_ids` (via `person_recorded_person`) and `Relationship.record_ids` → `Relationship.recorded_relationship_ids` (via `relationship_recorded_relationship`); `Event.record_ids` unchanged. Updated §5 linkage summary and scoring-columns junction table list accordingly. Added `similarity` as a RecordedRelationship-only extension to §6.7 Relationship Types. |
+| 2.8 | 23 June 2026 | Schema v4.0 additions. Added §4a Review Layer: §4a.1 Reviewer (first-class entity, three types: pipeline/human/ai, two seeded rows) and §4a.2 ConclusionLog (append-only audit trail, change grouping via `change_group_id`, named actions). Added `status` and `pending_delete_at` fields to §4.1 Person, §4.2 Relationship, §4.3 Event (lifecycle: active → pending_delete → physical deletion). Added §6.11 Conclusion Lifecycle Status, §6.12 Reviewer Types, §6.13 Conclusion Log Actions, §6.14 Conclusion Log Entity Types. |

@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*23 June 2026*
+*23 June 2026 (session 17)*
 
 ______________________________________________________________________
 
@@ -27,7 +27,7 @@ ______________________________________________________________________
 | Evidence | ✅ Complete (v3.2) | `add-evidence` CLI complete: [1/5]–[5/5] |
 | Conclusion | ✅ Complete | `conclude` CLI: [1/3]–[3/3] |
 | Testing | ✅ Complete | `tests/test_pipeline.py`: 59 tests passing (100%), fixed-fixture exact assertions |
-| Review | 🔜 Planned | `src/review/` redesign (item 13) |
+| Review | 🔄 In progress | Schema v4.0: `reviewer` + `conclusion_log` + lifecycle columns. Pipeline wired. `src/review/` redesign next (item 13). |
 
 ______________________________________________________________________
 
@@ -66,7 +66,8 @@ ______________________________________________________________________
 | 7 | Stale schema-version footers: audit all `docs/` files | Low | |
 | 11 | Remove `training_labels` from `schema.sql` and `training_repo.py` | Low | Conceptually retired; removal deferred |
 | 12 | Hierarchical household feature for person similarity: add RecordSimilarity score as a Splink comparison level to boost confidence when households match | Medium | Deferred to v1.1 post first clean run |
-| 13 | **Review layer redesign** (`src/review/validator.py`). Reframe from constraint enforcer to researcher report module. Port to PostgreSQL. Add `review` CLI command. | High (v2.0) | See note below |
+| 13 | **Review layer redesign** (`src/review/validator.py`). Reframe from constraint enforcer to researcher report module. Port to PostgreSQL. Add `review` CLI command. Structured ReportItem output (health findings + research prompts). | High (v2.0) | Foundation (schema v4.0) complete. Validator rewrite next. |
+| 34 | **Test harness: schema v4.0 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run (person, relationship, event creates); (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency check. Update `SCHEMA_VERSION` assertion from 32 → 40. | High | Next session |
 | 14 | `place_resolution.py` stale `sqlite3.Connection` type hints at lines 99 and 181 — fix when next touching that file | Low | Cosmetic only; works at runtime |
 | 15 | Pin exact similarity and conclusion counts in `test_pipeline.py` after first confirmed clean run. Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` | High | Next session |
 | 16 | ~~**`src/ingest/` orphan module**~~ | ~~Medium~~ | ✅ Already removed in prior session; confirmed absent from zip. |
@@ -191,6 +192,7 @@ ______________________________________________________________________
 
 | Date | Milestone / Change |
 |---|---|
+| 23 June 2026 (session 17) | **Schema v4.0 — Review Layer foundation.** Conceptual model v2.8: §7 Review Layer added (Reviewer entity, conclusion log, conclusion lifecycle, reporting surface). Data dictionary v2.8: §4a Reviewer + ConclusionLog field tables; `status`/`pending_delete_at` added to Person, Relationship, Event; §6.11–6.14 vocabulary sections. `schema.sql` v4.0: `reviewer` table, `conclusion_log` append-only audit table, `status`/`pending_delete_at` columns on `person`/`relationship`/`event`, partial indexes for bin view. `seed.sql`: two system reviewers seeded (pipeline:system, human:unknown). Migration `002_review_layer.sql`: safe for populated databases; backfills existing conclusions as pipeline:system creates. `src/dal/conclusion_log_repo.py` new DAL module: `log_action`, `log_create`, `log_update`, `log_delete`, `log_verify`, `get_or_create_reviewer`, `new_change_group`, query helpers. Pipeline wired: `person_resolution.py`, `relationship_resolution.py`, `event_resolution.py` all call `log_create` after conclusion inserts. `SCHEMA_VERSION` bumped 32 → 40. Item 34 added (test harness updates for v4.0). |
 | 23 June 2026 (session 15) | **Test suite complete (100% pass rate) + schema v3.2.** Item 32: Fixed NULL scores in role-pair RecordedRelationships — `role_relationships.py` now passes proper prior scores (0.75-0.90) and `SCORE_VERSION_ROLE_PAIR` when creating role-pair relationships. Schema migration `001_allow_scores_all_relationship_types.sql` removes restrictive CHECK constraint that limited scores to type='similarity' only. All 5,923 role-pair relationships now have scores. Item 33: Enhanced place normalization to handle "X or Y" compound names (takes primary/first name) and double consonant variants (normalizes to single). Updated `test_evidence_place_authority_complete` to use normalization matching. **Test harness: 59/59 passing (100%)**, up from 57/59 (96.6%). Schema version: 3.1 → 3.2. |
 | 22 June 2026 (session 14) | **Dead code removal + feature package creation.** Item 17: created `src/evidence/features/` package (`census.py` = `build_census_household_features`, `census_person.py` = `build_census_person_features`); updated `similarity.py` imports; removed all stale pipeline references from docstrings. Item 18: `get_unprocessed_census_records()` rewritten as `NOT EXISTS` with correct join on `rp.record_id` (join bug confirmed and fixed). Items 16, 19, 27, 28, 29, 30, 31: removed orphan/duplicate/dead functions and stale `sqlite3` imports across `record_repo.py`, `place_repo.py`, `person_repo.py`, `evidence/census.py`, `fetch_places.py`, `seed_places.py`; fixed all stale type hints; fixed broken `--db` CLI path in `fetch_places.main()`. |
 | 21 June 2026 (session 13) | **Critical bug fixes in conclusion layer.** `relationship_resolution.py`: item 23 (re-fetch household members from DB after Person assignments — prevents same-Person-id relationship skip); item 24 (`_ensure_relationship` now populates `relationship_recorded_relationship` provenance); item 21 (census_gap derived from record dates, passed to `_match_score`); item 22 (JaroWinkler ≥ 0.85 replaces exact name match). `event_resolution.py`: item 25 (one census Event per Record, all household Persons linked via `person_event`). |
