@@ -4,8 +4,8 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 3.1 (June 2026)\
-Implementation: Complete — all three layers (foundation, evidence, conclusion)
+Schema version: 4.0 (June 2026)\
+Implementation: Complete — all four layers (foundation, evidence, conclusion, review)
 
 ______________________________________________________________________
 
@@ -47,8 +47,11 @@ irish-genealogy-research/
 │   │   ├── relationship_resolution.py # [2/3] Household matching → Relationship conclusions
 │   │   └── event_resolution.py        # [3/3] Census + birth + marriage Event conclusions
 │   │
-│   ├── review/                        # Review layer — researcher report module (planned)
-│   │   └── validator.py               # R40–R46 rules; redesign pending (ROADMAP item 13)
+│   ├── review/                        # Review layer — researcher report module
+│   │   ├── report.py                  # ReportItem + Report dataclasses; JSON + Markdown serialisers
+│   │   ├── findings.py                # Nine v1.0 finding functions (GC01, GC02, GC04, GC05, GC07, GC12, GC13, unlinked, single-census)
+│   │   ├── priority.py                # Priority scoring: tier base score × scope multiplier → integer rank
+│   │   └── runner.py                  # run_review(), write_report() → reports/ dir
 │   │
 │   └── dal/                           # Data access layer
 │       ├── source_repo.py
@@ -59,9 +62,13 @@ irish-genealogy-research/
 │       ├── person_repo.py
 │       ├── relationship_repo.py
 │       ├── event_repo.py
+│       ├── conclusion_log_repo.py
 │       └── training_repo.py
 │
+├── reports/                           # Review report output (gitignored; .gitkeep tracks dir)
+│
 └── tests/
+    ├── test_pipeline.py               # Integration test harness (59 tests, 100% pass)
     ├── tullynaught_1901.csv
     ├── tullynaught_1911.csv
     └── tullynaught_1926.csv
@@ -99,6 +106,9 @@ python -m src.cli conclude
 
 # Inspect
 python -m src.cli summary
+
+# Run research review — produces prioritised findings report (JSON + Markdown)
+python -m src.cli review
 
 # Clear and re-run
 python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority

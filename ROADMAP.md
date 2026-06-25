@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*23 June 2026 (session 17)*
+*24 June 2026 (session 19)*
 
 ______________________________________________________________________
 
@@ -27,7 +27,7 @@ ______________________________________________________________________
 | Evidence | ✅ Complete (v3.2) | `add-evidence` CLI complete: [1/5]–[5/5] |
 | Conclusion | ✅ Complete | `conclude` CLI: [1/3]–[3/3] |
 | Testing | ✅ Complete | `tests/test_pipeline.py`: 59 tests passing (100%), fixed-fixture exact assertions |
-| Review | 🔄 In progress | Schema v4.0: `reviewer` + `conclusion_log` + lifecycle columns. Pipeline wired. `src/review/` redesign next (item 13). |
+| Review | ✅ Complete (v2.0) | `src/review/`: `report.py`, `findings.py`, `priority.py`, `runner.py`. `validator.py` deleted. CLI: `python -m src.cli review`. First run + training session next. |
 
 ______________________________________________________________________
 
@@ -66,7 +66,7 @@ ______________________________________________________________________
 | 7 | Stale schema-version footers: audit all `docs/` files | Low | |
 | 11 | Remove `training_labels` from `schema.sql` and `training_repo.py` | Low | Conceptually retired; removal deferred |
 | 12 | Hierarchical household feature for person similarity: add RecordSimilarity score as a Splink comparison level to boost confidence when households match | Medium | Deferred to v1.1 post first clean run |
-| 13 | **Review layer redesign** (`src/review/validator.py`). Reframe from constraint enforcer to researcher report module. Port to PostgreSQL. Add `review` CLI command. Structured ReportItem output (health findings + research prompts). | High (v2.0) | Foundation (schema v4.0) complete. Validator rewrite next. |
+| ~~13~~ | ~~**Review layer implementation** (`src/review/`). Replace `validator.py` with a researcher report module.~~ | ~~High (v2.0)~~ | ✅ **Complete (session 19).** `report.py`, `findings.py`, `priority.py`, `runner.py` created. `validator.py` deleted. CLI: `python -m src.cli review`. Nine v1.0 finding types. First run + training session next. |
 | 34 | **Test harness: schema v4.0 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run (person, relationship, event creates); (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency check. Update `SCHEMA_VERSION` assertion from 32 → 40. | High | Next session |
 | 14 | `place_resolution.py` stale `sqlite3.Connection` type hints at lines 99 and 181 — fix when next touching that file | Low | Cosmetic only; works at runtime |
 | 15 | Pin exact similarity and conclusion counts in `test_pipeline.py` after first confirmed clean run. Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` | High | Next session |
@@ -180,10 +180,91 @@ Multiple DAL functions (`insert_record`, `insert_recorded_person`, `insert_perso
 
 ______________________________________________________________________
 
+### 5.9 Review layer design (session 18, 24 June 2026)
+
+The existing `src/review/validator.py` is retired in full — not ported. It is a legacy constraint enforcer from a pre-v4.0 design era. Some of its domain logic reappears in the new module as finding functions, but the old rule codes (R40–R46), entry points (`validate`, `validate_object`, `validate_genealogical`), and output format (flat list of error strings) are all superseded. The new design is derived from `genealogical_constraints.md` and conceptual model §7.4, not from the old validator.
+
+**Design principles:**
+- Read-only. The report module queries the conclusion layer; it does not write to it or to `conclusion_log`.
+- Structured data first. Output is a `Report` containing typed `ReportItem` entries, rendered to JSON and Markdown.
+- Iterative. First implementation covers confident findings only. Thresholds and taxonomy are tuned after training sessions against real Supabase data.
+- Heterogeneous priority list. Health findings and research prompts are interleaved by priority score, not separated into sections.
+
+**`ReportItem` fields:**
+```
+finding_type:        str           # controlled vocabulary
+priority:            int           # 1 = highest; computed at assembly time
+person_id:           int | None
+relationship_id:     int | None
+event_id:            int | None
+record_ids:          list[int]     # evidence records underpinning the finding
+title:               str           # one-line summary
+detail:              str           # full explanation with specific values from the DB
+recommended_action:  str | None
+```
+
+**`Report` fields:**
+```
+generated_at:   datetime
+items:          list[ReportItem]   # sorted by priority ascending
+summary:        dict               # counts by finding_type
+```
+
+**Finding taxonomy — v1.0 scope (implement first):**
+
+| finding_type | Domain source | Notes |
+|---|---|---|
+| `merge_error_candidate` | GC07 | Person with 2+ active Records from same census source |
+| `birth_singularity_violation` | GC04 | Multiple `is_primary=true` birth Events on one Person |
+| `death_singularity_violation` | GC05 | Same for death |
+| `life_event_sequence_violation` | GC02 | Chronological order broken — detail must show actual values so researcher can distinguish signal from measurement noise |
+| `parent_age_implausible` | GC12 | Gap outside plausible range (< 15 yrs or > 50/70 maternal/paternal) |
+| `marriage_age_implausible` | GC13 | Person under 15 at marriage date |
+| `lifespan_boundary_violated` | GC01 | Record date outside concluded lifespan — detail must show actual delta |
+| `unlinked_recorded_person` | — | RecordedPerson with no Person conclusion |
+| `single_census_appearance` | — | Person in only one census, no concluded death Event |
+
+**Finding taxonomy — deferred (after first training session):**
+
+| finding_type | Notes |
+|---|---|
+| `source_coverage_gap` | Requires full §4 eligibility logic from `genealogical_constraints.md` |
+| `household_placement_unresolved` | Requires populated relationship graph (GC15 Case 3) |
+| `female_occupier_inference` | Same dependency (GC16) |
+| `sibling_birth_spacing` | < 9 months gap between concluded siblings |
+| `naming_pattern_lead` | Experience-dependent; low confidence (GC18) |
+
+**Priority scoring:** Three inputs collapse to a single integer. (1) Certainty — schema-state findings (singularity violations) score highest; inferred findings (source gaps) score lower. (2) Severity — merge error candidates score higher than local findings. (3) Scope of impact — Persons with more linked RecordedPersons score higher. Exact weights tuned after first training session.
+
+**Output:**
+- `reports/report_YYYYMMDD_HHMMSS.json` — machine-readable, for training sessions and future MCP consumption
+- `reports/report_YYYYMMDD_HHMMSS.md` — human-readable Markdown, for researcher review
+- Both written on each run; sortable by filename to see history
+
+**CLI:**
+```
+python -m src.cli review
+```
+No scoping arguments in v1.0. Full-database report only. Scoped review (per-person, per-finding-type) deferred to after training sessions establish what's useful.
+
+**Module structure:**
+```
+src/review/
+    __init__.py
+    report.py      # ReportItem and Report dataclasses
+    findings.py    # one function per finding_type
+    priority.py    # priority scoring
+    runner.py      # assembles Report from findings, writes output files
+```
+
+**`validate_object` disposition:** Pre-write structural validation is DAL-adjacent, not a researcher-facing function. It is removed from `validator.py` and not replaced in this module. If pre-write checks are needed, they live in the repo layer directly. No immediate action required — the old `validate_object` function is simply not carried forward.
+
+______________________________________________________________________
+
 ## 6. Release Plan
 
-- **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), items 17 and 23 (correctness).
-- **v2.0 (Target):** Review layer (`src/review/`) redesign (item 13). Full-scale Irish Census ingestion.
+- **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), item 34 (test harness v4.0 updates).
+- **v2.0 (Target):** Review layer complete (item 13 ✅). First run + training session against Supabase. Full-scale Irish Census ingestion.
 - **v3.0 (Long-term):** Parish and civil BMD ingest.
 
 ______________________________________________________________________
@@ -192,6 +273,8 @@ ______________________________________________________________________
 
 | Date | Milestone / Change |
 |---|---|
+| 24 June 2026 (session 19) | **Review layer implementation complete.** `src/review/validator.py` deleted. Four new modules: `report.py` (`ReportItem` + `Report` dataclasses, JSON + Markdown serialisers), `findings.py` (nine v1.0 finding functions: `merge_error_candidate`, `birth_singularity_violation`, `death_singularity_violation`, `life_event_sequence_violation`, `parent_age_implausible`, `marriage_age_implausible`, `lifespan_boundary_violated`, `unlinked_recorded_person`, `single_census_appearance`), `priority.py` (three-tier base score × scope multiplier → integer rank), `runner.py` (assembles report, writes paired JSON + Markdown to `reports/`). `src/cli.py`: `validate` subcommand replaced by `review`. `reports/.gitkeep` added. CLI: `python -m src.cli review`. Item 13 complete. |
+| 24 June 2026 (session 18) | **Review layer design complete.** `src/review/validator.py` retired in full — not ported. New design derived from `genealogical_constraints.md` and conceptual model §7.4. `ReportItem` and `Report` structures defined. Nine v1.0 finding types specified; five deferred to post-training-session. Priority scoring approach agreed. Output: paired JSON + Markdown files in `reports/` with timestamp filenames. CLI: `python -m src.cli review`. Module structure: `report.py`, `findings.py`, `priority.py`, `runner.py`. Training session workflow agreed: run report against Supabase data, review top findings with Claude, iterate on taxonomy and thresholds. Item 13 updated with full spec (§5.9). `validation_rules.md` updated with supersession note. |
 | 23 June 2026 (session 17) | **Schema v4.0 — Review Layer foundation.** Conceptual model v2.8: §7 Review Layer added (Reviewer entity, conclusion log, conclusion lifecycle, reporting surface). Data dictionary v2.8: §4a Reviewer + ConclusionLog field tables; `status`/`pending_delete_at` added to Person, Relationship, Event; §6.11–6.14 vocabulary sections. `schema.sql` v4.0: `reviewer` table, `conclusion_log` append-only audit table, `status`/`pending_delete_at` columns on `person`/`relationship`/`event`, partial indexes for bin view. `seed.sql`: two system reviewers seeded (pipeline:system, human:unknown). Migration `002_review_layer.sql`: safe for populated databases; backfills existing conclusions as pipeline:system creates. `src/dal/conclusion_log_repo.py` new DAL module: `log_action`, `log_create`, `log_update`, `log_delete`, `log_verify`, `get_or_create_reviewer`, `new_change_group`, query helpers. Pipeline wired: `person_resolution.py`, `relationship_resolution.py`, `event_resolution.py` all call `log_create` after conclusion inserts. `SCHEMA_VERSION` bumped 32 → 40. Item 34 added (test harness updates for v4.0). |
 | 23 June 2026 (session 15) | **Test suite complete (100% pass rate) + schema v3.2.** Item 32: Fixed NULL scores in role-pair RecordedRelationships — `role_relationships.py` now passes proper prior scores (0.75-0.90) and `SCORE_VERSION_ROLE_PAIR` when creating role-pair relationships. Schema migration `001_allow_scores_all_relationship_types.sql` removes restrictive CHECK constraint that limited scores to type='similarity' only. All 5,923 role-pair relationships now have scores. Item 33: Enhanced place normalization to handle "X or Y" compound names (takes primary/first name) and double consonant variants (normalizes to single). Updated `test_evidence_place_authority_complete` to use normalization matching. **Test harness: 59/59 passing (100%)**, up from 57/59 (96.6%). Schema version: 3.1 → 3.2. |
 | 22 June 2026 (session 14) | **Dead code removal + feature package creation.** Item 17: created `src/evidence/features/` package (`census.py` = `build_census_household_features`, `census_person.py` = `build_census_person_features`); updated `similarity.py` imports; removed all stale pipeline references from docstrings. Item 18: `get_unprocessed_census_records()` rewritten as `NOT EXISTS` with correct join on `rp.record_id` (join bug confirmed and fixed). Items 16, 19, 27, 28, 29, 30, 31: removed orphan/duplicate/dead functions and stale `sqlite3` imports across `record_repo.py`, `place_repo.py`, `person_repo.py`, `evidence/census.py`, `fetch_places.py`, `seed_places.py`; fixed all stale type hints; fixed broken `--db` CLI path in `fetch_places.main()`. |
