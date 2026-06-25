@@ -19,7 +19,8 @@ Commands:
     summary             Print knowledge base summary
     conclude            Run conclusion pipeline (3 steps): person resolution +
                         relationship resolution + event resolution
-    validate            Run genealogical constraint rules (R40–R46)
+    review              Run the research review — produce a prioritised findings
+                        report (JSON + Markdown) in the reports/ directory
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -447,9 +448,12 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     conn.close()
 
 
-def _cmd_validate(args: argparse.Namespace) -> None:
-    from src.review.validator import main as validator_main
-    validator_main()
+def _cmd_review(args: argparse.Namespace) -> None:
+    from src.review.runner import run_and_print
+    conn = open_db()
+    check_version(conn)
+    run_and_print(conn)
+    conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -507,9 +511,10 @@ def main() -> None:
         help="Conclusion pipeline [1/3–3/3]: person + relationship + event resolution",
     )
 
-    p_validate = sub.add_parser("validate", help="Run genealogical constraint rules (R40–R46)")
-    p_validate.add_argument("--person", type=int, default=None,
-                            help="Validate a single Person by ID (omit for all)")
+    sub.add_parser(
+        "review",
+        help="Run research review — produces prioritised findings report (reports/ dir)",
+    )
 
     dispatch = {
         "init":              _cmd_init,
@@ -521,7 +526,7 @@ def main() -> None:
         "fetch-places":      _cmd_fetch_places,
         "summary":           _cmd_summary,
         "conclude":          _cmd_conclude,
-        "validate":          _cmd_validate,
+        "review":            _cmd_review,
     }
 
     args = parser.parse_args()
