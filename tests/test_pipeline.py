@@ -14,15 +14,13 @@ Requirements:
   - Tullynaught fixtures at tests/tullynaught_{1901,1911,1926}.csv
 
 Usage:
-    python -m pytest tests/test_pipeline.py -v
-
-    # Or without pytest:
-    python tests/test_pipeline.py
+    pytest tests/test_pipeline.py -v
+    pytest tests/test_pipeline.py::test_schema_version  # single test
+    pytest -k "evidence" -v                             # by pattern
 
 Design:
   - One module-level fixture: ingest all three CSVs then run conclude once.
     All test functions query the resulting state; no test modifies the DB.
-  - Tests are grouped by layer/concern using plain functions (pytest-compatible).
   - Counts derived from the fixed Tullynaught fixtures are asserted exactly
     (household counts, person counts, role relationship counts, place links,
     birth year bounds). These must only change if the fixture CSVs change.
@@ -35,14 +33,12 @@ Design:
 
 from __future__ import annotations
 
-import os
 import sys
 import time
-import traceback
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
 
+import pytest
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
@@ -53,9 +49,6 @@ import psycopg2.extras
 
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-
-LOG_DIR  = REPO_ROOT / "tests" / "logs"
-LOG_FILE = LOG_DIR / f"test_run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.log"
 
 from dotenv import load_dotenv
 load_dotenv(REPO_ROOT / ".env")
@@ -154,88 +147,109 @@ FLOOR_RELATIONSHIPS     = 30    # TODO: replace with exact after first run
 FLOOR_EVENTS            = 100   # TODO: replace with exact after first run
 
 # ---------------------------------------------------------------------------
-# Simple test runner (no pytest dependency required)
+# Fixtures
 # ---------------------------------------------------------------------------
 
-_tests: list[tuple[str, Callable]] = []
-_results: dict[str, str] = {}
-_timings: dict[str, float] = {}    # test name → elapsed seconds
-_setup_timings: dict[str, float] = {}  # setup step label → elapsed seconds
+@pytest.fixture(scope="module")
+def db_conn():
+    from src.db.db import open_db, check_version
+    conn = open_db()
+    check_version(conn)
+    _setup_data(conn)
+    yield conn
+    conn.close()
 
 
-def test(fn: Callable) -> Callable:
-    """Decorator: register a test function."""
-    _tests.append((fn.__name__, fn))
-    return fn
+def _setup_data(conn: psycopg2.extensions.connection) -> None:
+    """
+    Wipe evidence + conclusion layers, ingest all three Tullynaught CSVs,
+    then run the full conclusion pipeline.
 
+    place_authority is preserved (must be seeded externally before running).
+    """
+    from src.evidence.census import ingest_census
+    from src.evidence.role_relationships import assign_role_relationships
+    from src.evidence.place_resolution import run_place_resolution
+    from src.evidence.similarity import run_record_similarity, run_person_similarity
+    from src.conclusion.person_resolution import run_person_resolution
+    from src.conclusion.relationship_resolution import run_relationship_resolution
+    from src.conclusion.event_resolution import run_event_resolution
 
-# ---------------------------------------------------------------------------
-# Logging — writes to stdout and to LOG_FILE simultaneously
-# ---------------------------------------------------------------------------
+    print("\nSetup: clearing evidence + conclusion layers...")
+    clear_tables = [
+        "training_labels",
+        "relationship_recorded_relationship",
+        "person_recorded_person",
+        "place_record",
+        "event_record",
+        "person_event",
+        "record_similarity",
+        "recorded_relationship",
+        "event",
+        "relationship",
+        "person",
+        "person_name",
+        "recorded_person",
+        "record",
+    ]
+    with conn:
+        with conn.cursor() as cur:
+            for table in clear_tables:
+                cur.execute(f"DELETE FROM {table}")
 
-_log_fh = None  # opened in __main__ once LOG_FILE path is known
-
-
-def _log(line: str = "") -> None:
-    """Print to stdout and append to log file."""
-    print(line)
-    if _log_fh is not None:
-        _log_fh.write(line + "\n")
-        _log_fh.flush()
-
-
-def _run_all(conn: psycopg2.extensions.connection) -> bool:
-    passed = failed = 0
-    for name, fn in _tests:
+    print("  ingesting all sources...")
+    for source_id, fixture_path in FIXTURES.items():
+        if not fixture_path.exists():
+            raise FileNotFoundError(f"Fixture not found: {fixture_path}")
+        print(f"    source {source_id} ({fixture_path.name})...", end=" ", flush=True)
         t0 = time.perf_counter()
-        try:
-            fn(conn)
-            elapsed = time.perf_counter() - t0
-            _results[name] = "PASS"
-            _timings[name] = elapsed
-            passed += 1
-        except AssertionError as e:
-            elapsed = time.perf_counter() - t0
-            _results[name] = f"FAIL: {e}"
-            _timings[name] = elapsed
-            failed += 1
-        except Exception as e:
-            elapsed = time.perf_counter() - t0
-            _results[name] = f"ERROR: {e}\n{traceback.format_exc()}"
-            _timings[name] = elapsed
-            failed += 1
+        ingest_result = ingest_census(conn, str(fixture_path), source_id=source_id)
 
-    total_test_time = sum(_timings.values())
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT record_id FROM record WHERE source_id = %s "
+                "ORDER BY record_id DESC LIMIT %s",
+                (source_id, ingest_result["records_committed"]),
+            )
+            record_ids = [row["record_id"] for row in cur.fetchall()]
 
-    _log()
-    _log("=" * 72)
-    _log("  GRA INTEGRATION TEST RESULTS")
-    _log("=" * 72)
-    for name, result in _results.items():
-        icon    = "✓" if result == "PASS" else "✗"
-        elapsed = _timings.get(name, 0.0)
-        _log(f"  {icon}  {name:<55}  {elapsed:>6.2f}s")
-        if result != "PASS":
-            for line in result.splitlines():
-                _log(f"       {line}")
-    _log()
-    _log(f"  {passed} passed  {failed} failed")
-    _log(f"  Total test execution:  {total_test_time:>7.2f}s")
-    _log()
+        with conn:
+            for rid in record_ids:
+                assign_role_relationships(conn, rid)
+        elapsed = time.perf_counter() - t0
+        print(f"{ingest_result['records_committed']} records ({elapsed:.2f}s)")
 
-    if _setup_timings:
-        _log("  SETUP TIMINGS")
-        _log("  " + "-" * 50)
-        for step, elapsed in _setup_timings.items():
-            _log(f"  {step:<40}  {elapsed:>7.2f}s")
-        setup_total = sum(_setup_timings.values())
-        _log(f"  {'Total setup':<40}  {setup_total:>7.2f}s")
-        _log(f"  {'Grand total (setup + tests)':<40}  {setup_total + total_test_time:>7.2f}s")
+    print("  running place resolution...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_place_resolution(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
 
-    _log("=" * 72)
-    if _log_fh is not None:
-        _log(f"\n  Log written to: {LOG_FILE}")
-    return failed == 0
+    print("  running record similarity...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_record_similarity(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
+
+    print("  running person similarity...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_person_similarity(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
+
+    print("  running person resolution...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_person_resolution(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
+
+    print("  running relationship resolution...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_relationship_resolution(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
+
+    print("  running event resolution...", end=" ", flush=True)
+    t0 = time.perf_counter()
+    run_event_resolution(conn)
+    print(f"({time.perf_counter() - t0:.2f}s)")
+
+    print("Setup complete.\n")
 
 
 # ---------------------------------------------------------------------------
@@ -260,129 +274,16 @@ def _place_authority_seeded(conn: psycopg2.extensions.connection) -> bool:
     return _q(conn, "SELECT COUNT(*) FROM place_authority") > 0
 
 
-# ---------------------------------------------------------------------------
-# Setup: clear conclusions + evidence, re-ingest, re-conclude
-# ---------------------------------------------------------------------------
-
-def setup(conn: psycopg2.extensions.connection) -> None:
-    """
-    Wipe evidence + conclusion layers, ingest all three Tullynaught CSVs,
-    then run the full conclusion pipeline.
-
-    place_authority is preserved (must be seeded externally before running).
-    """
-    from src.evidence.census import ingest_census
-    from src.evidence.role_relationships import assign_role_relationships
-    from src.evidence.place_resolution import run_place_resolution
-    from src.evidence.similarity import run_record_similarity, run_person_similarity
-    from src.conclusion.person_resolution import run_person_resolution
-    from src.conclusion.relationship_resolution import run_relationship_resolution
-    from src.conclusion.event_resolution import run_event_resolution
-
-    # --- Clear evidence + conclusion layers ---
-    clear_tables = [
-        "training_labels",
-        "relationship_recorded_relationship",
-        "person_recorded_person",
-        "place_record",
-        "event_record",
-        "person_event",
-        "record_similarity",
-        "recorded_relationship",
-        "event",
-        "relationship",
-        "person",
-        "person_name",
-        "recorded_person",
-        "record",
-    ]
-    _log("\nSetup: clearing evidence + conclusion layers...")
-    t0 = time.perf_counter()
-    with conn:
-        with conn.cursor() as cur:
-            for table in clear_tables:
-                cur.execute(f"DELETE FROM {table}")
-    _setup_timings["clear tables"] = time.perf_counter() - t0
-    _log(f"  cleared.  ({_setup_timings['clear tables']:.2f}s)")
-
-    # --- Ingest all three sources ---
-    for source_id, fixture_path in FIXTURES.items():
-        if not fixture_path.exists():
-            raise FileNotFoundError(f"Fixture not found: {fixture_path}")
-
-        _log(f"  ingesting source {source_id} ({fixture_path.name})...")
-        t0 = time.perf_counter()
-        ingest_result = ingest_census(conn, str(fixture_path), source_id=source_id)
-
-        # Fetch newly ingested record_ids (ingest_census commits its own transaction)
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT record_id FROM record WHERE source_id = %s "
-                "ORDER BY record_id DESC LIMIT %s",
-                (source_id, ingest_result["records_committed"]),
-            )
-            record_ids = [row["record_id"] for row in cur.fetchall()]
-
-        # Assign role relationships — one transaction per source, matching CLI behaviour
-        with conn:
-            for rid in record_ids:
-                assign_role_relationships(conn, rid)
-        elapsed = time.perf_counter() - t0
-        _setup_timings[f"ingest + role_rels source {source_id}"] = elapsed
-        _log(f"    {ingest_result['records_committed']} records, "
-             f"{ingest_result['persons_committed']} persons  ({elapsed:.2f}s)")
-
-    # --- Place resolution (once across all evidence) ---
-    _log("  running place resolution...")
-    t0 = time.perf_counter()
-    run_place_resolution(conn)
-    _setup_timings["place resolution"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['place resolution']:.2f}s)")
-
-    # --- Similarity (once across all evidence) ---
-    _log("  running record similarity...")
-    t0 = time.perf_counter()
-    run_record_similarity(conn)
-    _setup_timings["record similarity (Splink)"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['record similarity (Splink)']:.2f}s)")
-
-    _log("  running person similarity...")
-    t0 = time.perf_counter()
-    run_person_similarity(conn)
-    _setup_timings["person similarity (Splink)"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['person similarity (Splink)']:.2f}s)")
-
-    # --- Conclusion pipeline ---
-    _log("  running person resolution...")
-    t0 = time.perf_counter()
-    run_person_resolution(conn)
-    _setup_timings["person resolution"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['person resolution']:.2f}s)")
-
-    _log("  running relationship resolution...")
-    t0 = time.perf_counter()
-    run_relationship_resolution(conn)
-    _setup_timings["relationship resolution"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['relationship resolution']:.2f}s)")
-
-    _log("  running event resolution...")
-    t0 = time.perf_counter()
-    run_event_resolution(conn)
-    _setup_timings["event resolution"] = time.perf_counter() - t0
-    _log(f"    ({_setup_timings['event resolution']:.2f}s)")
-
-    _log("Setup complete.\n")
 
 
 # ---------------------------------------------------------------------------
 # FOUNDATION LAYER TESTS
 # ---------------------------------------------------------------------------
 
-@test
-def test_schema_version(conn):
+def test_schema_version(db_conn):
     """Schema version in gra_meta matches constants.SCHEMA_VERSION."""
     from src.constants import SCHEMA_VERSION
-    with conn.cursor() as cur:
+    with db_conn.cursor() as cur:
         cur.execute("SELECT value FROM gra_meta WHERE key = 'schema_version'")
         row = cur.fetchone()
     assert row is not None, "gra_meta has no schema_version row"
@@ -391,25 +292,22 @@ def test_schema_version(conn):
     )
 
 
-@test
-def test_seed_data_repositories(conn):
+def test_seed_data_repositories(db_conn):
     """At least 8 repository rows exist (from seed.sql)."""
-    count = _q(conn, "SELECT COUNT(*) FROM repository")
+    count = _q(db_conn, "SELECT COUNT(*) FROM repository")
     assert count >= 8, f"Expected ≥8 repositories, got {count}"
 
 
-@test
-def test_seed_data_sources(conn):
+def test_seed_data_sources(db_conn):
     """Census sources 3, 4, 5 and place authority source 13 exist."""
-    rows = _rows(conn, "SELECT source_id FROM source WHERE source_id IN (3, 4, 5, 13)")
+    rows = _rows(db_conn, "SELECT source_id FROM source WHERE source_id IN (3, 4, 5, 13)")
     ids = {r["source_id"] for r in rows}
     assert ids == {3, 4, 5, 13}, f"Missing expected source IDs: {ids}"
 
 
-@test
-def test_place_authority_warning(conn):
+def test_place_authority_warning(db_conn):
     """Warn if place_authority is empty (tests degrade gracefully but researcher should seed)."""
-    count = _q(conn, "SELECT COUNT(*) FROM place_authority")
+    count = _q(db_conn, "SELECT COUNT(*) FROM place_authority")
     assert count > 0, (
         "place_authority is empty — seed it with 'python -m src.cli seed-places' before "
         "running integration tests. Place-dependent assertions will be weak."
@@ -420,15 +318,13 @@ def test_place_authority_warning(conn):
 # EVIDENCE LAYER TESTS — ingest
 # ---------------------------------------------------------------------------
 
-@test
-def test_evidence_records_floor(conn):
+def test_evidence_records_floor(db_conn):
     """Exactly 715 households ingested across all three sources (263+240+212)."""
-    count = _q(conn, "SELECT COUNT(*) FROM record")
+    count = _q(db_conn, "SELECT COUNT(*) FROM record")
     assert count == EXACT_RECORDS_TOTAL, f"Expected {EXACT_RECORDS_TOTAL} records, got {count}"
 
 
-@test
-def test_evidence_records_per_source(conn):
+def test_evidence_records_per_source(db_conn):
     """Each census source has the exact expected household count."""
     expected = {
         SOURCE_ID_1901: EXACT_RECORDS_1901,
@@ -436,23 +332,21 @@ def test_evidence_records_per_source(conn):
         SOURCE_ID_1926: EXACT_RECORDS_1926,
     }
     for source_id, expected_count in expected.items():
-        count = _q(conn, "SELECT COUNT(*) FROM record WHERE source_id = %s", (source_id,))
+        count = _q(db_conn, "SELECT COUNT(*) FROM record WHERE source_id = %s", (source_id,))
         assert count == expected_count, (
             f"Source {source_id}: expected {expected_count} records, got {count}"
         )
 
 
-@test
-def test_evidence_recorded_persons_floor(conn):
+def test_evidence_recorded_persons_floor(db_conn):
     """Exactly 3167 recorded persons ingested across all sources (1193+1080+894)."""
-    count = _q(conn, "SELECT COUNT(*) FROM recorded_person")
+    count = _q(db_conn, "SELECT COUNT(*) FROM recorded_person")
     assert count == EXACT_PERSONS_TOTAL, (
         f"Expected {EXACT_PERSONS_TOTAL} recorded_persons, got {count}"
     )
 
 
-@test
-def test_evidence_recorded_persons_per_source(conn):
+def test_evidence_recorded_persons_per_source(db_conn):
     """Each census source has the exact expected recorded person count."""
     expected = {
         SOURCE_ID_1901: EXACT_PERSONS_1901,
@@ -460,7 +354,7 @@ def test_evidence_recorded_persons_per_source(conn):
         SOURCE_ID_1926: EXACT_PERSONS_1926,
     }
     for source_id, expected_count in expected.items():
-        count = _q(conn, """
+        count = _q(db_conn, """
             SELECT COUNT(*) FROM recorded_person rp
             JOIN record r ON r.record_id = rp.record_id
             WHERE r.source_id = %s
@@ -470,10 +364,9 @@ def test_evidence_recorded_persons_per_source(conn):
         )
 
 
-@test
-def test_evidence_every_record_has_persons(conn):
+def test_evidence_every_record_has_persons(db_conn):
     """Every record has at least one recorded_person (no orphan household records)."""
-    orphans = _q(conn, """
+    orphans = _q(db_conn, """
         SELECT COUNT(*) FROM record r
         WHERE NOT EXISTS (
             SELECT 1 FROM recorded_person rp WHERE rp.record_id = r.record_id
@@ -482,34 +375,30 @@ def test_evidence_every_record_has_persons(conn):
     assert orphans == 0, f"{orphans} records have no recorded_persons"
 
 
-@test
-def test_evidence_recorded_person_has_name(conn):
+def test_evidence_recorded_person_has_name(db_conn):
     """No recorded_person has a NULL or empty name_as_recorded."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_person
         WHERE name_as_recorded IS NULL OR trim(name_as_recorded) = ''
     """)
     assert bad == 0, f"{bad} recorded_persons have blank/null name_as_recorded"
 
 
-@test
-def test_evidence_recorded_person_age_non_negative(conn):
+def test_evidence_recorded_person_age_non_negative(db_conn):
     """All recorded_person ages are non-negative when present."""
-    bad = _q(conn, "SELECT COUNT(*) FROM recorded_person WHERE age IS NOT NULL AND age < 0")
+    bad = _q(db_conn, "SELECT COUNT(*) FROM recorded_person WHERE age IS NOT NULL AND age < 0")
     assert bad == 0, f"{bad} recorded_persons have negative age"
 
 
-@test
-def test_evidence_record_dates_set(conn):
+def test_evidence_record_dates_set(db_conn):
     """All census records have a non-null ISO date (1901-04-01, 1911-04-02, 1926-04-18)."""
-    bad = _q(conn, "SELECT COUNT(*) FROM record WHERE date IS NULL")
+    bad = _q(db_conn, "SELECT COUNT(*) FROM record WHERE date IS NULL")
     assert bad == 0, f"{bad} records have NULL date"
 
 
-@test
-def test_evidence_record_dates_valid_census_years(conn):
+def test_evidence_record_dates_valid_census_years(db_conn):
     """All census record dates fall in known census years (1901, 1911, 1926)."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM record r
         JOIN source s ON s.source_id = r.source_id AND s.type = 'census'
         WHERE EXTRACT(YEAR FROM r.date::date) NOT IN (1901, 1911, 1926)
@@ -521,17 +410,15 @@ def test_evidence_record_dates_valid_census_years(conn):
 # EVIDENCE LAYER TESTS — role relationships
 # ---------------------------------------------------------------------------
 
-@test
-def test_evidence_role_relationships_floor(conn):
+def test_evidence_role_relationships_floor(db_conn):
     """Exactly 5923 role-pair relationships assigned (347 couple, 2624 parent_child, 2952 sibling)."""
-    count = _q(conn, "SELECT COUNT(*) FROM recorded_relationship WHERE type != 'similarity'")
+    count = _q(db_conn, "SELECT COUNT(*) FROM recorded_relationship WHERE type != 'similarity'")
     assert count == EXACT_ROLE_RELS_TOTAL, (
         f"Expected {EXACT_ROLE_RELS_TOTAL} role relationships, got {count}"
     )
 
 
-@test
-def test_evidence_role_relationships_by_type(conn):
+def test_evidence_role_relationships_by_type(db_conn):
     """Exact role relationship counts by type match fixture-derived values."""
     expected = {
         "couple":       EXACT_ROLE_RELS_COUPLE,
@@ -539,7 +426,7 @@ def test_evidence_role_relationships_by_type(conn):
         "sibling":      EXACT_ROLE_RELS_SIBLING,
     }
     for rel_type, expected_count in expected.items():
-        count = _q(conn,
+        count = _q(db_conn,
             "SELECT COUNT(*) FROM recorded_relationship WHERE type = %s",
             (rel_type,),
         )
@@ -548,20 +435,18 @@ def test_evidence_role_relationships_by_type(conn):
         )
 
 
-@test
-def test_evidence_role_relationship_scores_not_null(conn):
+def test_evidence_role_relationship_scores_not_null(db_conn):
     """All role-pair recorded_relationships have a non-null score."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship
         WHERE type != 'similarity' AND score IS NULL
     """)
     assert bad == 0, f"{bad} role-pair recorded_relationships have NULL score"
 
 
-@test
-def test_evidence_role_relationship_scores_in_range(conn):
+def test_evidence_role_relationship_scores_in_range(db_conn):
     """Role-pair recorded_relationship scores are between 0.0 and 1.0."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship
         WHERE type != 'similarity'
           AND (score < 0.0 OR score > 1.0)
@@ -569,13 +454,12 @@ def test_evidence_role_relationship_scores_in_range(conn):
     assert bad == 0, f"{bad} role-pair recorded_relationships have out-of-range score"
 
 
-@test
-def test_evidence_role_relationship_types_valid(conn):
+def test_evidence_role_relationship_types_valid(db_conn):
     """All role-pair recorded_relationships have a recognised type."""
     valid_types = ("couple", "parent_child", "sibling", "similarity")
     placeholders = ",".join(["%s"] * len(valid_types))
     bad = _q(
-        conn,
+        db_conn,
         f"SELECT COUNT(*) FROM recorded_relationship WHERE type NOT IN ({placeholders})",
         valid_types,
     )
@@ -586,22 +470,20 @@ def test_evidence_role_relationship_types_valid(conn):
 # EVIDENCE LAYER TESTS — place resolution
 # ---------------------------------------------------------------------------
 
-@test
-def test_evidence_place_links_exact(conn):
+def test_evidence_place_links_exact(db_conn):
     """Exactly 715 place_record links — all households matched (100% match rate confirmed)."""
-    if not _place_authority_seeded(conn):
+    if not _place_authority_seeded(db_conn):
         # Can't assert without place_authority — warn via a soft pass
         return
-    count = _q(conn, "SELECT COUNT(*) FROM place_record")
+    count = _q(db_conn, "SELECT COUNT(*) FROM place_record")
     assert count == EXACT_PLACE_LINKS, (
         f"Expected {EXACT_PLACE_LINKS} place_record links, got {count}"
     )
 
 
-@test
-def test_evidence_place_links_valid_place_ids(conn):
+def test_evidence_place_links_valid_place_ids(db_conn):
     """All place_record rows reference a valid place_authority.place_id."""
-    orphans = _q(conn, """
+    orphans = _q(db_conn, """
         SELECT COUNT(*) FROM place_record pr
         WHERE NOT EXISTS (
             SELECT 1 FROM place_authority pa WHERE pa.place_id = pr.place_id
@@ -610,10 +492,9 @@ def test_evidence_place_links_valid_place_ids(conn):
     assert orphans == 0, f"{orphans} place_record rows reference non-existent place_id"
 
 
-@test
-def test_evidence_place_links_valid_record_ids(conn):
+def test_evidence_place_links_valid_record_ids(db_conn):
     """All place_record rows reference a valid record.record_id."""
-    orphans = _q(conn, """
+    orphans = _q(db_conn, """
         SELECT COUNT(*) FROM place_record pr
         WHERE NOT EXISTS (
             SELECT 1 FROM record r WHERE r.record_id = pr.record_id
@@ -622,12 +503,11 @@ def test_evidence_place_links_valid_record_ids(conn):
     assert orphans == 0, f"{orphans} place_record rows reference non-existent record_id"
 
 
-@test
-def test_evidence_place_authority_complete(conn):
+def test_evidence_place_authority_complete(db_conn):
     """place_authority contains all 33 authoritative Tullynaught townlands (via normalized matching)."""
-    if not _place_authority_seeded(conn):
+    if not _place_authority_seeded(db_conn):
         return
-    rows = _rows(conn, "SELECT name_en FROM place_authority WHERE place_type = 'townland'")
+    rows = _rows(db_conn, "SELECT name_en FROM place_authority WHERE place_type = 'townland'")
 
     # Build normalized lookup from seeded authority names
     seeded_normalized = {normalize_place_name(r["name_en"]): r["name_en"] for r in rows}
@@ -645,24 +525,22 @@ def test_evidence_place_authority_complete(conn):
     )
 
 
-@test
-def test_evidence_place_authority_count(conn):
+def test_evidence_place_authority_count(db_conn):
     """place_authority has exactly 34 rows: 1 DED + 33 townlands."""
-    if not _place_authority_seeded(conn):
+    if not _place_authority_seeded(db_conn):
         return
-    count = _q(conn, "SELECT COUNT(*) FROM place_authority")
+    count = _q(db_conn, "SELECT COUNT(*) FROM place_authority")
     assert count == 34, (
         f"Expected 34 place_authority rows (1 DED + 33 townlands), got {count}"
     )
 
 
-@test
-def test_evidence_uninhabited_townlands_have_no_place_records(conn):
+def test_evidence_uninhabited_townlands_have_no_place_records(db_conn):
     """Croaghnakern and Rooney's Island are uninhabited — no place_record rows for them."""
-    if not _place_authority_seeded(conn):
+    if not _place_authority_seeded(db_conn):
         return
     placeholders = ",".join(["%s"] * len(UNINHABITED_TOWNLANDS))
-    count = _q(conn, f"""
+    count = _q(db_conn, f"""
         SELECT COUNT(*) FROM place_record pr
         JOIN place_authority pa ON pa.place_id = pr.place_id
         WHERE pa.name_en IN ({placeholders})
@@ -676,19 +554,17 @@ def test_evidence_uninhabited_townlands_have_no_place_records(conn):
 # EVIDENCE LAYER TESTS — similarity
 # ---------------------------------------------------------------------------
 
-@test
-def test_evidence_record_similarities_floor(conn):
+def test_evidence_record_similarities_floor(db_conn):
     """At least FLOOR_RECORD_SIMS cross-census record similarity pairs."""
-    count = _q(conn, "SELECT COUNT(*) FROM record_similarity")
+    count = _q(db_conn, "SELECT COUNT(*) FROM record_similarity")
     assert count >= FLOOR_RECORD_SIMS, (
         f"Expected ≥{FLOOR_RECORD_SIMS} record_similarity rows, got {count}"
     )
 
 
-@test
-def test_evidence_record_similarities_cross_census(conn):
+def test_evidence_record_similarities_cross_census(db_conn):
     """All record_similarity pairs are cross-census (source_id_1 != source_id_2)."""
-    same_source = _q(conn, """
+    same_source = _q(db_conn, """
         SELECT COUNT(*) FROM record_similarity rs
         JOIN record r1 ON r1.record_id = rs.record_id_1
         JOIN record r2 ON r2.record_id = rs.record_id_2
@@ -699,29 +575,26 @@ def test_evidence_record_similarities_cross_census(conn):
     )
 
 
-@test
-def test_evidence_record_similarity_scores_in_range(conn):
+def test_evidence_record_similarity_scores_in_range(db_conn):
     """All record_similarity scores are between 0.0 and 1.0."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM record_similarity
         WHERE score < 0.0 OR score > 1.0
     """)
     assert bad == 0, f"{bad} record_similarity rows have out-of-range score"
 
 
-@test
-def test_evidence_person_similarities_floor(conn):
+def test_evidence_person_similarities_floor(db_conn):
     """At least FLOOR_PERSON_SIMS person-level similarity pairs in recorded_relationship."""
-    count = _q(conn, "SELECT COUNT(*) FROM recorded_relationship WHERE type = 'similarity'")
+    count = _q(db_conn, "SELECT COUNT(*) FROM recorded_relationship WHERE type = 'similarity'")
     assert count >= FLOOR_PERSON_SIMS, (
         f"Expected ≥{FLOOR_PERSON_SIMS} person similarity pairs, got {count}"
     )
 
 
-@test
-def test_evidence_person_similarity_scores_in_range(conn):
+def test_evidence_person_similarity_scores_in_range(db_conn):
     """All person similarity scores are between 0.0 and 1.0."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship
         WHERE type = 'similarity'
           AND (score < 0.0 OR score > 1.0)
@@ -729,10 +602,9 @@ def test_evidence_person_similarity_scores_in_range(conn):
     assert bad == 0, f"{bad} person similarity rows have out-of-range score"
 
 
-@test
-def test_evidence_person_similarity_no_self_pairs(conn):
+def test_evidence_person_similarity_no_self_pairs(db_conn):
     """No person similarity pair links a recorded_person to itself."""
-    self_pairs = _q(conn, """
+    self_pairs = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship
         WHERE type = 'similarity'
           AND recorded_person_id_1 = recorded_person_id_2
@@ -740,10 +612,9 @@ def test_evidence_person_similarity_no_self_pairs(conn):
     assert self_pairs == 0, f"{self_pairs} person similarity self-pairs found"
 
 
-@test
-def test_evidence_person_similarity_cross_census(conn):
+def test_evidence_person_similarity_cross_census(db_conn):
     """All person similarity pairs are cross-census."""
-    same_source = _q(conn, """
+    same_source = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship rr
         JOIN recorded_person rp1 ON rp1.recorded_person_id = rr.recorded_person_id_1
         JOIN recorded_person rp2 ON rp2.recorded_person_id = rr.recorded_person_id_2
@@ -761,17 +632,15 @@ def test_evidence_person_similarity_cross_census(conn):
 # CONCLUSION LAYER TESTS — Person
 # ---------------------------------------------------------------------------
 
-@test
-def test_conclusion_persons_floor(conn):
+def test_conclusion_persons_floor(db_conn):
     """At least FLOOR_PERSONS Person conclusions created."""
-    count = _q(conn, "SELECT COUNT(*) FROM person")
+    count = _q(db_conn, "SELECT COUNT(*) FROM person")
     assert count >= FLOOR_PERSONS, f"Expected ≥{FLOOR_PERSONS} persons, got {count}"
 
 
-@test
-def test_conclusion_every_person_has_recorded_person(conn):
+def test_conclusion_every_person_has_recorded_person(db_conn):
     """Every Person is linked to at least one RecordedPerson (no ghost Persons)."""
-    ghosts = _q(conn, """
+    ghosts = _q(db_conn, """
         SELECT COUNT(*) FROM person p
         WHERE NOT EXISTS (
             SELECT 1 FROM person_recorded_person prp WHERE prp.person_id = p.person_id
@@ -780,27 +649,24 @@ def test_conclusion_every_person_has_recorded_person(conn):
     assert ghosts == 0, f"{ghosts} Persons have no RecordedPerson link"
 
 
-@test
-def test_conclusion_every_person_has_label(conn):
+def test_conclusion_every_person_has_label(db_conn):
     """Every Person has a non-null, non-empty label."""
-    bad = _q(conn, "SELECT COUNT(*) FROM person WHERE label IS NULL OR trim(label) = ''")
+    bad = _q(db_conn, "SELECT COUNT(*) FROM person WHERE label IS NULL OR trim(label) = ''")
     assert bad == 0, f"{bad} Persons have blank/null label"
 
 
-@test
-def test_conclusion_person_gender_valid(conn):
+def test_conclusion_person_gender_valid(db_conn):
     """All Person gender values are male, female, or NULL."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM person
         WHERE gender IS NOT NULL AND gender NOT IN ('male', 'female')
     """)
     assert bad == 0, f"{bad} Persons have invalid gender value"
 
 
-@test
-def test_conclusion_recorded_person_not_double_linked(conn):
+def test_conclusion_recorded_person_not_double_linked(db_conn):
     """No RecordedPerson is linked to more than one Person."""
-    double_linked = _q(conn, """
+    double_linked = _q(db_conn, """
         SELECT COUNT(*) FROM (
             SELECT recorded_person_id
             FROM person_recorded_person
@@ -817,29 +683,26 @@ def test_conclusion_recorded_person_not_double_linked(conn):
 # CONCLUSION LAYER TESTS — Relationship
 # ---------------------------------------------------------------------------
 
-@test
-def test_conclusion_relationships_floor(conn):
+def test_conclusion_relationships_floor(db_conn):
     """At least FLOOR_RELATIONSHIPS Relationship conclusions created."""
-    count = _q(conn, "SELECT COUNT(*) FROM relationship")
+    count = _q(db_conn, "SELECT COUNT(*) FROM relationship")
     assert count >= FLOOR_RELATIONSHIPS, (
         f"Expected ≥{FLOOR_RELATIONSHIPS} relationships, got {count}"
     )
 
 
-@test
-def test_conclusion_relationship_types_valid(conn):
+def test_conclusion_relationship_types_valid(db_conn):
     """All Relationship types are couple, parent_child, or sibling."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM relationship
         WHERE type NOT IN ('couple', 'parent_child', 'sibling')
     """)
     assert bad == 0, f"{bad} Relationships have invalid type"
 
 
-@test
-def test_conclusion_relationship_persons_exist(conn):
+def test_conclusion_relationship_persons_exist(db_conn):
     """All Relationships reference valid Person IDs for both endpoints."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM relationship r
         WHERE NOT EXISTS (SELECT 1 FROM person p WHERE p.person_id = r.person_id_1)
            OR NOT EXISTS (SELECT 1 FROM person p WHERE p.person_id = r.person_id_2)
@@ -847,18 +710,16 @@ def test_conclusion_relationship_persons_exist(conn):
     assert bad == 0, f"{bad} Relationships reference non-existent Person IDs"
 
 
-@test
-def test_conclusion_no_self_relationships(conn):
+def test_conclusion_no_self_relationships(db_conn):
     """No Relationship links a Person to itself."""
-    self_rels = _q(conn, "SELECT COUNT(*) FROM relationship WHERE person_id_1 = person_id_2")
+    self_rels = _q(db_conn, "SELECT COUNT(*) FROM relationship WHERE person_id_1 = person_id_2")
     assert self_rels == 0, f"{self_rels} self-referencing Relationships found"
 
 
-@test
-def test_conclusion_no_duplicate_relationships(conn):
+def test_conclusion_no_duplicate_relationships(db_conn):
     """No duplicate Relationships exist for the same Person pair and type."""
     # Relationship is undirected: (A, B, type) == (B, A, type)
-    duplicates = _q(conn, """
+    duplicates = _q(db_conn, """
         SELECT COUNT(*) FROM (
             SELECT
                 LEAST(person_id_1, person_id_2)  AS p_lo,
@@ -873,10 +734,9 @@ def test_conclusion_no_duplicate_relationships(conn):
     assert duplicates == 0, f"{duplicates} duplicate Relationship (person-pair, type) groups found"
 
 
-@test
-def test_conclusion_couples_have_two_distinct_persons(conn):
+def test_conclusion_couples_have_two_distinct_persons(db_conn):
     """All couple Relationships link two distinct Persons."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM relationship
         WHERE type = 'couple' AND person_id_1 = person_id_2
     """)
@@ -887,29 +747,25 @@ def test_conclusion_couples_have_two_distinct_persons(conn):
 # CONCLUSION LAYER TESTS — Event
 # ---------------------------------------------------------------------------
 
-@test
-def test_conclusion_events_floor(conn):
+def test_conclusion_events_floor(db_conn):
     """At least FLOOR_EVENTS Event conclusions created."""
-    count = _q(conn, "SELECT COUNT(*) FROM event")
+    count = _q(db_conn, "SELECT COUNT(*) FROM event")
     assert count >= FLOOR_EVENTS, f"Expected ≥{FLOOR_EVENTS} events, got {count}"
 
 
-@test
-def test_conclusion_census_events_exist(conn):
+def test_conclusion_census_events_exist(db_conn):
     """At least one census Event exists."""
-    count = _q(conn, "SELECT COUNT(*) FROM event WHERE type = 'census'")
+    count = _q(db_conn, "SELECT COUNT(*) FROM event WHERE type = 'census'")
     assert count >= 1, "No census Events created"
 
 
-@test
-def test_conclusion_birth_events_exist(conn):
+def test_conclusion_birth_events_exist(db_conn):
     """At least one birth Event exists."""
-    count = _q(conn, "SELECT COUNT(*) FROM event WHERE type = 'birth'")
+    count = _q(db_conn, "SELECT COUNT(*) FROM event WHERE type = 'birth'")
     assert count >= 1, "No birth Events created"
 
 
-@test
-def test_conclusion_event_types_valid(conn):
+def test_conclusion_event_types_valid(db_conn):
     """All Event types are in the known vocabulary."""
     valid_types = (
         "birth", "baptism", "marriage", "death", "burial",
@@ -917,14 +773,13 @@ def test_conclusion_event_types_valid(conn):
         "valuation", "tithe", "military_service", "pension", "folklore",
     )
     placeholders = ",".join(["%s"] * len(valid_types))
-    bad = _q(conn, f"SELECT COUNT(*) FROM event WHERE type NOT IN ({placeholders})", valid_types)
+    bad = _q(db_conn, f"SELECT COUNT(*) FROM event WHERE type NOT IN ({placeholders})", valid_types)
     assert bad == 0, f"{bad} Events have invalid type"
 
 
-@test
-def test_conclusion_every_event_has_person_link(conn):
+def test_conclusion_every_event_has_person_link(db_conn):
     """Every Event is linked to at least one Person via person_event."""
-    orphan_events = _q(conn, """
+    orphan_events = _q(db_conn, """
         SELECT COUNT(*) FROM event e
         WHERE NOT EXISTS (
             SELECT 1 FROM person_event pe WHERE pe.event_id = e.event_id
@@ -933,30 +788,27 @@ def test_conclusion_every_event_has_person_link(conn):
     assert orphan_events == 0, f"{orphan_events} Events have no person_event link"
 
 
-@test
-def test_conclusion_person_event_persons_exist(conn):
+def test_conclusion_person_event_persons_exist(db_conn):
     """All person_event rows reference valid Person IDs."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM person_event pe
         WHERE NOT EXISTS (SELECT 1 FROM person p WHERE p.person_id = pe.person_id)
     """)
     assert bad == 0, f"{bad} person_event rows reference non-existent Person IDs"
 
 
-@test
-def test_conclusion_person_event_events_exist(conn):
+def test_conclusion_person_event_events_exist(db_conn):
     """All person_event rows reference valid Event IDs."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM person_event pe
         WHERE NOT EXISTS (SELECT 1 FROM event e WHERE e.event_id = pe.event_id)
     """)
     assert bad == 0, f"{bad} person_event rows reference non-existent Event IDs"
 
 
-@test
-def test_conclusion_birth_event_dates_calculated(conn):
+def test_conclusion_birth_event_dates_calculated(db_conn):
     """All birth Events from census inference have date_qualifier='calculated'."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM event
         WHERE type = 'birth'
           AND (date_qualifier IS NULL OR date_qualifier != 'calculated')
@@ -967,10 +819,9 @@ def test_conclusion_birth_event_dates_calculated(conn):
     )
 
 
-@test
-def test_conclusion_birth_event_dates_plausible(conn):
+def test_conclusion_birth_event_dates_plausible(db_conn):
     """All calculated birth Events have a date year within fixture-derived plausible range."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM event
         WHERE type = 'birth'
           AND date_qualifier = 'calculated'
@@ -986,10 +837,9 @@ def test_conclusion_birth_event_dates_plausible(conn):
     )
 
 
-@test
-def test_conclusion_one_primary_birth_event_per_person(conn):
+def test_conclusion_one_primary_birth_event_per_person(db_conn):
     """Every Person has at most one is_primary birth Event."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM (
             SELECT pe.person_id
             FROM person_event pe
@@ -1002,24 +852,21 @@ def test_conclusion_one_primary_birth_event_per_person(conn):
     assert bad == 0, f"{bad} Persons have more than one is_primary birth Event"
 
 
-@test
-def test_conclusion_census_events_all_primary(conn):
+def test_conclusion_census_events_all_primary(db_conn):
     """All census Events are is_primary=1 (each census appearance is a distinct moment)."""
-    bad = _q(conn, "SELECT COUNT(*) FROM event WHERE type = 'census' AND is_primary != 1")
+    bad = _q(db_conn, "SELECT COUNT(*) FROM event WHERE type = 'census' AND is_primary != 1")
     assert bad == 0, f"{bad} census Events have is_primary != 1"
 
 
-@test
-def test_conclusion_marriage_events_have_relationship(conn):
+def test_conclusion_marriage_events_have_relationship(db_conn):
     """All marriage Events reference a Relationship (relationship_id is not NULL)."""
-    bad = _q(conn, "SELECT COUNT(*) FROM event WHERE type = 'marriage' AND relationship_id IS NULL")
+    bad = _q(db_conn, "SELECT COUNT(*) FROM event WHERE type = 'marriage' AND relationship_id IS NULL")
     assert bad == 0, f"{bad} marriage Events have NULL relationship_id"
 
 
-@test
-def test_conclusion_marriage_relationship_ids_valid(conn):
+def test_conclusion_marriage_relationship_ids_valid(db_conn):
     """All marriage Event relationship_ids reference existing Relationships."""
-    bad = _q(conn, """
+    bad = _q(db_conn, """
         SELECT COUNT(*) FROM event e
         WHERE e.type = 'marriage'
           AND e.relationship_id IS NOT NULL
@@ -1030,14 +877,13 @@ def test_conclusion_marriage_relationship_ids_valid(conn):
     assert bad == 0, f"{bad} marriage Events reference non-existent relationship_id"
 
 
-@test
-def test_conclusion_event_record_links_valid(conn):
+def test_conclusion_event_record_links_valid(db_conn):
     """All event_record rows reference valid event_id and record_id."""
-    bad_event = _q(conn, """
+    bad_event = _q(db_conn, """
         SELECT COUNT(*) FROM event_record er
         WHERE NOT EXISTS (SELECT 1 FROM event e WHERE e.event_id = er.event_id)
     """)
-    bad_record = _q(conn, """
+    bad_record = _q(db_conn, """
         SELECT COUNT(*) FROM event_record er
         WHERE NOT EXISTS (SELECT 1 FROM record r WHERE r.record_id = er.record_id)
     """)
@@ -1049,14 +895,13 @@ def test_conclusion_event_record_links_valid(conn):
 # CROSS-LAYER INVARIANTS
 # ---------------------------------------------------------------------------
 
-@test
-def test_invariant_person_recorded_person_fk(conn):
+def test_invariant_person_recorded_person_fk(db_conn):
     """All person_recorded_person rows have valid person_id and recorded_person_id FKs."""
-    bad_person = _q(conn, """
+    bad_person = _q(db_conn, """
         SELECT COUNT(*) FROM person_recorded_person prp
         WHERE NOT EXISTS (SELECT 1 FROM person p WHERE p.person_id = prp.person_id)
     """)
-    bad_rp = _q(conn, """
+    bad_rp = _q(db_conn, """
         SELECT COUNT(*) FROM person_recorded_person prp
         WHERE NOT EXISTS (
             SELECT 1 FROM recorded_person rp WHERE rp.recorded_person_id = prp.recorded_person_id
@@ -1066,16 +911,15 @@ def test_invariant_person_recorded_person_fk(conn):
     assert bad_rp == 0, f"{bad_rp} person_recorded_person rows have invalid recorded_person_id"
 
 
-@test
-def test_invariant_recorded_relationship_fk(conn):
+def test_invariant_recorded_relationship_fk(db_conn):
     """All recorded_relationship rows reference valid recorded_person IDs."""
-    bad_1 = _q(conn, """
+    bad_1 = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship rr
         WHERE NOT EXISTS (
             SELECT 1 FROM recorded_person rp WHERE rp.recorded_person_id = rr.recorded_person_id_1
         )
     """)
-    bad_2 = _q(conn, """
+    bad_2 = _q(db_conn, """
         SELECT COUNT(*) FROM recorded_relationship rr
         WHERE NOT EXISTS (
             SELECT 1 FROM recorded_person rp WHERE rp.recorded_person_id = rr.recorded_person_id_2
@@ -1085,15 +929,14 @@ def test_invariant_recorded_relationship_fk(conn):
     assert bad_2 == 0, f"{bad_2} recorded_relationship rows have invalid recorded_person_id_2"
 
 
-@test
-def test_invariant_no_conclusion_points_to_conclusion(conn):
+def test_invariant_no_conclusion_points_to_conclusion(db_conn):
     """
     Evidence-conclusion separation: no RecordedPerson or RecordedRelationship
     references a conclusion-layer ID (Person, Relationship, Event).
     This is a schema-level property but worth asserting explicitly.
     """
     # RecordedPerson has no person_id FK by design — verified by absence of column
-    with conn.cursor() as cur:
+    with db_conn.cursor() as cur:
         cur.execute("""
             SELECT column_name FROM information_schema.columns
             WHERE table_name = 'recorded_person'
@@ -1106,80 +949,3 @@ def test_invariant_no_conclusion_points_to_conclusion(conn):
 
 
 # ---------------------------------------------------------------------------
-# Entry point (also works with pytest)
-# ---------------------------------------------------------------------------
-
-# Module-level connection used by both pytest fixtures and standalone runner
-_conn: psycopg2.extensions.connection | None = None
-
-
-def get_conn() -> psycopg2.extensions.connection:
-    global _conn
-    if _conn is None:
-        _conn = open_db()
-        check_version(_conn)
-    return _conn
-
-
-# pytest compatibility
-try:
-    import pytest
-
-    @pytest.fixture(scope="module")
-    def db_conn():
-        conn = get_conn()
-        setup(conn)
-        yield conn
-        conn.close()
-
-    # Re-export each test function for pytest discovery with the conn fixture
-    # pytest will call these; the standalone runner calls them directly.
-    def pytest_generate_tests(metafunc):
-        pass
-
-    # Wrap registered tests as pytest functions
-    import types
-    _module = sys.modules[__name__]
-    for _name, _fn in _tests:
-        def _make_pytest_fn(fn):
-            def _pytest_fn(db_conn):
-                fn(db_conn)
-            _pytest_fn.__name__ = fn.__name__
-            return _pytest_fn
-        setattr(_module, f"pytest_{_name}", _make_pytest_fn(_fn))
-
-except ImportError:
-    pass  # pytest not installed; standalone runner only
-
-
-if __name__ == "__main__":
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    _log_fh = LOG_FILE.open("w", encoding="utf-8")
-
-    run_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    _log(f"GRA Integration Test Suite")
-    _log(f"Run started: {run_ts}")
-    _log(f"Log file:    {LOG_FILE}")
-    _log()
-
-    _log("Connecting to database...")
-    try:
-        conn = get_conn()
-    except Exception as e:
-        _log(f"ERROR: Could not connect: {e}")
-        _log_fh.close()
-        sys.exit(1)
-
-    try:
-        setup(conn)
-    except Exception as e:
-        _log(f"ERROR during setup: {e}")
-        _log(traceback.format_exc())
-        conn.close()
-        _log_fh.close()
-        sys.exit(1)
-
-    ok = _run_all(conn)
-    conn.close()
-    _log_fh.close()
-    sys.exit(0 if ok else 1)
