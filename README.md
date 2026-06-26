@@ -113,6 +113,10 @@ python -m src.cli review
 # Clear and re-run
 python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority
 python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves evidence
+
+# View reports
+# Generated reports are written to reports/ with JSON + Markdown formats
+# Example: reports/report_20260626_233433.{json,md}
 ```
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5).
