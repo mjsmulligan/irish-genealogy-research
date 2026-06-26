@@ -386,8 +386,9 @@ def _build_person_settings() -> SettingsCreator:
       - sex_as_recorded (exact match)
       - place_id (exact match)
 
-    Note: v1.0 does not include household similarity scores as a hierarchical
-    feature. This will be added in a future version (see ROADMAP).
+    v1.1 infrastructure: household_match_score column is computed in feature extraction
+    to support hierarchical household context in future versions. Not yet active in Splink
+    comparisons (causes clustering corruption at current thresholds; needs further tuning).
     """
     return SettingsCreator(
         link_type="link_only",
@@ -441,6 +442,7 @@ def _build_person_settings() -> SettingsCreator:
                 output_column_name="place_id",
                 comparison_description="Place ID exact match",
             ),
+
         ],
         retain_matching_columns=True,
         retain_intermediate_calculation_columns=False,
@@ -501,7 +503,7 @@ def run_person_similarity(
     """
     from src.constants import (
         BATCH_SIZE_PERSON_SIMILARITY,
-        SCORE_VERSION_PERSON_SIMILARITY,
+        SCORE_VERSION_PERSON_SIMILARITY_V1_1,
     )
     from src.evidence.features.census_person import build_census_person_features
 
@@ -575,7 +577,7 @@ def run_person_similarity(
         if BATCH_SIZE_PERSON_SIMILARITY is None:
             # Single transaction for all pairs in this source-pair
             with conn:
-                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY)
+                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY_V1_1)
             pair_count = len(pairs_to_write)
         else:
             # Batched commits within this source-pair
@@ -583,7 +585,7 @@ def run_person_similarity(
             for i in range(0, len(pairs_to_write), batch_size):
                 batch = pairs_to_write[i : i + batch_size]
                 with conn:
-                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY)
+                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY_V1_1)
                 pair_count += len(batch)
 
         result.pairs_written += pair_count

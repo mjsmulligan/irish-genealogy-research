@@ -6,17 +6,22 @@ Splink input in run_person_similarity().
 
 Each row represents one RecordedPerson.  Columns:
 
-    unique_id           INTEGER  — recorded_person_id (Splink join key)
-    source_id           INTEGER  — census source (3=1901, 4=1911, 5=1926)
-    place_id            INTEGER  — resolved place_id from the parent Record, or NULL
-    surname_norm        TEXT     — normalised surname (last token of name_as_recorded)
-    forename_norm       TEXT     — normalised forenames (all tokens except last)
-    name_norm           TEXT     — forename_norm + " " + surname_norm (full name for Splink comparison)
-    birth_year_est      INTEGER  — census_year − age (NULL if age is NULL)
-    sex_as_recorded     TEXT     — 'm' / 'f' / NULL
+    unique_id               INTEGER  — recorded_person_id (Splink join key)
+    source_id               INTEGER  — census source (3=1901, 4=1911, 5=1926)
+    place_id                INTEGER  — resolved place_id from the parent Record, or NULL
+    surname_norm            TEXT     — normalised surname (last token of name_as_recorded)
+    forename_norm           TEXT     — normalised forenames (all tokens except last)
+    name_norm               TEXT     — forename_norm + " " + surname_norm (full name for Splink comparison)
+    birth_year_est          INTEGER  — census_year − age (NULL if age is NULL)
+    sex_as_recorded         TEXT     — 'm' / 'f' / NULL
+    household_match_score   REAL     — pre-computed household similarity (v1.1); populated by run_person_similarity
 
 Normalisation:
     All name tokens are lowercased and stripped.
+
+Household context:
+    v1.0 did not include household similarity. v1.1 adds household_match_score as a pre-computed
+    hierarchical feature, populated from record_similarity table during run_person_similarity.
 
 Entry point:
     build_census_person_features(conn) -> list[pd.DataFrame]
@@ -36,6 +41,46 @@ _SOURCE_YEAR: dict[int, int] = {3: 1901, 4: 1911, 5: 1926}
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _build_household_score_lookup(
+    conn: psycopg2.extensions.connection,
+) -> dict[int, float]:
+    """
+    Build a lookup: record_id → max household_match_score from record_similarity.
+
+    For each record, returns the maximum score it has across all its
+    pairs in record_similarity (treating record_id_1 and record_id_2 as equivalent).
+    Used to populate household_match_score in person features.
+
+    v1.1 hierarchical feature: provides household context to person similarity.
+    """
+    lookup: dict[int, float] = {}
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                record_id_1 AS record_id,
+                MAX(score) AS max_score
+            FROM record_similarity
+            GROUP BY record_id_1
+            UNION ALL
+            SELECT
+                record_id_2 AS record_id,
+                MAX(score) AS max_score
+            FROM record_similarity
+            GROUP BY record_id_2
+            """
+        )
+        rows = cur.fetchall()
+        for row in rows:
+            record_id = row["record_id"]
+            score = row["max_score"]
+            # Keep the max if this record_id appears in both queries above
+            lookup[record_id] = max(lookup.get(record_id, 0.0), score)
+
+    return lookup
+
 
 def _norm(name: str | None) -> str:
     """Lowercase + strip; return '' for None."""
@@ -72,8 +117,15 @@ def build_census_person_features(
 
     Each DataFrame has Splink-required column 'unique_id' set to
     recorded_person_id.
+
+    v1.1: Adds household_match_score (pre-computed from record_similarity)
+    to provide hierarchical household context to Splink.
     """
     result: list[pd.DataFrame] = []
+
+    # Build a lookup: record_id → max household similarity score across all sources
+    # This will be used to populate household_match_score in each person's features
+    household_scores: dict[int, float] = _build_household_score_lookup(conn)
 
     for source_id in CENSUS_SOURCE_IDS:
         census_year = _SOURCE_YEAR.get(source_id)
@@ -86,7 +138,8 @@ def build_census_person_features(
                     rp.name_as_recorded,
                     rp.age,
                     rp.sex_as_recorded,
-                    pr.place_id
+                    pr.place_id,
+                    rp.record_id
                 FROM recorded_person rp
                 JOIN record r ON r.record_id = rp.record_id
                 LEFT JOIN place_record pr ON pr.record_id = r.record_id
@@ -123,6 +176,7 @@ def build_census_person_features(
                     "name_norm": name_norm,
                     "birth_year_est": birth_year_est,
                     "sex_as_recorded": _norm(p["sex_as_recorded"]) or None,
+                    "household_match_score": household_scores.get(p["record_id"]),
                 }
             )
 
