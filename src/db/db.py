@@ -45,21 +45,38 @@ SEED_SQL   = Path(__file__).parent / "seed.sql"
 
 def open_db() -> psycopg2.extensions.connection:
     """
-    Open a connection to the Supabase / PostgreSQL database.
+    Open a connection to the PostgreSQL database.
 
-    Reads DATABASE_URL from the environment (or .env file).
+    Reads DATABASE_ENVIRONMENT to determine local vs. cloud:
+      - local: uses DATABASE_URL_LOCAL (localhost:5432)
+      - cloud: uses DATABASE_URL_CLOUD (Supabase)
+
+    If DATABASE_ENVIRONMENT is not set, defaults to 'local'.
+
     Returns a psycopg2 connection using RealDictCursor as the default
     cursor factory, so rows support dict-style key access: row["col"].
 
-    Raises EnvironmentError if DATABASE_URL is not set.
+    Raises EnvironmentError if the selected URL is not set.
     """
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        raise EnvironmentError(
-            "DATABASE_URL is not set. "
-            "Add it to your .env file or environment before running GRA.\n"
-            "  Format: postgresql://postgres:[password]@[host]:5432/postgres"
-        )
+    env = os.environ.get("DATABASE_ENVIRONMENT", "local").lower().strip()
+
+    if env == "cloud":
+        url = os.environ.get("DATABASE_URL_CLOUD")
+        if not url:
+            raise EnvironmentError(
+                "DATABASE_ENVIRONMENT=cloud but DATABASE_URL_CLOUD is not set.\n"
+                "Add DATABASE_URL_CLOUD to your .env file.\n"
+                "  Format: postgresql://postgres:[password]@[host]:5432/postgres"
+            )
+    else:  # default to local
+        url = os.environ.get("DATABASE_URL_LOCAL")
+        if not url:
+            raise EnvironmentError(
+                "DATABASE_ENVIRONMENT=local but DATABASE_URL_LOCAL is not set.\n"
+                "Add DATABASE_URL_LOCAL to your .env file.\n"
+                "  Format: postgresql://[user]@[host]:5432/[database]"
+            )
+
     conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
     conn.autocommit = False
     return conn
