@@ -1,6 +1,6 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*25 June 2026 (session R3 discovery)*
+*26 June 2026 (session R3 transcription discovery)*
 
 ______________________________________________________________________
 
@@ -63,7 +63,9 @@ ______________________________________________________________________
 
 | # | Item | Priority | Notes |
 |---|---|---|---|
-| 35 | **`/transcription` scope design.** Design `src/transcription/` module: image access pattern (NLI URL derivation from register_id), AI prompting strategy for vision LLM (baptism prompt, marriage prompt, index first-pass prompt), human review workflow, output validation against CSV schema. Recorded-as-is contract must be explicit in prompt design. Structural variant handling required: unnumbered records, illegitimate birth convention, multiple numbering schemes, mixed-type pages. | High (R3) | Dedicated session. Prerequisite for parish ingest implementation. |
+| 35 | ~~**`/transcription` scope design.**~~ | ~~High (R3)~~ | ✅ **Superseded (session 26 June 2026).** Transcription pipeline spawned as a separate repo (item 39). `src/transcription/` will not be built within GRA. |
+| 38 | **`export-vocab` CLI command.** Aggregate census name/place distributions by parish from the evidence layer and export to a vocabulary file (`{parish_id}_vocab.json`) for consumption by the transcription pipeline's confidence scoring module. Blocked on vocabulary file contract — dedicated session required to define format and field structure before implementation. | Medium (R3) | After vocabulary file contract session. See §5.10. |
+| 39 | **Spawn transcription repo.** Create new GitHub repository for the NLI Catholic parish register transcription pipeline. The CSV schemas defined 25 June 2026 (register index, parish baptism, parish marriage) plus bounding box envelope fields are the formal interface contract with GRA. GRA's only dependency on this repo is the CSV output it produces. | High (R3) | Prerequisite for parish ingest implementation (item 36). |
 | 36 | **Parish ingest pipeline.** Implement `src/evidence/parish.py`: parish baptism CSV → Record + RecordedPersons (child, father, mother, sponsors) + RecordedRelationships (child→father, child→mother, child→sponsor). Marriage CSV → Record + RecordedPersons (groom, bride, witnesses) + RecordedRelationships (couple, groom→witness, bride→witness). New role vocab: `sponsor`. New relationship type vocab: `sponsor`, `witness`. | High (R3) | After transcription scope design. After data dictionary and schema updated. |
 | 37 | **Data dictionary update for parish records.** Add `sponsor` to `RecordedPerson` role vocabulary. Add `sponsor` and `witness` to `RecordedRelationship` type vocabulary. Document three-state transcription field convention: empty (absent in source), `[?]` (illegible), value (as written). | Medium (R3) | Before parish ingest implementation. |
 | 7 | Stale schema-version footers: audit all `docs/` files | Low | |
@@ -264,11 +266,27 @@ src/review/
 
 ______________________________________________________________________
 
-## 6. Release Plan
+### 5.10 Vocabulary file contract (open — dedicated session required)
+
+GRA will export a parish-level name/place vocabulary file consumed by the transcription pipeline's confidence scoring module. This is the primary interface between GRA's evidence layer and the transcription repo beyond the CSV schemas.
+
+**Design principles agreed (26 June 2026):**
+- File existence check only in the transcription pipeline — no configuration, no hard dependency. If file absent, confidence scoring is skipped and pipeline continues.
+- Confidence adjustment is a signal, not a correction — transcription value never changes.
+- Census data used post-transcription only (preserves recorded-as-is contract).
+- Raw counts preferred over normalised frequencies.
+- Gendered forename sets for accurate confidence matching.
+- Townlands as a separate set from surnames (different semantic role, stronger signal).
+
+**GRA-side implementation:** `python -m src.cli export-vocab --parish <parish_id> --output <path>`
+
+**File naming convention:** `{parish_id}_vocab.json`
+
+**Format and field structure:** not yet decided. Dedicated session required before either repo implements against this contract. See item 38.
 
 - **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), item 34 (test harness v4.0 updates).
 - **v2.0 (Target):** Review layer complete (item 13 ✅). First run + training session against Supabase. Full-scale Irish Census ingestion.
-- **v3.0 (Long-term):** Parish and civil BMD ingest.
+- **v3.0 (Long-term):** Parish and civil BMD ingest. Depends on transcription repo (item 39) producing CSV output and parish ingest pipeline (item 36) consuming it.
 
 ______________________________________________________________________
 
@@ -276,6 +294,7 @@ ______________________________________________________________________
 
 | Date | Milestone / Change |
 |---|---|
+| 26 June 2026 (session R3 transcription discovery) | **Transcription pipeline discovery complete. Spawned as separate repo.** HTR strategy explored for NLI Catholic parish registers. Four sample images from vtls000631954 (1873–1881 baptisms) reviewed — three quality tiers observed (clean, moderate, degraded). Key decisions: (1) Transcription pipeline spawned as independent repo — no coupling to GRA internals, CSV schemas as the sole interface contract. `src/transcription/` will not be built within GRA. (2) Hybrid tiered pipeline adopted: image QA triage → layout detection (universal) → tiered HTR (Kraken local / Transkribus B2022) → field parsing → census confidence adjustment → CSV assembly. (3) Layout detection is universal first pass — required on all pages because bounding box coordinates are part of the CSV output contract. (4) Bounding box coordinates added to all three CSV schemas: `image_filename`, `bbox_x_min`, `bbox_y_min`, `bbox_x_max`, `bbox_y_max` — nullable, entry-block level. (5) Census vocabulary file as loose-coupling interface: GRA exports `{parish_id}_vocab.json`; transcription pipeline reads if present, skips confidence scoring if absent. File contract format left open — dedicated session required. (6) Transkribus Beyond 2022 model identified as best available pre-trained model for Irish archival handwriting (759,000 words, 50 handwriting styles). Access via UI export (PAGE XML) — API requires Organisation plan. Used as Tier 3 HTR and ground truth source for Kraken fine-tuning. Work queue: item 35 superseded, items 38 and 39 added. §5.10 added (vocabulary file contract design notes). |
 | 25 June 2026 (session R3 discovery) | **Parish records early discovery complete.** NLI Catholic parish register collection (`registers.nli.ie`) explored. LLM transcription experiments reviewed (Tawnawilly baptisms 499 records, Ballyoughter baptisms 1310 records, Tawnawilly marriages 102 records). Six source images examined (pages 4, 6, 7, 26, 31, 36). Key decisions: CSV as universal ingest contract for all sources; `/transcription` scope as separate ETL concern upstream of ingest; hybrid AI + human review transcription model; recorded-as-is as strict transcription contract (no invented disambiguation); three-file structure per register (index, baptisms, marriages); separate baptism and marriage schemas with shared envelope. `sponsor` added to both `RecordedPerson` role vocabulary and `RecordedRelationship` type vocabulary. `witness` added to `RecordedRelationship` type vocabulary. Three CSV schemas defined: register index, parish baptism, parish marriage. High-res image URL pattern documented: `registers.nli.ie/static/high/{register_id_no_vtls}/{vtls_filename}.jpg`. Work queue items 35, 36, 37 added. |
 | 24 June 2026 (session 19) | **Review layer implementation complete.** `src/review/validator.py` deleted. Four new modules: `report.py` (`ReportItem` + `Report` dataclasses, JSON + Markdown serialisers), `findings.py` (nine v1.0 finding functions: `merge_error_candidate`, `birth_singularity_violation`, `death_singularity_violation`, `life_event_sequence_violation`, `parent_age_implausible`, `marriage_age_implausible`, `lifespan_boundary_violated`, `unlinked_recorded_person`, `single_census_appearance`), `priority.py` (three-tier base score × scope multiplier → integer rank), `runner.py` (assembles report, writes paired JSON + Markdown to `reports/`). `src/cli.py`: `validate` subcommand replaced by `review`. `reports/.gitkeep` added. CLI: `python -m src.cli review`. Item 13 complete. |
 | 24 June 2026 (session 18) | **Review layer design complete.** `src/review/validator.py` retired in full — not ported. New design derived from `genealogical_constraints.md` and conceptual model §7.4. `ReportItem` and `Report` structures defined. Nine v1.0 finding types specified; five deferred to post-training-session. Priority scoring approach agreed. Output: paired JSON + Markdown files in `reports/` with timestamp filenames. CLI: `python -m src.cli review`. Module structure: `report.py`, `findings.py`, `priority.py`, `runner.py`. Training session workflow agreed: run report against Supabase data, review top findings with Claude, iterate on taxonomy and thresholds. Item 13 updated with full spec (§5.9). `validation_rules.md` updated with supersession note. |
