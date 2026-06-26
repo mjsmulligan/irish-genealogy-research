@@ -50,6 +50,8 @@ PROPOSE_FLOOR: float = 0.30           # score >= this → queue as proposal
 #   - Person similarity scores in practice max out ~0.68 for clear matches
 #   - Relationship Resolution (step 2) will refine using primary evidence
 #   - 0.65 creates Persons for clearest matches, leaves ambiguous cases as orphans
+#   - Tested 0.55: linkage *decreased* (552 → 303), so lower isn't better
+#   - Issue: Splink features aren't producing high confidence scores across-the-board
 PERSON_RESOLUTION_THRESHOLD: float = 0.65
 
 # ---------------------------------------------------------------------------
