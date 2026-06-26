@@ -121,6 +121,36 @@ python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves e
 
 ______________________________________________________________________
 
+## Testing
+
+Run the end-to-end integration test suite (59 tests covering all layers):
+
+```bash
+# Via pytest (CLI)
+pytest tests/test_pipeline.py -v
+
+# Run a single test
+pytest tests/test_pipeline.py::test_schema_version -v
+
+# Run tests by pattern
+pytest -k "evidence" -v
+```
+
+**VSCode:** Open Testing tab (beaker icon) and click play to run tests or individual test functions. Press F5 to launch via debugger.
+
+**Setup:** Tests require:
+1. PostgreSQL running locally (`localhost:5432/gra_test`)
+2. Database initialized: `python -m src.cli init`
+3. Place authority seeded: `python -m src.cli fetch-places --logainm-id 111482 --api-key YOUR_KEY`
+
+**Database switching:** Edit `.env` to switch between local and cloud:
+```
+DATABASE_ENVIRONMENT=local    # local PostgreSQL on localhost:5432
+DATABASE_ENVIRONMENT=cloud    # Supabase (requires network access)
+```
+
+______________________________________________________________________
+
 ## Requirements
 
 ```
