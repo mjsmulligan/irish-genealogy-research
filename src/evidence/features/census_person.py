@@ -24,8 +24,14 @@ Household context (v1.1):
     Example: Person from 1901 with household_match_score_to_4 = 0.87 means their household
     has a 0.87 match with some 1911 household (but may have 0.5 with 1926).
 
+Role consistency (v1.2):
+    Adds role column from recorded_person for Splink comparison. Enables Splink to score
+    role consistency: exact matches (head→head) are strongest evidence; plausible transitions
+    (son→head at age 30+) are medium evidence; implausible changes (head→son) are weak signals.
+
 Normalisation:
     All name tokens are lowercased and stripped.
+    Roles are normalized (lowercased) for comparison.
 
 Entry point:
     build_census_person_features(conn) -> list[pd.DataFrame]
@@ -163,6 +169,7 @@ def build_census_person_features(
                     rp.name_as_recorded,
                     rp.age,
                     rp.sex_as_recorded,
+                    rp.role,
                     pr.place_id,
                     rp.record_id
                 FROM recorded_person rp
@@ -202,6 +209,7 @@ def build_census_person_features(
                 "name_norm": name_norm,
                 "birth_year_est": birth_year_est,
                 "sex_as_recorded": _norm(p["sex_as_recorded"]) or None,
+                "role": _norm(p["role"]) or None,
             }
 
             # Add per-source household match scores (one column per other source)
@@ -223,6 +231,10 @@ def build_census_person_features(
             col_name = f"household_match_score_to_{target_source}"
             if col_name not in df.columns:
                 df[col_name] = None
+
+        # Ensure role column exists (should always exist from SELECT, but be safe)
+        if "role" not in df.columns:
+            df["role"] = None
 
         result.append(df)
 

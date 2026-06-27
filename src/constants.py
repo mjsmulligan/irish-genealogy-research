@@ -67,6 +67,7 @@ SCORE_VERSION_ROLE_PAIR: str = "role_pair_v1.0"
 SCORE_VERSION_RECORD_SIMILARITY: str = "record_similarity_v1.0"
 SCORE_VERSION_PERSON_SIMILARITY: str = "person_similarity_v1.0"
 SCORE_VERSION_PERSON_SIMILARITY_V1_1: str = "person_similarity_v1.1_with_household_context"
+SCORE_VERSION_PERSON_SIMILARITY_V1_2: str = "person_similarity_v1.2_with_role_consistency"
 
 # ---------------------------------------------------------------------------
 # Ingest-time assertion scores
