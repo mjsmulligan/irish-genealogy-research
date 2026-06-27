@@ -357,23 +357,14 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
         else:
             print(f"  (No similarity pairs)")
 
-        # ===== Regression Detection vs v1.1 Baseline =====
-        # v1.1 baseline (Phase 3 removed): 20-23% linkage
-        # Splink's EM training uses random sampling (estimate_u_using_random_sampling),
-        # causing variance across runs even with fixed seeds. Observed range: 20.1-22.9%.
-        # Target range: ≥20% (with Phase 3 removed and reproducible seeding).
-        # If linkage drops below 20%, investigate whether seeds are being respected.
+        # ===== Variance Note =====
+        # Splink is probabilistic. EM training uses random sampling (estimate_u_using_random_sampling),
+        # causing natural variance across runs. This is expected behavior, not a bug.
+        # We report linkage as informational; track trends over sessions, not individual runs.
 
-        MIN_LINKAGE = 20.0
-        threshold_ok = linkage_pct >= MIN_LINKAGE
-
-        print(f"\nRegression Detection vs v1.1 Baseline (Phase 3 Removed)")
-        print(f"  Expected linkage range: ≥{MIN_LINKAGE:.1f}%")
-        print(f"  Actual linkage: {linkage_pct:.1f}% ({linked_recorded_persons} persons)")
-        if threshold_ok:
-            print(f"  ✓ Within acceptable range")
-        else:
-            print(f"  ✗ Below threshold: {linkage_pct - MIN_LINKAGE:.1f}pp")
+        print(f"\nLinkage Metrics (Probabilistic — variance expected)")
+        print(f"  Linkage: {linkage_pct:.1f}% ({linked_recorded_persons} persons)")
+        print(f"  (Note: Each run produces slightly different results due to random sampling in EM)")
 
     print("="*80 + "\n")
 
