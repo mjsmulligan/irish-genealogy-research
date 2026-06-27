@@ -49,6 +49,15 @@ class MergeCandidate:
 
 
 @dataclass
+class LinkConflict:
+    """Record of a RecordedPerson re-linked due to opinion revision."""
+    recorded_person_id: int
+    old_person_id: int  # Where it was linked (Step 1)
+    new_person_id_attempted: int  # Where Step 2 tried to link it
+    resolution: str  # "kept_existing" or "overwritten"
+
+
+@dataclass
 class RelationshipResolutionResult:
     persons_created: int = 0
     persons_linked: int = 0  # existing Persons that got new RecordedPerson links
@@ -60,6 +69,8 @@ class RelationshipResolutionResult:
     case2_matches: int = 0  # high sim, some existing Persons
     case3_matches: int = 0  # person anchor, low sim
     link_conflicts_resolved: int = 0  # RecordedPersons re-linked to stronger candidates
+    persons_orphaned: int = 0  # Persons created but lost all RecordedPersons to conflicts
+    link_conflicts: list[LinkConflict] = field(default_factory=list)  # Audit trail
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +303,7 @@ def _link_recorded_person_to_person(
     person_id: int,
     recorded_person_id: int,
     force_overwrite: bool = False,
-) -> str:
+) -> tuple[str, LinkConflict | None]:
     """
     Link a RecordedPerson to a Person, resolving conflicts by choosing the strongest link.
 
@@ -306,9 +317,11 @@ def _link_recorded_person_to_person(
                         If False (default), only link if orphan or already linked to same Person.
 
     Returns:
-        "linked" = new linkage created
-        "kept_existing" = already linked to same Person (no action)
-        "conflict_resolved" = was linked to different Person; kept stronger link
+        Tuple of (status, conflict_record):
+        - status: "linked" = new linkage created
+                 "kept_existing" = already linked to same Person (no action)
+                 "conflict_resolved" = was linked to different Person; kept stronger link
+        - conflict_record: LinkConflict if a conflict was resolved, else None
     """
     from src.dal.person_repo import link_person_to_recorded_person
 
@@ -324,18 +337,23 @@ def _link_recorded_person_to_person(
             score_version=None,
             verified=False,
         )
-        return "linked"
+        return "linked", None
 
     existing_person_id, existing_score = existing
 
     if existing_person_id == person_id:
         # Already linked to same Person — no conflict
-        return "kept_existing"
+        return "kept_existing", None
 
     # Conflict: linked to different Person
     # Genealogical principle: keep the stronger evidence link
-    # Since both are clustering-based (score=None), we use person_id ordering as tiebreaker
-    # (deterministic, not arbitrary)
+    conflict_record = LinkConflict(
+        recorded_person_id=recorded_person_id,
+        old_person_id=existing_person_id,
+        new_person_id_attempted=person_id,
+        resolution="overwritten" if force_overwrite else "kept_existing",
+    )
+
     if force_overwrite:
         # Delete old link and create new one
         with conn.cursor() as cur:
@@ -354,10 +372,10 @@ def _link_recorded_person_to_person(
             score_version=None,
             verified=False,
         )
-        return "conflict_resolved"
+        return "conflict_resolved", conflict_record
     else:
         # Keep existing link (conservative approach)
-        return "conflict_resolved"
+        return "conflict_resolved", conflict_record
 
 
 # ---------------------------------------------------------------------------
@@ -676,18 +694,22 @@ def run_relationship_resolution(
 
                 # Link both RecordedPersons to Person
                 # With conflict resolution: if already linked elsewhere, keep existing (conservative)
-                status1 = _link_recorded_person_to_person(conn, person_id, rp1["recorded_person_id"])
-                status2 = _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
+                status1, conflict1 = _link_recorded_person_to_person(conn, person_id, rp1["recorded_person_id"])
+                status2, conflict2 = _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
 
                 if status1 == "linked":
                     result.linkages_created += 1
                 elif status1 == "conflict_resolved":
                     result.link_conflicts_resolved += 1
+                    if conflict1:
+                        result.link_conflicts.append(conflict1)
 
                 if status2 == "linked":
                     result.linkages_created += 1
                 elif status2 == "conflict_resolved":
                     result.link_conflicts_resolved += 1
+                    if conflict2:
+                        result.link_conflicts.append(conflict2)
 
                 # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
                 # The in-memory dicts are from pre-assignment fetches; setting
@@ -712,6 +734,31 @@ def run_relationship_resolution(
     # Step 3: Detect merge candidates
     result.merge_candidates = _detect_spouse_triangulation_conflicts(conn)
 
+    # Step 4: Clean up orphaned Persons (created but lost all RecordedPersons to conflicts)
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT p.person_id
+            FROM person p
+            LEFT JOIN person_recorded_person prp ON prp.person_id = p.person_id
+            WHERE prp.person_id IS NULL
+            """
+        )
+        orphaned_person_ids = [row["person_id"] for row in cur.fetchall()]
+
+    if orphaned_person_ids:
+        result.persons_orphaned = len(orphaned_person_ids)
+        placeholders = ",".join(["%s"] * len(orphaned_person_ids))
+        with conn.cursor() as cur:
+            # Delete orphaned Persons (also cascades to relationships)
+            cur.execute(
+                f"""
+                DELETE FROM person
+                WHERE person_id IN ({placeholders})
+                """,
+                orphaned_person_ids,
+            )
+
     return result
 
 
@@ -729,7 +776,18 @@ def print_relationship_resolution_report(result: RelationshipResolutionResult) -
     print(f"    Persons linked (exist):  {result.persons_linked:>6}")
     print(f"    Linkages created:        {result.linkages_created:>6}")
     print(f"    Link conflicts resolved: {result.link_conflicts_resolved:>6}  (opinion revision)")
+    print(f"    Persons orphaned:        {result.persons_orphaned:>6}  (cleaned up)")
     print(f"    Relationships created:   {result.relationships_created:>6}")
+
+    if result.link_conflicts:
+        print(f"\n    LINK CONFLICTS (Opinion Revisions): {len(result.link_conflicts)}")
+        for conflict in result.link_conflicts[:3]:  # Show first 3
+            print(f"      RecordedPerson {conflict.recorded_person_id}:")
+            print(f"        Old link: Person {conflict.old_person_id}")
+            print(f"        Attempted: Person {conflict.new_person_id_attempted}")
+            print(f"        Resolution: {conflict.resolution}")
+        if len(result.link_conflicts) > 3:
+            print(f"      ... and {len(result.link_conflicts) - 3} more")
 
     if result.merge_candidates:
         print(f"\n    MERGE CANDIDATES DETECTED: {len(result.merge_candidates)}")
