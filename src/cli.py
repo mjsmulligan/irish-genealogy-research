@@ -453,12 +453,13 @@ def _cmd_summary(args: argparse.Namespace) -> None:
 
 def _cmd_conclude(args: argparse.Namespace) -> None:
     """
-    Run the conclusion pipeline (3 steps) against all evidence.
+    Run the conclusion pipeline (4 steps) against all evidence.
 
     Steps:
-      [1/3] Person resolution      — cluster RecordedPersons into Person conclusions
-      [2/3] Relationship resolution — create Relationships from household structure
-      [3/3] Event resolution        — create census, birth, and marriage Events
+      [1/4] Person resolution      — cluster RecordedPersons into Person conclusions
+      [2/4] Relationship resolution — create Relationships from household structure
+      [3/4] Event resolution        — create census, birth, and marriage Events
+      [4/4] Validation cleanup      — remove linkages failing validation checks
     """
     from src.conclusion.person_resolution import (
         run_person_resolution,
@@ -472,17 +473,21 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         run_event_resolution,
         print_event_resolution_report,
     )
+    from src.conclusion.validation_cleanup import (
+        run_validation_cleanup,
+        print_validation_cleanup_report,
+    )
 
     conn = open_db()
     check_version(conn)
 
     print("\nRunning conclusion pipeline...")
 
-    print("\n[1/3] Person resolution...")
+    print("\n[1/4] Person resolution...")
     person_result = run_person_resolution(conn)
     print_person_resolution_report(person_result)
 
-    print("\n[2/3] Relationship resolution...")
+    print("\n[2/4] Relationship resolution...")
     rel_result = run_relationship_resolution(conn)
     print_relationship_resolution_report(rel_result)
 
@@ -490,11 +495,15 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         print(f"\n  NOTE: {len(rel_result.merge_candidates)} merge candidate(s) detected.")
         print("  Review and resolve manually before re-running.")
 
-    print("\n[3/3] Event resolution...")
+    print("\n[3/4] Event resolution...")
     event_result = run_event_resolution(conn)
     print_event_resolution_report(event_result)
 
-    print("\nConclusion pipeline complete. Running summary...\n")
+    print("\n[4/4] Validation cleanup...")
+    cleanup_result = run_validation_cleanup(conn)
+    print_validation_cleanup_report(cleanup_result)
+
+    print("Conclusion pipeline complete. Running summary...\n")
     print_summary(conn)
 
     conn.close()
