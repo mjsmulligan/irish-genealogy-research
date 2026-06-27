@@ -31,8 +31,10 @@ Entry points:
 from __future__ import annotations
 
 import itertools
+import random
 from dataclasses import dataclass, field
 
+import numpy as np
 import pandas as pd
 import psycopg2.extensions
 import splink.comparison_library as cl
@@ -247,6 +249,10 @@ def run_record_similarity(
 
     Returns a RecordSimilarityResult with counts per source-pair.
     """
+    # Set seed for reproducible Splink EM training
+    random.seed(42)
+    np.random.seed(42)
+
     result = RecordSimilarityResult()
 
     # Build household feature DataFrames from evidence layer.
@@ -550,6 +556,10 @@ def run_person_similarity(
 
     Returns a PersonSimilarityResult with counts per source-pair.
     """
+    # Set seed for reproducible Splink EM training
+    random.seed(42)
+    np.random.seed(42)
+
     from src.constants import (
         BATCH_SIZE_PERSON_SIMILARITY,
         SCORE_VERSION_PERSON_SIMILARITY_V1_2,
