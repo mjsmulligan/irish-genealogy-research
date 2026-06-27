@@ -492,47 +492,29 @@ def _build_person_settings() -> SettingsCreator:
                 comparison_description="Household match scores (per-source): max >= 0.80 or >= 0.50",
             ),
 
-            # Role consistency (v1.2): exact matches, same class, and plausible transitions
+            # Role consistency (v1.2): exact matches and plausible transitions
             # Enables Splink to score role consistency: exact matches (head→head) are strongest;
-            # same role class (head↔spouse, son↔daughter) and plausible transitions are medium;
-            # implausible changes and NULLs are weak/neutral.
+            # plausible transitions (son→head at age 30+) are medium; implausible changes are weak.
             cl.CustomComparison(
                 comparison_levels=[
-                    # 1. EXACT MATCH (strongest signal) - check BEFORE NULLs
+                    cll.NullLevel("role"),  # Handle NULL roles (missing in source)
                     cll.CustomLevel(
                         "role_l = role_r AND role_l IS NOT NULL",
                         label_for_charts="exact_role_match",
                     ),
-                    # 2. SAME ROLE CLASS (medium-strong) - for EM training signal
-                    cll.CustomLevel(
-                        "("
-                        "  (role_l IN ('head', 'spouse') AND role_r IN ('head', 'spouse')) OR "
-                        "  (role_l IN ('son', 'daughter') AND role_r IN ('son', 'daughter')) OR "
-                        "  (role_l IN ('parent', 'grandparent') AND role_r IN ('parent', 'grandparent'))"
-                        ") AND role_l != role_r",
-                        label_for_charts="same_role_class",
-                    ),
-                    # 3. PLAUSIBLE TRANSITIONS (medium) - expanded set
                     cll.CustomLevel(
                         "("
                         "  (role_l = 'son' AND role_r = 'head') OR "
                         "  (role_l = 'head' AND role_r = 'son') OR "
                         "  (role_l = 'daughter' AND role_r = 'head') OR "
-                        "  (role_l = 'head' AND role_r = 'daughter') OR "
-                        "  (role_l = 'head' AND role_r = 'spouse') OR "
-                        "  (role_l = 'spouse' AND role_r = 'head') OR "
-                        "  (role_l = 'sibling' AND role_r = 'head') OR "
-                        "  (role_l = 'head' AND role_r = 'sibling')"
+                        "  (role_l = 'head' AND role_r = 'daughter')"
                         ")",
                         label_for_charts="plausible_role_transition",
                     ),
-                    # 4. HANDLE MISSING ROLES (neutral) - check AFTER positive signals
-                    cll.NullLevel("role"),
-                    # 5. ELSE (weak/no signal)
                     cll.ElseLevel(),
                 ],
                 output_column_name="role_consistency",
-                comparison_description="Role consistency: exact > same_class > transition > NULL > else",
+                comparison_description="Role consistency: exact match or plausible transition (son→head, etc.)",
             ),
 
         ],
