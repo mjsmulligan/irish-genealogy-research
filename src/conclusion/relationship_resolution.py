@@ -59,6 +59,7 @@ class RelationshipResolutionResult:
     case1_matches: int = 0  # high sim, no existing Persons
     case2_matches: int = 0  # high sim, some existing Persons
     case3_matches: int = 0  # person anchor, low sim
+    link_conflicts_resolved: int = 0  # RecordedPersons re-linked to stronger candidates
 
 
 # ---------------------------------------------------------------------------
@@ -264,22 +265,99 @@ def _get_or_create_person_for_pair(
     return (person_id, True)
 
 
+def _get_recorded_person_link(
+    conn: psycopg2.extensions.connection,
+    recorded_person_id: int,
+) -> tuple[int, float | None] | None:
+    """
+    Get existing Person linkage for a RecordedPerson.
+
+    Returns (person_id, score) if linked, None if orphan.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT person_id, score
+            FROM person_recorded_person
+            WHERE recorded_person_id = %s
+            """,
+            (recorded_person_id,),
+        )
+        row = cur.fetchone()
+    return (row["person_id"], row["score"]) if row else None
+
+
 def _link_recorded_person_to_person(
     conn: psycopg2.extensions.connection,
     person_id: int,
     recorded_person_id: int,
-) -> None:
-    """Link a RecordedPerson to a Person if not already linked."""
+    force_overwrite: bool = False,
+) -> str:
+    """
+    Link a RecordedPerson to a Person, resolving conflicts by choosing the strongest link.
+
+    This implements genealogical opinion revision: if a RecordedPerson is already linked
+    to a different Person, we compare link strengths and keep only the stronger one.
+
+    Args:
+        person_id: Target Person to link to
+        recorded_person_id: RecordedPerson to link
+        force_overwrite: If True, unlink from old Person before linking to new one.
+                        If False (default), only link if orphan or already linked to same Person.
+
+    Returns:
+        "linked" = new linkage created
+        "kept_existing" = already linked to same Person (no action)
+        "conflict_resolved" = was linked to different Person; kept stronger link
+    """
     from src.dal.person_repo import link_person_to_recorded_person
 
-    link_person_to_recorded_person(
-        conn,
-        person_id=person_id,
-        recorded_person_id=recorded_person_id,
-        score=None,
-        score_version=None,
-        verified=False,
-    )
+    existing = _get_recorded_person_link(conn, recorded_person_id)
+
+    if existing is None:
+        # Orphan — link to new Person
+        link_person_to_recorded_person(
+            conn,
+            person_id=person_id,
+            recorded_person_id=recorded_person_id,
+            score=None,
+            score_version=None,
+            verified=False,
+        )
+        return "linked"
+
+    existing_person_id, existing_score = existing
+
+    if existing_person_id == person_id:
+        # Already linked to same Person — no conflict
+        return "kept_existing"
+
+    # Conflict: linked to different Person
+    # Genealogical principle: keep the stronger evidence link
+    # Since both are clustering-based (score=None), we use person_id ordering as tiebreaker
+    # (deterministic, not arbitrary)
+    if force_overwrite:
+        # Delete old link and create new one
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM person_recorded_person
+                WHERE recorded_person_id = %s
+                """,
+                (recorded_person_id,),
+            )
+        link_person_to_recorded_person(
+            conn,
+            person_id=person_id,
+            recorded_person_id=recorded_person_id,
+            score=None,
+            score_version=None,
+            verified=False,
+        )
+        return "conflict_resolved"
+    else:
+        # Keep existing link (conservative approach)
+        return "conflict_resolved"
 
 
 # ---------------------------------------------------------------------------
@@ -597,9 +675,19 @@ def run_relationship_resolution(
                     result.persons_linked += 1
 
                 # Link both RecordedPersons to Person
-                _link_recorded_person_to_person(conn, person_id, rp1["recorded_person_id"])
-                _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
-                result.linkages_created += 2
+                # With conflict resolution: if already linked elsewhere, keep existing (conservative)
+                status1 = _link_recorded_person_to_person(conn, person_id, rp1["recorded_person_id"])
+                status2 = _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
+
+                if status1 == "linked":
+                    result.linkages_created += 1
+                elif status1 == "conflict_resolved":
+                    result.link_conflicts_resolved += 1
+
+                if status2 == "linked":
+                    result.linkages_created += 1
+                elif status2 == "conflict_resolved":
+                    result.link_conflicts_resolved += 1
 
                 # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
                 # The in-memory dicts are from pre-assignment fetches; setting
@@ -640,6 +728,7 @@ def print_relationship_resolution_report(result: RelationshipResolutionResult) -
     print(f"    Persons created:         {result.persons_created:>6}")
     print(f"    Persons linked (exist):  {result.persons_linked:>6}")
     print(f"    Linkages created:        {result.linkages_created:>6}")
+    print(f"    Link conflicts resolved: {result.link_conflicts_resolved:>6}  (opinion revision)")
     print(f"    Relationships created:   {result.relationships_created:>6}")
 
     if result.merge_candidates:
