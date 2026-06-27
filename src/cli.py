@@ -24,6 +24,8 @@ Commands:
     export-validation   Export validation dataset for manual linkage review.
                         Creates a CSV with all persons across all censuses,
                         marked with linkage status for researcher validation.
+    validate-linkages   Validate all linkages for age progression, name variants,
+                        and household coherence errors. Flags problematic linkages.
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -40,6 +42,7 @@ import psycopg2.extensions
 from src.db.db import open_db, init_db, check_version
 from src.constants import CENSUS_SOURCE_IDS
 from src.export_validation_dataset import export_validation_dataset
+from src.validation import validate_all_linkages, remove_flagged_linkages
 
 
 # ---------------------------------------------------------------------------
@@ -509,6 +512,55 @@ def _cmd_export_validation(args: argparse.Namespace) -> None:
     export_validation_dataset(args.output)
 
 
+def _cmd_validate_linkages(args: argparse.Namespace) -> None:
+    conn = open_db()
+    check_version(conn)
+    try:
+        report = validate_all_linkages(conn)
+
+        print()
+        print("=" * 80)
+        print("  LINKAGE VALIDATION REPORT")
+        print("=" * 80)
+        print(f"\n  Total linkages checked: {report.total_linkages_checked:,}")
+        print(f"  Total violations found: {report.total_violations} ({report.violation_rate:.1f}%)")
+        print(f"\n  Violations by type:")
+        print(f"    Age progression errors: {report.age_violations}")
+        print(f"    Name mismatch errors:   {report.name_mismatches}")
+        print(f"    Household coherence:    {report.household_errors}")
+
+        if report.flagged_pairs:
+            print(f"\n  Flagged pairs (details saved to validation_flags.csv if requested):")
+            for i, pair in enumerate(report.flagged_pairs[:10], 1):
+                print(f"    {i}. Person {pair['person_id']}: {pair['violations']}")
+            if len(report.flagged_pairs) > 10:
+                print(f"    ... and {len(report.flagged_pairs) - 10} more")
+
+        # Optionally save to CSV
+        if args.save_csv:
+            import csv
+            with open(args.save_csv, 'w', newline='', encoding='utf-8') as f:
+                if report.flagged_pairs:
+                    writer = csv.DictWriter(f, fieldnames=report.flagged_pairs[0].keys())
+                    writer.writeheader()
+                    writer.writerows(report.flagged_pairs)
+            print(f"\n  Flagged pairs saved to: {args.save_csv}")
+
+        # Optionally remove flagged linkages
+        if args.remove:
+            if args.dry_run:
+                count, msg = remove_flagged_linkages(conn, report, dry_run=True)
+                print(f"\n  DRY RUN: {msg}")
+            else:
+                count, msg = remove_flagged_linkages(conn, report, dry_run=False)
+                print(f"\n  {msg}")
+                print(f"  Remaining linkages: {report.total_linkages_checked - count}")
+
+        print("\n" + "=" * 80)
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Argparse + dispatch
 # ---------------------------------------------------------------------------
@@ -579,6 +631,25 @@ def main() -> None:
         help="Output CSV file path (default: validation_dataset.csv)"
     )
 
+    p_validate = sub.add_parser(
+        "validate-linkages",
+        help="Validate all linkages for age/name/household errors",
+    )
+    p_validate.add_argument(
+        "--save-csv",
+        help="Save flagged pairs to CSV file for review"
+    )
+    p_validate.add_argument(
+        "--remove",
+        action="store_true",
+        help="Remove flagged linkages from database"
+    )
+    p_validate.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be removed without actually deleting"
+    )
+
     dispatch = {
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
@@ -591,6 +662,7 @@ def main() -> None:
         "conclude":          _cmd_conclude,
         "review":            _cmd_review,
         "export-validation": _cmd_export_validation,
+        "validate-linkages": _cmd_validate_linkages,
     }
 
     args = parser.parse_args()
