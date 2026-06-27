@@ -249,6 +249,59 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
     run_event_resolution(conn)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
+    # INSTRUMENTATION: Capture Phase 3 metrics
+    print("\n" + "="*80)
+    print("PHASE 3 LINKAGE METRICS (v1.2 with Role Consistency)")
+    print("="*80)
+    
+    with conn.cursor() as cur:
+        # Overall linkage
+        cur.execute("""
+            SELECT 
+                COUNT(DISTINCT p.person_id) as total_persons,
+                COUNT(DISTINCT prp.person_id) as linked_persons
+            FROM person p
+            LEFT JOIN person_recorded_person prp ON prp.person_id = p.person_id
+        """)
+        total_p, linked_p = cur.fetchone().values()
+        linkage_pct = 100.0 * linked_p / total_p if total_p > 0 else 0
+        
+        print(f"Total persons: {total_p}")
+        print(f"Linked persons: {linked_p} ({linkage_pct:.1f}%)")
+        print(f"Unlinked: {total_p - linked_p} ({100-linkage_pct:.1f}%)")
+        
+        # Score distribution
+        cur.execute("""
+            SELECT 
+                COUNT(*) as total_pairs,
+                AVG(score)::numeric(5,3) as avg_score,
+                COUNT(CASE WHEN score >= 0.65 THEN 1 END) as tier_65,
+                COUNT(CASE WHEN score >= 0.50 AND score < 0.65 THEN 1 END) as tier_50_65,
+                COUNT(CASE WHEN score >= 0.45 AND score < 0.50 THEN 1 END) as tier_45_50,
+                COUNT(CASE WHEN score < 0.45 THEN 1 END) as tier_below_45
+            FROM recorded_relationship
+            WHERE type = 'similarity'
+        """)
+        row = cur.fetchone()
+        if row and row['total_pairs']:
+            print(f"\nSimilarity pairs: {row['total_pairs']} (avg score: {row['avg_score']})")
+            print(f"  ≥0.65: {row['tier_65']} ({100*row['tier_65']/row['total_pairs']:.1f}%)")
+            print(f"  0.50-0.65: {row['tier_50_65']} ({100*row['tier_50_65']/row['total_pairs']:.1f}%)")
+            print(f"  0.45-0.50: {row['tier_45_50']} ({100*row['tier_45_50']/row['total_pairs']:.1f}%)")
+            print(f"  <0.45: {row['tier_below_45']} ({100*row['tier_below_45']/row['total_pairs']:.1f}%)")
+        
+        # V1.1 comparison
+        v1_1_linked = 824
+        v1_1_linkage = 26.0
+        gain = linkage_pct - v1_1_linkage
+        
+        print(f"\nComparison to v1.1 baseline:")
+        print(f"  v1.1: {v1_1_linkage}% ({v1_1_linked} persons)")
+        print(f"  v1.2: {linkage_pct:.1f}% ({linked_p} persons)")
+        print(f"  Gain: {gain:+.1f}pp ({linked_p - v1_1_linked:+d} persons)")
+    
+    print("="*80 + "\n")
+
     print("Setup complete.\n")
 
 
