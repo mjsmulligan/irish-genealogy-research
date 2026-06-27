@@ -46,7 +46,8 @@ def _norm(name: str | None) -> str:
 def _soundex(s: str | None) -> str:
     """
     Compute Soundex phonetic code for Irish surnames.
-    Handles variants like O'Brien/Brien/O Brien all → B650.
+    Handles Irish naming conventions: O'Brien/Brien/O Brien all → B650 (same code).
+    Removes non-letter chars and Irish prefixes (O, Mac, etc.) before first consonant.
     """
     if not s:
         return ""
@@ -55,8 +56,29 @@ def _soundex(s: str | None) -> str:
     if not s:
         return ""
 
-    # Keep first letter
-    first = s[0].upper()
+    # Remove non-letter characters
+    letters_only = ''.join(c for c in s if c.isalpha()).lower()
+    if not letters_only:
+        return ""
+
+    # Handle Irish prefixes: skip 'o' and 'mac' if they're followed by consonants
+    # O'Brien → remove O, keep Brien
+    # Mac...  → remove Mac, keep the consonant
+    idx = 0
+    if letters_only.startswith('o') and len(letters_only) > 1:
+        # Check if 'o' is a prefix (followed by a consonant) vs. a vowel in Ó...
+        next_char = letters_only[1]
+        if next_char not in 'aeiou':  # 'o' is a prefix if followed by consonant
+            idx = 1
+    elif letters_only.startswith('mac'):
+        idx = 3
+
+    core_name = letters_only[idx:]
+    if not core_name:
+        core_name = letters_only  # fallback if all chars removed
+
+    # Keep first letter of the core name
+    first = core_name[0].upper()
 
     # Soundex mapping: consonants → digits, vowels/H/W/Y → 0
     codes = {
@@ -70,11 +92,8 @@ def _soundex(s: str | None) -> str:
         'r': '6',
     }
 
-    # Convert to digit sequence, skipping non-letter chars (e.g., apostrophes)
-    digits = ''.join(
-        codes.get(c, '0') for c in s[1:].lower()
-        if c.isalpha()
-    )
+    # Convert remaining letters to digit sequence
+    digits = ''.join(codes.get(c, '0') for c in core_name[1:])
 
     # Remove consecutive duplicates and zeros
     result = [first]
