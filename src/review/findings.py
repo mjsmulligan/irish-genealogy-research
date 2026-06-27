@@ -946,6 +946,141 @@ def find_link_conflicts_resolved(
 # Public aggregator
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# unlinked_in_populated_household (discovery for false negatives)
+# ---------------------------------------------------------------------------
+
+def find_unlinked_in_populated_households(
+    conn: psycopg2.extensions.connection,
+) -> list[ReportItem]:
+    """
+    Find unlinked RecordedPersons in households that contain linked persons.
+
+    These are high-confidence false negative opportunities: individuals who appear in
+    a household alongside linked persons (e.g., a child in the same household as a
+    linked parent) but were not themselves linked. They should probably be linked
+    to the household's Person cluster.
+
+    This is a discovery tool: shows researchers where the pipeline may have missed
+    linkages and helps calibrate thresholds or validation rules.
+    """
+    items = []
+
+    with conn.cursor() as cur:
+        # Find households with both linked AND unlinked persons
+        cur.execute("""
+            SELECT
+                r.record_id,
+                r.date AS record_date,
+                r.place_as_recorded AS place_name,
+                COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) as linked_count,
+                COUNT(*) FILTER (WHERE prp.person_id IS NULL) as unlinked_count
+            FROM record r
+            JOIN recorded_person rp ON rp.record_id = r.record_id
+            LEFT JOIN person_recorded_person prp ON prp.recorded_person_id = rp.recorded_person_id
+            GROUP BY r.record_id, r.date, r.place_as_recorded
+            HAVING COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) >= 1
+              AND COUNT(*) FILTER (WHERE prp.person_id IS NULL) >= 1
+            ORDER BY r.record_id
+        """)
+        households_with_mixed = cur.fetchall()
+
+    if not households_with_mixed:
+        return []
+
+    from src.validation import validate_name_variant
+
+    for household in households_with_mixed:
+        record_id = household["record_id"]
+
+        # Get linked persons in this household
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    prp.person_id,
+                    p.label,
+                    rp.name_as_recorded,
+                    rp.age,
+                    rp.role
+                FROM person_recorded_person prp
+                JOIN person p ON p.person_id = prp.person_id
+                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+                JOIN record r ON r.record_id = rp.record_id
+                WHERE r.record_id = %s
+                ORDER BY rp.role DESC, rp.name_as_recorded
+            """, (record_id,))
+            linked_persons = cur.fetchall()
+
+        # Get unlinked persons in this household
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    rp.recorded_person_id,
+                    rp.name_as_recorded,
+                    rp.age,
+                    rp.role
+                FROM recorded_person rp
+                JOIN record r ON r.record_id = rp.record_id
+                WHERE r.record_id = %s
+                  AND NOT EXISTS (
+                      SELECT 1 FROM person_recorded_person
+                      WHERE recorded_person_id = rp.recorded_person_id
+                  )
+                ORDER BY rp.role DESC, rp.name_as_recorded
+            """, (record_id,))
+            unlinked_persons = cur.fetchall()
+
+        if not unlinked_persons:
+            continue
+
+        # Format detail
+        detail_lines = [
+            f"Household {record_id} ({household['place_name']}, {household['record_date']})",
+            "",
+            f"Contains {household['linked_count']} linked person(s) and {household['unlinked_count']} unlinked:",
+            "",
+            "✓ Linked persons:",
+        ]
+
+        for lp in linked_persons:
+            detail_lines.append(
+                f"  • Person {lp['person_id']} ({lp['label']}): "
+                f"{lp['name_as_recorded']} (age {lp['age'] or '?'}, {lp['role']})"
+            )
+
+        detail_lines.append("")
+        detail_lines.append("◇ Unlinked persons (likely false negatives):")
+        for up in unlinked_persons:
+            detail_lines.append(
+                f"  • RecordedPerson {up['recorded_person_id']}: "
+                f"{up['name_as_recorded']} (age {up['age'] or '?'}, {up['role']})"
+            )
+
+        detail_lines.append("")
+        detail_lines.append(
+            "These unlinked individuals appear in a household with linked persons. "
+            "They may represent missing linkages or indicate validation rules that are too strict."
+        )
+
+        items.append(ReportItem(
+            finding_type="unlinked_in_populated_household",
+            priority=1,  # High priority: clear false negatives
+            person_id=None,
+            relationship_id=None,
+            event_id=None,
+            record_ids=[record_id],
+            title=f"Household {record_id}: {household['unlinked_count']} unlinked in populated household",
+            detail="\n".join(detail_lines),
+            recommended_action=(
+                "Review unlinked persons in household context. These are likely to represent "
+                "valid linkages (especially children/servants in parent/head's household). "
+                "Consider manual linkage or threshold adjustment."
+            ),
+        ))
+
+    return items
+
+
 def run_all_findings(
     conn: psycopg2.extensions.connection,
 ) -> list[ReportItem]:
@@ -964,4 +1099,5 @@ def run_all_findings(
     items.extend(find_unlinked_recorded_persons(conn))
     items.extend(find_single_census_appearance(conn))
     items.extend(find_link_conflicts_resolved(conn))
+    items.extend(find_unlinked_in_populated_households(conn))
     return items

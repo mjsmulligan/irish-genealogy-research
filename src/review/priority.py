@@ -51,15 +51,16 @@ _TIER_RESEARCH_PROMPT: int = 300
 
 # Per-finding-type base scores within tiers
 _BASE_SCORE: dict[str, int] = {
-    "merge_error_candidate":          _TIER_SCHEMA_STATE + 0,   # highest — corrupts everything
-    "birth_singularity_violation":    _TIER_SCHEMA_STATE + 10,
-    "death_singularity_violation":    _TIER_SCHEMA_STATE + 10,
-    "life_event_sequence_violation":  _TIER_CONSTRAINT + 0,
-    "parent_age_implausible":         _TIER_CONSTRAINT + 10,
-    "marriage_age_implausible":       _TIER_CONSTRAINT + 20,
-    "lifespan_boundary_violated":     _TIER_CONSTRAINT + 30,
-    "unlinked_recorded_person":       _TIER_RESEARCH_PROMPT + 0,
-    "single_census_appearance":       _TIER_RESEARCH_PROMPT + 10,
+    "merge_error_candidate":              _TIER_SCHEMA_STATE + 0,   # highest — corrupts everything
+    "birth_singularity_violation":        _TIER_SCHEMA_STATE + 10,
+    "death_singularity_violation":        _TIER_SCHEMA_STATE + 10,
+    "life_event_sequence_violation":      _TIER_CONSTRAINT + 0,
+    "parent_age_implausible":             _TIER_CONSTRAINT + 10,
+    "marriage_age_implausible":           _TIER_CONSTRAINT + 20,
+    "lifespan_boundary_violated":         _TIER_CONSTRAINT + 30,
+    "unlinked_in_populated_household":    _TIER_RESEARCH_PROMPT - 10,  # high priority: likely valid linkages
+    "unlinked_recorded_person":           _TIER_RESEARCH_PROMPT + 0,
+    "single_census_appearance":           _TIER_RESEARCH_PROMPT + 10,
 }
 
 _DEFAULT_BASE_SCORE: int = _TIER_RESEARCH_PROMPT + 50  # fallback for unknown types
