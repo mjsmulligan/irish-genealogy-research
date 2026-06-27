@@ -32,6 +32,7 @@ class ValidationCleanupResult:
     age_violations_removed: int = 0
     name_violations_removed: int = 0
     gender_flips_removed: int = 0
+    household_same_census_violations_removed: int = 0
     household_violations_removed: int = 0
 
 
@@ -61,6 +62,7 @@ def run_validation_cleanup(
     result.age_violations_removed = report.age_violations
     result.name_violations_removed = report.name_mismatches
     result.gender_flips_removed = report.gender_flips
+    result.household_same_census_violations_removed = report.household_same_census_errors
     result.household_violations_removed = report.household_errors
 
     if not report.flagged_pairs:
@@ -87,6 +89,7 @@ def print_validation_cleanup_report(result: ValidationCleanupResult) -> None:
     print(f"      Age progression:       {result.age_violations_removed:>6}")
     print(f"      Name mismatches:       {result.name_violations_removed:>6}")
     print(f"      Gender flips:          {result.gender_flips_removed:>6}")
-    print(f"      Household errors:      {result.household_violations_removed:>6}")
+    print(f"      Household (same):      {result.household_violations_removed:>6}")
+    print(f"      Household (same census):{result.household_same_census_violations_removed:>6}")
     print(f"    Linkages removed:        {result.linkages_removed:>6}")
     print()
