@@ -408,6 +408,13 @@ def _build_person_settings() -> SettingsCreator:
     v1.3 improvements:
       - Added Soundex blocking for Irish surname variants (O'Brien/Brien/O Brien)
       - Pre-computed in features (Python) for DuckDB compatibility
+
+    v1.4 improvements (validation integration):
+      - Added age_progression_validity comparison (detects impossible age progressions)
+      - Added name_first_name_variant comparison (enforces Irish name variant rules)
+      - Added household_same_person_check comparison (flags duplicate person_ids)
+      - EM training now learns that invalid age progressions and suspicious name changes
+        carry weak or negative signal, naturally downweighting them without manual filtering
     """
     return SettingsCreator(
         link_type="link_only",
@@ -464,6 +471,71 @@ def _build_person_settings() -> SettingsCreator:
                 ],
                 output_column_name="place_id",
                 comparison_description="Place ID exact match",
+            ),
+
+            # Name first-name variant validation (v1.4: validation integration)
+            # Enforces Irish name variant rules: exact and approved get higher scores,
+            # suspicious first-name changes get lower scores. EM training learns these
+            # are weak signals for matching.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("name_first_name_variant"),
+                    cll.CustomLevel(
+                        "(name_first_name_variant_l = 'exact' OR name_first_name_variant_r = 'exact')",
+                        label_for_charts="first names identical",
+                    ),
+                    cll.CustomLevel(
+                        "(name_first_name_variant_l = 'approved' AND name_first_name_variant_r = 'approved')",
+                        label_for_charts="first names approved variants",
+                    ),
+                    cll.CustomLevel(
+                        "(name_first_name_variant_l != 'suspicious' AND name_first_name_variant_r != 'suspicious')",
+                        label_for_charts="no suspicious first names",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="name_first_name_variant",
+                comparison_description="Irish name variant validation: exact, approved variants, or non-suspicious",
+            ),
+
+            # Age progression validity (v1.4: validation integration)
+            # Flags impossible age progressions (e.g., age 42→6). EM training learns
+            # these are false positives.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("age_progression_validity"),
+                    cll.CustomLevel(
+                        "(age_progression_validity_l >= 0.8 AND age_progression_validity_r >= 0.8)",
+                        label_for_charts="age progression valid (both sources)",
+                    ),
+                    cll.CustomLevel(
+                        "(age_progression_validity_l >= 0.5 OR age_progression_validity_r >= 0.5)",
+                        label_for_charts="age progression marginal (one source)",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="age_progression_validity",
+                comparison_description="Age progression validation: realistic age changes across censuses",
+            ),
+
+            # Household same-person check (v1.4: validation integration)
+            # Flags duplicate person_ids in same household/census. EM training learns
+            # this indicates data errors.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("household_same_person_check"),
+                    cll.CustomLevel(
+                        "(household_same_person_check_l = 0 AND household_same_person_check_r = 0)",
+                        label_for_charts="unique within households",
+                    ),
+                    cll.CustomLevel(
+                        "(household_same_person_check_l = 0 OR household_same_person_check_r = 0)",
+                        label_for_charts="not duplicate in both",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="household_same_person_check",
+                comparison_description="Household coherence: person doesn't appear twice in same household",
             ),
 
             # Household match score — hierarchical feature (v1.1, revised)
@@ -552,7 +624,7 @@ def run_person_similarity(
     """
     from src.constants import (
         BATCH_SIZE_PERSON_SIMILARITY,
-        SCORE_VERSION_PERSON_SIMILARITY_V1_2,
+        SCORE_VERSION_PERSON_SIMILARITY_V1_4,
     )
     from src.evidence.features.census_person import build_census_person_features
 
@@ -626,7 +698,7 @@ def run_person_similarity(
         if BATCH_SIZE_PERSON_SIMILARITY is None:
             # Single transaction for all pairs in this source-pair
             with conn:
-                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY_V1_2)
+                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY_V1_4)
             pair_count = len(pairs_to_write)
         else:
             # Batched commits within this source-pair
@@ -634,7 +706,7 @@ def run_person_similarity(
             for i in range(0, len(pairs_to_write), batch_size):
                 batch = pairs_to_write[i : i + batch_size]
                 with conn:
-                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY_V1_2)
+                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY_V1_4)
                 pair_count += len(batch)
 
         result.pairs_written += pair_count
