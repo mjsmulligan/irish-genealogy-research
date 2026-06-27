@@ -960,7 +960,7 @@ def find_unlinked_in_populated_households(
     1. **Weak scorers** (similarity 0.40–0.50): Almost linked to other censuses—show
        the candidate and why the pair scored below threshold. High-value for manual
        linkage or threshold tuning.
-    2. **True orphans** (no similarity pairs): Only appear in this census, no cross-census
+    2. **Isolated records** (no similarity pairs): Only appear in this census, no cross-census
        records. Likely emigrated, married out, or died young. Informational only.
 
     This is a discovery tool: helps researchers spot systematic patterns and understand
@@ -1046,9 +1046,9 @@ def find_unlinked_in_populated_households(
         if not unlinked_with_scores:
             continue
 
-        # Separate weak scorers from true orphans
+        # Separate weak scorers from isolated records
         weak_scorers = [u for u in unlinked_with_scores if u['best_weak_score'] is not None]
-        orphans = [u for u in unlinked_with_scores if u['best_weak_score'] is None]
+        isolated = [u for u in unlinked_with_scores if u['best_weak_score'] is None]
 
         # Format detail
         detail_lines = [
@@ -1082,14 +1082,14 @@ def find_unlinked_in_populated_households(
                 "for manual linkage or threshold adjustment."
             )
 
-        # Orphans section
-        if orphans:
+        # Isolated records section
+        if isolated:
             detail_lines.append("")
-            detail_lines.append("○ True orphans (no cross-census records found):")
-            for orphan in orphans:
+            detail_lines.append("○ Isolated records (no cross-census records found):")
+            for record in isolated:
                 detail_lines.append(
-                    f"  • RecordedPerson {orphan['recorded_person_id']}: {orphan['name_as_recorded']} "
-                    f"(age {orphan['age'] or '?'}, {orphan['role']})"
+                    f"  • RecordedPerson {record['recorded_person_id']}: {record['name_as_recorded']} "
+                    f"(age {record['age'] or '?'}, {record['role']})"
                 )
             detail_lines.append("")
             detail_lines.append(
@@ -1101,15 +1101,15 @@ def find_unlinked_in_populated_households(
         detail_lines.append("")
         detail_lines.append(
             "Research action: Weak scorers warrant immediate review for manual linkage. "
-            "Orphans are informational—decide whether to link to household parents based on "
+            "Isolated records are informational—decide whether to link to household parents based on "
             "genealogical judgment."
         )
 
         title_parts = []
         if weak_scorers:
             title_parts.append(f"{len(weak_scorers)} weak scorers")
-        if orphans:
-            title_parts.append(f"{len(orphans)} orphans")
+        if isolated:
+            title_parts.append(f"{len(isolated)} isolated")
 
         items.append(ReportItem(
             finding_type="unlinked_in_populated_household",
@@ -1122,7 +1122,7 @@ def find_unlinked_in_populated_households(
             detail="\n".join(detail_lines),
             recommended_action=(
                 "For weak scorers: Review candidates and consider manual linkage or threshold tuning. "
-                "For orphans: Link to household for genealogical context if appropriate, or note as "
+                "For isolated records: Link to household for genealogical context if appropriate, or note as "
                 "emigrated/deceased."
             ),
         ))
