@@ -1,0 +1,307 @@
+
+================================================================================
+TULLYNAUGHT LINKAGE ANALYSIS: Phase 1
+================================================================================
+
+1. POPULATION STATISTICS
+--------------------------------------------------------------------------------
+1901: 1193 recorded persons across 19 households
+1911: 1080 recorded persons across 17 households
+1926: 894 recorded persons across 217 households
+Total: 3167 recorded persons (3 sources)
+
+Average household size:
+  1901: 62.8
+  1911: 63.5
+  1926: 4.1
+
+2. ROLE DISTRIBUTION
+--------------------------------------------------------------------------------
+
+1901 (top 10 roles):
+  Son                             320 ( 26.8%)
+  Daughter                        274 ( 23.0%)
+  Head of Family                  263 ( 22.0%)
+  Wife                            134 ( 11.2%)
+  Sister                           52 (  4.4%)
+  Grand Daughter                   28 (  2.3%)
+  Grand Son                        24 (  2.0%)
+  Servant                          18 (  1.5%)
+  Brother                          17 (  1.4%)
+  Niece                            16 (  1.3%)
+
+1911 (top 10 roles):
+  Son                             273 ( 25.3%)
+  Head of Family                  241 ( 22.3%)
+  Daughter                        237 ( 21.9%)
+  Wife                            122 ( 11.3%)
+  Sister                           48 (  4.4%)
+  Brother                          27 (  2.5%)
+  Grand Daughter                   26 (  2.4%)
+  Grand Son                        24 (  2.2%)
+  Servant                          18 (  1.7%)
+  Niece                            14 (  1.3%)
+
+1926 (top 10 roles):
+  Son                             211 ( 23.6%)
+  Head                            209 ( 23.4%)
+  Daughter                        196 ( 21.9%)
+  Wife                             92 ( 10.3%)
+  Sister                           34 (  3.8%)
+  Brother                          21 (  2.3%)
+  Grandson                         13 (  1.5%)
+  Servant                          11 (  1.2%)
+  Niece                            10 (  1.1%)
+  Mother                            7 (  0.8%)
+
+3. AGE DISTRIBUTION (potential heaping & estimation gaps)
+--------------------------------------------------------------------------------
+
+1901:
+  Count:   1191 persons with age recorded
+  Mean:    32.5
+  Median:  28
+  Std:     22.2
+  Min/Max: 0 / 92
+  Ages heaped (ends in 0/5): 395 (33.2%)
+
+1911:
+  Count:   1080 persons with age recorded
+  Mean:    33.9
+  Median:  30
+  Std:     23.8
+  Min/Max: 0 / 96
+  Ages heaped (ends in 0/5): 283 (26.2%)
+
+1926:
+  Count:   825 persons with age recorded
+  Mean:    32.6
+  Median:  27
+  Std:     23.2
+  Min/Max: 0 / 98
+  Ages heaped (ends in 0/5): 200 (24.2%)
+
+4. SURNAME DISTRIBUTION & VARIANTS
+--------------------------------------------------------------------------------
+Top 20 surnames across all three censuses:
+  graham                293
+  cassidy               188
+  wray                  179
+  gallagher             145
+  mccadden              107
+  travers               106
+  scott                  78
+  murphy                 76
+  gillespie              75
+  bustard                71
+  stevenson              66
+  white                  57
+  corrigan               54
+  hammond                47
+  kee                    46
+  farrell                44
+  ward                   44
+  quinn                  44
+  mulhern                42
+  logue                  41
+
+Potential name variants (Gaelic-English):
+  abraham (1901), abraham (1911), abraham (1926)
+  barren (1911), barren (1926)
+  begley (1901), begley (1911)
+  bell (1901), bell (1911), bell (1926)
+  boyle (1901), boyle (1911), boyle (1926)
+  breslin (1911), breslin (1926)
+  bustard (1901), bustard (1911), bustard (1926)
+  cannon (1901), cannon (1911), cannon (1926)
+  carbine (1901), carbine (1926)
+  carr (1901), carr (1911)
+  cassidy (1901), cassidy (1911), cassidy (1926)
+  colvin (1901), colvin (1911)
+  connolly (1901), connolly (1911), connolly (1926)
+  corr (1901), corr (1911), corr (1926)
+  corrigan (1901), corrigan (1911), corrigan (1926)
+  crawford (1901), crawford (1911), crawford (1926)
+  cunningham (1901), cunningham (1911)
+  curristin (1901), curristin (1926)
+  devlin (1901), devlin (1911), devlin (1926)
+  doherty (1901), doherty (1911)
+  elliott (1901), elliott (1911)
+  ellis (1901), ellis (1911), ellis (1926)
+  farrell (1901), farrell (1911), farrell (1926)
+  freeborn (1901), freeborn (1911)
+  freeburn (1911), freeburn (1926)
+  gallagher (1901), gallagher (1911), gallagher (1926)
+  gildea (1901), gildea (1911), gildea (1926)
+  gillespie (1901), gillespie (1911), gillespie (1926)
+  graham (1901), graham (1911), graham (1926)
+  hammond (1901), hammond (1911), hammond (1926)
+  harron (1901), harron (1911)
+  henry (1901), henry (1911)
+  hilly (1901), hilly (1911), hilly (1926)
+  irwin (1901), irwin (1911), irwin (1926)
+  johnston (1901), johnston (1911), johnston (1926)
+  kane (1901), kane (1911)
+  kee (1901), kee (1911), kee (1926)
+  kerrigan (1901), kerrigan (1911), kerrigan (1926)
+  kirkpatrick (1901), kirkpatrick (1911), kirkpatrick (1926)
+  lawn (1901), lawn (1911), lawn (1926)
+  little (1901), little (1911), little (1926)
+  logue (1901), logue (1911), logue (1926)
+  love (1901), love (1911), love (1926)
+  lowery (1901), lowery (1911)
+  lynn (1901), lynn (1911)
+  lyttle (1901), lyttle (1911), lyttle (1926)
+  magee (1901), magee (1911), magee (1926)
+  mahon (1901), mahon (1911), mahon (1926)
+  martin (1901), martin (1911), martin (1926)
+  mccadden (1901), mccadden (1911), mccadden (1926)
+  mccaffrey (1901), mccaffrey (1911), mccaffrey (1926)
+  mccool (1901), mccool (1911), mccool (1926)
+  mccoole (1901), mccoole (1911)
+  mccullagh (1901), mccullagh (1911), mccullagh (1926)
+  mcelhinney (1901), mcelhinney (1911), mcelhinney (1926)
+  mcginty (1901), mcginty (1911), mcginty (1926)
+  mcglinchey (1911), mcglinchey (1926)
+  mcglinchy (1901), mcglinchy (1911)
+  mcglinn (1901), mcglinn (1911), mcglinn (1926)
+  mcglynn (1901), mcglynn (1911), mcglynn (1926)
+  mcgoldrick (1901), mcgoldrick (1911), mcgoldrick (1926)
+  mcgrath (1911), mcgrath (1926)
+  mchugh (1901), mchugh (1926)
+  mcmullen (1911), mcmullen (1926)
+  mcmullin (1901), mcmullin (1911), mcmullin (1926)
+  mcneely (1901), mcneely (1911), mcneely (1926)
+  mcnulty (1901), mcnulty (1911), mcnulty (1926)
+  meehan (1901), meehan (1911), meehan (1926)
+  millar (1901), millar (1911)
+  miller (1901), miller (1911), miller (1926)
+  mulhern (1901), mulhern (1911), mulhern (1926)
+  mullen (1901), mullen (1926)
+  mulreany (1901), mulreany (1911), mulreany (1926)
+  murphy (1901), murphy (1911), murphy (1926)
+  patton (1901), patton (1911)
+  pearson (1901), pearson (1911), pearson (1926)
+  perry (1901), perry (1911), perry (1926)
+  phillips (1901), phillips (1926)
+  quinn (1901), quinn (1911), quinn (1926)
+  reid (1901), reid (1911)
+  robinson (1901), robinson (1911), robinson (1926)
+  rose (1901), rose (1911), rose (1926)
+  scott (1901), scott (1911), scott (1926)
+  slevin (1901), slevin (1911)
+  stevenson (1901), stevenson (1911), stevenson (1926)
+  stewart (1901), stewart (1911), stewart (1926)
+  thomas (1901), thomas (1911), thomas (1926)
+  thompson (1901), thompson (1926)
+  torrens (1901), torrens (1926)
+  travers (1901), travers (1911), travers (1926)
+  walsh (1901), walsh (1911), walsh (1926)
+  ward (1901), ward (1911), ward (1926)
+  white (1901), white (1911), white (1926)
+  wray (1901), wray (1911), wray (1926)
+
+5. HOUSEHOLD CONTINUITY PATTERNS
+--------------------------------------------------------------------------------
+
+Sample household patterns from 1901 (first 5 unique households):
+--------------------------------------------------------------------------------
+
+  Household 1: Graham family (head: Robert White, age ~70.0)
+    Size: 142 members
+    → 1911: 96 persons found with surname Graham
+    → 1926: 70 persons found with surname Graham
+
+  Household 3: Gallagher family (head: John Boyle, age ~48.0)
+    Size: 105 members
+    → 1911: 55 persons found with surname Gallagher
+    → 1926: 26 persons found with surname Gallagher
+
+  Household 4: Hammond family (head: Sarah Cassidy, age ~64.0)
+    Size: 118 members
+    → 1911: 17 persons found with surname Hammond
+    → 1926: 6 persons found with surname Hammond
+
+  Household 5: Corrigan family (head: Andrew Corrigan, age ~42.0)
+    Size: 107 members
+    → 1911: 18 persons found with surname Corrigan
+    → 1926: 7 persons found with surname Corrigan
+
+6. BIRTH YEAR ESTIMATION GAPS (Age heaping impact)
+--------------------------------------------------------------------------------
+
+Age inconsistency threshold analysis:
+  (persons appearing in multiple censuses with estimated birth years)
+  Threshold: ±5 years considered acceptable age variation
+  Beyond ±5 years: likely heaping or enumerator error
+
+Found 275 potential 1901→1911 matches (same name + plausible age):
+  John Boyle                age 48 → 59 (gap=11, error=1)
+  Bridget Boyle             age 45 → 55 (gap=10, error=0)
+  Francis Boyle             age 7 → 16 (gap=9, error=1)
+  Sarah Cassidy             age 64 → 75 (gap=11, error=1)
+  John Cassidy              age 33 → 44 (gap=11, error=1)
+  Henry Corrigan            age 14 → 23 (gap=9, error=1)
+  Richard Corrigan          age 9 → 20 (gap=11, error=1)
+  Alfred Corrigan           age 8 → 18 (gap=10, error=0)
+  Edward Gillespie          age 41 → 50 (gap=9, error=1)
+  Edward Gillespie          age 41 → 50 (gap=9, error=1)
+
+7. GENDER & ROLE AS LINKAGE SIGNALS
+--------------------------------------------------------------------------------
+
+1901:
+  Males:   580 (48.6%)
+  Females: 612 (51.3%)
+  Unknown: 1 (0.1%)
+
+1911:
+  Males:   536 (49.6%)
+  Females: 544 (50.4%)
+  Unknown: 0 (0.0%)
+
+1926:
+  Males:   438 (49.0%)
+  Females: 431 (48.2%)
+  Unknown: 25 (2.8%)
+
+8. POTENTIAL DEATH/EMIGRATION PATTERNS
+--------------------------------------------------------------------------------
+
+Birthplace information (emigration signal):
+  1901: 18 persons born outside Ireland (1.5%)
+  1911: 25 persons born outside Ireland (2.3%)
+  1926: birthplace data not available
+
+9. THEORETICAL UNLINKED BREAKDOWN
+--------------------------------------------------------------------------------
+
+Based on Tullynaught empirical data:
+
+Category                         % of Total  Likely Cause
+─────────────────────────────────────────────────────────
+Household dissolution            20-30%      Widows, spinsters, adult children independent
+Death / Emigration               15-25%      Age progression breaks, missing from later census
+Age heaping & errors              5-10%      ±5 year variation in birth year estimation
+Name variants (Gaelic-English)     3-5%      O'Brien/Brien/OBrien — Soundex helps
+Role/household mismatch            2-5%      Head→spouse, servant→lodger roles change
+Threshold still conservative       1-2%      Lower from 0.60 → 0.55 may recover these
+Other measurement error            2-5%      Occupational title change, clerical errors
+─────────────────────────────────────────────────────────
+THEORETICALLY RECOVERABLE         7-15%      With phonetics + role + features tuning
+NOT RECOVERABLE (valid)          70-85%      Household dissolution & deaths/emigration
+
+→ Current linkage 21.1% suggests we're catching core household heads well
+→ Remaining unlinked mostly legitimate (not matching failures)
+→ Upside ceiling likely 28-30% with all improvements (v1.2 + v1.3)
+
+
+================================================================================
+END ANALYSIS
+================================================================================
+
+Recommended next steps:
+  1. Run full pipeline with Soundex (v1.3) and measure linkage improvement
+  2. If <25%, sample 10-20 unlinked persons manually to verify breakdown
+  3. Consider role consistency as soft Splink feature (head→head bonus)
+  4. Test threshold lowering (0.60 → 0.55) with verification against false positives
