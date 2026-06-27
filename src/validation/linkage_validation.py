@@ -418,13 +418,17 @@ def validate_name_variant(name1: str, name2: str) -> NameVariantResult:
 
 def validate_household_coherence(conn: psycopg2.extensions.connection) -> tuple[int, list[str]]:
     """
-    Check for impossible linkages: same person_id appearing twice in same household/census.
+    Check for impossible linkages:
+    1. Same person_id appearing twice in same household/census (within-household duplicates)
+    2. Same person_id appearing in different households in same census (across-household duplicates)
 
     Returns:
         (error_count, error_descriptions)
     """
+    errors = []
+
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        # Find duplicate person_ids within same household/census
+        # Check 1: Duplicate person_ids within same household/census
         cur.execute("""
             SELECT
                 prp1.person_id,
@@ -446,12 +450,46 @@ def validate_household_coherence(conn: psycopg2.extensions.connection) -> tuple[
             ORDER BY prp1.person_id, rp1.recorded_person_id
         """)
 
-        errors = []
         for row in cur.fetchall():
             errors.append(
                 f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
                 f"and {row['name2']} (rp {row['rp2_id']}) "
                 f"appear in same household {row['record_id']} ({row['date']})"
+            )
+
+        # Check 2: Duplicate person_ids across different households in SAME census
+        cur.execute("""
+            SELECT
+                prp1.person_id,
+                rp1.recorded_person_id AS rp1_id,
+                rp2.recorded_person_id AS rp2_id,
+                r1.record_id AS record1_id,
+                r2.record_id AS record2_id,
+                r1.date,
+                s.source_id,
+                rp1.name_as_recorded AS name1,
+                rp2.name_as_recorded AS name2
+            FROM person_recorded_person prp1
+            JOIN person_recorded_person prp2
+                ON prp1.person_id = prp2.person_id
+                AND prp1.recorded_person_id != prp2.recorded_person_id
+            JOIN recorded_person rp1 ON prp1.recorded_person_id = rp1.recorded_person_id
+            JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
+            JOIN record r1 ON rp1.record_id = r1.record_id
+            JOIN record r2 ON rp2.record_id = r2.record_id
+            JOIN source s ON r1.source_id = s.source_id
+            WHERE r1.source_id = r2.source_id  -- same census source
+              AND r1.record_id != r2.record_id  -- different households
+              AND EXTRACT(YEAR FROM r1.date) = EXTRACT(YEAR FROM r2.date)  -- same year
+            ORDER BY prp1.person_id, rp1.recorded_person_id
+        """)
+
+        for row in cur.fetchall():
+            errors.append(
+                f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
+                f"and {row['name2']} (rp {row['rp2_id']}) "
+                f"appear in different households ({row['record1_id']}, {row['record2_id']}) "
+                f"in same census {row['source_id']} ({row['date'].year})"
             )
 
     return len(errors), errors
@@ -466,6 +504,7 @@ class ValidationReport:
     age_violations: int = 0
     name_mismatches: int = 0
     gender_flips: int = 0
+    household_same_census_errors: int = 0
     household_errors: int = 0
     total_linkages_checked: int = 0
     total_violations: int = 0
