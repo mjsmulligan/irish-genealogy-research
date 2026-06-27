@@ -4,14 +4,20 @@ GRA — Linkage Validation Module
 Implements validation checks to improve linkage quality:
 
 1. Age Progression Validation
-   - Rejects linkages where age change is >3 years from expected
+   - Rejects linkages where age change is >2 years from expected
+   - Rejects age regressions (impossible negative progressions)
    - Prevents false positives like "age 42 → age 6"
 
 2. Name Variant Validation
    - Approves known Irish name variants (Alice/Annie, Margaret/Maggie)
    - Rejects suspicious first-name changes (James/Patrick, John/Joseph)
 
-3. Household Coherence Validation
+3. Gender-Flip Detection (v3.0)
+   - Identifies gender changes between records (Francis→Margaret)
+   - Auto-rejects: different gender strongly suggests different people
+   - Uses Irish name gender dictionary
+
+4. Household Coherence Validation
    - Prevents same person_id appearing twice in same household/census
 
 Applied after Splink scoring but before person_resolution clustering.
@@ -105,6 +111,84 @@ APPROVED_NAME_VARIANTS = {
     'chuck': {'charles', 'charlie'},
 }
 
+# ---------------------------------------------------------------------------
+# Irish Name Gender Dictionary (v3.0)
+# ---------------------------------------------------------------------------
+# Used to detect gender flips: Francis→Margaret suggests different people
+# Populated from common Irish census names, categorized by typical gender
+
+IRISH_MALE_NAMES = {
+    'william', 'liam', 'will', 'bill', 'willie', 'wm',
+    'francis', 'frank', 'fran', 'frankie',
+    'edward', 'ed', 'eddie', 'ted',
+    'robert', 'rob', 'robbie', 'bob', 'bobby',
+    'michael', 'mick', 'mike', 'mikey',
+    'james', 'jim', 'jimmy', 'jas', 'jem',
+    'john', 'jack', 'johnny', 'jon', 'sean', 'jean',
+    'thomas', 'tom', 'tommy', 'thom',
+    'patrick', 'pat', 'patty', 'paddy', 'pádraig',
+    'daniel', 'dan', 'danny',
+    'henry', 'harry', 'hank',
+    'charles', 'charlie', 'chuck', 'chas',
+    'richard', 'rick', 'dick', 'ricky',
+    'joseph', 'joe', 'joey',
+    'george', 'georgie',
+    'anthony', 'tony', 'ant',
+    'peter', 'pete',
+    'paul', 'paulo',
+    'stephen', 'steve', 'steven',
+    'andrew', 'andy', 'andrew',
+    'andrew', 'andy',
+    'brian', 'bryan',
+    'martin', 'marty',
+    'kevin', 'kev',
+    'david', 'dave', 'davy',
+    'owen', 'o',
+    'bertram', 'bert',
+    'humphrey', 'humphry',
+    'lawrence', 'larry', 'laurence',
+    'gerald', 'gerry',
+    'oliver', 'ollie',
+}
+
+IRISH_FEMALE_NAMES = {
+    'mary', 'marie', 'molly', 'moll', 'm',
+    'margaret', 'maggie', 'meg', 'maggy', 'margie',
+    'elizabeth', 'liz', 'lizzie', 'liza', 'eliza', 'betty', 'beth',
+    'catherine', 'kate', 'kathryn', 'cathy', 'catharine',
+    'kathleen', 'kathy', 'kay',
+    'josephine', 'josephina', 'jo', 'josie',
+    'alice', 'anna', 'anne', 'annie', 'ann',
+    'susan', 'sue', 'suzanne',
+    'patricia', 'patty', 'pat',
+    'barbara', 'barb', 'barbie',
+    'sarah', 'sara', 'sally',
+    'jessica', 'jess', 'jessie',
+    'janet', 'jane', 'jane',
+    'helen', 'helena', 'helena',
+    'sandra', 'sandy',
+    'ashley', 'ash',
+    'theresa', 'teresa', 'terry', 'theresa',
+    'frances', 'fran', 'francie',
+    'dorothy', 'dot', 'dotty',
+    'gloria', 'gloria',
+    'rose', 'rosie',
+    'joyce', 'joyce',
+    'diane', 'dianne',
+    'evelyn', 'eve',
+    'joan', 'joanne',
+    'christine', 'christie', 'chris', 'chrissie',
+    'carolyn', 'carol', 'carole',
+    'rachel', 'rachel',
+    'janet', 'jane', 'janey',
+    'maria', 'marie',
+    'nora', 'norah',
+    'bridget', 'brigid', 'bridie', 'bride',
+    'monica', 'moira',
+    'siobhan', 'siobhán',
+    'sheila', 'sheila',
+}
+
 
 # ---------------------------------------------------------------------------
 # Age Progression Validation
@@ -115,6 +199,79 @@ class AgeValidationResult:
     valid: bool
     deviation_years: float = 0.0
     message: str = ""
+
+
+def infer_name_gender(name: str) -> str | None:
+    """
+    Infer gender from first name using Irish name dictionary.
+
+    Args:
+        name: Full name (e.g., "Francis Boyle")
+
+    Returns:
+        'M' (male), 'F' (female), or None (ambiguous)
+    """
+    if not name:
+        return None
+
+    first_name = name.lower().strip().split()[0]
+
+    if first_name in IRISH_MALE_NAMES:
+        return 'M'
+    elif first_name in IRISH_FEMALE_NAMES:
+        return 'F'
+    else:
+        return None
+
+
+@dataclass
+class GenderFlipResult:
+    has_flip: bool
+    gender_1: str | None
+    gender_2: str | None
+    message: str = ""
+
+
+def validate_gender_consistency(name1: str, name2: str) -> GenderFlipResult:
+    """
+    Detect if names suggest different genders (gender flip).
+
+    A gender flip is strong evidence of different people, even if ages/surnames match.
+
+    Args:
+        name1: First name
+        name2: Second name
+
+    Returns:
+        GenderFlipResult with has_flip=True if genders differ
+    """
+    gender1 = infer_name_gender(name1)
+    gender2 = infer_name_gender(name2)
+
+    # If either gender is ambiguous, no flip detected
+    if gender1 is None or gender2 is None:
+        return GenderFlipResult(
+            has_flip=False,
+            gender_1=gender1,
+            gender_2=gender2,
+            message="Cannot infer gender from one or both names"
+        )
+
+    # If genders differ, it's a flip
+    if gender1 != gender2:
+        return GenderFlipResult(
+            has_flip=True,
+            gender_1=gender1,
+            gender_2=gender2,
+            message=f"Gender flip detected: {name1} ({gender1}) vs {name2} ({gender2})"
+        )
+
+    return GenderFlipResult(
+        has_flip=False,
+        gender_1=gender1,
+        gender_2=gender2,
+        message=f"Gender consistent: both {gender1}"
+    )
 
 
 def validate_age_progression(
@@ -150,6 +307,17 @@ def validate_age_progression(
     years_between_censuses = census_year2 - census_year1
     expected_age_year2 = age_year1 + years_between_censuses
     actual_deviation = age_year2 - expected_age_year2
+
+    # Reject age regressions (person ages backward)
+    if age_year2 < age_year1:
+        return AgeValidationResult(
+            valid=False,
+            deviation_years=actual_deviation,
+            message=(
+                f"Age regression: {age_year1}y ({census_year1}) → {age_year2}y ({census_year2}), "
+                f"age decreased {age_year1 - age_year2}y (impossible)"
+            )
+        )
 
     is_valid = abs(actual_deviation) <= tolerance_years
 
@@ -297,6 +465,7 @@ def validate_household_coherence(conn: psycopg2.extensions.connection) -> tuple[
 class ValidationReport:
     age_violations: int = 0
     name_mismatches: int = 0
+    gender_flips: int = 0
     household_errors: int = 0
     total_linkages_checked: int = 0
     total_violations: int = 0
@@ -392,6 +561,12 @@ def validate_all_linkages(conn: psycopg2.extensions.connection) -> ValidationRep
 
             violations = []
 
+            # Check for gender flip (highest priority disqualifier)
+            gender_result = validate_gender_consistency(row['name_as_recorded'], row['other_name'])
+            if gender_result.has_flip:
+                violations.append(f"Gender flip: {gender_result.message}")
+                report.gender_flips += 1
+
             # Check age progression
             try:
                 age1 = float(row['age_as_recorded']) if row['age_as_recorded'] else None
@@ -400,18 +575,19 @@ def validate_all_linkages(conn: psycopg2.extensions.connection) -> ValidationRep
                 year2 = int(row['other_date'][:4])
 
                 if age1 and age2 and year1 and year2:
-                    age_result = validate_age_progression(age1, year1, age2, year2)
+                    age_result = validate_age_progression(age1, year1, age2, year2, tolerance_years=2.0)
                     if not age_result.valid:
                         violations.append(f"Age: {age_result.message}")
                         report.age_violations += 1
             except (ValueError, TypeError):
                 pass
 
-            # Check name variant
-            name_result = validate_name_variant(row['name_as_recorded'], row['other_name'])
-            if not name_result.approved:
-                violations.append(f"Name: {name_result.reason}")
-                report.name_mismatches += 1
+            # Check name variant (only if no gender flip)
+            if not gender_result.has_flip:
+                name_result = validate_name_variant(row['name_as_recorded'], row['other_name'])
+                if not name_result.approved:
+                    violations.append(f"Name: {name_result.reason}")
+                    report.name_mismatches += 1
 
             # Flag if any violations
             if violations:
