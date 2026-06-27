@@ -413,20 +413,16 @@ def _build_person_settings() -> SettingsCreator:
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
             block_on("place_id"),
-            block_on("soundex_surname"),
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
-            # Surname — stable across census; TF penalty inappropriate for cross-source matching
-            # (TF is designed for within-source deduplication, not cross-census linkage)
+            # Full name (concatenated for maximum information) — JaroWinkler with TF=True
+            # Reverted to v1.1 approach after v1.2 regression (21.1% → 19.5%)
+            # v1.2 split surname/forename and disabled TF, intending to improve common names,
+            # but actual result was worse linkage. Going back to name_norm with TF.
             cl.JaroWinklerAtThresholds(
-                "surname_norm", [0.92, 0.80],
-            ).configure(term_frequency_adjustments=False),
-
-            # Forename — subject to spelling variation, nicknames; no TF adjustment
-            cl.JaroWinklerAtThresholds(
-                "forename_norm", [0.92, 0.80],
-            ).configure(term_frequency_adjustments=False),
+                "name_norm", [0.92, 0.80],
+            ).configure(term_frequency_adjustments=True),
 
             # Birth year — absolute difference bands
             cl.CustomComparison(
