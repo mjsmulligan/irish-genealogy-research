@@ -492,6 +492,31 @@ def _build_person_settings() -> SettingsCreator:
                 comparison_description="Household match scores (per-source): max >= 0.80 or >= 0.50",
             ),
 
+            # Role consistency (v1.2): exact matches and plausible transitions
+            # Enables Splink to score role consistency: exact matches (head→head) are strongest;
+            # plausible transitions (son→head at age 30+) are medium; implausible changes are weak.
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("role"),  # Handle NULL roles (missing in source)
+                    cll.CustomLevel(
+                        "role_l = role_r AND role_l IS NOT NULL",
+                        label_for_charts="exact_role_match",
+                    ),
+                    cll.CustomLevel(
+                        "("
+                        "  (role_l = 'son' AND role_r = 'head') OR "
+                        "  (role_l = 'head' AND role_r = 'son') OR "
+                        "  (role_l = 'daughter' AND role_r = 'head') OR "
+                        "  (role_l = 'head' AND role_r = 'daughter')"
+                        ")",
+                        label_for_charts="plausible_role_transition",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="role_consistency",
+                comparison_description="Role consistency: exact match or plausible transition (son→head, etc.)",
+            ),
+
         ],
         retain_matching_columns=True,
         retain_intermediate_calculation_columns=False,
@@ -552,7 +577,7 @@ def run_person_similarity(
     """
     from src.constants import (
         BATCH_SIZE_PERSON_SIMILARITY,
-        SCORE_VERSION_PERSON_SIMILARITY_V1_1,
+        SCORE_VERSION_PERSON_SIMILARITY_V1_2,
     )
     from src.evidence.features.census_person import build_census_person_features
 
@@ -626,7 +651,7 @@ def run_person_similarity(
         if BATCH_SIZE_PERSON_SIMILARITY is None:
             # Single transaction for all pairs in this source-pair
             with conn:
-                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY_V1_1)
+                _commit_person_pairs(conn, pairs_to_write, SCORE_VERSION_PERSON_SIMILARITY_V1_2)
             pair_count = len(pairs_to_write)
         else:
             # Batched commits within this source-pair
@@ -634,7 +659,7 @@ def run_person_similarity(
             for i in range(0, len(pairs_to_write), batch_size):
                 batch = pairs_to_write[i : i + batch_size]
                 with conn:
-                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY_V1_1)
+                    _commit_person_pairs(conn, batch, SCORE_VERSION_PERSON_SIMILARITY_V1_2)
                 pair_count += len(batch)
 
         result.pairs_written += pair_count
