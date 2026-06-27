@@ -30,6 +30,10 @@ from dataclasses import dataclass, field
 import psycopg2.extensions
 
 from src.constants import PERSON_RESOLUTION_THRESHOLD
+from src.validation import (
+    validate_age_progression,
+    validate_name_variant,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +224,76 @@ def _resolve_gender(
 
 
 # ---------------------------------------------------------------------------
+# Validation filtering (Option 2)
+# ---------------------------------------------------------------------------
+
+def _filter_invalid_pairs(
+    conn: psycopg2.extensions.connection,
+    pairs: list[dict],
+) -> list[dict]:
+    """
+    Filter out linkage pairs that fail validation checks (Option 2 pre-clustering filtering).
+
+    Validation checks:
+      1. Age progression: person must not have aged unrealistically (±2 years tolerance)
+      2. Name variant: first names must not be suspicious mismatches (using Irish variant dictionary)
+
+    Returns subset of pairs that pass all checks.
+    """
+    valid_pairs = []
+
+    for pair in pairs:
+        rp_id_1 = pair["recorded_person_id_1"]
+        rp_id_2 = pair["recorded_person_id_2"]
+
+        # Fetch person data
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    rp.age,
+                    r.source_id,
+                    rp.name_as_recorded
+                FROM recorded_person rp
+                JOIN record r ON r.record_id = rp.record_id
+                WHERE rp.recorded_person_id IN (%s, %s)
+                ORDER BY rp.recorded_person_id
+                """,
+                (rp_id_1, rp_id_2),
+            )
+            rows = cur.fetchall()
+
+        if len(rows) != 2:
+            continue
+
+        p1, p2 = rows[0], rows[1]
+        year_1 = {3: 1901, 4: 1911, 5: 1926}.get(p1["source_id"])
+        year_2 = {3: 1901, 4: 1911, 5: 1926}.get(p2["source_id"])
+
+        # Check 1: Age progression validity
+        if p1["age"] and p2["age"] and year_1 and year_2:
+            age_check = validate_age_progression(
+                p1["age"], year_1,
+                p2["age"], year_2,
+                tolerance_years=2.0
+            )
+            if not age_check.valid:
+                continue
+
+        # Check 2: Name variant consistency
+        name_check = validate_name_variant(
+            p1["name_as_recorded"], p2["name_as_recorded"]
+        )
+        if not name_check.approved:
+            continue
+
+        # All checks passed
+        valid_pairs.append(pair)
+
+    return valid_pairs
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -263,6 +337,16 @@ def run_person_resolution(
 
     if not similarity_pairs:
         # No similarities above threshold — all RecordedPersons are orphans
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) as count FROM recorded_person")
+            result.orphans_count = cur.fetchone()["count"]
+        return result
+
+    # Step 1b: Filter out invalid pairs (Option 2 pre-clustering validation)
+    similarity_pairs = _filter_invalid_pairs(conn, similarity_pairs)
+
+    if not similarity_pairs:
+        # All pairs filtered out by validation — all RecordedPersons are orphans
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) as count FROM recorded_person")
             result.orphans_count = cur.fetchone()["count"]
