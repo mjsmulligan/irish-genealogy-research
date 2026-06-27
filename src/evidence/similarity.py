@@ -89,8 +89,13 @@ def _build_settings() -> SettingsCreator:
     a separate DataFrame; Splink generates cross-DataFrame pairs only.
 
     Blocking:
-      Primary:  same resolved place_id (strongest geographic anchor)
-      Fallback: first 4 chars of household_surname_norm (phonetic-adjacent)
+      Primary:   same resolved place_id (strongest geographic anchor)
+      Secondary: soundex_household_surname (phonetic encoding for Irish surname variants)
+      Fallback:  first 4 chars of household_surname_norm (character-based)
+
+    Soundex pre-computed in features (Python, not SQL) for DuckDB compatibility.
+    Handles Irish surname variants (e.g., O'Brien/Brien/O Brien all → B650).
+    Character-based fallback catches names with common prefixes.
 
     Comparisons follow reconstruction_algorithms.md §5.7.
     """
@@ -98,6 +103,7 @@ def _build_settings() -> SettingsCreator:
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
             block_on("place_id"),
+            block_on("soundex_household_surname"),
             block_on("substr(household_surname_norm, 1, 4)"),
         ],
         comparisons=[
@@ -377,8 +383,13 @@ def _build_person_settings() -> SettingsCreator:
     a separate DataFrame; Splink generates cross-DataFrame pairs only.
 
     Blocking:
-      Primary:  same resolved place_id (strongest geographic anchor)
-      Fallback: first 4 chars of surname_norm (phonetic-adjacent)
+      Primary:   same resolved place_id (strongest geographic anchor)
+      Secondary: soundex_surname (phonetic encoding for Irish surname variants)
+      Fallback:  first 4 chars of surname_norm (character-based)
+
+    Soundex pre-computed in features (Python, not SQL) for DuckDB compatibility.
+    Handles Irish surname variants (e.g., O'Brien/Brien/O Brien all → B650).
+    Character-based fallback catches names with common prefixes.
 
     Comparisons (v1.2 tuning):
       - surname_norm (Jaro-Winkler [0.92, 0.80], NO TF for cross-census)
@@ -393,11 +404,16 @@ def _build_person_settings() -> SettingsCreator:
       - Disabled Term Frequency for cross-census matching (TF penalizes common names
         inappropriately; it's designed for within-source deduplication, not cross-source)
       - EM training learns independent weights for surname vs forename
+
+    v1.3 improvements:
+      - Added Soundex blocking for Irish surname variants (O'Brien/Brien/O Brien)
+      - Pre-computed in features (Python) for DuckDB compatibility
     """
     return SettingsCreator(
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
             block_on("place_id"),
+            block_on("soundex_surname"),
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[

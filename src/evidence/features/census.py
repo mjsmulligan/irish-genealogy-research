@@ -43,6 +43,50 @@ def _norm(name: str | None) -> str:
     return (name or "").lower().strip()
 
 
+def _soundex(s: str | None) -> str:
+    """
+    Compute Soundex phonetic code for Irish surnames.
+    Handles variants like O'Brien/Brien/O Brien all → B650.
+    """
+    if not s:
+        return ""
+
+    s = _norm(s)
+    if not s:
+        return ""
+
+    # Keep first letter
+    first = s[0].upper()
+
+    # Soundex mapping: consonants → digits, vowels/H/W/Y → 0
+    codes = {
+        'a': '0', 'e': '0', 'i': '0', 'o': '0', 'u': '0',
+        'h': '0', 'w': '0', 'y': '0',
+        'b': '1', 'f': '1', 'p': '1', 'v': '1',
+        'c': '2', 'g': '2', 'j': '2', 'k': '2', 'q': '2', 's': '2', 'x': '2', 'z': '2',
+        'd': '3', 't': '3',
+        'l': '4',
+        'm': '5', 'n': '5',
+        'r': '6',
+    }
+
+    # Convert to digit sequence, skipping non-letter chars (e.g., apostrophes)
+    digits = ''.join(
+        codes.get(c, '0') for c in s[1:].lower()
+        if c.isalpha()
+    )
+
+    # Remove consecutive duplicates and zeros
+    result = [first]
+    for d in digits:
+        if d != '0' and (not result or d != result[-1]):
+            result.append(d)
+
+    # Pad or trim to 4 characters
+    soundex_code = ''.join(result)
+    return (soundex_code + '000')[:4]
+
+
 def _surname_from(name: str | None) -> str:
     """
     Extract the surname token from a name-as-recorded string.
@@ -116,6 +160,7 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
         "source_id": source_id,
         "place_id": place_id,
         "household_surname_norm": modal_surname,
+        "soundex_household_surname": _soundex(modal_surname),
         "adult_forenames_sorted": pipe_join(adult_forenames),
         "child_forenames_young": pipe_join(child_forenames_young),
         "child_forenames_older": pipe_join(child_forenames_older),
