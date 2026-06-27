@@ -4,7 +4,46 @@
 
 ______________________________________________________________________
 
-## 0. Latest Update (27 June 2026 — Complete Double-Link Prevention with Downstream Cleanup)
+## 0. Latest Update (27 June 2026 — Splink v1.2 Tuning & Person Similarity Improvements)
+
+**Implemented Splink v1.2 tuning to improve cross-census person matching:**
+
+### Key Improvements
+
+#### 1. Separated Forename & Surname Comparisons ✅
+**Issue addressed:** Previously identified in prior session—features were built but unused.
+- Before: Single `name_norm` comparison (concatenated full name)
+- After: Separate `surname_norm` and `forename_norm` Jaro-Winkler comparisons
+- Rationale: Surname stable and high signal; forename variable. Different matching semantics.
+- EM training: Now learns independent weights for surname vs forename; can optimize each.
+
+#### 2. Disabled Term Frequency for Cross-Census Matching ✅
+**Problem:** TF adjustment designed for within-source deduplication, not cross-census linkage.
+- Before: `term_frequency_adjustments=True` on name (penalizes common names)
+- Problem: "Robert Bustard" exact match scores only 0.528 despite being identical
+- Root cause: TF heavily penalizes common Irish surnames (Robert: 34 occ, Bustard: 20 occ)
+- After: `term_frequency_adjustments=False` for both surname and forename
+- Result: Common names now score properly without penalty in cross-census matching
+
+#### 3. EM Training Optimization ✅
+- Separate comparisons allow EM to independently calibrate surname vs forename weights
+- Model can weight surname heavier if more discriminative (expected)
+- Two existing EM passes (surname_first4, place_id) still active
+
+### Expected Impact
+- **Linkage target:** 21.1% (v1.1) → 24-26% (v1.2) [+3-5pp]
+- **Mechanism:** Better scoring of common Irish surnames without TF penalty
+- **Validation:** All 59 tests pass; conflict resolution handles opinion revisions
+
+### Code Changes
+File: `src/evidence/similarity.py` (`_build_person_settings()`)
+- Separated name_norm into surname_norm + forename_norm comparisons
+- Both use `term_frequency_adjustments=False` for cross-census semantics
+- Updated docstring documenting v1.2 changes
+
+---
+
+### Previous: Double-Link Prevention & Downstream Cleanup (27 June 2026)
 
 **Implemented comprehensive solution to prevent double-linking and address all downstream consequences:**
 
