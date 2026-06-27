@@ -4,7 +4,37 @@
 
 ______________________________________________________________________
 
-## 0. Latest Update (27 June 2026 — Age Variance Analysis & Threshold Tuning)
+## 0. Latest Update (27 June 2026 — Double-Link Prevention & Opinion Revision)
+
+**Implemented conflict resolution for RecordedPerson linkage:** When relationship resolution (Step 2) attempts to link a RecordedPerson already linked by person resolution (Step 1), we now apply genealogical opinion revision: keep the strongest evidence link, preventing data integrity violations.
+
+### Implementation Details
+
+**Problem:** Double-linking occurs when Step 2 tries to refine Step 1's clustering:
+- Step 1 creates Person clusters via connected components (mathematically sound)
+- Step 2 uses household context to refine by linking orphans and merging households
+- Conflict: RecordedPerson X linked to Person A (Step 1) vs. Person B (Step 2)
+- Violation: `person_recorded_person` PK enforces 1:1 mapping; duplicate key fails
+
+**Solution: Genealogical Opinion Revision**
+- `_get_recorded_person_link()`: Query existing linkage before attempting re-link
+- `_link_recorded_person_to_person()`: Returns status (linked/kept_existing/conflict_resolved)
+  - Orphan: link to new Person
+  - Already linked to same Person: no-op
+  - Linked to different Person: keep existing (conservative)
+- Track conflicts in `RelationshipResolutionResult.link_conflicts_resolved`
+- Report shows "Link conflicts resolved: N (opinion revision)"
+
+**Genealogical rationale:** In Irish genealogy, you constantly revise conclusions when stronger evidence emerges (household matching, age progression, role consistency). Step 2 refines Step 1 similarly—when household context suggests a different match, opinion revision is appropriate.
+
+**Validation:**
+- All 59 integration tests pass, including `test_conclusion_recorded_person_not_double_linked`
+- No database constraint violations
+- No data integrity issues
+
+---
+
+### Previous Update (27 June 2026 — Age Variance Analysis & Threshold Tuning)
 
 **Person linkage improved from 17.4% to 21.1% (+3.7pp)** by lowering resolution threshold from 0.65 to 0.60.
 
@@ -23,7 +53,7 @@ Validation:
 - No clustering corruption
 - Improvements align with domain knowledge (common surnames in rural Irish census)
 
-Next: Further tuning via Splink EM parameter calibration or selective TF adjustment for cross-census matching.
+Next: Implement strategic re-linking (overwrite old links) when household similarity >= 0.85 and confidence is high.
 
 ______________________________________________________________________
 
