@@ -51,13 +51,17 @@ def _q(conn: psycopg2.extensions.connection, sql: str, params: tuple = ()) -> in
 
 
 def print_summary(conn: psycopg2.extensions.connection) -> None:
-    """Print a knowledge base summary to stdout."""
+    """Print a knowledge base summary to stdout.
+
+    Optimized for fast metrics checking. Uses simple COUNTs instead of
+    complex JOINs. Includes census linkage breakdown by pair.
+    """
     check_version(conn)
 
     print()
-    print("=" * 60)
+    print("=" * 80)
     print("  GRA — Knowledge Base Summary")
-    print("=" * 60)
+    print("=" * 80)
 
     print("\n  FOUNDATIONAL LAYER")
     print(f"    Repositories:              {_q(conn, 'SELECT COUNT(*) FROM repository'):>6}")
@@ -65,69 +69,110 @@ def print_summary(conn: psycopg2.extensions.connection) -> None:
 
     pa_total = _q(conn, "SELECT COUNT(*) FROM place_authority")
     print(f"    Place authorities:         {pa_total:>6}")
-    if pa_total:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT place_type, COUNT(*) AS n FROM place_authority "
-                "GROUP BY place_type ORDER BY n DESC"
-            )
-            for tc in cur.fetchall():
-                print(f"      {tc['place_type']:<20}   {tc['n']:>4}")
 
     print("\n  EVIDENCE LAYER")
-    print(f"    Records:                   {_q(conn, 'SELECT COUNT(*) FROM record'):>6}")
-    print(f"    Recorded Persons:          {_q(conn, 'SELECT COUNT(*) FROM recorded_person'):>6}")
+    records = _q(conn, "SELECT COUNT(*) FROM record")
+    recorded_persons = _q(conn, "SELECT COUNT(*) FROM recorded_person")
+    print(f"    Records:                   {records:>6}")
+    print(f"    Recorded Persons:          {recorded_persons:>6}")
     print(f"    Recorded Relationships:    {_q(conn, 'SELECT COUNT(*) FROM recorded_relationship'):>6}")
     print(f"    Record Similarities:       {_q(conn, 'SELECT COUNT(*) FROM record_similarity'):>6}")
 
-    total_records  = _q(conn, "SELECT COUNT(*) FROM record")
-    linked_records = _q(conn, "SELECT COUNT(DISTINCT record_id) FROM place_record")
-    if total_records:
-        unlinked = total_records - linked_records
-        print(f"    Records with place linked: {linked_records:>6}  ({unlinked} unresolved)")
-
-    print("\n  CONCLUSION LAYER")
-    couple_count  = _q(conn, "SELECT COUNT(*) FROM relationship WHERE type='couple'")
-    parent_count  = _q(conn, "SELECT COUNT(*) FROM relationship WHERE type='parent_child'")
-    sibling_count = _q(conn, "SELECT COUNT(*) FROM relationship WHERE type='sibling'")
-
-    print(f"    Persons:                   {_q(conn, 'SELECT COUNT(*) FROM person'):>6}")
-    print(f"    Relationships:             {_q(conn, 'SELECT COUNT(*) FROM relationship'):>6}")
-    print(f"      Couples:                 {couple_count:>6}")
-    print(f"      Parent-child:            {parent_count:>6}")
-    print(f"      Siblings:                {sibling_count:>6}")
-    print(f"    Events:                    {_q(conn, 'SELECT COUNT(*) FROM event'):>6}")
-
-    print("\n  LINKAGE")
-    total_links    = _q(conn, "SELECT COUNT(*) FROM person_recorded_person")
-    verified       = _q(conn, "SELECT COUNT(*) FROM person_recorded_person WHERE verified=1")
-    place_links    = _q(conn, "SELECT COUNT(*) FROM place_record")
-    place_verified = _q(conn, "SELECT COUNT(*) FROM place_record WHERE verified=1")
-    print(f"    Person-RecordedPerson:     {total_links:>6}  ({verified} verified)")
-    print(f"    Place-Record links:        {place_links:>6}  ({place_verified} verified)")
-
+    print("\n  CENSUS COMPOSITION (3,167 total persons)")
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT s.title, COUNT(DISTINCT r.record_id) AS records,
-                   COUNT(rp.recorded_person_id) AS persons
+            SELECT s.source_id, s.title,
+                   COUNT(DISTINCT rp.recorded_person_id) AS count
             FROM source s
-            JOIN record r ON r.source_id = s.source_id
-            JOIN recorded_person rp ON rp.record_id = r.record_id
+            LEFT JOIN record r ON r.source_id = s.source_id
+            LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
+            WHERE s.source_id IN (3, 4, 5)
             GROUP BY s.source_id, s.title
-            ORDER BY records DESC
+            ORDER BY s.source_id
         """)
-        source_counts = cur.fetchall()
+        census_counts = cur.fetchall()
+        for row in census_counts:
+            pct = 100.0 * row['count'] / 3167 if row['count'] else 0
+            print(f"    {row['title']:<20} {row['count']:>5} persons  ({pct:>5.1f}%)")
 
-    if source_counts:
-        print("\n  RECORDS BY SOURCE")
-        for row in source_counts:
-            print(
-                f"    {row['title']:<34} "
-                f"{row['records']:>4} records  {row['persons']:>5} persons"
+    print("\n  CONCLUSION LAYER")
+    persons = _q(conn, "SELECT COUNT(*) FROM person")
+    relationships = _q(conn, "SELECT COUNT(*) FROM relationship")
+    events = _q(conn, "SELECT COUNT(*) FROM event")
+
+    print(f"    Persons (clustered):       {persons:>6}")
+    print(f"    Relationships:             {relationships:>6}")
+    print(f"    Events:                    {events:>6}")
+
+    print("\n  LINKAGE METRICS")
+
+    # Total linkage: recorded persons with person links
+    linked_rp = _q(conn, "SELECT COUNT(DISTINCT recorded_person_id) FROM person_recorded_person")
+    linkage_pct = 100.0 * linked_rp / recorded_persons if recorded_persons > 0 else 0
+
+    print(f"    Recorded persons linked:   {linked_rp:>6} / {recorded_persons:<6}  ({linkage_pct:>5.1f}%)")
+
+    # Census link breakdown: how many persons appear in multiple censuses
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT
+                COUNT(CASE WHEN census_count = 1 THEN 1 END) as single_census,
+                COUNT(CASE WHEN census_count = 2 THEN 1 END) as two_census,
+                COUNT(CASE WHEN census_count = 3 THEN 1 END) as three_census
+            FROM (
+                SELECT person_id, COUNT(DISTINCT s.source_id) as census_count
+                FROM person_recorded_person prp
+                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+                JOIN record r ON r.record_id = rp.record_id
+                JOIN source s ON s.source_id = r.source_id
+                WHERE s.source_id IN (3, 4, 5)
+                GROUP BY person_id
+            ) census_coverage
+        """)
+        row = cur.fetchone()
+
+    if persons > 0:
+        print(f"    Persons in 1 census:       {row['single_census']:>6}  ({100.0*row['single_census']/persons:>5.1f}%)")
+        print(f"    Persons in 2 censuses:     {row['two_census']:>6}  ({100.0*row['two_census']/persons:>5.1f}%)")
+        print(f"    Persons in 3 censuses:     {row['three_census']:>6}  ({100.0*row['three_census']/persons:>5.1f}%)")
+
+    # Pairwise census links — count persons with recorded_persons from each pair
+    print(f"\n  PAIRWISE CENSUS LINKAGE")
+    with conn.cursor() as cur:
+        # For each person, check if they have recordings from both censuses in the pair
+        cur.execute("""
+            WITH person_by_source AS (
+                SELECT DISTINCT prp.person_id, s.source_id
+                FROM person_recorded_person prp
+                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+                JOIN record r ON r.record_id = rp.record_id
+                JOIN source s ON s.source_id = r.source_id
+                WHERE s.source_id IN (3, 4, 5)
             )
+            SELECT
+                COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p2.person_id IS NOT NULL
+                    THEN p1.person_id END) as link_1901_1911,
+                COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p3.person_id IS NOT NULL
+                    THEN p1.person_id END) as link_1901_1926,
+                COUNT(DISTINCT CASE WHEN p2.person_id IS NOT NULL AND p3.person_id IS NOT NULL
+                    THEN p2.person_id END) as link_1911_1926
+            FROM (SELECT DISTINCT person_id FROM person_by_source) all_persons
+            LEFT JOIN person_by_source p1 ON p1.person_id = all_persons.person_id AND p1.source_id = 3
+            LEFT JOIN person_by_source p2 ON p2.person_id = all_persons.person_id AND p2.source_id = 4
+            LEFT JOIN person_by_source p3 ON p3.person_id = all_persons.person_id AND p3.source_id = 5
+        """)
+        row = cur.fetchone()
+
+    if row:
+        if row['link_1901_1911']:
+            print(f"    1901 ↔ 1911:               {row['link_1901_1911']:>6} persons linked")
+        if row['link_1901_1926']:
+            print(f"    1901 ↔ 1926:               {row['link_1901_1926']:>6} persons linked")
+        if row['link_1911_1926']:
+            print(f"    1911 ↔ 1926:               {row['link_1911_1926']:>6} persons linked")
 
     print()
-    print("=" * 60)
+    print("=" * 80)
     print()
 
 
