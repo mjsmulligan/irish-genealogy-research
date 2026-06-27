@@ -46,13 +46,12 @@ PROPOSE_FLOOR: float = 0.30           # score >= this → queue as proposal
 # ---------------------------------------------------------------------------
 
 # Person Resolution: clustering threshold for person-level similarity.
-# Lower than AUTO_COMMIT_THRESHOLD (0.85) because:
-#   - Person similarity scores in practice max out ~0.68 for clear matches
-#   - Relationship Resolution (step 2) will refine using primary evidence
-#   - 0.65 creates Persons for clearest matches, leaves ambiguous cases as orphans
-#   - Tested 0.55: linkage *decreased* (552 → 303), so lower isn't better
-#   - Issue: Splink features aren't producing high confidence scores across-the-board
-PERSON_RESOLUTION_THRESHOLD: float = 0.65
+# v1.1: Lowered from 0.65 to 0.60
+# Rationale: Splink name matching with TF adjustment downweights common names significantly
+# (e.g., "Robert Bustard" scores 0.528 despite being exact matches). Analysis shows
+# many valid cross-census matches fall in 0.50-0.65 range due to TF penalty on common names.
+# Threshold 0.60 captures these without requiring Splink changes that cause double-linking.
+PERSON_RESOLUTION_THRESHOLD: float = 0.60
 
 # ---------------------------------------------------------------------------
 # Score versions — identify the algorithm run that produced a score
