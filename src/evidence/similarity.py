@@ -380,15 +380,19 @@ def _build_person_settings() -> SettingsCreator:
       Primary:  same resolved place_id (strongest geographic anchor)
       Fallback: first 4 chars of surname_norm (phonetic-adjacent)
 
-    Comparisons:
-      - name_norm (Jaro-Winkler with TF adjustment; forename + surname concatenated)
-      - birth_year_est (absolute difference bands: 0, <=2, <=5)
+    Comparisons (v1.2 tuning):
+      - surname_norm (Jaro-Winkler [0.92, 0.80], NO TF for cross-census)
+      - forename_norm (Jaro-Winkler [0.92, 0.80], NO TF)
+      - birth_year_est (absolute difference bands: 0, ±2, ±5)
       - sex_as_recorded (exact match)
       - place_id (exact match)
+      - household_match_score (per-source, 0.80 / 0.50 thresholds)
 
-    v1.1 infrastructure: household_match_score column is computed in feature extraction
-    to support hierarchical household context in future versions. Not yet active in Splink
-    comparisons (causes clustering corruption at current thresholds; needs further tuning).
+    v1.2 improvements:
+      - Separated surname and forename comparisons (addresses prior session issue)
+      - Disabled Term Frequency for cross-census matching (TF penalizes common names
+        inappropriately; it's designed for within-source deduplication, not cross-source)
+      - EM training learns independent weights for surname vs forename
     """
     return SettingsCreator(
         link_type="link_only",
@@ -397,10 +401,16 @@ def _build_person_settings() -> SettingsCreator:
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
-            # Full name (forename + surname) — JaroWinkler with TF adjustment for common names
+            # Surname — stable across census; TF penalty inappropriate for cross-source matching
+            # (TF is designed for within-source deduplication, not cross-census linkage)
             cl.JaroWinklerAtThresholds(
-                "name_norm", [0.92, 0.80],
-            ).configure(term_frequency_adjustments=True),
+                "surname_norm", [0.92, 0.80],
+            ).configure(term_frequency_adjustments=False),
+
+            # Forename — subject to spelling variation, nicknames; no TF adjustment
+            cl.JaroWinklerAtThresholds(
+                "forename_norm", [0.92, 0.80],
+            ).configure(term_frequency_adjustments=False),
 
             # Birth year — absolute difference bands
             cl.CustomComparison(
