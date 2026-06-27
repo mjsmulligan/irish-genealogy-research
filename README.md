@@ -4,7 +4,8 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 4.0 (June 2026)\
+Schema version: 4.0 (June 2026)  
+**Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
 Implementation: Complete — all four layers (foundation, evidence, conclusion, review)
 
 ______________________________________________________________________
