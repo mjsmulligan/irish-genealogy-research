@@ -443,6 +443,32 @@ def _build_person_settings() -> SettingsCreator:
                 comparison_description="Place ID exact match",
             ),
 
+            # Household match score — hierarchical feature (v1.1, revised)
+            # Now using per-source columns: household_match_score_to_3, to_4, to_5
+            # Compares the max available score from either side
+            cl.CustomComparison(
+                comparison_levels=[
+                    cll.NullLevel("household_match_score_to_3"),
+                    cll.NullLevel("household_match_score_to_4"),
+                    cll.NullLevel("household_match_score_to_5"),
+                    cll.CustomLevel(
+                        "(COALESCE(household_match_score_to_3_l, 0.0) >= 0.80 OR COALESCE(household_match_score_to_3_r, 0.0) >= 0.80) OR "
+                        "(COALESCE(household_match_score_to_4_l, 0.0) >= 0.80 OR COALESCE(household_match_score_to_4_r, 0.0) >= 0.80) OR "
+                        "(COALESCE(household_match_score_to_5_l, 0.0) >= 0.80 OR COALESCE(household_match_score_to_5_r, 0.0) >= 0.80)",
+                        label_for_charts="any household_score >= 0.80",
+                    ),
+                    cll.CustomLevel(
+                        "(COALESCE(household_match_score_to_3_l, 0.0) >= 0.50 OR COALESCE(household_match_score_to_3_r, 0.0) >= 0.50) OR "
+                        "(COALESCE(household_match_score_to_4_l, 0.0) >= 0.50 OR COALESCE(household_match_score_to_4_r, 0.0) >= 0.50) OR "
+                        "(COALESCE(household_match_score_to_5_l, 0.0) >= 0.50 OR COALESCE(household_match_score_to_5_r, 0.0) >= 0.50)",
+                        label_for_charts="any household_score >= 0.50",
+                    ),
+                    cll.ElseLevel(),
+                ],
+                output_column_name="household_match_score",
+                comparison_description="Household match scores (per-source): max >= 0.80 or >= 0.50",
+            ),
+
         ],
         retain_matching_columns=True,
         retain_intermediate_calculation_columns=False,
