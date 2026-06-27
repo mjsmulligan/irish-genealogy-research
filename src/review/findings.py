@@ -17,6 +17,7 @@ marriage_age_implausible      GC13  Person under 15 at marriage date
 lifespan_boundary_violated    GC01  Record date outside concluded lifespan
 unlinked_recorded_person       —    RecordedPerson with no Person conclusion
 single_census_appearance       —    Person appears in only one census, no death Event
+link_conflict_resolved         —    RecordedPerson's opinion revised during relationship resolution
 
 Design notes
 ------------
@@ -916,6 +917,32 @@ def find_single_census_appearance(
 
 
 # ---------------------------------------------------------------------------
+# link_conflict_resolved — Opinion revision during relationship resolution
+# ---------------------------------------------------------------------------
+
+def find_link_conflicts_resolved(
+    conn: psycopg2.extensions.connection,
+) -> list[ReportItem]:
+    """
+    RecordedPersons whose Person linkage was revised (opinion revision) during
+    relationship resolution when Step 2 (household matching) attempted to link
+    them to a different Person than Step 1 assigned.
+
+    This finding logs the genealogical decision chain: when stronger household
+    evidence emerges, which RecordedPersons were involved in the conflict, and
+    what resolution was chosen (kept existing vs. overwritten).
+
+    Note: This is metadata audit trail, not an error. It helps researchers
+    understand why their conclusion diverged from simpler step 1 clustering.
+    """
+    # Query metadata table tracking opinion revisions
+    # (Currently tracked in memory only; stored for next audit session)
+    # This is a placeholder for future integration with audit trail storage.
+    # For now, return empty list until audit trail persistence is implemented.
+    return []
+
+
+# ---------------------------------------------------------------------------
 # Public aggregator
 # ---------------------------------------------------------------------------
 
@@ -936,4 +963,5 @@ def run_all_findings(
     items.extend(find_lifespan_boundary_violated(conn))
     items.extend(find_unlinked_recorded_persons(conn))
     items.extend(find_single_census_appearance(conn))
+    items.extend(find_link_conflicts_resolved(conn))
     return items
