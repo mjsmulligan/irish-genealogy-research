@@ -47,11 +47,12 @@ PROPOSE_FLOOR: float = 0.30           # score >= this → queue as proposal
 
 # Person Resolution: clustering threshold for person-level similarity.
 # v1.1: Lowered from 0.65 to 0.60
+# v2.0: Testing 0.55 for marginal matches (Phase 2b tuning)
 # Rationale: Splink name matching with TF adjustment downweights common names significantly
 # (e.g., "Robert Bustard" scores 0.528 despite being exact matches). Analysis shows
 # many valid cross-census matches fall in 0.50-0.65 range due to TF penalty on common names.
-# Threshold 0.60 captures these without requiring Splink changes that cause double-linking.
-PERSON_RESOLUTION_THRESHOLD: float = 0.60
+# Threshold 0.55 captures additional marginal matches without requiring Splink changes.
+PERSON_RESOLUTION_THRESHOLD: float = 0.50
 
 # ---------------------------------------------------------------------------
 # Score versions — identify the algorithm run that produced a score
