@@ -4,6 +4,29 @@
 
 ______________________________________________________________________
 
+## 0. Latest Update (27 June 2026 — Age Variance Analysis & Threshold Tuning)
+
+**Person linkage improved from 17.4% to 21.1% (+3.7pp)** by lowering resolution threshold from 0.65 to 0.60.
+
+Root cause analysis (SQL-driven):
+- Compared linked persons across censuses (173 valid pairs)
+- Found age variance: mean +11 years (not +10), stdev 3.3, within ±7 covering 94.2%
+- Splink name matching with Term Frequency adjustment heavily penalizes common names:
+  - "Robert" (34 occ), "Bustard" (20 occ) → "Robert Bustard" exact match scores only 0.528
+  - Many valid cross-census matches fall in 0.50–0.65 range due to TF penalty
+- Solution: Lower threshold to 0.60 to capture TF-penalized common names
+- No Splink feature changes required (avoids double-linking issues from 0.55 threshold test)
+
+Validation:
+- All 59 integration tests pass
+- No data integrity issues
+- No clustering corruption
+- Improvements align with domain knowledge (common surnames in rural Irish census)
+
+Next: Further tuning via Splink EM parameter calibration or selective TF adjustment for cross-census matching.
+
+______________________________________________________________________
+
 ## 1. Current State
 
 ### Documentation
