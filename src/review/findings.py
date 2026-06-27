@@ -956,13 +956,15 @@ def find_unlinked_in_populated_households(
     """
     Find unlinked RecordedPersons in households that contain linked persons.
 
-    These are high-confidence false negative opportunities: individuals who appear in
-    a household alongside linked persons (e.g., a child in the same household as a
-    linked parent) but were not themselves linked. They should probably be linked
-    to the household's Person cluster.
+    Distinguishes two cases:
+    1. **Weak scorers** (similarity 0.40–0.50): Almost linked to other censuses—show
+       the candidate and why the pair scored below threshold. High-value for manual
+       linkage or threshold tuning.
+    2. **True orphans** (no similarity pairs): Only appear in this census, no cross-census
+       records. Likely emigrated, married out, or died young. Informational only.
 
-    This is a discovery tool: shows researchers where the pipeline may have missed
-    linkages and helps calibrate thresholds or validation rules.
+    This is a discovery tool: helps researchers spot systematic patterns and understand
+    whether unlinked persons represent missed matches or natural data gaps.
     """
     items = []
 
@@ -973,12 +975,13 @@ def find_unlinked_in_populated_households(
                 r.record_id,
                 r.date AS record_date,
                 r.place_as_recorded AS place_name,
+                r.source_id,
                 COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) as linked_count,
                 COUNT(*) FILTER (WHERE prp.person_id IS NULL) as unlinked_count
             FROM record r
             JOIN recorded_person rp ON rp.record_id = r.record_id
             LEFT JOIN person_recorded_person prp ON prp.recorded_person_id = rp.recorded_person_id
-            GROUP BY r.record_id, r.date, r.place_as_recorded
+            GROUP BY r.record_id, r.date, r.place_as_recorded, r.source_id
             HAVING COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) >= 1
               AND COUNT(*) FILTER (WHERE prp.person_id IS NULL) >= 1
             ORDER BY r.record_id
@@ -1011,27 +1014,41 @@ def find_unlinked_in_populated_households(
             """, (record_id,))
             linked_persons = cur.fetchall()
 
-        # Get unlinked persons in this household
+        # Get unlinked persons in this household with their best similarity scores
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT
                     rp.recorded_person_id,
                     rp.name_as_recorded,
                     rp.age,
-                    rp.role
+                    rp.role,
+                    MAX(rr.score) FILTER (WHERE rr.score < 0.50) as best_weak_score,
+                    MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_2 END)
+                        FILTER (WHERE rr.recorded_person_id_1 = rp.recorded_person_id AND rr.score < 0.50)
+                        as weak_match_id_2,
+                    MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_1 END)
+                        FILTER (WHERE rr.recorded_person_id_2 = rp.recorded_person_id AND rr.score < 0.50)
+                        as weak_match_id_1
                 FROM recorded_person rp
-                JOIN record r ON r.record_id = rp.record_id
-                WHERE r.record_id = %s
+                LEFT JOIN recorded_relationship rr ON
+                    (rr.recorded_person_id_1 = rp.recorded_person_id OR rr.recorded_person_id_2 = rp.recorded_person_id)
+                    AND rr.type = 'similarity' AND rr.score < 0.50
+                WHERE rp.record_id = %s
                   AND NOT EXISTS (
                       SELECT 1 FROM person_recorded_person
                       WHERE recorded_person_id = rp.recorded_person_id
                   )
-                ORDER BY rp.role DESC, rp.name_as_recorded
+                GROUP BY rp.recorded_person_id, rp.name_as_recorded, rp.age, rp.role
+                ORDER BY best_weak_score DESC NULLS LAST, rp.role DESC, rp.name_as_recorded
             """, (record_id,))
-            unlinked_persons = cur.fetchall()
+            unlinked_with_scores = cur.fetchall()
 
-        if not unlinked_persons:
+        if not unlinked_with_scores:
             continue
+
+        # Separate weak scorers from true orphans
+        weak_scorers = [u for u in unlinked_with_scores if u['best_weak_score'] is not None]
+        orphans = [u for u in unlinked_with_scores if u['best_weak_score'] is None]
 
         # Format detail
         detail_lines = [
@@ -1048,33 +1065,65 @@ def find_unlinked_in_populated_households(
                 f"{lp['name_as_recorded']} (age {lp['age'] or '?'}, {lp['role']})"
             )
 
-        detail_lines.append("")
-        detail_lines.append("◇ Unlinked persons (likely false negatives):")
-        for up in unlinked_persons:
+        # Weak scorers section
+        if weak_scorers:
+            detail_lines.append("")
+            detail_lines.append("⚠ Weak scorers (0.40–0.50 similarity to other census):")
+            for ws in weak_scorers:
+                match_id = ws['weak_match_id_2'] or ws['weak_match_id_1']
+                detail_lines.append(
+                    f"  • RecordedPerson {ws['recorded_person_id']}: {ws['name_as_recorded']} "
+                    f"(age {ws['age'] or '?'}, {ws['role']}) → "
+                    f"score {ws['best_weak_score']:.2f} with rp_id {match_id}"
+                )
+            detail_lines.append("")
             detail_lines.append(
-                f"  • RecordedPerson {up['recorded_person_id']}: "
-                f"{up['name_as_recorded']} (age {up['age'] or '?'}, {up['role']})"
+                "These persons scored just below the 0.50 linking threshold. Strong candidates "
+                "for manual linkage or threshold adjustment."
+            )
+
+        # Orphans section
+        if orphans:
+            detail_lines.append("")
+            detail_lines.append("○ True orphans (no cross-census records found):")
+            for orphan in orphans:
+                detail_lines.append(
+                    f"  • RecordedPerson {orphan['recorded_person_id']}: {orphan['name_as_recorded']} "
+                    f"(age {orphan['age'] or '?'}, {orphan['role']})"
+                )
+            detail_lines.append("")
+            detail_lines.append(
+                "These persons appear ONLY in this census. Likely emigrated, married out of area, "
+                "or died young. Can be linked to household parents for context, but no cross-census "
+                "verification possible."
             )
 
         detail_lines.append("")
         detail_lines.append(
-            "These unlinked individuals appear in a household with linked persons. "
-            "They may represent missing linkages or indicate validation rules that are too strict."
+            "Research action: Weak scorers warrant immediate review for manual linkage. "
+            "Orphans are informational—decide whether to link to household parents based on "
+            "genealogical judgment."
         )
+
+        title_parts = []
+        if weak_scorers:
+            title_parts.append(f"{len(weak_scorers)} weak scorers")
+        if orphans:
+            title_parts.append(f"{len(orphans)} orphans")
 
         items.append(ReportItem(
             finding_type="unlinked_in_populated_household",
-            priority=1,  # High priority: clear false negatives
+            priority=1 if weak_scorers else 3,  # Higher priority if there are weak scorers
             person_id=None,
             relationship_id=None,
             event_id=None,
             record_ids=[record_id],
-            title=f"Household {record_id}: {household['unlinked_count']} unlinked in populated household",
+            title=f"Household {record_id}: {' + '.join(title_parts)}",
             detail="\n".join(detail_lines),
             recommended_action=(
-                "Review unlinked persons in household context. These are likely to represent "
-                "valid linkages (especially children/servants in parent/head's household). "
-                "Consider manual linkage or threshold adjustment."
+                "For weak scorers: Review candidates and consider manual linkage or threshold tuning. "
+                "For orphans: Link to household for genealogical context if appropriate, or note as "
+                "emigrated/deceased."
             ),
         ))
 
