@@ -492,31 +492,6 @@ def _build_person_settings() -> SettingsCreator:
                 comparison_description="Household match scores (per-source): max >= 0.80 or >= 0.50",
             ),
 
-            # Role consistency (v1.2): exact matches and plausible transitions
-            # Enables Splink to score role consistency: exact matches (head→head) are strongest;
-            # plausible transitions (son→head at age 30+) are medium; implausible changes are weak.
-            cl.CustomComparison(
-                comparison_levels=[
-                    cll.NullLevel("role"),  # Handle NULL roles (missing in source)
-                    cll.CustomLevel(
-                        "role_l = role_r AND role_l IS NOT NULL",
-                        label_for_charts="exact_role_match",
-                    ),
-                    cll.CustomLevel(
-                        "("
-                        "  (role_l = 'son' AND role_r = 'head') OR "
-                        "  (role_l = 'head' AND role_r = 'son') OR "
-                        "  (role_l = 'daughter' AND role_r = 'head') OR "
-                        "  (role_l = 'head' AND role_r = 'daughter')"
-                        ")",
-                        label_for_charts="plausible_role_transition",
-                    ),
-                    cll.ElseLevel(),
-                ],
-                output_column_name="role_consistency",
-                comparison_description="Role consistency: exact match or plausible transition (son→head, etc.)",
-            ),
-
         ],
         retain_matching_columns=True,
         retain_intermediate_calculation_columns=False,

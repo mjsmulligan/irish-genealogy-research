@@ -152,6 +152,21 @@ FLOOR_EVENTS            = 100   # TODO: replace with exact after first run
 
 @pytest.fixture(scope="module")
 def db_conn():
+    """
+    Module-level fixture: set up clean database, ingest Tullynaught fixtures,
+    run full pipeline, capture metrics, then yield connection for all tests.
+
+    This ensures all tests run against the same freshly-ingested golden dataset
+    with known, fixed record and person counts (see METRICS_DEFINITIONS.md).
+
+    Fixture setup:
+      1. Clear evidence + conclusion layers (place_authority preserved)
+      2. Verify clean state: person count = 0
+      3. Ingest all three CSVs (1901, 1911, 1926)
+      4. Run full evidence + conclusion pipeline
+      5. Capture Phase 3 metrics and linkage statistics
+      6. Yield connection for test queries
+    """
     from src.db.db import open_db, check_version
     conn = open_db()
     check_version(conn)
@@ -163,9 +178,13 @@ def db_conn():
 def _setup_data(conn: psycopg2.extensions.connection) -> None:
     """
     Wipe evidence + conclusion layers, ingest all three Tullynaught CSVs,
-    then run the full conclusion pipeline.
+    run the full conclusion pipeline, and capture metrics.
 
     place_authority is preserved (must be seeded externally before running).
+
+    Uses the complete Tullynaught golden 3-census set (all 3,167 persons) to ensure
+    consistent linkage measurements across all test runs. See METRICS_DEFINITIONS.md
+    for linkage percentage calculations.
     """
     from src.evidence.census import ingest_census
     from src.evidence.role_relationships import assign_role_relationships
@@ -196,6 +215,16 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
         with conn.cursor() as cur:
             for table in clear_tables:
                 cur.execute(f"DELETE FROM {table}")
+
+    # Verify clean state: ensure person table is empty before ingest
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) as count FROM person")
+        person_count = cur.fetchone()["count"]
+        if person_count > 0:
+            raise AssertionError(
+                f"Database not clean: {person_count} persons exist after clear. "
+                "Run 'python -m src.cli clear-evidence' before tests."
+            )
 
     print("  ingesting all sources...")
     for source_id, fixture_path in FIXTURES.items():
@@ -249,32 +278,51 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
     run_event_resolution(conn)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
-    # INSTRUMENTATION: Capture Phase 3 metrics
+    # METRICS CAPTURE: Three-Census Linkage and Pairwise Similarity
+    # See tests/METRICS_DEFINITIONS.md for calculation definitions and regression detection rules.
     print("\n" + "="*80)
-    print("PHASE 3 LINKAGE METRICS (v1.2 with Role Consistency)")
+    print("LINKAGE METRICS — Phase 3 (v1.2 with Role Consistency)")
     print("="*80)
-    
+
     with conn.cursor() as cur:
-        # Overall linkage
+        # ===== Three-Census Linkage Percentage =====
+        # Definition: Proportion of recorded persons linked into unified persons
+        # Formula: 100 × (Linked Recorded Persons) / (Total Recorded Persons)
+        # Numerator: COUNT(DISTINCT recorded_person_id) FROM person_recorded_person
+        # Denominator: EXACT_PERSONS_TOTAL = 3,167 (fixed, from all three census fixtures)
+        # Interpretation: % of all census persons that were merged via Splink + clustering
+
         cur.execute("""
-            SELECT 
-                COUNT(DISTINCT p.person_id) as total_persons,
-                COUNT(DISTINCT prp.person_id) as linked_persons
-            FROM person p
-            LEFT JOIN person_recorded_person prp ON prp.person_id = p.person_id
+            SELECT COUNT(DISTINCT recorded_person_id) as linked_rp
+            FROM person_recorded_person
         """)
-        total_p, linked_p = cur.fetchone().values()
-        linkage_pct = 100.0 * linked_p / total_p if total_p > 0 else 0
-        
-        print(f"Total persons: {total_p}")
-        print(f"Linked persons: {linked_p} ({linkage_pct:.1f}%)")
-        print(f"Unlinked: {total_p - linked_p} ({100-linkage_pct:.1f}%)")
-        
-        # Score distribution
+        linked_recorded_persons = cur.fetchone()["linked_rp"]
+        linkage_pct = 100.0 * linked_recorded_persons / EXACT_PERSONS_TOTAL
+
+        print(f"\nThree-Census Linkage (denominator: {EXACT_PERSONS_TOTAL} total persons)")
+        print(f"  Linked recorded persons: {linked_recorded_persons}")
+        print(f"  Linkage: {linkage_pct:.1f}%")
+
+        # Verify fixture ingestion: total persons should match expected
+        cur.execute("SELECT COUNT(DISTINCT person_id) FROM person")
+        clustered_persons = cur.fetchone()["count"]
+        print(f"  Clustered persons: {clustered_persons} (unique persons after merging)")
+        print(f"  Merge ratio: {linked_recorded_persons / clustered_persons:.2f}x " +
+              f"({linked_recorded_persons} recorded → {clustered_persons} clustered)")
+
+        # ===== Pairwise Person Similarity Metrics =====
+        # Definition: Distribution and quality of similarity scores across all recorded_person pairs
+        # These scores come from Splink EM training and determine clustering at threshold=0.50
+        # Formula: Score tiers as % of total similarity pairs evaluated
+        # Interpretation: Concentration near threshold indicates good feature discrimination
+
         cur.execute("""
-            SELECT 
+            SELECT
                 COUNT(*) as total_pairs,
                 AVG(score)::numeric(5,3) as avg_score,
+                MIN(score)::numeric(5,3) as min_score,
+                MAX(score)::numeric(5,3) as max_score,
+                STDDEV(score)::numeric(5,3) as stddev_score,
                 COUNT(CASE WHEN score >= 0.65 THEN 1 END) as tier_65,
                 COUNT(CASE WHEN score >= 0.50 AND score < 0.65 THEN 1 END) as tier_50_65,
                 COUNT(CASE WHEN score >= 0.45 AND score < 0.50 THEN 1 END) as tier_45_50,
@@ -283,23 +331,48 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
             WHERE type = 'similarity'
         """)
         row = cur.fetchone()
+
+        print(f"\nPairwise Person Similarity (person-level Splink scores)")
         if row and row['total_pairs']:
-            print(f"\nSimilarity pairs: {row['total_pairs']} (avg score: {row['avg_score']})")
-            print(f"  ≥0.65: {row['tier_65']} ({100*row['tier_65']/row['total_pairs']:.1f}%)")
-            print(f"  0.50-0.65: {row['tier_50_65']} ({100*row['tier_50_65']/row['total_pairs']:.1f}%)")
-            print(f"  0.45-0.50: {row['tier_45_50']} ({100*row['tier_45_50']/row['total_pairs']:.1f}%)")
-            print(f"  <0.45: {row['tier_below_45']} ({100*row['tier_below_45']/row['total_pairs']:.1f}%)")
-        
-        # V1.1 comparison
+            total_pairs = row['total_pairs']
+            print(f"  Total pairs: {total_pairs}")
+            print(f"  Statistics:")
+            print(f"    Mean: {row['avg_score']:.3f}")
+            print(f"    Range: {row['min_score']:.3f} – {row['max_score']:.3f}")
+            print(f"    Std Dev: {row['stddev_score']:.3f}")
+            print(f"  Score distribution (tiers as % of total pairs):")
+            pct_65 = 100*row['tier_65']/total_pairs
+            pct_50_65 = 100*row['tier_50_65']/total_pairs
+            pct_45_50 = 100*row['tier_45_50']/total_pairs
+            pct_below_45 = 100*row['tier_below_45']/total_pairs
+
+            print(f"    ≥0.65 (high):      {row['tier_65']:4d} ({pct_65:5.1f}%)")
+            print(f"    0.50-0.65 (med):   {row['tier_50_65']:4d} ({pct_50_65:5.1f}%)")
+            print(f"    0.45-0.50 (marg):  {row['tier_45_50']:4d} ({pct_45_50:5.1f}%)")
+            print(f"    <0.45 (weak):      {row['tier_below_45']:4d} ({pct_below_45:5.1f}%)")
+
+            pairs_above_threshold = row['tier_65'] + row['tier_50_65'] + row['tier_45_50']
+            pct_above_threshold = 100*pairs_above_threshold/total_pairs
+            print(f"  Pairs ≥0.45 (above clustering threshold): {pairs_above_threshold} ({pct_above_threshold:.1f}%)")
+        else:
+            print(f"  (No similarity pairs)")
+
+        # ===== Regression Detection vs v1.1 Baseline =====
+        # v1.1 baseline (before Phase 3): 26.0% linkage (824 persons)
+        # v1.2 target (after Phase 3 fix): ≥26% linkage (restore to baseline)
+
         v1_1_linked = 824
         v1_1_linkage = 26.0
         gain = linkage_pct - v1_1_linkage
-        
-        print(f"\nComparison to v1.1 baseline:")
-        print(f"  v1.1: {v1_1_linkage}% ({v1_1_linked} persons)")
-        print(f"  v1.2: {linkage_pct:.1f}% ({linked_p} persons)")
-        print(f"  Gain: {gain:+.1f}pp ({linked_p - v1_1_linked:+d} persons)")
-    
+
+        print(f"\nRegression Detection vs v1.1 Baseline")
+        print(f"  v1.1 linkage: {v1_1_linkage:.1f}% ({v1_1_linked} persons)")
+        print(f"  v1.2 linkage: {linkage_pct:.1f}% ({linked_recorded_persons} persons)")
+        if gain >= 0:
+            print(f"  ✓ Gain: +{gain:.1f}pp ({linked_recorded_persons - v1_1_linked:+d} persons)")
+        else:
+            print(f"  ✗ Regression: {gain:.1f}pp ({linked_recorded_persons - v1_1_linked:+d} persons)")
+
     print("="*80 + "\n")
 
     print("Setup complete.\n")
