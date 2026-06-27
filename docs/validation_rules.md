@@ -3,7 +3,7 @@
 *Version 2.9 — 24 June 2026*
 *Audience: Developers and data engineers. This document is the authoritative specification for all validation rules enforced by the Python validation layer. It is the companion to `data_dictionary.md`, `conceptual_model.md`, `database_schema.md`, and `genealogical_constraints.md`.*
 
-> **Status notice — 24 June 2026:** The genealogical constraint rules in §6 (R40–R46) and their implementation in `src/review/validator.py` are **superseded**. The `validator.py` module is retired in full. Researcher-facing findings derived from these constraints are now the responsibility of the new review layer (`src/review/`), designed in session 18 and specified in `ROADMAP.md` §5.9. Pre-write structural validation (formerly `validate_object`) is not replaced in the new design — structural constraints are enforced at the DB layer and repo level. This document is retained as a historical record of the rule vocabulary and thresholds; the implementation it describes no longer exists.
+> **Status notice — 24 June 2026:** The genealogical constraint rules in §6 (R40–R46) and their implementation in `src/review/validator.py` are **superseded**. The `validator.py` module is retired in full. Researcher-facing findings derived from these constraints are now the responsibility of the new review layer (`src/review/`), specified in `docs/review_layer.md`. Pre-write structural validation (formerly `validate_object`) is not replaced in the new design — structural constraints are enforced at the DB layer and repo level. This document is retained as a historical record of the rule vocabulary and thresholds; the implementation it describes no longer exists.
 
 ______________________________________________________________________
 
