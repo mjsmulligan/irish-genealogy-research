@@ -12,6 +12,7 @@ Each row represents one RecordedPerson.  Columns:
     surname_norm                        TEXT     — normalised surname (last token of name_as_recorded)
     forename_norm                       TEXT     — normalised forenames (all tokens except last)
     name_norm                           TEXT     — forename_norm + " " + surname_norm (full name for Splink comparison)
+    soundex_surname                     TEXT     — Soundex phonetic code of surname (for blocking on Irish variants)
     birth_year_est                      INTEGER  — census_year − age (NULL if age is NULL)
     sex_as_recorded                     TEXT     — 'm' / 'f' / NULL
     household_match_score_to_SOURCE     REAL     — per-source household similarity (v1.1)
@@ -36,6 +37,7 @@ import pandas as pd
 import psycopg2.extensions
 
 from src.constants import CENSUS_SOURCE_IDS
+from src.evidence.features.census import _soundex
 
 # Map source_id → approximate census year for birth_year_est calculation.
 _SOURCE_YEAR: dict[int, int] = {3: 1901, 4: 1911, 5: 1926}
@@ -195,6 +197,7 @@ def build_census_person_features(
                 "source_id": source_id,
                 "place_id": p["place_id"],
                 "surname_norm": surname,
+                "soundex_surname": _soundex(surname),
                 "forename_norm": forename,
                 "name_norm": name_norm,
                 "birth_year_est": birth_year_est,
