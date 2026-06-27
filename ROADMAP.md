@@ -4,42 +4,42 @@
 
 ______________________________________________________________________
 
-## 0. Latest Update (27 June 2026 — Splink v1.2 Tuning & Person Similarity Improvements)
+## 0. Latest Update (27 June 2026 — Splink v1.3 Phonetic Blocking & v1.2 Tuning)
 
-**Implemented Splink v1.2 tuning to improve cross-census person matching:**
+**Implemented Splink v1.2-v1.3 comprehensive tuning for Irish genealogy cross-census matching:**
 
-### Key Improvements
+### v1.3: Soundex Phonetic Blocking for Irish Surname Variants ✅
+**Problem addressed:** Character-based blocking misses phonetic variants.
+- Before: `substr(surname, 1, 4)` misses O'Brien/Brien/O Brien (different prefixes)
+- After: Soundex phonetic codes block all variants together (all → B650)
+- Implementation: Python Soundex algorithm, pre-computed in features (DuckDB compatibility)
+- Examples: O'Brien, Brien, O Brien → B650; Ó'Broin → B650 (blocks together)
+- **Blocking rules:** place_id (primary) + soundex (secondary) + substr (fallback)
+- **Impact:** Better linkage for common Irish surnames with spelling variations
 
-#### 1. Separated Forename & Surname Comparisons ✅
-**Issue addressed:** Previously identified in prior session—features were built but unused.
-- Before: Single `name_norm` comparison (concatenated full name)
-- After: Separate `surname_norm` and `forename_norm` Jaro-Winkler comparisons
-- Rationale: Surname stable and high signal; forename variable. Different matching semantics.
-- EM training: Now learns independent weights for surname vs forename; can optimize each.
+### v1.2: Separated Name Components & Disabled TF for Cross-Census ✅
+**Issues addressed:** 
+1. Prior session identified forename/surname features built but unused
+2. TF adjustment inappropriately penalizes common names in cross-census matching
 
-#### 2. Disabled Term Frequency for Cross-Census Matching ✅
-**Problem:** TF adjustment designed for within-source deduplication, not cross-census linkage.
-- Before: `term_frequency_adjustments=True` on name (penalizes common names)
-- Problem: "Robert Bustard" exact match scores only 0.528 despite being identical
-- Root cause: TF heavily penalizes common Irish surnames (Robert: 34 occ, Bustard: 20 occ)
-- After: `term_frequency_adjustments=False` for both surname and forename
-- Result: Common names now score properly without penalty in cross-census matching
+**Changes:**
+- Separated single `name_norm` into separate `surname_norm` and `forename_norm` Jaro-Winkler comparisons
+- Disabled `term_frequency_adjustments` for both (TF designed for within-source dedup, not cross-census)
+- "Robert Bustard" exact match now scores properly without 0.528 TF penalty
+- EM training learns independent weights for surname vs forename
 
-#### 3. EM Training Optimization ✅
-- Separate comparisons allow EM to independently calibrate surname vs forename weights
-- Model can weight surname heavier if more discriminative (expected)
-- Two existing EM passes (surname_first4, place_id) still active
-
-### Expected Impact
-- **Linkage target:** 21.1% (v1.1) → 24-26% (v1.2) [+3-5pp]
-- **Mechanism:** Better scoring of common Irish surnames without TF penalty
+### Combined Impact (v1.2 + v1.3)
+- **Linkage target:** 21.1% (v1.1) → 25-28% (v1.3) [+4-7pp expected]
+- **Mechanisms:**
+  1. Soundex blocking catches more surname variants (phonetic recall)
+  2. Separate surname/forename optimize independently (EM calibration)
+  3. No TF penalty on common Irish surnames (scoring accuracy)
 - **Validation:** All 59 tests pass; conflict resolution handles opinion revisions
 
 ### Code Changes
-File: `src/evidence/similarity.py` (`_build_person_settings()`)
-- Separated name_norm into surname_norm + forename_norm comparisons
-- Both use `term_frequency_adjustments=False` for cross-census semantics
-- Updated docstring documenting v1.2 changes
+- `src/evidence/similarity.py`: Updated Splink settings with soundex blocking
+- `src/evidence/features/census.py`: Added `_soundex()` implementation + feature columns
+- `src/evidence/features/census_person.py`: Added soundex columns to person features
 
 ---
 
