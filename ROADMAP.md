@@ -4,33 +4,53 @@
 
 ______________________________________________________________________
 
-## 0. Latest Update (27 June 2026 — Double-Link Prevention & Opinion Revision)
+## 0. Latest Update (27 June 2026 — Complete Double-Link Prevention with Downstream Cleanup)
 
-**Implemented conflict resolution for RecordedPerson linkage:** When relationship resolution (Step 2) attempts to link a RecordedPerson already linked by person resolution (Step 1), we now apply genealogical opinion revision: keep the strongest evidence link, preventing data integrity violations.
+**Implemented comprehensive solution to prevent double-linking and address all downstream consequences:**
 
-### Implementation Details
+### Three-Part Enhancement
 
-**Problem:** Double-linking occurs when Step 2 tries to refine Step 1's clustering:
-- Step 1 creates Person clusters via connected components (mathematically sound)
-- Step 2 uses household context to refine by linking orphans and merging households
-- Conflict: RecordedPerson X linked to Person A (Step 1) vs. Person B (Step 2)
-- Violation: `person_recorded_person` PK enforces 1:1 mapping; duplicate key fails
+#### 1. Core Prevention: Conflict Detection & Resolution ✅
+**Problem:** RecordedPerson linkage conflicts occur when Step 2 tries to re-link a RecordedPerson already assigned by Step 1.
 
-**Solution: Genealogical Opinion Revision**
+**Solution:**
 - `_get_recorded_person_link()`: Query existing linkage before attempting re-link
-- `_link_recorded_person_to_person()`: Returns status (linked/kept_existing/conflict_resolved)
-  - Orphan: link to new Person
-  - Already linked to same Person: no-op
-  - Linked to different Person: keep existing (conservative)
-- Track conflicts in `RelationshipResolutionResult.link_conflicts_resolved`
-- Report shows "Link conflicts resolved: N (opinion revision)"
+- `_link_recorded_person_to_person()`: Returns status + LinkConflict record
+  - Orphan → link to new Person (status: "linked")
+  - Same Person → no-op (status: "kept_existing")
+  - Different Person → keep existing (status: "conflict_resolved", tracks conflict)
+- Conservative default: preserve Step 1 clustering when conflicts emerge
 
-**Genealogical rationale:** In Irish genealogy, you constantly revise conclusions when stronger evidence emerges (household matching, age progression, role consistency). Step 2 refines Step 1 similarly—when household context suggests a different match, opinion revision is appropriate.
+**Result:** No double-linking violations; database constraint always satisfied.
 
-**Validation:**
-- All 59 integration tests pass, including `test_conclusion_recorded_person_not_double_linked`
-- No database constraint violations
-- No data integrity issues
+#### 2. Orphan Cleanup: Data Integrity ✅
+**Problem:** When Step 2 creates Persons but loses RecordedPersons to conflicts, orphaned Persons remain (no evidence base).
+
+**Solution:**
+- After relationship resolution: identify Persons with zero linked RecordedPersons
+- Delete orphaned Persons (maintains invariant: every Person grounded in ≥1 RecordedPerson)
+- Track cleanup in `RelationshipResolutionResult.persons_orphaned`
+
+**Genealogical principle:** A hypothesis without evidence is abandoned, not retained.
+
+#### 3. Audit Trail: Review Layer Documentation ✅
+**Problem:** Opinion revisions happen silently; researcher can't understand why Step 2's household evidence diverged from Step 1.
+
+**Solution:**
+- `LinkConflict` dataclass: tracks recorded_person_id, old_person_id, new_person_id_attempted, resolution
+- Stored in `RelationshipResolutionResult.link_conflicts` (shown in report)
+- New review finding type: `link_conflict_resolved` (changelog entry)
+- Report output shows first 3 conflicts with details
+
+**Genealogical rationale:** In genealogy, you gather evidence and revise conclusions. This documents that process.
+
+### Validation
+
+✅ All 59 integration tests pass, including `test_conclusion_recorded_person_not_double_linked`
+✅ No database constraint violations
+✅ No data integrity issues
+✅ Orphan cleanup verified
+✅ Audit trail captures conflicts for review layer
 
 ---
 
