@@ -413,6 +413,7 @@ def _build_person_settings() -> SettingsCreator:
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
             block_on("place_id"),
+            block_on("soundex_surname"),
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
