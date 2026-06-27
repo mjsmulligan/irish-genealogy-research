@@ -21,6 +21,9 @@ Commands:
                         relationship resolution + event resolution
     review              Run the research review — produce a prioritised findings
                         report (JSON + Markdown) in the reports/ directory
+    export-validation   Export validation dataset for manual linkage review.
+                        Creates a CSV with all persons across all censuses,
+                        marked with linkage status for researcher validation.
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -36,6 +39,7 @@ import psycopg2.extensions
 
 from src.db.db import open_db, init_db, check_version
 from src.constants import CENSUS_SOURCE_IDS
+from src.export_validation_dataset import export_validation_dataset
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +505,10 @@ def _cmd_review(args: argparse.Namespace) -> None:
     conn.close()
 
 
+def _cmd_export_validation(args: argparse.Namespace) -> None:
+    export_validation_dataset(args.output)
+
+
 # ---------------------------------------------------------------------------
 # Argparse + dispatch
 # ---------------------------------------------------------------------------
@@ -561,6 +569,16 @@ def main() -> None:
         help="Run research review — produces prioritised findings report (reports/ dir)",
     )
 
+    p_export = sub.add_parser(
+        "export-validation",
+        help="Export validation dataset for manual linkage review by researchers",
+    )
+    p_export.add_argument(
+        "-o", "--output",
+        default="validation_dataset.csv",
+        help="Output CSV file path (default: validation_dataset.csv)"
+    )
+
     dispatch = {
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
@@ -572,6 +590,7 @@ def main() -> None:
         "summary":           _cmd_summary,
         "conclude":          _cmd_conclude,
         "review":            _cmd_review,
+        "export-validation": _cmd_export_validation,
     }
 
     args = parser.parse_args()
