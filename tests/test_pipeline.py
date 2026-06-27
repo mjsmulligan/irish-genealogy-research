@@ -281,7 +281,7 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
     # METRICS CAPTURE: Three-Census Linkage and Pairwise Similarity
     # See tests/METRICS_DEFINITIONS.md for calculation definitions and regression detection rules.
     print("\n" + "="*80)
-    print("LINKAGE METRICS — Phase 3 (v1.2 with Role Consistency)")
+    print("LINKAGE METRICS — v1.1 Baseline (Phase 3 Removed)")
     print("="*80)
 
     with conn.cursor() as cur:
