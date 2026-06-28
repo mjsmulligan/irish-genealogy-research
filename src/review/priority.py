@@ -54,7 +54,9 @@ _BASE_SCORE: dict[str, int] = {
     "merge_error_candidate":              _TIER_SCHEMA_STATE + 0,   # highest — corrupts everything
     "birth_singularity_violation":        _TIER_SCHEMA_STATE + 10,
     "death_singularity_violation":        _TIER_SCHEMA_STATE + 10,
-    "life_event_sequence_violation":      _TIER_CONSTRAINT + 0,
+    "parent_age_regression":              _TIER_CONSTRAINT - 10,   # age regression is critical merge error
+    "split_person_candidate":             _TIER_CONSTRAINT + 0,    # very high — suggests split needed
+    "life_event_sequence_violation":      _TIER_CONSTRAINT + 5,
     "parent_age_implausible":             _TIER_CONSTRAINT + 10,
     "marriage_age_implausible":           _TIER_CONSTRAINT + 20,
     "lifespan_boundary_violated":         _TIER_CONSTRAINT + 30,
