@@ -58,6 +58,23 @@ def _ensure_data_dir() -> None:
     DATA_DIR.mkdir(exist_ok=True)
 
 
+def _logainm_id_exists(conn: psycopg2.extensions.connection, logainm_id: int) -> bool:
+    """
+    Check if a logainm_id already exists in place_authority.
+
+    Returns:
+        True if DED with logainm_id exists, False otherwise
+    """
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM place_authority WHERE logainm_id = %s AND place_type = 'ded' LIMIT 1",
+        (logainm_id,),
+    )
+    exists = cur.fetchone() is not None
+    cur.close()
+    return exists
+
+
 def _get_ded_context(conn: psycopg2.extensions.connection, logainm_id: int) -> tuple[str, str]:
     """
     Query place_authority to get county and DED names for a logainm_id.
@@ -88,9 +105,9 @@ def _get_ded_context(conn: psycopg2.extensions.connection, logainm_id: int) -> t
     return county_name, ded_name
 
 
-def _fetch_census_year(county: str, ded: str, year: int, max_retries: int = 3) -> list[dict]:
+def _fetch_census_from_api(county: str, ded: str, year: int, max_retries: int = 3) -> pd.DataFrame:
     """
-    Fetch census CSV data for a single year via pagination.
+    Fetch census CSV data from API via pagination (single year or shared endpoint).
 
     Args:
         county: County name (e.g., "Donegal")
@@ -99,7 +116,7 @@ def _fetch_census_year(county: str, ded: str, year: int, max_retries: int = 3) -
         max_retries: Number of retry attempts on network error
 
     Returns:
-        List of record dicts from the CSV
+        DataFrame with all fetched records (may contain multiple census years if API returns them)
     """
     base_url = _CENSUS_BASE_URLS.get(year)
     if not base_url:
@@ -142,7 +159,7 @@ def _fetch_census_year(county: str, ded: str, year: int, max_retries: int = 3) -
             break
 
         all_records.append(df)
-        print(f"  {year}: Fetched {len(df)} records at offset {offset}.")
+        print(f"  API returned {len(df)} records at offset {offset}.")
 
         # Last page
         if len(df) < limit:
@@ -152,10 +169,40 @@ def _fetch_census_year(county: str, ded: str, year: int, max_retries: int = 3) -
         time.sleep(1)  # Rate limit: 1s between pages
 
     if not all_records:
+        return pd.DataFrame()
+
+    return pd.concat(all_records, ignore_index=True)
+
+
+def _fetch_census_year(county: str, ded: str, year: int) -> list[dict]:
+    """
+    Fetch census CSV data for a specific year.
+
+    Note: 1901 and 1911 share the same API endpoint and are fetched together,
+    then split by census_year column. 1926 uses a separate endpoint.
+
+    Args:
+        county: County name (e.g., "Donegal")
+        ded: DED name (e.g., "Tullynaught")
+        year: Census year (1901, 1911, or 1926)
+
+    Returns:
+        List of record dicts from the CSV, filtered by census_year
+    """
+    df = _fetch_census_from_api(county, ded, year)
+
+    if df.empty:
         return []
 
-    final_df = pd.concat(all_records, ignore_index=True)
-    return final_df.to_dict("records")
+    # Filter by census_year column (1901/1911 API may return both years)
+    if "census_year" in df.columns:
+        df = df[df["census_year"] == year]
+        if df.empty:
+            print(f"  {year}: No records found after filtering by census_year.")
+            return []
+
+    print(f"  {year}: {len(df)} records after filtering.")
+    return df.to_dict("records")
 
 
 def fetch_census(
