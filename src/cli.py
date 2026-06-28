@@ -641,6 +641,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         run_validation_cleanup,
         print_validation_cleanup_report,
     )
+    from src.metrics import Timer, PipelineRun, log_run
 
     conn = open_db()
     check_version(conn)
@@ -648,11 +649,25 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     print("\nRunning conclusion pipeline...")
 
     print("\n[1/4] Person resolution...")
-    person_result = run_person_resolution(conn)
+    with Timer('conclusion', 'run_person_resolution') as timer:
+        person_result = run_person_resolution(conn)
+    log_run(conn, PipelineRun(
+        stage='conclusion',
+        step_name='run_person_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
     print_person_resolution_report(person_result)
 
     print("\n[2/4] Relationship resolution...")
-    rel_result = run_relationship_resolution(conn)
+    with Timer('conclusion', 'run_relationship_resolution') as timer:
+        rel_result = run_relationship_resolution(conn)
+    log_run(conn, PipelineRun(
+        stage='conclusion',
+        step_name='run_relationship_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
     print_relationship_resolution_report(rel_result)
 
     if rel_result.merge_candidates:
@@ -660,14 +675,28 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         print("  Review and resolve manually before re-running.")
 
     print("\n[3/4] Event resolution...")
-    event_result = run_event_resolution(conn)
+    with Timer('conclusion', 'run_event_resolution') as timer:
+        event_result = run_event_resolution(conn)
+    log_run(conn, PipelineRun(
+        stage='conclusion',
+        step_name='run_event_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
     print_event_resolution_report(event_result)
 
     if args.skip_validation:
         print("\n[4/4] Validation cleanup... SKIPPED (--skip-validation)")
     else:
         print("\n[4/4] Validation cleanup...")
-        cleanup_result = run_validation_cleanup(conn)
+        with Timer('conclusion', 'run_validation_cleanup') as timer:
+            cleanup_result = run_validation_cleanup(conn)
+        log_run(conn, PipelineRun(
+            stage='conclusion',
+            step_name='run_validation_cleanup',
+            records_processed=None,
+            duration_ms=timer.duration_ms,
+        ))
         print_validation_cleanup_report(cleanup_result)
 
     print("Conclusion pipeline complete. Running summary...\n")
