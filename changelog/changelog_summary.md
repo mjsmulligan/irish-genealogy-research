@@ -4,6 +4,26 @@ Complete session history for the Genealogy Research Assistant project. Detailed 
 
 ---
 
+## 28 June 2026 — Household Resolution (New Conclusion Pipeline Step)
+
+Detailed file: [`session_changelog_2026-06-28.md`](session_changelog_2026-06-28.md)
+
+Gap identified from review reports: Persons only created when a RecordedPerson matched across multiple census years. Households where some members linked cross-census and others did not were left partially resolved.
+
+**New step [3/5]: `household_resolution`.** If at least one RecordedPerson in a household has become a Person (anchor), any remaining unlinked RecordedPerson connected to that anchor via a RecordedRelationship is promoted to a Person conclusion. Co-presence alone is not sufficient — a RecordedRelationship path is required, which naturally excludes visitors, boarders, and other non-family roles. Operates within a single census only. Score inherited from the RecordedRelationship prior (0.75–0.90). After Person creation, Relationship conclusions derived from the fuller household.
+
+**New: `src/conclusion/household_utils.py`.** Shared helpers extracted from `relationship_resolution.py`: `get_household_members`, `ensure_relationship`, `create_relationships_from_household`. Both `relationship_resolution.py` and `household_resolution.py` import from here.
+
+**Modified: `relationship_resolution.py`.** Three extracted functions removed; imports added from `household_utils`. Unused `Optional` and `defaultdict` imports removed.
+
+**Modified: `src/constants.py`.** `SCORE_VERSION_HOUSEHOLD_EXTENSION = "household_extension_v1.0"` added.
+
+**Modified: `src/cli.py`.** Conclusion pipeline wired as [1/5]–[5/5]. All step counters, docstrings, and help text updated.
+
+**ROADMAP items added:** 40 (test harness coverage for new step), 41 (household contradiction validation — review layer finding, warning-level, deferred until item 40 complete). No schema changes; no migration required.
+
+---
+
 ## 27 June 2026 — Splink v1.2–v1.3, Threshold Tuning, Phase 1 Analysis
 
 **Sessions 27 & 28 + supporting analysis files**
