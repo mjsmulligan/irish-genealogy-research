@@ -446,7 +446,7 @@ def _cmd_fetch_places(args: argparse.Namespace) -> None:
 
 
 def _cmd_fetch_census(args: argparse.Namespace) -> None:
-    from src.db.fetch_census import fetch_census, print_fetch_census_report
+    from src.db.fetch_census import fetch_census, print_fetch_census_report, _logainm_id_exists
     from src.db.fetch_places import fetch_places, write_to_db as write_places_to_db
     from src.evidence.census import ingest_census
     from src.evidence.role_relationships import assign_role_relationships
@@ -468,19 +468,22 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
     conn = open_db()
     check_version(conn)
 
-    # Step 1: Seed place authority via fetch-places
-    print(f"Step 1/2: Seeding place_authority with logainm ID {args.logainm_id}...")
-    try:
-        rate_delay = getattr(args, 'rate_delay', 0.05)  # Default to 0.05s if not provided
-        result = fetch_places(args.logainm_id, api_key, rate_delay)
-        rows = result.rows
-        print(f"  Fetched {len(rows)} place rows.")
-        inserted, skipped = write_places_to_db(conn, rows)
-        print(f"  DB: {inserted} inserted, {skipped} skipped.")
-    except Exception as e:
-        print(f"Error seeding places: {e}", file=sys.stderr)
-        conn.close()
-        sys.exit(1)
+    # Step 1: Seed place authority via fetch-places (skip if already exists)
+    if _logainm_id_exists(conn, args.logainm_id):
+        print(f"Step 1/2: logainm ID {args.logainm_id} already in place_authority. Skipping fetch-places.")
+    else:
+        print(f"Step 1/2: Seeding place_authority with logainm ID {args.logainm_id}...")
+        try:
+            rate_delay = getattr(args, 'rate_delay', 0.05)  # Default to 0.05s if not provided
+            result = fetch_places(args.logainm_id, api_key, rate_delay)
+            rows = result.rows
+            print(f"  Fetched {len(rows)} place rows.")
+            inserted, skipped = write_places_to_db(conn, rows)
+            print(f"  DB: {inserted} inserted, {skipped} skipped.")
+        except Exception as e:
+            print(f"Error seeding places: {e}", file=sys.stderr)
+            conn.close()
+            sys.exit(1)
 
     # Step 2: Fetch and save census files
     print(f"\nStep 2/2: Downloading census files...")
