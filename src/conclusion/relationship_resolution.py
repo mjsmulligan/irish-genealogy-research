@@ -325,6 +325,36 @@ def _link_recorded_person_to_person(
     """
     from src.dal.person_repo import link_person_to_recorded_person
 
+    # Check for same-census constraint: reject if person is already linked to another recorded_person from same census
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT r.source_id FROM record r
+            JOIN recorded_person rp ON rp.record_id = r.record_id
+            WHERE rp.recorded_person_id = %s
+            """,
+            (recorded_person_id,),
+        )
+        row = cur.fetchone()
+        new_source_id = row["source_id"] if row else None
+
+    if new_source_id:
+        # Check if person is already linked to another recorded_person from same source
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COUNT(*) as cnt FROM person_recorded_person prp
+                JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+                JOIN record r ON rp.record_id = r.record_id
+                WHERE prp.person_id = %s AND r.source_id = %s
+                """,
+                (person_id, new_source_id),
+            )
+            existing_same_census = cur.fetchone()["cnt"]
+            if existing_same_census > 0:
+                # Would create same-census link; reject
+                return "skipped_same_census", None
+
     existing = _get_recorded_person_link(conn, recorded_person_id)
 
     if existing is None:
