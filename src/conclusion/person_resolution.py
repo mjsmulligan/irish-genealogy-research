@@ -376,9 +376,37 @@ def run_person_resolution(
     from src.dal.person_repo import create_person, link_person_to_recorded_person
 
     for root, members in clusters.items():
+        # Validate cluster: remove any members that share a census source with another member
+        # This catches transitive same-census linkages (A→B cross-census, B→C cross-census, but A and C same-census)
+        valid_members = []
+        member_sources: dict[int, int] = {}  # rp_id -> source_id
+
+        # Get source_id for each member
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT rp.recorded_person_id, r.source_id "
+                "FROM recorded_person rp "
+                "JOIN record r ON rp.record_id = r.record_id "
+                "WHERE rp.recorded_person_id = ANY(%s)",
+                (members,),
+            )
+            for row in cur.fetchall():
+                member_sources[row["recorded_person_id"]] = row["source_id"]
+
+        # Keep only members that don't share source_id with any other member
+        for rp_id in members:
+            source_id = member_sources.get(rp_id)
+            # Check if any other member has the same source_id
+            if not any(other_id != rp_id and member_sources.get(other_id) == source_id for other_id in members):
+                valid_members.append(rp_id)
+
+        if not valid_members:
+            # Cluster invalid; skip it
+            continue
+
         # Generate label and resolve gender
-        label = _generate_person_label(conn, members)
-        gender = _resolve_gender(conn, members)
+        label = _generate_person_label(conn, valid_members)
+        gender = _resolve_gender(conn, valid_members)
 
         # Create Person
         with conn:
@@ -386,7 +414,7 @@ def run_person_resolution(
             result.persons_created += 1
 
             # Link all RecordedPersons to this Person
-            for rp_id in members:
+            for rp_id in valid_members:
                 link_person_to_recorded_person(
                     conn,
                     person_id=person_id,
