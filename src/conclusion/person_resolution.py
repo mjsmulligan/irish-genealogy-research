@@ -270,6 +270,10 @@ def _filter_invalid_pairs(
         year_1 = {3: 1901, 4: 1911, 5: 1926}.get(p1["source_id"])
         year_2 = {3: 1901, 4: 1911, 5: 1926}.get(p2["source_id"])
 
+        # Check 0: Reject same-census linkages (hard constraint)
+        if p1["source_id"] == p2["source_id"]:
+            continue
+
         # Check 1: Age progression validity
         if p1["age"] and p2["age"] and year_1 and year_2:
             age_check = validate_age_progression(
