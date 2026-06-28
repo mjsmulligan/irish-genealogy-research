@@ -448,6 +448,15 @@ def _cmd_fetch_places(args: argparse.Namespace) -> None:
 def _cmd_fetch_census(args: argparse.Namespace) -> None:
     from src.db.fetch_census import fetch_census, print_fetch_census_report
     from src.db.fetch_places import fetch_places, write_to_db as write_places_to_db
+    from src.evidence.census import ingest_census
+    from src.evidence.role_relationships import assign_role_relationships
+    from src.evidence.place_resolution import run_place_resolution
+    from src.evidence.similarity import (
+        run_record_similarity,
+        print_record_similarity_report,
+        run_person_similarity,
+        print_person_similarity_report,
+    )
     import os
 
     # Get API key
@@ -478,10 +487,71 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
     census_result = fetch_census(conn, args.logainm_id, years=years)
     print_fetch_census_report(census_result)
 
-    conn.close()
-
     if census_result.errors:
+        conn.close()
         sys.exit(1)
+
+    # Optional Step 3: Run add-evidence pipeline on downloaded files
+    if args.add_evidence:
+        from pathlib import Path
+        data_dir = Path(__file__).parent.parent / "data"
+
+        print(f"\nRunning add-evidence pipeline on downloaded census files...")
+
+        for source_id, year in [(3, 1901), (4, 1911), (5, 1926)]:
+            if year not in census_result.records_per_year:
+                continue
+
+            csv_file = data_dir / f"{census_result.ded_name}_{year}.csv"
+            if not csv_file.exists():
+                print(f"  Skipping {year}: CSV not found at {csv_file}")
+                continue
+
+            print(f"\n[Evidence {year}/3] Running evidence pipeline for {year} census...")
+
+            # [1/3] Ingest CSV
+            print(f"  [1/3] Ingesting CSV (source {source_id})...")
+            ingest_result = ingest_census(conn, str(csv_file), source_id=source_id)
+            print(f"    Households: {ingest_result['records_committed']}, Persons: {ingest_result['persons_committed']}")
+
+            # [2/3] Assign role-pair RecordedRelationships
+            print(f"  [2/3] Assigning role-pair RecordedRelationships...")
+            rr_totals = {"created": 0, "skipped_null": 0, "skipped_no_rule": 0}
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT record_id FROM record WHERE source_id = %s "
+                    "ORDER BY record_id DESC LIMIT %s",
+                    (source_id, ingest_result["records_committed"]),
+                )
+                record_ids = [row["record_id"] for row in cur.fetchall()]
+
+            with conn:
+                for rid in record_ids:
+                    rr = assign_role_relationships(conn, rid)
+                    rr_totals["created"] += rr.relationships_created
+                    rr_totals["skipped_null"] += rr.skipped_null_role_pairs
+                    rr_totals["skipped_no_rule"] += rr.skipped_no_rule
+            print(f"    Relationships: {rr_totals['created']}")
+
+            # [3/3] Place resolution
+            print(f"  [3/3] Running place resolution...")
+            place_result = run_place_resolution(conn)
+            print(f"    Records linked: {place_result.records_linked}, Unresolved: {len(place_result.unresolved)}")
+
+        # Run cross-census similarity (once after all years ingested)
+        print(f"\nRunning cross-census similarity analysis...")
+        print(f"  [4/5] Record similarity (Splink)...")
+        record_similarity_result = run_record_similarity(conn)
+
+        print(f"  [5/5] Person similarity (Splink)...")
+        person_similarity_result = run_person_similarity(conn)
+
+        print_record_similarity_report(record_similarity_result)
+        print_person_similarity_report(person_similarity_result)
+
+        print(f"\nadd-evidence pipeline complete")
+
+    conn.close()
 
 
 def _cmd_summary(args: argparse.Namespace) -> None:
@@ -661,6 +731,7 @@ def main() -> None:
     p_fetch_census.add_argument("--logainm-id", type=int, required=True, help="DED logainm ID")
     p_fetch_census.add_argument("--api-key", default=None, help="Logainm API key (or use LOGAINM_API_KEY env var)")
     p_fetch_census.add_argument("--year", type=int, nargs="+", default=None, help="Census years to download (default: 1901 1911 1926)")
+    p_fetch_census.add_argument("--add-evidence", action="store_true", help="After download, run the 3-step evidence pipeline (ingest, relationships, place resolution)")
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
