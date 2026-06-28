@@ -498,6 +498,8 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
 
         print(f"\nRunning add-evidence pipeline on downloaded census files...")
 
+        # Check for existing records before ingesting
+        source_ids_to_process = []
         for source_id, year in [(3, 1901), (4, 1911), (5, 1926)]:
             if year not in census_result.records_per_year:
                 continue
@@ -507,6 +509,21 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
                 print(f"  Skipping {year}: CSV not found at {csv_file}")
                 continue
 
+            # Check if records for this source already exist
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) as count FROM record WHERE source_id = %s", (source_id,))
+                existing_count = cur.fetchone()["count"]
+
+            if existing_count > 0:
+                print(f"\nWARNING: {existing_count} records already exist for source {source_id} ({year} census).")
+                print(f"  Halting add-evidence pipeline to prevent duplicate ingestion.")
+                print(f"  Run `clear-evidence` first if you want to re-ingest.")
+                conn.close()
+                sys.exit(1)
+
+            source_ids_to_process.append((source_id, year, csv_file))
+
+        for source_id, year, csv_file in source_ids_to_process:
             print(f"\n[Evidence {year}/3] Running evidence pipeline for {year} census...")
 
             # [1/3] Ingest CSV
