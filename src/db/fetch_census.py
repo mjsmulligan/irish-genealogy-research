@@ -174,6 +174,26 @@ def _fetch_census_from_api(county: str, ded: str, year: int, max_retries: int = 
     return pd.concat(all_records, ignore_index=True)
 
 
+def _clean_townland(raw: str | None) -> str:
+    """Clean/normalize a townland name."""
+    if not raw or not str(raw).strip():
+        return ""
+    s = str(raw).strip()
+    s = s.lower()
+    s = " ".join(s.split())
+    return s
+
+
+def _clean_ded(raw: str | None) -> str:
+    """Clean/normalize a DED name."""
+    if not raw or not str(raw).strip():
+        return ""
+    s = str(raw).strip()
+    s = s.lower()
+    s = " ".join(s.split())
+    return s
+
+
 def _fetch_census_year(county: str, ded: str, year: int) -> list[dict]:
     """
     Fetch census CSV data for a specific year.
@@ -200,6 +220,13 @@ def _fetch_census_year(county: str, ded: str, year: int) -> list[dict]:
         if df.empty:
             print(f"  {year}: No records found after filtering by census_year.")
             return []
+
+    # Add cleaned columns for 1901/1911
+    if year in [1901, 1911]:
+        if "townland" in df.columns:
+            df["townland_clean"] = df["townland"].apply(_clean_townland)
+        if "ded" in df.columns:
+            df["ded_clean"] = df["ded"].apply(_clean_ded)
 
     print(f"  {year}: {len(df)} records after filtering.")
     return df.to_dict("records")
@@ -249,6 +276,22 @@ def fetch_census(
 
     # Download each year
     for year in sorted(years):
+        output_path = DATA_DIR / f"{ded_name}_{year}.csv"
+
+        # Check if CSV already exists
+        if output_path.exists():
+            print(f"Skipping {year} census — CSV already exists at {output_path}")
+            # Count records in existing file for reporting
+            try:
+                with open(output_path, "r", newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    record_count = sum(1 for _ in reader)
+                    records_per_year[year] = record_count
+            except Exception as e:
+                print(f"  WARNING: Could not read existing file: {e}")
+                records_per_year[year] = 0
+            continue
+
         try:
             print(f"Fetching {year} census for {ded_name}, {county_name}...")
             records = _fetch_census_year(county_name, ded_name, year)
@@ -256,8 +299,6 @@ def fetch_census(
 
             if records:
                 # Write to CSV
-                output_path = DATA_DIR / f"{ded_name}_{year}.csv"
-
                 with open(output_path, "w", newline="", encoding="utf-8") as f:
                     fieldnames = list(records[0].keys())
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
