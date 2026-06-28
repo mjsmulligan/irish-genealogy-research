@@ -125,3 +125,69 @@ def get_recent_runs(
             params,
         )
         return cur.fetchall()
+
+
+def print_timing_report(
+    conn: psycopg2.extensions.connection,
+    stage: str | None = None,
+    limit: int = 50,
+) -> None:
+    """Print a formatted timing report of recent pipeline runs.
+
+    Args:
+        conn: Database connection
+        stage: Filter by stage (optional)
+        limit: Maximum runs to display
+    """
+    with conn.cursor() as cur:
+        where_sql = "WHERE stage = %s" if stage else ""
+        params = [stage] if stage else []
+        params.append(limit)
+
+        cur.execute(
+            f"""
+            SELECT stage, step_name, COUNT(*) as count,
+                   ROUND(AVG(duration_ms)::numeric, 0)::int as avg_ms,
+                   MIN(duration_ms) as min_ms,
+                   MAX(duration_ms) as max_ms,
+                   SUM(duration_ms) as total_ms,
+                   SUM(records_processed) as total_records
+            FROM pipeline_run
+            {where_sql}
+            GROUP BY stage, step_name
+            ORDER BY stage, total_ms DESC
+            LIMIT %s
+            """,
+            params,
+        )
+        runs = cur.fetchall()
+
+    if not runs:
+        print("No timing data available.")
+        return
+
+    print()
+    print("=" * 120)
+    print("  PIPELINE TIMING REPORT")
+    print("=" * 120)
+    print()
+    print(f"{'Stage':<12} {'Step':<35} {'Count':>6} {'Avg (ms)':>10} {'Min (ms)':>10} {'Max (ms)':>10} {'Total (ms)':>12} {'Records':>10}")
+    print("-" * 120)
+
+    for run in runs:
+        stage = run["stage"] or ""
+        step = run["step_name"] or ""
+        count = run["count"]
+        avg = run["avg_ms"]
+        min_ms = run["min_ms"]
+        max_ms = run["max_ms"]
+        total = run["total_ms"]
+        records = run["total_records"] or 0
+
+        print(
+            f"{stage:<12} {step:<35} {count:>6} {avg:>10} {min_ms:>10} {max_ms:>10} {total:>12} {records:>10}"
+        )
+
+    print()
+    print("=" * 120)
+    print()

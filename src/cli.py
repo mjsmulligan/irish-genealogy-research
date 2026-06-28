@@ -16,11 +16,13 @@ Commands:
                         (legacy; prefer add-evidence)
     seed-places         Seed place_authority from a logainm CSV
     fetch-places        Fetch place authority from logainm.ie API
+    fetch-census        Download census CSVs from National Archives API
     summary             Print knowledge base summary
     conclude            Run conclusion pipeline (3 steps): person resolution +
                         relationship resolution + event resolution
     review              Run the research review — produce a prioritised findings
                         report (JSON + Markdown) in the reports/ directory
+    timing-report       Print pipeline timing statistics (execution times by step)
     export-validation   Export validation dataset for manual linkage review.
                         Creates a CSV with all persons across all censuses,
                         marked with linkage status for researcher validation.
@@ -661,9 +663,12 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     event_result = run_event_resolution(conn)
     print_event_resolution_report(event_result)
 
-    print("\n[4/4] Validation cleanup...")
-    cleanup_result = run_validation_cleanup(conn)
-    print_validation_cleanup_report(cleanup_result)
+    if args.skip_validation:
+        print("\n[4/4] Validation cleanup... SKIPPED (--skip-validation)")
+    else:
+        print("\n[4/4] Validation cleanup...")
+        cleanup_result = run_validation_cleanup(conn)
+        print_validation_cleanup_report(cleanup_result)
 
     print("Conclusion pipeline complete. Running summary...\n")
     print_summary(conn)
@@ -676,6 +681,16 @@ def _cmd_review(args: argparse.Namespace) -> None:
     conn = open_db()
     check_version(conn)
     run_and_print(conn)
+    conn.close()
+
+
+def _cmd_timing_report(args: argparse.Namespace) -> None:
+    from src.metrics.tracker import print_timing_report
+    conn = open_db()
+    check_version(conn)
+    stage = getattr(args, 'stage', None)
+    limit = getattr(args, 'limit', 50)
+    print_timing_report(conn, stage=stage, limit=limit)
     conn.close()
 
 
@@ -788,14 +803,35 @@ def main() -> None:
 
     sub.add_parser("summary", help="Print knowledge base summary")
 
-    sub.add_parser(
+    p_conclude = sub.add_parser(
         "conclude",
         help="Conclusion pipeline [1/3–3/3]: person + relationship + event resolution",
+    )
+    p_conclude.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip final validation cleanup step (for faster iteration)"
     )
 
     sub.add_parser(
         "review",
         help="Run research review — produces prioritised findings report (reports/ dir)",
+    )
+
+    p_timing = sub.add_parser(
+        "timing-report",
+        help="Print pipeline timing statistics (execution times by step)",
+    )
+    p_timing.add_argument(
+        "--stage",
+        default=None,
+        help="Filter by stage (optional: ingest, evidence, similarity, conclusion)"
+    )
+    p_timing.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum number of step groups to display (default: 50)"
     )
 
     p_export = sub.add_parser(
@@ -839,6 +875,7 @@ def main() -> None:
         "summary":           _cmd_summary,
         "conclude":          _cmd_conclude,
         "review":            _cmd_review,
+        "timing-report":     _cmd_timing_report,
         "export-validation": _cmd_export_validation,
         "validate-linkages": _cmd_validate_linkages,
     }
