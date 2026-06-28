@@ -294,6 +294,7 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
         run_person_similarity,
         print_person_similarity_report,
     )
+    from src.metrics import Timer, PipelineRun, log_run
 
     conn = open_db()
     check_version(conn)
@@ -304,33 +305,76 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     print(f"\n[1/5] Ingesting CSV (source {source_id})...")
-    ingest_result = ingest_census(conn, args.file, source_id=source_id)
+    with Timer('ingest', 'ingest_census', source_id=source_id) as timer:
+        ingest_result = ingest_census(conn, args.file, source_id=source_id)
+    log_run(conn, PipelineRun(
+        stage='ingest',
+        step_name='ingest_census',
+        records_processed=ingest_result['records_committed'],
+        duration_ms=timer.duration_ms,
+        source_id=source_id,
+    ))
+    print(f"  Elapsed: {timer.duration_ms/1000:.2f}s for {ingest_result['records_committed']} households")
 
     print("\n[2/5] Assigning role-pair RecordedRelationships...")
-    rr_totals = {"created": 0, "skipped_null": 0, "skipped_no_rule": 0}
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT record_id FROM record WHERE source_id = %s "
-            "ORDER BY record_id DESC LIMIT %s",
-            (source_id, ingest_result["records_committed"]),
-        )
-        record_ids = [row["record_id"] for row in cur.fetchall()]
+    with Timer('evidence', 'assign_role_relationships', source_id=source_id) as timer:
+        rr_totals = {"created": 0, "skipped_null": 0, "skipped_no_rule": 0}
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT record_id FROM record WHERE source_id = %s "
+                "ORDER BY record_id DESC LIMIT %s",
+                (source_id, ingest_result["records_committed"]),
+            )
+            record_ids = [row["record_id"] for row in cur.fetchall()]
 
-    with conn:
-        for rid in record_ids:
-            rr = assign_role_relationships(conn, rid)
-            rr_totals["created"] += rr.relationships_created
-            rr_totals["skipped_null"] += rr.skipped_null_role_pairs
-            rr_totals["skipped_no_rule"] += rr.skipped_no_rule
+        with conn:
+            for rid in record_ids:
+                rr = assign_role_relationships(conn, rid)
+                rr_totals["created"] += rr.relationships_created
+                rr_totals["skipped_null"] += rr.skipped_null_role_pairs
+                rr_totals["skipped_no_rule"] += rr.skipped_no_rule
+    log_run(conn, PipelineRun(
+        stage='evidence',
+        step_name='assign_role_relationships',
+        records_processed=len(record_ids),
+        duration_ms=timer.duration_ms,
+        source_id=source_id,
+    ))
+    print(f"  Elapsed: {timer.duration_ms/1000:.2f}s for {rr_totals['created']} relationships")
 
     print("\n[3/5] Running place resolution...")
-    place_result = run_place_resolution(conn)
+    with Timer('evidence', 'run_place_resolution', source_id=source_id) as timer:
+        place_result = run_place_resolution(conn)
+    log_run(conn, PipelineRun(
+        stage='evidence',
+        step_name='run_place_resolution',
+        records_processed=place_result.records_linked,
+        duration_ms=timer.duration_ms,
+        source_id=source_id,
+    ))
+    print(f"  Elapsed: {timer.duration_ms/1000:.2f}s for {place_result.records_linked} records linked")
 
     print("\n[4/5] Running record similarity (Splink household-level, cross-census)...")
-    record_similarity_result = run_record_similarity(conn)
+    with Timer('similarity', 'run_record_similarity') as timer:
+        record_similarity_result = run_record_similarity(conn)
+    log_run(conn, PipelineRun(
+        stage='similarity',
+        step_name='run_record_similarity',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print(f"  Elapsed: {timer.duration_ms/1000:.2f}s")
 
     print("\n[5/5] Running person similarity (Splink person-level, cross-census)...")
-    person_similarity_result = run_person_similarity(conn)
+    with Timer('similarity', 'run_person_similarity') as timer:
+        person_similarity_result = run_person_similarity(conn)
+    log_run(conn, PipelineRun(
+        stage='similarity',
+        step_name='run_person_similarity',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print(f"  Elapsed: {timer.duration_ms/1000:.2f}s")
 
     # --- Report ---
     print(f"\nadd-evidence complete — {ingest_result['source_title']}")
