@@ -18,20 +18,27 @@ Three cases handled:
   Case 2: High household similarity, some existing Persons → link to existing + create Relationships
   Case 3: Person anchor, low household similarity → extend matches using anchor
 
+Shared household helpers (get_household_members, ensure_relationship,
+create_relationships_from_household) live in household_utils.py and are
+also used by household_resolution.py (Step 3).
+
 Entry point:
     run_relationship_resolution(conn) -> RelationshipResolutionResult
 """
 
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
 
 import psycopg2.extensions
 from rapidfuzz.distance import JaroWinkler
 
 from src.constants import AUTO_COMMIT_THRESHOLD
+from src.conclusion.household_utils import (
+    get_household_members,
+    ensure_relationship,
+    create_relationships_from_household,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -76,45 +83,6 @@ class RelationshipResolutionResult:
 # ---------------------------------------------------------------------------
 # Household matching helpers
 # ---------------------------------------------------------------------------
-
-def _get_household_members(
-    conn: psycopg2.extensions.connection,
-    record_id: int,
-) -> list[dict]:
-    """
-    Get all RecordedPersons in a household with their Person linkage if it exists.
-
-    Returns list of dicts with keys: recorded_person_id, name_as_recorded, role,
-    age, sex_as_recorded, person_id (or None if orphan).
-    """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                rp.recorded_person_id,
-                rp.name_as_recorded,
-                rp.role,
-                rp.age,
-                rp.sex_as_recorded,
-                prp.person_id
-            FROM recorded_person rp
-            LEFT JOIN person_recorded_person prp
-                ON prp.recorded_person_id = rp.recorded_person_id
-            WHERE rp.record_id = %s
-            ORDER BY
-                CASE rp.role
-                    WHEN 'head' THEN 1
-                    WHEN 'spouse' THEN 2
-                    WHEN 'son' THEN 3
-                    WHEN 'daughter' THEN 4
-                    ELSE 5
-                END,
-                rp.age DESC NULLS LAST
-            """,
-            (record_id,),
-        )
-        return cur.fetchall()
-
 
 _NAME_JW_THRESHOLD: float = 0.85   # JaroWinkler threshold for name match
 
@@ -439,157 +407,9 @@ def _link_recorded_person_to_person(
 
 
 # ---------------------------------------------------------------------------
-# Relationship creation
+# Relationship creation — see household_utils.py
+# (ensure_relationship, create_relationships_from_household imported above)
 # ---------------------------------------------------------------------------
-
-def _ensure_relationship(
-    conn: psycopg2.extensions.connection,
-    person_id_1: int,
-    person_id_2: int,
-    rel_type: str,
-) -> Optional[int]:
-    """
-    Ensure a Relationship exists between two Persons and populate its evidence
-    provenance in relationship_recorded_relationship.
-
-    Evidence lookup: find all RecordedRelationships of matching type whose two
-    RecordedPersons are linked to person_id_1 and person_id_2 respectively (in
-    either order).  These are the ingest-time role-pair rows created by
-    role_relationships.py.
-
-    Returns relationship_id if newly created, None if it already existed.
-    (Provenance rows are written either way for any new RecordedRelationships
-    not yet linked.)
-    """
-    from src.dal.relationship_repo import insert_relationship_recorded_relationship
-    from src.constants import SCORE_VERSION_ROLE_PAIR
-
-    # Check if relationship already exists (either direction)
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT relationship_id
-            FROM relationship
-            WHERE type = %s
-              AND ((person_id_1 = %s AND person_id_2 = %s)
-                OR (person_id_1 = %s AND person_id_2 = %s))
-            """,
-            (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
-        )
-        existing = cur.fetchone()
-
-    if existing:
-        rel_id = existing["relationship_id"]
-        created = False
-    else:
-        # Create new Relationship
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO relationship (type, person_id_1, person_id_2)
-                VALUES (%s, %s, %s)
-                RETURNING relationship_id
-                """,
-                (rel_type, person_id_1, person_id_2),
-            )
-            rel_id = cur.fetchone()["relationship_id"]
-        created = True
-
-    # Populate provenance: find RecordedRelationships of this type linking the
-    # two Persons' RecordedPersons, then write to relationship_recorded_relationship.
-    # ON CONFLICT DO NOTHING in the DAL function makes this idempotent.
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT rr.recorded_relationship_id, rr.score
-            FROM recorded_relationship rr
-            JOIN person_recorded_person prp1
-                ON prp1.recorded_person_id = rr.recorded_person_id_1
-            JOIN person_recorded_person prp2
-                ON prp2.recorded_person_id = rr.recorded_person_id_2
-            WHERE rr.type = %s
-              AND (
-                  (prp1.person_id = %s AND prp2.person_id = %s)
-               OR (prp1.person_id = %s AND prp2.person_id = %s)
-              )
-            """,
-            (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
-        )
-        rr_rows = cur.fetchall()
-
-    for rr in rr_rows:
-        insert_relationship_recorded_relationship(
-            conn,
-            relationship_id=rel_id,
-            recorded_relationship_id=rr["recorded_relationship_id"],
-            score=rr["score"] if rr["score"] is not None else 0.0,
-            score_version=SCORE_VERSION_ROLE_PAIR,
-        )
-
-    return rel_id if created else None
-
-
-def _create_relationships_from_household(
-    conn: psycopg2.extensions.connection,
-    household_members: list[dict],
-) -> int:
-    """
-    Create Relationships based on household roles.
-
-    Only creates Relationships for members who have Persons.
-
-    Returns count of Relationships created.
-    """
-    count = 0
-
-    # Get members with Persons
-    members_with_persons = [m for m in household_members if m.get("person_id")]
-
-    if len(members_with_persons) < 2:
-        return 0
-
-    # Find head and spouse
-    head = next((m for m in members_with_persons if m["role"] == "head"), None)
-    spouse = next((m for m in members_with_persons if m["role"] == "spouse"), None)
-
-    # Create couple relationship
-    if head and spouse and head["person_id"] != spouse["person_id"]:
-        rel_id = _ensure_relationship(
-            conn, head["person_id"], spouse["person_id"], "couple"
-        )
-        if rel_id:
-            count += 1
-
-    # Create parent-child relationships
-    children = [m for m in members_with_persons if m["role"] in ("son", "daughter")]
-    for child in children:
-        if head and head["person_id"] != child["person_id"]:
-            rel_id = _ensure_relationship(
-                conn, head["person_id"], child["person_id"], "parent_child"
-            )
-            if rel_id:
-                count += 1
-        if spouse and spouse["person_id"] != child["person_id"]:
-            rel_id = _ensure_relationship(
-                conn, spouse["person_id"], child["person_id"], "parent_child"
-            )
-            if rel_id:
-                count += 1
-
-    # Create sibling relationships
-    for i, child1 in enumerate(children):
-        for child2 in children[i + 1 :]:
-            # Skip if same Person (can happen if both RecordedPersons belong to same Person)
-            if child1["person_id"] == child2["person_id"]:
-                continue
-            rel_id = _ensure_relationship(
-                conn, child1["person_id"], child2["person_id"], "sibling"
-            )
-            if rel_id:
-                count += 1
-
-    return count
-
 
 # ---------------------------------------------------------------------------
 # Conflict detection
@@ -725,8 +545,8 @@ def run_relationship_resolution(
         year_2 = _year(pair["date_2"])
         census_gap = abs(year_2 - year_1) if (year_1 and year_2) else 10  # fallback
 
-        h1_members = _get_household_members(conn, record_id_1)
-        h2_members = _get_household_members(conn, record_id_2)
+        h1_members = get_household_members(conn, record_id_1)
+        h2_members = get_household_members(conn, record_id_2)
 
         # Match members using dynamic gap (items 21, 22)
         matches = _match_households(h1_members, h2_members, census_gap)
@@ -773,20 +593,20 @@ def run_relationship_resolution(
 
                 # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
                 # The in-memory dicts are from pre-assignment fetches; setting
-                # both to the same person_id would cause _create_relationships_from_household
+                # both to the same person_id would cause create_relationships_from_household
                 # to see household members as identical Persons and skip all
                 # relationship creation.  Instead, re-fetch from DB below (item 23).
 
             # Re-fetch household members so person_id reflects all DB writes
             # made above.  This is the item 23 fix: relationship creation now
             # sees correct, distinct person_ids rather than the mutated dicts.
-            h1_members_fresh = _get_household_members(conn, record_id_1)
-            h2_members_fresh = _get_household_members(conn, record_id_2)
+            h1_members_fresh = get_household_members(conn, record_id_1)
+            h2_members_fresh = get_household_members(conn, record_id_2)
 
             # Create Relationships from household structure (item 24: provenance
-            # is populated inside _ensure_relationship)
-            rels_created = _create_relationships_from_household(conn, h1_members_fresh)
-            rels_created += _create_relationships_from_household(conn, h2_members_fresh)
+            # is populated inside ensure_relationship)
+            rels_created = create_relationships_from_household(conn, h1_members_fresh)
+            rels_created += create_relationships_from_household(conn, h2_members_fresh)
             result.relationships_created += rels_created
 
         result.households_processed += 1
