@@ -445,6 +445,45 @@ def _cmd_fetch_places(args: argparse.Namespace) -> None:
     conn.close()
 
 
+def _cmd_fetch_census(args: argparse.Namespace) -> None:
+    from src.db.fetch_census import fetch_census, print_fetch_census_report
+    from src.db.fetch_places import fetch_places, write_to_db as write_places_to_db
+    import os
+
+    # Get API key
+    api_key = args.api_key or os.environ.get("LOGAINM_API_KEY")
+    if not api_key:
+        print("Error: No API key provided. Use --api-key or set LOGAINM_API_KEY.", file=sys.stderr)
+        sys.exit(1)
+
+    conn = open_db()
+    check_version(conn)
+
+    # Step 1: Seed place authority via fetch-places
+    print(f"Step 1/2: Seeding place_authority with logainm ID {args.logainm_id}...")
+    try:
+        result = fetch_places(args.logainm_id, api_key, args.rate_delay)
+        rows = result.rows
+        print(f"  Fetched {len(rows)} place rows.")
+        inserted, skipped = write_places_to_db(conn, rows)
+        print(f"  DB: {inserted} inserted, {skipped} skipped.")
+    except Exception as e:
+        print(f"Error seeding places: {e}", file=sys.stderr)
+        conn.close()
+        sys.exit(1)
+
+    # Step 2: Fetch and save census files
+    print(f"\nStep 2/2: Downloading census files...")
+    years = args.year if args.year else [1901, 1911, 1926]
+    census_result = fetch_census(conn, args.logainm_id, years=years)
+    print_fetch_census_report(census_result)
+
+    conn.close()
+
+    if census_result.errors:
+        sys.exit(1)
+
+
 def _cmd_summary(args: argparse.Namespace) -> None:
     conn = open_db()
     print_summary(conn)
@@ -618,6 +657,11 @@ def main() -> None:
     p_fetch.add_argument("--api-key", default=None, help="Logainm API key")
     p_fetch.add_argument("--rate-delay", type=float, default=0.05, help="Delay between requests (s)")
 
+    p_fetch_census = sub.add_parser("fetch-census", help="Download census CSVs from National Archives API")
+    p_fetch_census.add_argument("--logainm-id", type=int, required=True, help="DED logainm ID")
+    p_fetch_census.add_argument("--api-key", default=None, help="Logainm API key (or use LOGAINM_API_KEY env var)")
+    p_fetch_census.add_argument("--year", type=int, nargs="+", default=None, help="Census years to download (default: 1901 1911 1926)")
+
     sub.add_parser("summary", help="Print knowledge base summary")
 
     sub.add_parser(
@@ -667,6 +711,7 @@ def main() -> None:
         "ingest":            _cmd_ingest,
         "seed-places":       _cmd_seed_places,
         "fetch-places":      _cmd_fetch_places,
+        "fetch-census":      _cmd_fetch_census,
         "summary":           _cmd_summary,
         "conclude":          _cmd_conclude,
         "review":            _cmd_review,

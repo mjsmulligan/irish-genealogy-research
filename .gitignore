@@ -1,6 +1,7 @@
 # local ignored files
 genealogy.db
 pred_df.csv
+/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
