@@ -85,6 +85,8 @@ Active and open items only. Completed items are in §8 (Version History).
 | 37 | **Data dictionary update for parish records.** Add `sponsor` to RecordedPerson role vocabulary. Add `sponsor` and `witness` to RecordedRelationship type vocabulary. Document three-state transcription field convention: empty (absent), `[?]` (illegible), value (as written). | Medium (R3) | Before item 36 |
 | 38 | **`export-vocab` CLI command.** Aggregate census name/place distributions by parish and export to `{parish_id}_vocab.json` for the transcription pipeline's confidence scoring module. Blocked on vocabulary file contract — dedicated session required. See §6.2. | Medium (R3) | After vocabulary contract session |
 | 39 | **Spawn transcription repo.** Create new GitHub repository for the NLI Catholic parish register transcription pipeline. The three CSV schemas (register index, parish baptism, parish marriage) plus bounding box envelope fields are the formal interface contract with GRA. | High (R3) | Prerequisite for item 36 |
+| 40 | **Test harness: household_resolution coverage.** Add tests for `src/conclusion/household_resolution.py` and `src/conclusion/household_utils.py`. Cases to cover: (a) anchor-extension creates Person for unlinked spouse/child; (b) anchor as non-head (Case B/C); (c) no RecordedRelationship to anchor — member skipped; (d) score inherited from RecordedRelationship prior; (e) idempotency (re-run adds no duplicate Persons or Relationships). Update step-counter assertions from [4/4] to [5/5]. | High | After household_resolution merged |
+| 41 | **Household contradiction validation (review layer).** After `household_resolution` is proven in production, add a validation finding that flags Relationship conclusions contradicted by intra-census household evidence — e.g. two Persons concluded as `couple` whose RecordedPersons appear in the same household as `head` and `son`. Warning-level only at v1; auto-action to be decided after first review run. | Medium | After item 40 |
 
 ---
 
@@ -151,7 +153,7 @@ GRA will export a parish-level name/place vocabulary file consumed by the transc
 
 ## 7. Release Targets
 
-- **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), item 34 (test harness v4.0 updates).
+- **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), item 34 (test harness v4.0 updates), item 40 (household_resolution test coverage), item 41 (household contradiction validation).
 - **v2.0 (Target):** Review layer complete ✅. First run + training session against Supabase. Full-scale Irish Census ingestion.
 - **v3.0 (Long-term):** Parish and civil BMD ingest. Depends on transcription repo (item 39) producing CSV output and parish ingest pipeline (item 36) consuming it.
 
