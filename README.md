@@ -4,9 +4,10 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: 4.0 (June 2026)  
+Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
-Implementation: Complete — all four layers (foundation, evidence, conclusion, review)
+Implementation: Complete — all four layers (foundation, evidence, conclusion, review)  
+**Latest:** Same-census linking constraint enforced across all conclusion steps (zero merge errors)
 
 ______________________________________________________________________
 
@@ -21,6 +22,12 @@ ______________________________________________________________________
 ```text
 irish-genealogy-research/
 │
+├── analysis/                          # Research analysis and findings
+│   ├── AGE_REGRESSION_ANALYSIS.md    # Open issues: age conflict resolution
+│   └── *.md                          # Detailed investigations and conclusions
+│
+├── data/                              # Downloaded census CSVs (not in git)
+│
 ├── docs/                              # Schema and system documentation
 │
 ├── src/
@@ -29,10 +36,12 @@ irish-genealogy-research/
 │   │
 │   ├── db/                            # Schema lifecycle and utilities
 │   │   ├── db.py                      # Connection (psycopg2/Supabase), init, schema version check
-│   │   ├── schema.sql                 # Complete DDL (v3.1, PostgreSQL)
+│   │   ├── schema.sql                 # Complete DDL (v4.3, PostgreSQL)
 │   │   ├── seed.sql                   # Repository and source seed data
 │   │   ├── fetch_places.py            # logainm API fetcher → DB or CSV
-│   │   └── seed_places.py             # CSV → place_authority loader
+│   │   ├── fetch_census.py            # NAI census API fetcher → CSV (with townland_clean/ded_clean)
+│   │   ├── seed_places.py             # CSV → place_authority loader
+│   │   └── migrations/                # Schema migrations (001–005)
 │   │
 │   ├── evidence/                      # Evidence layer steps 1–5
 │   │   ├── census.py                  # [1/5] ingest_census — NAI CSV → record + recorded_person
@@ -43,16 +52,25 @@ irish-genealogy-research/
 │   │       ├── census.py              # Splink household feature extractor
 │   │       └── census_person.py       # Splink person feature extractor
 │   │
-│   ├── conclusion/                    # Conclusion layer steps 1–3
-│   │   ├── person_resolution.py       # [1/3] Cluster RecordedPersons → Person conclusions
-│   │   ├── relationship_resolution.py # [2/3] Household matching → Relationship conclusions
-│   │   └── event_resolution.py        # [3/3] Census + birth + marriage Event conclusions
+│   ├── conclusion/                    # Conclusion layer steps 1–4
+│   │   ├── person_resolution.py       # [1/4] Cluster RecordedPersons → Person conclusions (same-census filtered)
+│   │   ├── relationship_resolution.py # [2/4] Household matching → Relationship conclusions (same-census + age regression checks)
+│   │   ├── event_resolution.py        # [3/4] Census + birth + marriage Event conclusions
+│   │   └── validation_cleanup.py      # [4/4] Validation gate before finalizing conclusions
 │   │
 │   ├── review/                        # Review layer — researcher report module
 │   │   ├── report.py                  # ReportItem + Report dataclasses; JSON + Markdown serialisers
-│   │   ├── findings.py                # Nine v1.0 finding functions (GC01, GC02, GC04, GC05, GC07, GC12, GC13, unlinked, single-census)
+│   │   ├── findings.py                # Finding functions: merge errors, age issues, unlinked persons
 │   │   ├── priority.py                # Priority scoring: tier base score × scope multiplier → integer rank
 │   │   └── runner.py                  # run_review(), write_report() → reports/ dir
+│   │
+│   ├── metrics/                       # Performance tracking
+│   │   ├── tracker.py                 # Timer context manager, pipeline_run logging, timing report generation
+│   │   └── __init__.py
+│   │
+│   ├── validation/                    # Linkage validation
+│   │   ├── linkage_validation.py      # Age progression, name variants, gender consistency, household coherence
+│   │   └── __init__.py
 │   │
 │   └── dal/                           # Data access layer
 │       ├── source_repo.py
@@ -86,7 +104,10 @@ python -m src.cli init
 # Seed place authority from logainm.ie (requires LOGAINM_API_KEY)
 python -m src.cli fetch-places --logainm-id 111482 --api-key YOUR_KEY
 
-# Or seed from a pre-fetched CSV
+# Or fetch census data directly (downloads + seeds places + optionally ingests)
+python -m src.cli fetch-census --logainm-id 111482 --api-key YOUR_KEY --add-evidence
+
+# Or seed places from a pre-fetched CSV
 python -m src.cli seed-places --file tullynaught_places.csv
 
 # Add evidence: 5-step pipeline runs automatically per CSV
@@ -95,21 +116,26 @@ python -m src.cli seed-places --file tullynaught_places.csv
 # [3/5] Run place resolution (links records to place_authority)
 # [4/5] Run Splink record similarity (cross-census household matching)
 # [5/5] Run Splink person similarity (cross-census person matching)
-python -m src.cli add-evidence --source 3 --file tests/tullynaught_1901.csv
-python -m src.cli add-evidence --source 4 --file tests/tullynaught_1911.csv
-python -m src.cli add-evidence --source 5 --file tests/tullynaught_1926.csv
+python -m src.cli add-evidence --source 3 --file data/tullynaught_1901.csv
+python -m src.cli add-evidence --source 4 --file data/tullynaught_1911.csv
+python -m src.cli add-evidence --source 5 --file data/tullynaught_1926.csv
 
 # Build conclusions from evidence
-# [1/3] Person resolution  — cluster RecordedPersons into Person conclusions
-# [2/3] Relationship resolution — create Relationships from household structure
-# [3/3] Event resolution   — create census, birth, and marriage Events
+# [1/4] Person resolution  — cluster RecordedPersons into Person conclusions
+# [2/4] Relationship resolution — create Relationships from household structure
+# [3/4] Event resolution   — create census, birth, and marriage Events
+# [4/4] Validation cleanup — remove linkages failing validation checks
 python -m src.cli conclude
 
 # Inspect
 python -m src.cli summary
+python -m src.cli timing-report        # Show pipeline execution times by step
 
 # Run research review — produces prioritised findings report (JSON + Markdown)
 python -m src.cli review
+
+# Validate linkages
+python -m src.cli validate-linkages    # Check for age/name/household errors
 
 # Clear and re-run
 python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority
@@ -117,7 +143,7 @@ python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves e
 
 # View reports
 # Generated reports are written to reports/ with JSON + Markdown formats
-# Example: reports/report_20260626_233433.{json,md}
+# Example: reports/report_20260628_022035.{json,md}
 ```
 
 **Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5).

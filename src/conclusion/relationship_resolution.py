@@ -329,7 +329,7 @@ def _link_recorded_person_to_person(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT r.source_id FROM record r
+            SELECT r.source_id, rp.age FROM record r
             JOIN recorded_person rp ON rp.record_id = r.record_id
             WHERE rp.recorded_person_id = %s
             """,
@@ -337,6 +337,8 @@ def _link_recorded_person_to_person(
         )
         row = cur.fetchone()
         new_source_id = row["source_id"] if row else None
+        new_age = row["age"] if row else None
+        new_year = {3: 1901, 4: 1911, 5: 1926}.get(new_source_id)
 
     if new_source_id:
         # Check if person is already linked to another recorded_person from same source
@@ -354,6 +356,34 @@ def _link_recorded_person_to_person(
             if existing_same_census > 0:
                 # Would create same-census link; reject
                 return "skipped_same_census", None
+
+        # Check for age regression: reject if any linked recorded_person would create backward age progression
+        if new_age and new_year:
+            from src.validation import validate_age_progression
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT rp.age, r.source_id FROM person_recorded_person prp
+                    JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+                    JOIN record r ON rp.record_id = r.record_id
+                    WHERE prp.person_id = %s
+                    """,
+                    (person_id,),
+                )
+                for other_row in cur.fetchall():
+                    other_age = other_row["age"]
+                    other_source_id = other_row["source_id"]
+                    other_year = {3: 1901, 4: 1911, 5: 1926}.get(other_source_id)
+
+                    if other_age and other_year:
+                        age_check = validate_age_progression(
+                            other_age, other_year,
+                            new_age, new_year,
+                            tolerance_years=2.0
+                        )
+                        if not age_check.valid:
+                            # Age regression detected; skip this linkage
+                            return "skipped_age_regression", None
 
     existing = _get_recorded_person_link(conn, recorded_person_id)
 
