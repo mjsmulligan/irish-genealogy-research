@@ -480,16 +480,18 @@ def validate_household_coherence(conn: psycopg2.extensions.connection) -> tuple[
             JOIN source s ON r1.source_id = s.source_id
             WHERE r1.source_id = r2.source_id  -- same census source
               AND r1.record_id != r2.record_id  -- different households
-              AND EXTRACT(YEAR FROM r1.date) = EXTRACT(YEAR FROM r2.date)  -- same year
+              AND EXTRACT(YEAR FROM r1.date::date) = EXTRACT(YEAR FROM r2.date::date)  -- same year
             ORDER BY prp1.person_id, rp1.recorded_person_id
         """)
 
         for row in cur.fetchall():
+            date_str = row['date']
+            year = date_str.split('-')[0] if isinstance(date_str, str) else date_str.year
             errors.append(
                 f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
                 f"and {row['name2']} (rp {row['rp2_id']}) "
                 f"appear in different households ({row['record1_id']}, {row['record2_id']}) "
-                f"in same census {row['source_id']} ({row['date'].year})"
+                f"in same census {row['source_id']} ({year})"
             )
 
     return len(errors), errors
@@ -645,7 +647,12 @@ def validate_all_linkages(conn: psycopg2.extensions.connection) -> ValidationRep
                 })
 
     # Check household coherence
+    import time
+    print("  Starting household coherence validation...")
+    start = time.time()
     hh_errors, hh_descriptions = validate_household_coherence(conn)
+    elapsed = time.time() - start
+    print(f"  Household coherence validation completed in {elapsed:.1f}s ({hh_errors} errors)")
     report.household_errors = hh_errors
     report.total_violations += hh_errors
 
