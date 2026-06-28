@@ -53,13 +53,31 @@ The validation report flags **8 age regressions** where a Person is linked to ce
 - Reviewer decides whether to split Person or accept conflict
 - **Pro:** Conservative, preserves data; **Con:** Adds manual work
 
-## Recommended Next Steps
+## Solution (Decided 2026-06-28)
 
-1. **Quantify the issue:** How many Persons have conflicting ages? What's the range?
-2. **Examine actual cases:** Are these legitimate (estimation error) or genuine merge errors?
-3. **Design decision:** Choose resolution approach (1-4 above)
-4. **Implement:** Add logic to person_resolution or relationship_resolution to prevent creating conflicting-age Persons
-5. **Validate:** Re-run conclude and verify age regressions drop to near-zero
+**Use primary birth Event as authoritative birth year source.**
+
+When calculating age progression or birth year for a Person:
+1. **Prioritize primary birth Event** — if it exists, use ONLY this for birth year
+2. **Never mix** primary birth Event with census-derived ages in same Person
+3. **For Persons without birth Event** — derive from earliest census age as currently implemented
+
+**Rationale:**
+- Primary birth Events are documentary evidence (civil registration, church records)
+- Census ages are estimated/rounded by respondent at enumeration
+- Mixing them creates false conflicts (e.g., age 20 in 1901 vs age 35 in 1911)
+- If we have a birth Event, we should trust it over age estimates
+
+**Implementation:** Modify `_derive_birth_year()` to:
+- Return immediately after finding primary birth Event (don't continue to census fallback)
+- Only use census age backfill when no birth Event exists
+
+## Recommended Next Steps (Next Session)
+
+1. **Implement:** Modify `src/review/findings.py::_derive_birth_year()` to not fall through to census ages if birth Event found
+2. **Validate:** Re-run conclude and verify age regressions drop to zero
+3. **Test:** Check that parent-age-implausible findings also resolve
+4. **Document:** Update validation rules documentation
 
 ## Related Code
 
