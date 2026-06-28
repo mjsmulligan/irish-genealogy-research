@@ -18,8 +18,9 @@ Commands:
     fetch-places        Fetch place authority from logainm.ie API
     fetch-census        Download census CSVs from National Archives API
     summary             Print knowledge base summary
-    conclude            Run conclusion pipeline (3 steps): person resolution +
-                        relationship resolution + event resolution
+    conclude            Run conclusion pipeline (5 steps): person resolution +
+                        relationship resolution + household resolution +
+                        event resolution + validation cleanup
     review              Run the research review — produce a prioritised findings
                         report (JSON + Markdown) in the reports/ directory
     timing-report       Print pipeline timing statistics (execution times by step)
@@ -620,10 +621,11 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     Run the conclusion pipeline (4 steps) against all evidence.
 
     Steps:
-      [1/4] Person resolution      — cluster RecordedPersons into Person conclusions
-      [2/4] Relationship resolution — create Relationships from household structure
-      [3/4] Event resolution        — create census, birth, and marriage Events
-      [4/4] Validation cleanup      — remove linkages failing validation checks
+      [1/5] Person resolution       — cluster RecordedPersons into Person conclusions
+      [2/5] Relationship resolution — create Relationships from household similarity
+      [3/5] Household resolution    — extend Persons to unlinked household members
+      [4/5] Event resolution        — create census, birth, and marriage Events
+      [5/5] Validation cleanup      — remove linkages failing validation checks
     """
     from src.conclusion.person_resolution import (
         run_person_resolution,
@@ -632,6 +634,10 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     from src.conclusion.relationship_resolution import (
         run_relationship_resolution,
         print_relationship_resolution_report,
+    )
+    from src.conclusion.household_resolution import (
+        run_household_resolution,
+        print_household_resolution_report,
     )
     from src.conclusion.event_resolution import (
         run_event_resolution,
@@ -648,7 +654,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
 
     print("\nRunning conclusion pipeline...")
 
-    print("\n[1/4] Person resolution...")
+    print("\n[1/5] Person resolution...")
     with Timer('conclusion', 'run_person_resolution') as timer:
         person_result = run_person_resolution(conn)
     log_run(conn, PipelineRun(
@@ -659,7 +665,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     ))
     print_person_resolution_report(person_result)
 
-    print("\n[2/4] Relationship resolution...")
+    print("\n[2/5] Relationship resolution...")
     with Timer('conclusion', 'run_relationship_resolution') as timer:
         rel_result = run_relationship_resolution(conn)
     log_run(conn, PipelineRun(
@@ -674,7 +680,18 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         print(f"\n  NOTE: {len(rel_result.merge_candidates)} merge candidate(s) detected.")
         print("  Review and resolve manually before re-running.")
 
-    print("\n[3/4] Event resolution...")
+    print("\n[3/5] Household resolution...")
+    with Timer('conclusion', 'run_household_resolution') as timer:
+        household_result = run_household_resolution(conn)
+    log_run(conn, PipelineRun(
+        stage='conclusion',
+        step_name='run_household_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print_household_resolution_report(household_result)
+
+    print("\n[4/5] Event resolution...")
     with Timer('conclusion', 'run_event_resolution') as timer:
         event_result = run_event_resolution(conn)
     log_run(conn, PipelineRun(
@@ -686,9 +703,9 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     print_event_resolution_report(event_result)
 
     if args.skip_validation:
-        print("\n[4/4] Validation cleanup... SKIPPED (--skip-validation)")
+        print("\n[5/5] Validation cleanup... SKIPPED (--skip-validation)")
     else:
-        print("\n[4/4] Validation cleanup...")
+        print("\n[5/5] Validation cleanup...")
         with Timer('conclusion', 'run_validation_cleanup') as timer:
             cleanup_result = run_validation_cleanup(conn)
         log_run(conn, PipelineRun(
@@ -834,7 +851,7 @@ def main() -> None:
 
     p_conclude = sub.add_parser(
         "conclude",
-        help="Conclusion pipeline [1/3–3/3]: person + relationship + event resolution",
+        help="Conclusion pipeline [1/5–5/5]: person + relationship + household + event resolution + validation cleanup",
     )
     p_conclude.add_argument(
         "--skip-validation",
