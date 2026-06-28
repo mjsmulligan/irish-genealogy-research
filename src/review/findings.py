@@ -544,6 +544,36 @@ def find_parent_age_implausible(
 
         violations: list[str] = []
 
+        # NEW: Check for age regression (parent younger than child)
+        if gap < 0:
+            parent_label = _person_label(conn, parent_id)
+            child_label = _person_label(conn, child_id)
+            items.append(ReportItem(
+                finding_type="parent_age_regression",
+                priority=0,
+                person_id=parent_id,
+                relationship_id=rid,
+                event_id=None,
+                record_ids=[],
+                title=(
+                    f"Relationship {rid}: parent age regression "
+                    f"({parent_id} / {child_id})"
+                ),
+                detail=(
+                    f"Relationship {rid} (parent_child): parent Person {parent_id} "
+                    f"({parent_label}) birth year ~{parent_birth}; child Person {child_id} "
+                    f"({child_label}) birth year ~{child_birth}. "
+                    f"Age regression: parent is {abs(gap)} years YOUNGER than child. "
+                    f"This is biologically impossible and indicates a merge error. "
+                    f"These two records should be split into separate persons."
+                ),
+                recommended_action=(
+                    "Review the underlying RecordedPersons and split this Person "
+                    "into two distinct individuals."
+                ),
+            ))
+            continue  # Skip to next relationship
+
         if effective_min < _MIN_PARENT_GAP:
             violations.append(
                 f"gap of {gap} yrs is below minimum of {_MIN_PARENT_GAP} yrs "
@@ -594,6 +624,73 @@ def find_parent_age_implausible(
                 "underlying RecordedRelationships for a mis-assigned relationship."
             ),
         ))
+
+    # NEW: Detect split-person pattern
+    # If a female parent has 2+ children ALL with extreme age gaps (> 50yr),
+    # it suggests two different people were merged into one person
+    extreme_gap_children: dict[int, list[dict]] = {}  # parent_id → [child records]
+
+    # First pass: collect all extreme-gap children
+    for rel in rels:
+        parent_id = rel["parent_id"]
+        child_id = rel["child_id"]
+        rid = rel["relationship_id"]
+        gender = rel["parent_gender"]
+
+        if gender != "female":
+            continue  # Only check maternal relationships
+
+        parent_birth = _derive_birth_year(conn, parent_id)
+        child_birth = _derive_birth_year(conn, child_id)
+
+        if parent_birth is None or child_birth is None:
+            continue
+
+        gap = child_birth - parent_birth
+
+        # Flag if extreme gap
+        if gap > _MAX_MATERNAL_GAP:  # > 50 years
+            if parent_id not in extreme_gap_children:
+                extreme_gap_children[parent_id] = []
+            extreme_gap_children[parent_id].append({
+                'child_id': child_id,
+                'child_name': _person_label(conn, child_id),
+                'gap': gap,
+                'rel_id': rid,
+            })
+
+    # Second pass: flag split-person patterns
+    for parent_id, children in extreme_gap_children.items():
+        if len(children) >= 2:  # Multiple children with extreme gaps
+            parent_label = _person_label(conn, parent_id)
+            parent_birth = _derive_birth_year(conn, parent_id)
+            gaps_str = ", ".join([f"{c['gap']}yr" for c in children])
+            children_names = ", ".join([c['child_name'] for c in children])
+
+            items.append(ReportItem(
+                finding_type="split_person_candidate",
+                priority=0,
+                person_id=parent_id,
+                relationship_id=None,
+                event_id=None,
+                record_ids=[],
+                title=(
+                    f"Split person candidate: {parent_id} ({parent_label}) — "
+                    f"{len(children)} children with extreme maternal age gaps"
+                ),
+                detail=(
+                    f"Person {parent_id} ({parent_label}, birth year ~{parent_birth}) "
+                    f"is linked as parent to {len(children)} children "
+                    f"({children_names}) with maternal age gaps of {gaps_str}. "
+                    f"All gaps exceed the maximum maternal age of {_MAX_MATERNAL_GAP} years. "
+                    f"This pattern strongly suggests TWO DIFFERENT PEOPLE were merged into one person. "
+                    f"Review the underlying RecordedPersons to determine if they should be split."
+                ),
+                recommended_action=(
+                    "Split this Person into separate individuals, one per distinct "
+                    "genealogical generation based on the extreme age gaps."
+                ),
+            ))
 
     return items
 
