@@ -27,9 +27,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+import psycopg2.extensions
 import requests
-
-from src.db.db import Connection
 
 
 # Base URLs for census APIs
@@ -59,7 +58,7 @@ def _ensure_data_dir() -> None:
     DATA_DIR.mkdir(exist_ok=True)
 
 
-def _get_ded_context(conn: Connection, logainm_id: int) -> tuple[str, str]:
+def _get_ded_context(conn: psycopg2.extensions.connection, logainm_id: int) -> tuple[str, str]:
     """
     Query place_authority to get county and DED names for a logainm_id.
 
@@ -71,7 +70,7 @@ def _get_ded_context(conn: Connection, logainm_id: int) -> tuple[str, str]:
     """
     cur = conn.cursor()
     cur.execute(
-        "SELECT county_name, name_en FROM place_authority WHERE logainm_id = %s AND place_type = 'ded'",
+        "SELECT county_name, name_en, ded_name FROM place_authority WHERE logainm_id = %s AND place_type = 'ded'",
         (logainm_id,),
     )
     row = cur.fetchone()
@@ -83,7 +82,9 @@ def _get_ded_context(conn: Connection, logainm_id: int) -> tuple[str, str]:
             "Run fetch-places first to seed the place authority."
         )
 
-    county_name, ded_name = row
+    # For a DED record, ded_name column is NULL (self-reference), so use name_en
+    county_name = row["county_name"]
+    ded_name = row["ded_name"] or row["name_en"]
     return county_name, ded_name
 
 
@@ -158,7 +159,7 @@ def _fetch_census_year(county: str, ded: str, year: int, max_retries: int = 3) -
 
 
 def fetch_census(
-    conn: Connection,
+    conn: psycopg2.extensions.connection,
     logainm_id: int,
     years: list[int] | None = None,
 ) -> FetchCensusResult:

@@ -471,7 +471,8 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
     # Step 1: Seed place authority via fetch-places
     print(f"Step 1/2: Seeding place_authority with logainm ID {args.logainm_id}...")
     try:
-        result = fetch_places(args.logainm_id, api_key, args.rate_delay)
+        rate_delay = getattr(args, 'rate_delay', 0.05)  # Default to 0.05s if not provided
+        result = fetch_places(args.logainm_id, api_key, rate_delay)
         rows = result.rows
         print(f"  Fetched {len(rows)} place rows.")
         inserted, skipped = write_places_to_db(conn, rows)
