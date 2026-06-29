@@ -1,7 +1,7 @@
 # Irish Genealogy Research — Reconstruction Algorithms
 
 *Version 1.3 — 19 June 2026*
-*Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `validation_rules.md` first.*
+*Audience: Developers and data engineers. This document specifies the algorithms that construct and extend the conclusion layer from the evidence layer. Read `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, and `genealogical_constraints.md` first.*
 
 ______________________________________________________________________
 
@@ -688,6 +688,6 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `validation_rules.md`, `session_bootstrap.md`*
+*Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `genealogical_constraints.md`*
 
-*Schema version: v3.1 target (see database_schema.md §1)*
+*Schema version: 4.3 — 28 June 2026*

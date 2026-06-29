@@ -20,6 +20,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+import psycopg2.extensions
 from rapidfuzz.distance import JaroWinkler
 
 SCORE_VERSION = "place_v2.0"
@@ -109,7 +110,7 @@ class PlaceResolutionResult:
 # Core algorithm
 # ---------------------------------------------------------------------------
 
-def _load_authorities(conn: sqlite3.Connection) -> list[dict]:
+def _load_authorities(conn: psycopg2.extensions.connection) -> list[dict]:
     """
     Load all place_authority rows. For each row build a list of normalised
     name strings to match against: name_en is always included; any
@@ -133,7 +134,7 @@ def _load_authorities(conn: sqlite3.Connection) -> list[dict]:
 
 
 def _collect_evidence_tokens(
-    conn,  # psycopg2.extensions.connection
+    conn: psycopg2.extensions.connection,
 ) -> tuple[dict[str, dict], int]:
     """
     Collect all distinct place_as_recorded strings from record,
@@ -191,7 +192,7 @@ def _best_match(
 # Entry point
 # ---------------------------------------------------------------------------
 
-def run_place_resolution(conn: sqlite3.Connection) -> PlaceResolutionResult:
+def run_place_resolution(conn: psycopg2.extensions.connection) -> PlaceResolutionResult:
     """
     Match all unresolved place_as_recorded strings in the evidence layer
     against place_authority. Commits matched linkages to place_record.

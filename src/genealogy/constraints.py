@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 
 import psycopg2
 import psycopg2.extensions
-import psycopg2.extras
 
 from src.genealogy.names import (
     APPROVED_NAME_VARIANTS,
@@ -264,7 +263,7 @@ def check_household_coherence(
     within_errors: list[str] = []
     census_errors: list[str] = []
 
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+    with conn.cursor() as cur:
 
         # Check 1: duplicate person_ids within the same household
         cur.execute("""
@@ -349,7 +348,7 @@ def apply_constraints_to_linkages(
     """
     report = ConstraintReport()
 
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+    with conn.cursor() as cur:
         cur.execute("""
             SELECT
                 prp.person_id,
