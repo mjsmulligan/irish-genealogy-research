@@ -29,6 +29,8 @@ Commands:
                         marked with linkage status for researcher validation.
     validate-linkages   Validate all linkages for age progression, name variants,
                         and household coherence errors. Flags problematic linkages.
+    sync-to-cloud       Dump local database and restore to Supabase. One-way sync
+                        from local (primary) to cloud (backup).
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -40,9 +42,9 @@ import datetime
 import sys
 from pathlib import Path
 
-import psycopg2.extensions
-
 from src.db.db import open_db, init_db, check_version
+from src.db.repository import Repository
+from src.db.sync_to_cloud import sync_to_cloud as _sync_to_cloud
 from src.constants import CENSUS_SOURCE_IDS
 from src.export_validation_dataset import export_validation_dataset
 from src.genealogy import apply_constraints_to_linkages, remove_flagged_linkages, ConstraintReport
@@ -53,20 +55,18 @@ from src.genealogy import apply_constraints_to_linkages, remove_flagged_linkages
 # ---------------------------------------------------------------------------
 
 
-def _q(conn: psycopg2.extensions.connection, sql: str, params: tuple = ()) -> int:
-    with conn.cursor() as cur:
-        cur.execute(sql, params)
-        row = cur.fetchone()
-        return list(row.values())[0]
+def _q(repo: Repository, sql: str, params: tuple = ()) -> int:
+    row = repo.fetch_one(sql, params)
+    return list(row.values())[0]
 
 
-def print_summary(conn: psycopg2.extensions.connection) -> None:
+def print_summary(repo: Repository) -> None:
     """Print a knowledge base summary to stdout.
 
     Optimized for fast metrics checking. Uses simple COUNTs instead of
     complex JOINs. Includes census linkage breakdown by pair.
     """
-    check_version(conn)
+    check_version(repo)
 
     print()
     print("=" * 80)
@@ -74,41 +74,39 @@ def print_summary(conn: psycopg2.extensions.connection) -> None:
     print("=" * 80)
 
     print("\n  FOUNDATIONAL LAYER")
-    print(f"    Repositories:              {_q(conn, 'SELECT COUNT(*) FROM repository'):>6}")
-    print(f"    Sources:                   {_q(conn, 'SELECT COUNT(*) FROM source'):>6}")
+    print(f"    Repositories:              {_q(repo, 'SELECT COUNT(*) FROM repository'):>6}")
+    print(f"    Sources:                   {_q(repo, 'SELECT COUNT(*) FROM source'):>6}")
 
-    pa_total = _q(conn, "SELECT COUNT(*) FROM place_authority")
+    pa_total = _q(repo, "SELECT COUNT(*) FROM place_authority")
     print(f"    Place authorities:         {pa_total:>6}")
 
     print("\n  EVIDENCE LAYER")
-    records = _q(conn, "SELECT COUNT(*) FROM record")
-    recorded_persons = _q(conn, "SELECT COUNT(*) FROM recorded_person")
+    records = _q(repo, "SELECT COUNT(*) FROM record")
+    recorded_persons = _q(repo, "SELECT COUNT(*) FROM recorded_person")
     print(f"    Records:                   {records:>6}")
     print(f"    Recorded Persons:          {recorded_persons:>6}")
-    print(f"    Recorded Relationships:    {_q(conn, 'SELECT COUNT(*) FROM recorded_relationship'):>6}")
-    print(f"    Record Similarities:       {_q(conn, 'SELECT COUNT(*) FROM record_similarity'):>6}")
+    print(f"    Recorded Relationships:    {_q(repo, 'SELECT COUNT(*) FROM recorded_relationship'):>6}")
+    print(f"    Record Similarities:       {_q(repo, 'SELECT COUNT(*) FROM record_similarity'):>6}")
 
     print("\n  CENSUS COMPOSITION (3,167 total persons)")
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT s.source_id, s.title,
-                   COUNT(DISTINCT rp.recorded_person_id) AS count
-            FROM source s
-            LEFT JOIN record r ON r.source_id = s.source_id
-            LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
-            WHERE s.source_id IN (3, 4, 5)
-            GROUP BY s.source_id, s.title
-            ORDER BY s.source_id
-        """)
-        census_counts = cur.fetchall()
-        for row in census_counts:
-            pct = 100.0 * row['count'] / 3167 if row['count'] else 0
-            print(f"    {row['title']:<20} {row['count']:>5} persons  ({pct:>5.1f}%)")
+    census_counts = repo.fetch_all("""
+        SELECT s.source_id, s.title,
+               COUNT(DISTINCT rp.recorded_person_id) AS count
+        FROM source s
+        LEFT JOIN record r ON r.source_id = s.source_id
+        LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
+        WHERE s.source_id IN (3, 4, 5)
+        GROUP BY s.source_id, s.title
+        ORDER BY s.source_id
+    """)
+    for row in census_counts:
+        pct = 100.0 * row['count'] / 3167 if row['count'] else 0
+        print(f"    {row['title']:<20} {row['count']:>5} persons  ({pct:>5.1f}%)")
 
     print("\n  CONCLUSION LAYER")
-    persons = _q(conn, "SELECT COUNT(*) FROM person")
-    relationships = _q(conn, "SELECT COUNT(*) FROM relationship")
-    events = _q(conn, "SELECT COUNT(*) FROM event")
+    persons = _q(repo, "SELECT COUNT(*) FROM person")
+    relationships = _q(repo, "SELECT COUNT(*) FROM relationship")
+    events = _q(repo, "SELECT COUNT(*) FROM event")
 
     print(f"    Persons (clustered):       {persons:>6}")
     print(f"    Relationships:             {relationships:>6}")
@@ -117,29 +115,28 @@ def print_summary(conn: psycopg2.extensions.connection) -> None:
     print("\n  LINKAGE METRICS")
 
     # Total linkage: recorded persons with person links
-    linked_rp = _q(conn, "SELECT COUNT(DISTINCT recorded_person_id) FROM person_recorded_person")
+    linked_rp = _q(repo, "SELECT COUNT(DISTINCT recorded_person_id) FROM person_recorded_person")
     linkage_pct = 100.0 * linked_rp / recorded_persons if recorded_persons > 0 else 0
 
     print(f"    Recorded persons linked:   {linked_rp:>6} / {recorded_persons:<6}  ({linkage_pct:>5.1f}%)")
 
     # Census link breakdown: how many persons appear in multiple censuses
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT
-                COUNT(CASE WHEN census_count = 1 THEN 1 END) as single_census,
-                COUNT(CASE WHEN census_count = 2 THEN 1 END) as two_census,
-                COUNT(CASE WHEN census_count = 3 THEN 1 END) as three_census
-            FROM (
-                SELECT person_id, COUNT(DISTINCT s.source_id) as census_count
-                FROM person_recorded_person prp
-                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-                JOIN record r ON r.record_id = rp.record_id
-                JOIN source s ON s.source_id = r.source_id
-                WHERE s.source_id IN (3, 4, 5)
-                GROUP BY person_id
-            ) census_coverage
-        """)
-        row = cur.fetchone()
+    census_coverage = repo.fetch_one("""
+        SELECT
+            COUNT(CASE WHEN census_count = 1 THEN 1 END) as single_census,
+            COUNT(CASE WHEN census_count = 2 THEN 1 END) as two_census,
+            COUNT(CASE WHEN census_count = 3 THEN 1 END) as three_census
+        FROM (
+            SELECT person_id, COUNT(DISTINCT s.source_id) as census_count
+            FROM person_recorded_person prp
+            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+            JOIN record r ON r.record_id = rp.record_id
+            JOIN source s ON s.source_id = r.source_id
+            WHERE s.source_id IN (3, 4, 5)
+            GROUP BY person_id
+        ) census_coverage
+    """)
+    row = census_coverage
 
     if persons > 0:
         print(f"    Persons in 1 census:       {row['single_census']:>6}  ({100.0*row['single_census']/persons:>5.1f}%)")
@@ -148,30 +145,28 @@ def print_summary(conn: psycopg2.extensions.connection) -> None:
 
     # Pairwise census links — count persons with recorded_persons from each pair
     print(f"\n  PAIRWISE CENSUS LINKAGE")
-    with conn.cursor() as cur:
-        # For each person, check if they have recordings from both censuses in the pair
-        cur.execute("""
-            WITH person_by_source AS (
-                SELECT DISTINCT prp.person_id, s.source_id
-                FROM person_recorded_person prp
-                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-                JOIN record r ON r.record_id = rp.record_id
-                JOIN source s ON s.source_id = r.source_id
-                WHERE s.source_id IN (3, 4, 5)
-            )
-            SELECT
-                COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p2.person_id IS NOT NULL
-                    THEN p1.person_id END) as link_1901_1911,
-                COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p3.person_id IS NOT NULL
-                    THEN p1.person_id END) as link_1901_1926,
-                COUNT(DISTINCT CASE WHEN p2.person_id IS NOT NULL AND p3.person_id IS NOT NULL
-                    THEN p2.person_id END) as link_1911_1926
-            FROM (SELECT DISTINCT person_id FROM person_by_source) all_persons
-            LEFT JOIN person_by_source p1 ON p1.person_id = all_persons.person_id AND p1.source_id = 3
-            LEFT JOIN person_by_source p2 ON p2.person_id = all_persons.person_id AND p2.source_id = 4
-            LEFT JOIN person_by_source p3 ON p3.person_id = all_persons.person_id AND p3.source_id = 5
-        """)
-        row = cur.fetchone()
+    # For each person, check if they have recordings from both censuses in the pair
+    row = repo.fetch_one("""
+        WITH person_by_source AS (
+            SELECT DISTINCT prp.person_id, s.source_id
+            FROM person_recorded_person prp
+            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+            JOIN record r ON r.record_id = rp.record_id
+            JOIN source s ON s.source_id = r.source_id
+            WHERE s.source_id IN (3, 4, 5)
+        )
+        SELECT
+            COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p2.person_id IS NOT NULL
+                THEN p1.person_id END) as link_1901_1911,
+            COUNT(DISTINCT CASE WHEN p1.person_id IS NOT NULL AND p3.person_id IS NOT NULL
+                THEN p1.person_id END) as link_1901_1926,
+            COUNT(DISTINCT CASE WHEN p2.person_id IS NOT NULL AND p3.person_id IS NOT NULL
+                THEN p2.person_id END) as link_1911_1926
+        FROM (SELECT DISTINCT person_id FROM person_by_source) all_persons
+        LEFT JOIN person_by_source p1 ON p1.person_id = all_persons.person_id AND p1.source_id = 3
+        LEFT JOIN person_by_source p2 ON p2.person_id = all_persons.person_id AND p2.source_id = 4
+        LEFT JOIN person_by_source p3 ON p3.person_id = all_persons.person_id AND p3.source_id = 5
+    """)
 
     if row:
         if row['link_1901_1911']:
@@ -204,9 +199,9 @@ def _make_debug_dir() -> Path:
 
 
 def _cmd_init(args: argparse.Namespace) -> None:
-    conn = init_db()
+    repo = init_db()
     print("Database initialised. Run 'python -m src.cli seed-places' to load place authority.")
-    conn.close()
+    repo.close()
 
 
 def _cmd_clear_evidence(args: argparse.Namespace) -> None:
@@ -214,8 +209,8 @@ def _cmd_clear_evidence(args: argparse.Namespace) -> None:
     Wipe evidence + conclusion layers. place_authority is preserved.
     Useful for re-ingesting from scratch without re-fetching places.
     """
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
 
     tables = [
         "training_labels",
@@ -235,14 +230,13 @@ def _cmd_clear_evidence(args: argparse.Namespace) -> None:
     ]
 
     print("Clearing evidence + conclusion layers (place_authority preserved)...")
-    with conn:
-        with conn.cursor() as cur:
-            for table in tables:
-                cur.execute(f"DELETE FROM {table}")
-                print(f"  cleared: {table}")
+    for table in tables:
+        repo.execute(f"DELETE FROM {table}")
+        print(f"  cleared: {table}")
+    repo.commit()
 
     print("\nReady for re-ingest.\n")
-    conn.close()
+    repo.close()
 
 
 def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
@@ -251,8 +245,8 @@ def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
     and place_authority are preserved. Allows re-running conclude without
     re-ingesting.
     """
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
 
     tables = [
         "training_labels",
@@ -267,14 +261,13 @@ def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
     ]
 
     print("Clearing conclusion layer (evidence and place_authority preserved)...")
-    with conn:
-        with conn.cursor() as cur:
-            for table in tables:
-                cur.execute(f"DELETE FROM {table}")
-                print(f"  cleared: {table}")
+    for table in tables:
+        repo.execute(f"DELETE FROM {table}")
+        print(f"  cleared: {table}")
+    repo.commit()
 
     print("\nReady to re-run conclude.\n")
-    conn.close()
+    repo.close()
 
 
 def _cmd_add_evidence(args: argparse.Namespace) -> None:
@@ -299,8 +292,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     )
     from src.metrics import Timer, PipelineRun, log_run
 
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
     source_id = int(args.source)
 
     if source_id not in CENSUS_SOURCE_IDS:
@@ -309,8 +302,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
 
     print(f"\n[1/5] Ingesting CSV (source {source_id})...")
     with Timer('ingest', 'ingest_census', source_id=source_id) as timer:
-        ingest_result = ingest_census(conn, args.file, source_id=source_id)
-    log_run(conn, PipelineRun(
+        ingest_result = ingest_census(repo, args.file, source_id=source_id)
+    log_run(repo, PipelineRun(
         stage='ingest',
         step_name='ingest_census',
         records_processed=ingest_result['records_committed'],
@@ -322,21 +315,18 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     print("\n[2/5] Assigning role-pair RecordedRelationships...")
     with Timer('evidence', 'assign_role_relationships', source_id=source_id) as timer:
         rr_totals = {"created": 0, "skipped_null": 0, "skipped_no_rule": 0}
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT record_id FROM record WHERE source_id = %s "
-                "ORDER BY record_id DESC LIMIT %s",
-                (source_id, ingest_result["records_committed"]),
-            )
-            record_ids = [row["record_id"] for row in cur.fetchall()]
+        record_ids = repo.fetch_all(
+            "SELECT record_id FROM record WHERE source_id = %s "
+            "ORDER BY record_id DESC LIMIT %s",
+            (source_id, ingest_result["records_committed"]),
+        )
 
-        with conn:
-            for rid in record_ids:
-                rr = assign_role_relationships(conn, rid)
-                rr_totals["created"] += rr.relationships_created
-                rr_totals["skipped_null"] += rr.skipped_null_role_pairs
-                rr_totals["skipped_no_rule"] += rr.skipped_no_rule
-    log_run(conn, PipelineRun(
+        for rid_row in record_ids:
+            rr = assign_role_relationships(repo, rid_row["record_id"])
+            rr_totals["created"] += rr.relationships_created
+            rr_totals["skipped_null"] += rr.skipped_null_role_pairs
+            rr_totals["skipped_no_rule"] += rr.skipped_no_rule
+    log_run(repo, PipelineRun(
         stage='evidence',
         step_name='assign_role_relationships',
         records_processed=len(record_ids),
@@ -347,8 +337,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
 
     print("\n[3/5] Running place resolution...")
     with Timer('evidence', 'run_place_resolution', source_id=source_id) as timer:
-        place_result = run_place_resolution(conn)
-    log_run(conn, PipelineRun(
+        place_result = run_place_resolution(repo)
+    log_run(repo, PipelineRun(
         stage='evidence',
         step_name='run_place_resolution',
         records_processed=place_result.records_linked,
@@ -359,8 +349,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
 
     print("\n[4/5] Running record similarity (Splink household-level, cross-census)...")
     with Timer('similarity', 'run_record_similarity') as timer:
-        record_similarity_result = run_record_similarity(conn)
-    log_run(conn, PipelineRun(
+        record_similarity_result = run_record_similarity(repo)
+    log_run(repo, PipelineRun(
         stage='similarity',
         step_name='run_record_similarity',
         records_processed=None,
@@ -370,8 +360,8 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
 
     print("\n[5/5] Running person similarity (Splink person-level, cross-census)...")
     with Timer('similarity', 'run_person_similarity') as timer:
-        person_similarity_result = run_person_similarity(conn)
-    log_run(conn, PipelineRun(
+        person_similarity_result = run_person_similarity(repo)
+    log_run(repo, PipelineRun(
         stage='similarity',
         step_name='run_person_similarity',
         records_processed=None,
@@ -409,20 +399,20 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     else:
         print("\n  No parse notes — clean ingest.")
 
-    conn.close()
+    repo.close()
 
 
 def _cmd_ingest(args: argparse.Namespace) -> None:
     """Legacy single-step ingest. Prefer add-evidence."""
     from src.evidence.census import ingest_census
-    conn = open_db()
+    repo = open_db()
     source_id = int(args.source)
 
     if source_id not in CENSUS_SOURCE_IDS:
         print(f"No ingest handler implemented for source {source_id}.", file=sys.stderr)
         sys.exit(1)
 
-    result = ingest_census(conn, args.file, source_id=source_id)
+    result = ingest_census(repo, args.file, source_id=source_id)
 
     print(f"\nIngest complete — {result['source_title']}")
     print(f"  CSV rows:        {result['rows_in_csv']}")
@@ -439,16 +429,16 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
     else:
         print("\n  No parse notes — clean ingest.")
 
-    conn.close()
+    repo.close()
 
 
 def _cmd_seed_places(args: argparse.Namespace) -> None:
     from src.db.seed_places import seed_places, print_seed_places_report
-    conn = open_db()
-    check_version(conn)
-    result = seed_places(conn, args.file)
+    repo = open_db()
+    check_version(repo)
+    result = seed_places(repo, args.file)
     print_seed_places_report(result)
-    conn.close()
+    repo.close()
     if not result["ok"]:
         sys.exit(1)
 
@@ -485,11 +475,11 @@ def _cmd_fetch_places(args: argparse.Namespace) -> None:
         write_to_csv(rows, args.csv)
         print(f"  CSV written to: {args.csv}")
 
-    conn = open_db()
-    check_version(conn)
-    inserted, skipped = write_to_db(conn, rows)
+    repo = open_db()
+    check_version(repo)
+    inserted, skipped = write_to_db(repo, rows)
     print(f"  DB: {inserted} inserted, {skipped} skipped (already present).")
-    conn.close()
+    repo.close()
 
 
 def _cmd_fetch_census(args: argparse.Namespace) -> None:
@@ -512,11 +502,11 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
         print("Error: No API key provided. Use --api-key or set LOGAINM_API_KEY.", file=sys.stderr)
         sys.exit(1)
 
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
 
     # Step 1: Seed place authority via fetch-places (skip if already exists)
-    if _logainm_id_exists(conn, args.logainm_id):
+    if _logainm_id_exists(repo, args.logainm_id):
         print(f"Step 1/2: logainm ID {args.logainm_id} already in place_authority. Skipping fetch-places.")
     else:
         print(f"Step 1/2: Seeding place_authority with logainm ID {args.logainm_id}...")
@@ -525,21 +515,21 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
             result = fetch_places(args.logainm_id, api_key, rate_delay)
             rows = result.rows
             print(f"  Fetched {len(rows)} place rows.")
-            inserted, skipped = write_places_to_db(conn, rows)
+            inserted, skipped = write_places_to_db(repo, rows)
             print(f"  DB: {inserted} inserted, {skipped} skipped.")
         except Exception as e:
             print(f"Error seeding places: {e}", file=sys.stderr)
-            conn.close()
+            repo.close()
             sys.exit(1)
 
     # Step 2: Fetch and save census files
     print(f"\nStep 2/2: Downloading census files...")
     years = args.year if args.year else [1901, 1911, 1926]
-    census_result = fetch_census(conn, args.logainm_id, years=years)
+    census_result = fetch_census(repo, args.logainm_id, years=years)
     print_fetch_census_report(census_result)
 
     if census_result.errors:
-        conn.close()
+        repo.close()
         sys.exit(1)
 
     # Optional Step 3: Run add-evidence pipeline on downloaded files
@@ -567,53 +557,50 @@ def _cmd_fetch_census(args: argparse.Namespace) -> None:
 
             # [1/3] Ingest CSV
             print(f"  [1/3] Ingesting CSV (source {source_id})...")
-            ingest_result = ingest_census(conn, str(csv_file), source_id=source_id)
+            ingest_result = ingest_census(repo, str(csv_file), source_id=source_id)
             print(f"    Households: {ingest_result['records_committed']}, Persons: {ingest_result['persons_committed']}")
 
             # [2/3] Assign role-pair RecordedRelationships
             print(f"  [2/3] Assigning role-pair RecordedRelationships...")
             rr_totals = {"created": 0, "skipped_null": 0, "skipped_no_rule": 0}
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT record_id FROM record WHERE source_id = %s "
-                    "ORDER BY record_id DESC LIMIT %s",
-                    (source_id, ingest_result["records_committed"]),
-                )
-                record_ids = [row["record_id"] for row in cur.fetchall()]
+            record_ids = repo.fetch_all(
+                "SELECT record_id FROM record WHERE source_id = %s "
+                "ORDER BY record_id DESC LIMIT %s",
+                (source_id, ingest_result["records_committed"]),
+            )
 
-            with conn:
-                for rid in record_ids:
-                    rr = assign_role_relationships(conn, rid)
-                    rr_totals["created"] += rr.relationships_created
-                    rr_totals["skipped_null"] += rr.skipped_null_role_pairs
-                    rr_totals["skipped_no_rule"] += rr.skipped_no_rule
+            for rid_row in record_ids:
+                rr = assign_role_relationships(repo, rid_row["record_id"])
+                rr_totals["created"] += rr.relationships_created
+                rr_totals["skipped_null"] += rr.skipped_null_role_pairs
+                rr_totals["skipped_no_rule"] += rr.skipped_no_rule
             print(f"    Relationships: {rr_totals['created']}")
 
             # [3/3] Place resolution
             print(f"  [3/3] Running place resolution...")
-            place_result = run_place_resolution(conn)
+            place_result = run_place_resolution(repo)
             print(f"    Records linked: {place_result.records_linked}, Unresolved: {len(place_result.unresolved)}")
 
         # Run cross-census similarity (once after all years ingested)
         print(f"\nRunning cross-census similarity analysis...")
         print(f"  [4/5] Record similarity (Splink)...")
-        record_similarity_result = run_record_similarity(conn)
+        record_similarity_result = run_record_similarity(repo)
 
         print(f"  [5/5] Person similarity (Splink)...")
-        person_similarity_result = run_person_similarity(conn)
+        person_similarity_result = run_person_similarity(repo)
 
         print_record_similarity_report(record_similarity_result)
         print_person_similarity_report(person_similarity_result)
 
         print(f"\nadd-evidence pipeline complete")
 
-    conn.close()
+    repo.close()
 
 
 def _cmd_summary(args: argparse.Namespace) -> None:
-    conn = open_db()
-    print_summary(conn)
-    conn.close()
+    repo = open_db()
+    print_summary(repo)
+    repo.close()
 
 
 def _cmd_conclude(args: argparse.Namespace) -> None:
@@ -649,15 +636,15 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     )
     from src.metrics import Timer, PipelineRun, log_run
 
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
 
     print("\nRunning conclusion pipeline...")
 
     print("\n[1/5] Person resolution...")
     with Timer('conclusion', 'run_person_resolution') as timer:
-        person_result = run_person_resolution(conn)
-    log_run(conn, PipelineRun(
+        person_result = run_person_resolution(repo)
+    log_run(repo, PipelineRun(
         stage='conclusion',
         step_name='run_person_resolution',
         records_processed=None,
@@ -667,8 +654,8 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
 
     print("\n[2/5] Relationship resolution...")
     with Timer('conclusion', 'run_relationship_resolution') as timer:
-        rel_result = run_relationship_resolution(conn)
-    log_run(conn, PipelineRun(
+        rel_result = run_relationship_resolution(repo)
+    log_run(repo, PipelineRun(
         stage='conclusion',
         step_name='run_relationship_resolution',
         records_processed=None,
@@ -682,8 +669,8 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
 
     print("\n[3/5] Household resolution...")
     with Timer('conclusion', 'run_household_resolution') as timer:
-        household_result = run_household_resolution(conn)
-    log_run(conn, PipelineRun(
+        household_result = run_household_resolution(repo)
+    log_run(repo, PipelineRun(
         stage='conclusion',
         step_name='run_household_resolution',
         records_processed=None,
@@ -693,8 +680,8 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
 
     print("\n[4/5] Event resolution...")
     with Timer('conclusion', 'run_event_resolution') as timer:
-        event_result = run_event_resolution(conn)
-    log_run(conn, PipelineRun(
+        event_result = run_event_resolution(repo)
+    log_run(repo, PipelineRun(
         stage='conclusion',
         step_name='run_event_resolution',
         records_processed=None,
@@ -707,8 +694,8 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     else:
         print("\n[5/5] Validation cleanup...")
         with Timer('conclusion', 'run_validation_cleanup') as timer:
-            cleanup_result = run_validation_cleanup(conn)
-        log_run(conn, PipelineRun(
+            cleanup_result = run_validation_cleanup(repo)
+        log_run(repo, PipelineRun(
             stage='conclusion',
             step_name='run_validation_cleanup',
             records_processed=None,
@@ -717,38 +704,43 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         print_validation_cleanup_report(cleanup_result)
 
     print("Conclusion pipeline complete. Running summary...\n")
-    print_summary(conn)
+    print_summary(repo)
 
-    conn.close()
+    repo.close()
 
 
 def _cmd_review(args: argparse.Namespace) -> None:
     from src.review.runner import run_and_print
-    conn = open_db()
-    check_version(conn)
-    run_and_print(conn)
-    conn.close()
+    repo = open_db()
+    check_version(repo)
+    run_and_print(repo)
+    repo.close()
 
 
 def _cmd_timing_report(args: argparse.Namespace) -> None:
     from src.metrics.tracker import print_timing_report
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
     stage = getattr(args, 'stage', None)
     limit = getattr(args, 'limit', 50)
-    print_timing_report(conn, stage=stage, limit=limit)
-    conn.close()
+    print_timing_report(repo, stage=stage, limit=limit)
+    repo.close()
 
 
 def _cmd_export_validation(args: argparse.Namespace) -> None:
     export_validation_dataset(args.output)
 
 
+def _cmd_sync_to_cloud(args: argparse.Namespace) -> None:
+    """Dump local database and restore to Supabase."""
+    _sync_to_cloud()
+
+
 def _cmd_validate_linkages(args: argparse.Namespace) -> None:
-    conn = open_db()
-    check_version(conn)
+    repo = open_db()
+    check_version(repo)
     try:
-        report = apply_constraints_to_linkages(conn)
+        report = apply_constraints_to_linkages(repo)
 
         print()
         print("=" * 80)
@@ -782,16 +774,16 @@ def _cmd_validate_linkages(args: argparse.Namespace) -> None:
         # Optionally remove flagged linkages
         if args.remove:
             if args.dry_run:
-                count, msg = remove_flagged_linkages(conn, report, dry_run=True)
+                count, msg = remove_flagged_linkages(repo, report, dry_run=True)
                 print(f"\n  DRY RUN: {msg}")
             else:
-                count, msg = remove_flagged_linkages(conn, report, dry_run=False)
+                count, msg = remove_flagged_linkages(repo, report, dry_run=False)
                 print(f"\n  {msg}")
                 print(f"  Remaining linkages: {report.total_linkages_checked - count}")
 
         print("\n" + "=" * 80)
     finally:
-        conn.close()
+        repo.close()
 
 
 # ---------------------------------------------------------------------------
@@ -910,6 +902,11 @@ def main() -> None:
         help="Show what would be removed without actually deleting"
     )
 
+    sub.add_parser(
+        "sync-to-cloud",
+        help="Dump local database and restore to Supabase (one-way backup)",
+    )
+
     dispatch = {
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
@@ -925,6 +922,7 @@ def main() -> None:
         "timing-report":     _cmd_timing_report,
         "export-validation": _cmd_export_validation,
         "validate-linkages": _cmd_validate_linkages,
+        "sync-to-cloud":     _cmd_sync_to_cloud,
     }
 
     args = parser.parse_args()

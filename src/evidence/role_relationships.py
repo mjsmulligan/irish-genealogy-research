@@ -19,8 +19,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import psycopg2.extensions
-
 from src.constants import (
     SCORE_VERSION_ROLE_PAIR,
     SCORE_ROLE_COUPLE,
@@ -29,6 +27,7 @@ from src.constants import (
     SCORE_ROLE_SIBLING_DIRECT,
     SCORE_ROLE_SIBLING_INFERRED,
 )
+from src.db.repository import Repository
 from src.dal.record_repo import get_recorded_persons_for_record
 from src.dal.recorded_relationship_repo import insert_recorded_relationship
 
@@ -93,7 +92,7 @@ class RoleRelationshipResult:
 # ---------------------------------------------------------------------------
 
 def assign_role_relationships(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     record_id: int,
 ) -> RoleRelationshipResult:
     """
@@ -108,7 +107,7 @@ def assign_role_relationships(
     """
     result = RoleRelationshipResult(record_id=record_id)
 
-    persons = get_recorded_persons_for_record(conn, record_id)
+    persons = get_recorded_persons_for_record(repo, record_id)
     if len(persons) < 2:
         return result  # nothing to pair
 
@@ -135,7 +134,7 @@ def assign_role_relationships(
             # All RecordedRelationships get scores — role-pair types use the
             # prior score from the rule table; similarity types use Splink scores.
             insert_recorded_relationship(
-                conn,
+                repo,
                 recorded_person_id_1=rp_a["recorded_person_id"],
                 recorded_person_id_2=rp_b["recorded_person_id"],
                 rel_type=rel_type,
@@ -153,7 +152,7 @@ def assign_role_relationships(
 # ---------------------------------------------------------------------------
 
 def assign_role_relationships_for_source(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     source_id: int,
 ) -> list[RoleRelationshipResult]:
     """
@@ -161,11 +160,9 @@ def assign_role_relationships_for_source(
     Used by the CLI when re-running the role-relationship step in isolation.
     Each record is processed within the caller's transaction.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT record_id FROM record WHERE source_id = %s ORDER BY record_id",
-            (source_id,),
-        )
-        record_ids = [row["record_id"] for row in cur.fetchall()]
+    record_ids = repo.fetch_all(
+        "SELECT record_id FROM record WHERE source_id = %s ORDER BY record_id",
+        (source_id,),
+    )
 
-    return [assign_role_relationships(conn, rid) for rid in record_ids]
+    return [assign_role_relationships(repo, rid["record_id"]) for rid in record_ids]

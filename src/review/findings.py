@@ -35,8 +35,7 @@ from __future__ import annotations
 
 import re
 
-import psycopg2.extensions
-
+from src.db.repository import Repository
 from src.review.report import ReportItem
 
 # ---------------------------------------------------------------------------
@@ -66,14 +65,12 @@ def _year(date_str: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def _person_label(conn: psycopg2.extensions.connection, person_id: int) -> str:
-    with conn.cursor() as cur:
-        cur.execute("SELECT label FROM person WHERE person_id = %s", (person_id,))
-        row = cur.fetchone()
+def _person_label(repo: Repository, person_id: int) -> str:
+    row = repo.fetch_one("SELECT label FROM person WHERE person_id = %s", (person_id,))
     return row["label"] if row else str(person_id)
 
 
-def _derive_birth_year(conn: psycopg2.extensions.connection, person_id: int) -> int | None:
+def _derive_birth_year(repo: Repository, person_id: int) -> int | None:
     """
     Best available birth-year estimate for a Person.
 
@@ -82,91 +79,84 @@ def _derive_birth_year(conn: psycopg2.extensions.connection, person_id: int) -> 
     2. is_primary baptism Event date (lower bound proxy)
     3. Earliest census RecordedPerson age back-calculated from record date
     """
-    with conn.cursor() as cur:
-        # 1. Primary birth Event
-        cur.execute(
-            """
-            SELECT e.date FROM event e
-            JOIN person_event pe ON pe.event_id = e.event_id
-            WHERE pe.person_id = %s AND e.type = 'birth' AND e.is_primary = 1
-              AND e.date IS NOT NULL
-            LIMIT 1
-            """,
-            (person_id,),
-        )
-        row = cur.fetchone()
-        if row:
-            y = _year(row["date"])
-            if y:
-                return y
+    # 1. Primary birth Event
+    row = repo.fetch_one(
+        """
+        SELECT e.date FROM event e
+        JOIN person_event pe ON pe.event_id = e.event_id
+        WHERE pe.person_id = %s AND e.type = 'birth' AND e.is_primary = 1
+          AND e.date IS NOT NULL
+        LIMIT 1
+        """,
+        (person_id,),
+    )
+    if row:
+        y = _year(row["date"])
+        if y:
+            return y
 
-        # 2. Primary baptism Event
-        cur.execute(
-            """
-            SELECT e.date FROM event e
-            JOIN person_event pe ON pe.event_id = e.event_id
-            WHERE pe.person_id = %s AND e.type = 'baptism' AND e.is_primary = 1
-              AND e.date IS NOT NULL
-            LIMIT 1
-            """,
-            (person_id,),
-        )
-        row = cur.fetchone()
-        if row:
-            y = _year(row["date"])
-            if y:
-                return y
+    # 2. Primary baptism Event
+    row = repo.fetch_one(
+        """
+        SELECT e.date FROM event e
+        JOIN person_event pe ON pe.event_id = e.event_id
+        WHERE pe.person_id = %s AND e.type = 'baptism' AND e.is_primary = 1
+          AND e.date IS NOT NULL
+        LIMIT 1
+        """,
+        (person_id,),
+    )
+    if row:
+        y = _year(row["date"])
+        if y:
+            return y
 
-        # 3. Derive from census RecordedPerson age + record date
-        cur.execute(
-            """
-            SELECT rp.age, r.date
-            FROM person_recorded_person prp
-            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-            JOIN record r ON r.record_id = rp.record_id
-            JOIN source s ON s.source_id = r.source_id
-            WHERE prp.person_id = %s
-              AND s.type = 'census'
-              AND rp.age IS NOT NULL
-              AND r.date IS NOT NULL
-            ORDER BY rp.age ASC
-            LIMIT 1
-            """,
-            (person_id,),
-        )
-        row = cur.fetchone()
-        if row and row["age"] is not None:
-            census_year = _year(str(row["date"]))
-            if census_year:
-                return census_year - int(row["age"])
+    # 3. Derive from census RecordedPerson age + record date
+    row = repo.fetch_one(
+        """
+        SELECT rp.age, r.date
+        FROM person_recorded_person prp
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        WHERE prp.person_id = %s
+          AND s.type = 'census'
+          AND rp.age IS NOT NULL
+          AND r.date IS NOT NULL
+        ORDER BY rp.age ASC
+        LIMIT 1
+        """,
+        (person_id,),
+    )
+    if row and row["age"] is not None:
+        census_year = _year(str(row["date"]))
+        if census_year:
+            return census_year - int(row["age"])
 
     return None
 
 
-def _derive_death_year(conn: psycopg2.extensions.connection, person_id: int) -> int | None:
+def _derive_death_year(repo: Repository, person_id: int) -> int | None:
     """Return the is_primary death year for a Person, or None."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT e.date FROM event e
-            JOIN person_event pe ON pe.event_id = e.event_id
-            WHERE pe.person_id = %s AND e.type = 'death' AND e.is_primary = 1
-              AND e.date IS NOT NULL
-            LIMIT 1
-            """,
-            (person_id,),
-        )
-        row = cur.fetchone()
+    row = repo.fetch_one(
+        """
+        SELECT e.date FROM event e
+        JOIN person_event pe ON pe.event_id = e.event_id
+        WHERE pe.person_id = %s AND e.type = 'death' AND e.is_primary = 1
+          AND e.date IS NOT NULL
+        LIMIT 1
+        """,
+        (person_id,),
+    )
     return _year(row["date"]) if row else None
 
 
-def _get_active_person_ids(conn: psycopg2.extensions.connection) -> list[int]:
+def _get_active_person_ids(repo: Repository) -> list[int]:
     """Return all active Person IDs, ordered."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT person_id FROM person WHERE status = 'active' ORDER BY person_id"
-        )
-        return [r["person_id"] for r in cur.fetchall()]
+    rows = repo.fetch_all(
+        "SELECT person_id FROM person WHERE status = 'active' ORDER BY person_id"
+    )
+    return [r["person_id"] for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +164,7 @@ def _get_active_person_ids(conn: psycopg2.extensions.connection) -> list[int]:
 # ---------------------------------------------------------------------------
 
 def find_merge_error_candidates(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC07: A Person linked to 2+ active Records from the same census source is
@@ -184,33 +174,31 @@ def find_merge_error_candidates(
     Query: person_recorded_person → recorded_person → record → source
     grouped by (person_id, source_id), HAVING count > 1.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                prp.person_id,
-                r.source_id,
-                s.title   AS source_title,
-                COUNT(DISTINCT r.record_id) AS record_count,
-                ARRAY_AGG(DISTINCT r.record_id ORDER BY r.record_id) AS record_ids
-            FROM person_recorded_person prp
-            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-            JOIN record r ON r.record_id = rp.record_id
-            JOIN source s ON s.source_id = r.source_id
-            JOIN person p ON p.person_id = prp.person_id
-            WHERE s.type = 'census'
-              AND p.status = 'active'
-            GROUP BY prp.person_id, r.source_id, s.title
-            HAVING COUNT(DISTINCT r.record_id) > 1
-            ORDER BY COUNT(DISTINCT r.record_id) DESC, prp.person_id
-            """
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        """
+        SELECT
+            prp.person_id,
+            r.source_id,
+            s.title   AS source_title,
+            COUNT(DISTINCT r.record_id) AS record_count,
+            ARRAY_AGG(DISTINCT r.record_id ORDER BY r.record_id) AS record_ids
+        FROM person_recorded_person prp
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        JOIN person p ON p.person_id = prp.person_id
+        WHERE s.type = 'census'
+          AND p.status = 'active'
+        GROUP BY prp.person_id, r.source_id, s.title
+        HAVING COUNT(DISTINCT r.record_id) > 1
+        ORDER BY COUNT(DISTINCT r.record_id) DESC, prp.person_id
+        """
+    )
 
     items = []
     for row in rows:
         pid = row["person_id"]
-        label = _person_label(conn, pid)
+        label = _person_label(repo, pid)
         record_ids = list(row["record_ids"])
         source_count = row["record_count"]
 
@@ -244,7 +232,7 @@ def find_merge_error_candidates(
 # ---------------------------------------------------------------------------
 
 def find_birth_singularity_violations(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC04: A Person with multiple Events of type 'birth' marked is_primary=1.
@@ -271,7 +259,7 @@ def find_birth_singularity_violations(
     items = []
     for row in rows:
         pid = row["person_id"]
-        label = _person_label(conn, pid)
+        label = _person_label(repo, pid)
         event_ids = list(row["event_ids"])
         dates = [d or "unknown" for d in row["event_dates"]]
         date_pairs = ", ".join(
@@ -309,7 +297,7 @@ def find_birth_singularity_violations(
 # ---------------------------------------------------------------------------
 
 def find_death_singularity_violations(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC05: A Person with multiple Events of type 'death' marked is_primary=1.
@@ -334,7 +322,7 @@ def find_death_singularity_violations(
     items = []
     for row in rows:
         pid = row["person_id"]
-        label = _person_label(conn, pid)
+        label = _person_label(repo, pid)
         event_ids = list(row["event_ids"])
         dates = [d or "unknown" for d in row["event_dates"]]
         date_pairs = ", ".join(
@@ -370,7 +358,7 @@ def find_death_singularity_violations(
 # ---------------------------------------------------------------------------
 
 def find_life_event_sequence_violations(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC02: Chronological order broken across a Person's concluded Events.
@@ -501,7 +489,7 @@ def find_life_event_sequence_violations(
 # ---------------------------------------------------------------------------
 
 def find_parent_age_implausible(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC12: Parent–child birth-year gap outside plausible range.
@@ -701,7 +689,7 @@ def find_parent_age_implausible(
 # ---------------------------------------------------------------------------
 
 def find_marriage_age_implausible(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC13: Person under 15 years old at a concluded marriage Event date.
@@ -775,7 +763,7 @@ def find_marriage_age_implausible(
 # ---------------------------------------------------------------------------
 
 def find_lifespan_boundary_violated(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     GC01: A Record linked to a Person has a date outside the Person's
@@ -876,7 +864,7 @@ def find_lifespan_boundary_violated(
 # ---------------------------------------------------------------------------
 
 def find_unlinked_recorded_persons(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     RecordedPersons with no Person conclusion (no row in person_recorded_person).
@@ -941,7 +929,7 @@ def find_unlinked_recorded_persons(
 # ---------------------------------------------------------------------------
 
 def find_single_census_appearance(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     Persons who appear in only one census (one distinct census source across
@@ -1019,7 +1007,7 @@ def find_single_census_appearance(
 # ---------------------------------------------------------------------------
 
 def find_link_conflicts_resolved(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     RecordedPersons whose Person linkage was revised (opinion revision) during
@@ -1052,7 +1040,7 @@ def find_link_conflicts_resolved(
 # ---------------------------------------------------------------------------
 
 def find_unlinked_in_populated_households(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     Find unlinked RecordedPersons in households that contain linked persons.
@@ -1232,7 +1220,7 @@ def find_unlinked_in_populated_households(
 
 
 def run_all_findings(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[ReportItem]:
     """
     Run all v1.0 finding functions and return the combined list.

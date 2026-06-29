@@ -29,9 +29,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-import psycopg2
-import psycopg2.extensions
-
+from src.db.repository import Repository
 from src.genealogy.names import (
     APPROVED_NAME_VARIANTS,
     infer_gender,
@@ -244,7 +242,7 @@ def evaluate_pair(
 # ---------------------------------------------------------------------------
 
 def check_household_coherence(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> tuple[int, int, list[str]]:
     """
     Check for structurally impossible linkages in person_recorded_person.
@@ -263,71 +261,69 @@ def check_household_coherence(
     within_errors: list[str] = []
     census_errors: list[str] = []
 
-    with conn.cursor() as cur:
+    # Check 1: duplicate person_ids within the same household
+    within_rows = repo.fetch_all("""
+        SELECT
+            prp1.person_id,
+            rp1.recorded_person_id AS rp1_id,
+            rp2.recorded_person_id AS rp2_id,
+            r1.record_id,
+            r1.date,
+            rp1.name_as_recorded AS name1,
+            rp2.name_as_recorded AS name2
+        FROM person_recorded_person prp1
+        JOIN person_recorded_person prp2
+            ON prp1.person_id = prp2.person_id
+           AND prp1.recorded_person_id < prp2.recorded_person_id
+        JOIN recorded_person rp1 ON prp1.recorded_person_id = rp1.recorded_person_id
+        JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
+        JOIN record r1 ON rp1.record_id = r1.record_id
+        JOIN record r2 ON rp2.record_id = r2.record_id
+        WHERE r1.record_id = r2.record_id
+        ORDER BY prp1.person_id, rp1.recorded_person_id
+    """)
+    for row in within_rows:
+        within_errors.append(
+            f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
+            f"and {row['name2']} (rp {row['rp2_id']}) "
+            f"appear in same household {row['record_id']} ({row['date']})"
+        )
 
-        # Check 1: duplicate person_ids within the same household
-        cur.execute("""
-            SELECT
-                prp1.person_id,
-                rp1.recorded_person_id AS rp1_id,
-                rp2.recorded_person_id AS rp2_id,
-                r1.record_id,
-                r1.date,
-                rp1.name_as_recorded AS name1,
-                rp2.name_as_recorded AS name2
-            FROM person_recorded_person prp1
-            JOIN person_recorded_person prp2
-                ON prp1.person_id = prp2.person_id
-               AND prp1.recorded_person_id < prp2.recorded_person_id
-            JOIN recorded_person rp1 ON prp1.recorded_person_id = rp1.recorded_person_id
-            JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
-            JOIN record r1 ON rp1.record_id = r1.record_id
-            JOIN record r2 ON rp2.record_id = r2.record_id
-            WHERE r1.record_id = r2.record_id
-            ORDER BY prp1.person_id, rp1.recorded_person_id
-        """)
-        for row in cur.fetchall():
-            within_errors.append(
-                f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
-                f"and {row['name2']} (rp {row['rp2_id']}) "
-                f"appear in same household {row['record_id']} ({row['date']})"
-            )
-
-        # Check 2: duplicate person_ids across different households, same census
-        cur.execute("""
-            SELECT
-                prp1.person_id,
-                rp1.recorded_person_id AS rp1_id,
-                rp2.recorded_person_id AS rp2_id,
-                r1.record_id AS record1_id,
-                r2.record_id AS record2_id,
-                r1.date,
-                s.source_id,
-                rp1.name_as_recorded AS name1,
-                rp2.name_as_recorded AS name2
-            FROM person_recorded_person prp1
-            JOIN person_recorded_person prp2
-                ON prp1.person_id = prp2.person_id
-               AND prp1.recorded_person_id < prp2.recorded_person_id
-            JOIN recorded_person rp1 ON prp1.recorded_person_id = rp1.recorded_person_id
-            JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
-            JOIN record r1 ON rp1.record_id = r1.record_id
-            JOIN record r2 ON rp2.record_id = r2.record_id
-            JOIN source s ON r1.source_id = s.source_id
-            WHERE r1.source_id = r2.source_id
-              AND r1.record_id != r2.record_id
-              AND EXTRACT(YEAR FROM r1.date::date) = EXTRACT(YEAR FROM r2.date::date)
-            ORDER BY prp1.person_id, rp1.recorded_person_id
-        """)
-        for row in cur.fetchall():
-            date_str = row['date']
-            year = date_str.split('-')[0] if isinstance(date_str, str) else date_str.year
-            census_errors.append(
-                f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
-                f"and {row['name2']} (rp {row['rp2_id']}) "
-                f"appear in different households ({row['record1_id']}, {row['record2_id']}) "
-                f"in same census {row['source_id']} ({year})"
-            )
+    # Check 2: duplicate person_ids across different households, same census
+    census_rows = repo.fetch_all("""
+        SELECT
+            prp1.person_id,
+            rp1.recorded_person_id AS rp1_id,
+            rp2.recorded_person_id AS rp2_id,
+            r1.record_id AS record1_id,
+            r2.record_id AS record2_id,
+            r1.date,
+            s.source_id,
+            rp1.name_as_recorded AS name1,
+            rp2.name_as_recorded AS name2
+        FROM person_recorded_person prp1
+        JOIN person_recorded_person prp2
+            ON prp1.person_id = prp2.person_id
+           AND prp1.recorded_person_id < prp2.recorded_person_id
+        JOIN recorded_person rp1 ON prp1.recorded_person_id = rp1.recorded_person_id
+        JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
+        JOIN record r1 ON rp1.record_id = r1.record_id
+        JOIN record r2 ON rp2.record_id = r2.record_id
+        JOIN source s ON r1.source_id = s.source_id
+        WHERE r1.source_id = r2.source_id
+          AND r1.record_id != r2.record_id
+          AND EXTRACT(YEAR FROM r1.date::date) = EXTRACT(YEAR FROM r2.date::date)
+        ORDER BY prp1.person_id, rp1.recorded_person_id
+    """)
+    for row in census_rows:
+        date_str = row['date']
+        year = date_str.split('-')[0] if isinstance(date_str, str) else date_str.year
+        census_errors.append(
+            f"Person {row['person_id']}: {row['name1']} (rp {row['rp1_id']}) "
+            f"and {row['name2']} (rp {row['rp2_id']}) "
+            f"appear in different households ({row['record1_id']}, {row['record2_id']}) "
+            f"in same census {row['source_id']} ({year})"
+        )
 
     return len(within_errors), len(census_errors), within_errors + census_errors
 
@@ -337,7 +333,7 @@ def check_household_coherence(
 # ---------------------------------------------------------------------------
 
 def apply_constraints_to_linkages(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> ConstraintReport:
     """
     Apply all genealogical constraints to every current linkage pair in
@@ -348,74 +344,73 @@ def apply_constraints_to_linkages(
     """
     report = ConstraintReport()
 
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT
-                prp.person_id,
-                prp.recorded_person_id            AS rp1_id,
-                prp2.recorded_person_id           AS rp2_id,
-                rp.name_as_recorded               AS name1,
-                rp.age_as_recorded                AS age1_raw,
-                rp2.name_as_recorded              AS name2,
-                rp2.age_as_recorded               AS age2_raw,
-                r.source_id                       AS source_id_1,
-                r2.source_id                      AS source_id_2,
-                r.date                            AS date1,
-                r2.date                           AS date2
-            FROM person_recorded_person prp
-            JOIN person_recorded_person prp2
-                ON prp.person_id = prp2.person_id
-               AND prp.recorded_person_id < prp2.recorded_person_id
-            JOIN recorded_person rp  ON prp.recorded_person_id  = rp.recorded_person_id
-            JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
-            JOIN record r  ON rp.record_id  = r.record_id
-            JOIN record r2 ON rp2.record_id = r2.record_id
-            ORDER BY prp.person_id, rp.recorded_person_id
-        """)
+    rows = repo.fetch_all("""
+        SELECT
+            prp.person_id,
+            prp.recorded_person_id            AS rp1_id,
+            prp2.recorded_person_id           AS rp2_id,
+            rp.name_as_recorded               AS name1,
+            rp.age_as_recorded                AS age1_raw,
+            rp2.name_as_recorded              AS name2,
+            rp2.age_as_recorded               AS age2_raw,
+            r.source_id                       AS source_id_1,
+            r2.source_id                      AS source_id_2,
+            r.date                            AS date1,
+            r2.date                           AS date2
+        FROM person_recorded_person prp
+        JOIN person_recorded_person prp2
+            ON prp.person_id = prp2.person_id
+           AND prp.recorded_person_id < prp2.recorded_person_id
+        JOIN recorded_person rp  ON prp.recorded_person_id  = rp.recorded_person_id
+        JOIN recorded_person rp2 ON prp2.recorded_person_id = rp2.recorded_person_id
+        JOIN record r  ON rp.record_id  = r.record_id
+        JOIN record r2 ON rp2.record_id = r2.record_id
+        ORDER BY prp.person_id, rp.recorded_person_id
+    """)
 
-        for row in cur.fetchall():
-            report.total_linkages_checked += 1
+    for row in rows:
+        report.total_linkages_checked += 1
 
-            try:
-                age1 = float(row['age1_raw']) if row['age1_raw'] else None
-                age2 = float(row['age2_raw']) if row['age2_raw'] else None
-            except (ValueError, TypeError):
-                age1 = age2 = None
+        try:
+            age1 = float(row['age1_raw']) if row['age1_raw'] else None
+            age2 = float(row['age2_raw']) if row['age2_raw'] else None
+        except (ValueError, TypeError):
+            age1 = age2 = None
 
-            evaluation = evaluate_pair(
-                name1=row['name1'],
-                age1=age1,
-                source_id_1=row['source_id_1'],
-                name2=row['name2'],
-                age2=age2,
-                source_id_2=row['source_id_2'],
-            )
+        evaluation = evaluate_pair(
+            name1=row['name1'],
+            age1=age1,
+            source_id_1=row['source_id_1'],
+            name2=row['name2'],
+            age2=age2,
+            source_id_2=row['source_id_2'],
+        )
 
-            if not evaluation.passes:
-                report.total_violations += 1
-                for v in evaluation.violations:
-                    if v.gc_code == 'GC-GEN':
-                        report.gender_flips += 1
-                    elif v.gc_code == 'GC-AGE':
-                        report.age_violations += 1
-                    elif v.gc_code == 'GC-NAM':
-                        report.name_mismatches += 1
+        if not evaluation.passes:
+            report.total_violations += 1
+            for v in evaluation.violations:
+                if v.gc_code == 'GC-GEN':
+                    report.gender_flips += 1
+                elif v.gc_code == 'GC-AGE':
+                    report.age_violations += 1
+                elif v.gc_code == 'GC-NAM':
+                    report.name_mismatches += 1
 
-                report.flagged_pairs.append({
-                    'person_id':        row['person_id'],
-                    'recorded_person_id_1': row['rp1_id'],
-                    'recorded_person_id_2': row['rp2_id'],
-                    'name_1':           row['name1'],
-                    'age_1':            row['age1_raw'],
-                    'date_1':           row['date1'],
-                    'name_2':           row['name2'],
-                    'age_2':            row['age2_raw'],
-                    'date_2':           row['date2'],
-                    'violations':       '; '.join(v.message for v in evaluation.violations),
-                })
+            report.flagged_pairs.append({
+                'person_id':        row['person_id'],
+                'recorded_person_id_1': row['rp1_id'],
+                'recorded_person_id_2': row['rp2_id'],
+                'name_1':           row['name1'],
+                'age_1':            row['age1_raw'],
+                'date_1':           row['date1'],
+                'name_2':           row['name2'],
+                'age_2':            row['age2_raw'],
+                'date_2':           row['date2'],
+                'violations':       '; '.join(v.message for v in evaluation.violations),
+            })
 
     # Household coherence (DB-structural, separate from pair evaluation)
-    within_errors, census_errors, _ = check_household_coherence(conn)
+    within_errors, census_errors, _ = check_household_coherence(repo)
     report.household_errors = within_errors + census_errors
     report.total_violations += report.household_errors
 
@@ -423,7 +418,7 @@ def apply_constraints_to_linkages(
 
 
 def remove_flagged_linkages(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     report: ConstraintReport,
     dry_run: bool = False,
 ) -> tuple[int, str]:
@@ -440,23 +435,22 @@ def remove_flagged_linkages(
         return 0, "No flagged pairs to remove"
 
     count = 0
-    with conn.cursor() as cur:
-        for pair in report.flagged_pairs:
-            for rp_id in (pair['recorded_person_id_1'], pair['recorded_person_id_2']):
-                if dry_run:
-                    count += 1
-                else:
-                    cur.execute(
-                        """
-                        DELETE FROM person_recorded_person
-                        WHERE person_id = %s AND recorded_person_id = %s
-                        """,
-                        (pair['person_id'], rp_id),
-                    )
-                    count += 1
+    for pair in report.flagged_pairs:
+        for rp_id in (pair['recorded_person_id_1'], pair['recorded_person_id_2']):
+            if dry_run:
+                count += 1
+            else:
+                repo.execute(
+                    """
+                    DELETE FROM person_recorded_person
+                    WHERE person_id = %s AND recorded_person_id = %s
+                    """,
+                    (pair['person_id'], rp_id),
+                )
+                count += 1
 
     if not dry_run:
-        conn.commit()
+        repo.commit()
 
     verb = "Would remove" if dry_run else "Removed"
     return count, f"{verb} {count} linkage(s) across {len(report.flagged_pairs)} flagged pair(s)"

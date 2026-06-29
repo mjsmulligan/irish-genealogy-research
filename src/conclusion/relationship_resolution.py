@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import psycopg2.extensions
+from src.db.repository import Repository
 from rapidfuzz.distance import JaroWinkler
 
 from src.constants import AUTO_COMMIT_THRESHOLD
@@ -189,7 +189,7 @@ def _match_households(
 # ---------------------------------------------------------------------------
 
 def _get_or_create_person_for_pair(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     rp1: dict,
     rp2: dict,
 ) -> tuple[int, bool]:
@@ -221,14 +221,12 @@ def _get_or_create_person_for_pair(
     name = rp1["name_as_recorded"] or "Unknown"
 
     # Get place from record
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT place_as_recorded FROM record WHERE record_id = "
-            "(SELECT record_id FROM recorded_person WHERE recorded_person_id = %s)",
-            (rp1["recorded_person_id"],),
-        )
-        place_row = cur.fetchone()
-        place = place_row["place_as_recorded"] if place_row else "Unknown"
+    place_row = repo.fetch_one(
+        "SELECT place_as_recorded FROM record WHERE record_id = "
+        "(SELECT record_id FROM recorded_person WHERE recorded_person_id = %s)",
+        (rp1["recorded_person_id"],),
+    )
+    place = place_row["place_as_recorded"] if place_row else "Unknown"
 
     label = f"{name} ({place})"
 
@@ -241,12 +239,12 @@ def _get_or_create_person_for_pair(
     elif sex2 and sex2.upper() in ("M", "F"):
         gender = "male" if sex2.upper() == "M" else "female"
 
-    person_id = create_person(conn, label=label, gender=gender)
+    person_id = create_person(repo, label=label, gender=gender)
     return (person_id, True)
 
 
 def _get_recorded_person_link(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     recorded_person_id: int,
 ) -> tuple[int, float | None] | None:
     """
@@ -254,21 +252,19 @@ def _get_recorded_person_link(
 
     Returns (person_id, score) if linked, None if orphan.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT person_id, score
-            FROM person_recorded_person
-            WHERE recorded_person_id = %s
-            """,
-            (recorded_person_id,),
-        )
-        row = cur.fetchone()
+    row = repo.fetch_one(
+        """
+        SELECT person_id, score
+        FROM person_recorded_person
+        WHERE recorded_person_id = %s
+        """,
+        (recorded_person_id,),
+    )
     return (row["person_id"], row["score"]) if row else None
 
 
 def _link_recorded_person_to_person(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     person_id: int,
     recorded_person_id: int,
     force_overwrite: bool = False,
@@ -295,66 +291,62 @@ def _link_recorded_person_to_person(
     from src.dal.person_repo import link_person_to_recorded_person
 
     # Check for same-census constraint: reject if person is already linked to another recorded_person from same census
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT r.source_id, rp.age FROM record r
-            JOIN recorded_person rp ON rp.record_id = r.record_id
-            WHERE rp.recorded_person_id = %s
-            """,
-            (recorded_person_id,),
-        )
-        row = cur.fetchone()
-        new_source_id = row["source_id"] if row else None
-        new_age = row["age"] if row else None
-        new_year = CENSUS_YEAR.get(new_source_id)
+    row = repo.fetch_one(
+        """
+        SELECT r.source_id, rp.age FROM record r
+        JOIN recorded_person rp ON rp.record_id = r.record_id
+        WHERE rp.recorded_person_id = %s
+        """,
+        (recorded_person_id,),
+    )
+    new_source_id = row["source_id"] if row else None
+    new_age = row["age"] if row else None
+    new_year = CENSUS_YEAR.get(new_source_id)
 
     if new_source_id:
         # Check if person is already linked to another recorded_person from same source
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT COUNT(*) as cnt FROM person_recorded_person prp
-                JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
-                JOIN record r ON rp.record_id = r.record_id
-                WHERE prp.person_id = %s AND r.source_id = %s
-                """,
-                (person_id, new_source_id),
-            )
-            existing_same_census = cur.fetchone()["cnt"]
-            if existing_same_census > 0:
-                # Would create same-census link; reject
-                return "skipped_same_census", None
+        cnt_row = repo.fetch_one(
+            """
+            SELECT COUNT(*) as cnt FROM person_recorded_person prp
+            JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+            JOIN record r ON rp.record_id = r.record_id
+            WHERE prp.person_id = %s AND r.source_id = %s
+            """,
+            (person_id, new_source_id),
+        )
+        existing_same_census = cnt_row["cnt"]
+        if existing_same_census > 0:
+            # Would create same-census link; reject
+            return "skipped_same_census", None
 
         # Check for age regression: reject if any linked recorded_person would create backward age progression
         if new_age and new_year:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT rp.age, r.source_id FROM person_recorded_person prp
-                    JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
-                    JOIN record r ON rp.record_id = r.record_id
-                    WHERE prp.person_id = %s
-                    """,
-                    (person_id,),
-                )
-                for other_row in cur.fetchall():
-                    other_age = other_row["age"]
-                    other_source_id = other_row["source_id"]
-                    if other_age:
-                        age_check = evaluate_age_progression(
-                            other_age, other_source_id,
-                            new_age, new_source_id,
-                        )
-                        if not age_check.valid:
-                            return "skipped_age_regression", None
+            other_rows = repo.fetch_all(
+                """
+                SELECT rp.age, r.source_id FROM person_recorded_person prp
+                JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+                JOIN record r ON rp.record_id = r.record_id
+                WHERE prp.person_id = %s
+                """,
+                (person_id,),
+            )
+            for other_row in other_rows:
+                other_age = other_row["age"]
+                other_source_id = other_row["source_id"]
+                if other_age:
+                    age_check = evaluate_age_progression(
+                        other_age, other_source_id,
+                        new_age, new_source_id,
+                    )
+                    if not age_check.valid:
+                        return "skipped_age_regression", None
 
-    existing = _get_recorded_person_link(conn, recorded_person_id)
+    existing = _get_recorded_person_link(repo, recorded_person_id)
 
     if existing is None:
         # Orphan — link to new Person
         link_person_to_recorded_person(
-            conn,
+            repo,
             person_id=person_id,
             recorded_person_id=recorded_person_id,
             score=None,
@@ -380,16 +372,15 @@ def _link_recorded_person_to_person(
 
     if force_overwrite:
         # Delete old link and create new one
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                DELETE FROM person_recorded_person
-                WHERE recorded_person_id = %s
-                """,
-                (recorded_person_id,),
-            )
+        repo.execute(
+            """
+            DELETE FROM person_recorded_person
+            WHERE recorded_person_id = %s
+            """,
+            (recorded_person_id,),
+        )
         link_person_to_recorded_person(
-            conn,
+            repo,
             person_id=person_id,
             recorded_person_id=recorded_person_id,
             score=None,
@@ -412,7 +403,7 @@ def _link_recorded_person_to_person(
 # ---------------------------------------------------------------------------
 
 def _detect_spouse_triangulation_conflicts(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[MergeCandidate]:
     """
     Detect cases where one Person has multiple spouse Persons.
@@ -421,29 +412,27 @@ def _detect_spouse_triangulation_conflicts(
     """
     merge_candidates = []
 
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                p1.person_id as anchor_person,
-                p2.person_id as spouse1,
-                p3.person_id as spouse2,
-                p1.label as anchor_label,
-                p2.label as spouse1_label,
-                p3.label as spouse2_label
-            FROM relationship r1
-            JOIN relationship r2
-                ON r1.person_id_1 = r2.person_id_1
-                AND r1.type = 'couple'
-                AND r2.type = 'couple'
-                AND r1.relationship_id < r2.relationship_id
-            JOIN person p1 ON p1.person_id = r1.person_id_1
-            JOIN person p2 ON p2.person_id = r1.person_id_2
-            JOIN person p3 ON p3.person_id = r2.person_id_2
-            WHERE p2.person_id != p3.person_id
-            """
-        )
-        conflicts = cur.fetchall()
+    conflicts = repo.fetch_all(
+        """
+        SELECT
+            p1.person_id as anchor_person,
+            p2.person_id as spouse1,
+            p3.person_id as spouse2,
+            p1.label as anchor_label,
+            p2.label as spouse1_label,
+            p3.label as spouse2_label
+        FROM relationship r1
+        JOIN relationship r2
+            ON r1.person_id_1 = r2.person_id_1
+            AND r1.type = 'couple'
+            AND r2.type = 'couple'
+            AND r1.relationship_id < r2.relationship_id
+        JOIN person p1 ON p1.person_id = r1.person_id_1
+        JOIN person p2 ON p2.person_id = r1.person_id_2
+        JOIN person p3 ON p3.person_id = r2.person_id_2
+        WHERE p2.person_id != p3.person_id
+        """
+    )
 
     for conflict in conflicts:
         merge_candidates.append(
@@ -464,14 +453,12 @@ def _detect_spouse_triangulation_conflicts(
 # Entry point
 # ---------------------------------------------------------------------------
 
-def _get_record_year(conn: psycopg2.extensions.connection, record_id: int) -> int | None:
+def _get_record_year(repo: Repository, record_id: int) -> int | None:
     """Return the four-digit census year for a record, or None if unavailable."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT date FROM record WHERE record_id = %s",
-            (record_id,),
-        )
-        row = cur.fetchone()
+    row = repo.fetch_one(
+        "SELECT date FROM record WHERE record_id = %s",
+        (record_id,),
+    )
     if not row or not row["date"]:
         return None
     import re
@@ -480,7 +467,7 @@ def _get_record_year(conn: psycopg2.extensions.connection, record_id: int) -> in
 
 
 def run_relationship_resolution(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     household_threshold: float = AUTO_COMMIT_THRESHOLD,
 ) -> RelationshipResolutionResult:
     """
@@ -504,24 +491,22 @@ def run_relationship_resolution(
     result = RelationshipResolutionResult()
 
     # Step 1: Fetch high-similarity household pairs with their record dates
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                rs.record_id_1,
-                rs.record_id_2,
-                rs.score,
-                r1.date AS date_1,
-                r2.date AS date_2
-            FROM record_similarity rs
-            JOIN record r1 ON r1.record_id = rs.record_id_1
-            JOIN record r2 ON r2.record_id = rs.record_id_2
-            WHERE rs.score >= %s
-            ORDER BY rs.score DESC
-            """,
-            (household_threshold,),
-        )
-        household_pairs = cur.fetchall()
+    household_pairs = repo.fetch_all(
+        """
+        SELECT
+            rs.record_id_1,
+            rs.record_id_2,
+            rs.score,
+            r1.date AS date_1,
+            r2.date AS date_2
+        FROM record_similarity rs
+        JOIN record r1 ON r1.record_id = rs.record_id_1
+        JOIN record r2 ON r2.record_id = rs.record_id_2
+        WHERE rs.score >= %s
+        ORDER BY rs.score DESC
+        """,
+        (household_threshold,),
+    )
 
     # Step 2: Process each household pair
     import re as _re
@@ -541,8 +526,8 @@ def run_relationship_resolution(
         year_2 = _year(pair["date_2"])
         census_gap = abs(year_2 - year_1) if (year_1 and year_2) else 10  # fallback
 
-        h1_members = get_household_members(conn, record_id_1)
-        h2_members = get_household_members(conn, record_id_2)
+        h1_members = get_household_members(repo, record_id_1)
+        h2_members = get_household_members(repo, record_id_2)
 
         # Match members using dynamic gap (items 21, 22)
         matches = _match_households(h1_members, h2_members, census_gap)
@@ -557,83 +542,79 @@ def run_relationship_resolution(
         else:
             result.case2_matches += len(matches)
 
-        # Process matches within a transaction
-        with conn:
-            for rp1, rp2 in matches:
-                # Get or create Person
-                person_id, was_created = _get_or_create_person_for_pair(conn, rp1, rp2)
+        # Process matches
+        for rp1, rp2 in matches:
+            # Get or create Person
+            person_id, was_created = _get_or_create_person_for_pair(repo, rp1, rp2)
 
-                if was_created:
-                    result.persons_created += 1
-                else:
-                    result.persons_linked += 1
+            if was_created:
+                result.persons_created += 1
+            else:
+                result.persons_linked += 1
 
-                # Link both RecordedPersons to Person
-                # With conflict resolution: if already linked elsewhere, keep existing (conservative)
-                status1, conflict1 = _link_recorded_person_to_person(conn, person_id, rp1["recorded_person_id"])
-                status2, conflict2 = _link_recorded_person_to_person(conn, person_id, rp2["recorded_person_id"])
+            # Link both RecordedPersons to Person
+            # With conflict resolution: if already linked elsewhere, keep existing (conservative)
+            status1, conflict1 = _link_recorded_person_to_person(repo, person_id, rp1["recorded_person_id"])
+            status2, conflict2 = _link_recorded_person_to_person(repo, person_id, rp2["recorded_person_id"])
 
-                if status1 == "linked":
-                    result.linkages_created += 1
-                elif status1 == "conflict_resolved":
-                    result.link_conflicts_resolved += 1
-                    if conflict1:
-                        result.link_conflicts.append(conflict1)
+            if status1 == "linked":
+                result.linkages_created += 1
+            elif status1 == "conflict_resolved":
+                result.link_conflicts_resolved += 1
+                if conflict1:
+                    result.link_conflicts.append(conflict1)
 
-                if status2 == "linked":
-                    result.linkages_created += 1
-                elif status2 == "conflict_resolved":
-                    result.link_conflicts_resolved += 1
-                    if conflict2:
-                        result.link_conflicts.append(conflict2)
+            if status2 == "linked":
+                result.linkages_created += 1
+            elif status2 == "conflict_resolved":
+                result.link_conflicts_resolved += 1
+                if conflict2:
+                    result.link_conflicts.append(conflict2)
 
-                # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
-                # The in-memory dicts are from pre-assignment fetches; setting
-                # both to the same person_id would cause create_relationships_from_household
-                # to see household members as identical Persons and skip all
-                # relationship creation.  Instead, re-fetch from DB below (item 23).
+            # NOTE: Do NOT mutate rp1["person_id"] / rp2["person_id"] here.
+            # The in-memory dicts are from pre-assignment fetches; setting
+            # both to the same person_id would cause create_relationships_from_household
+            # to see household members as identical Persons and skip all
+            # relationship creation.  Instead, re-fetch from DB below (item 23).
 
-            # Re-fetch household members so person_id reflects all DB writes
-            # made above.  This is the item 23 fix: relationship creation now
-            # sees correct, distinct person_ids rather than the mutated dicts.
-            h1_members_fresh = get_household_members(conn, record_id_1)
-            h2_members_fresh = get_household_members(conn, record_id_2)
+        # Re-fetch household members so person_id reflects all DB writes
+        # made above.  This is the item 23 fix: relationship creation now
+        # sees correct, distinct person_ids rather than the mutated dicts.
+        h1_members_fresh = get_household_members(repo, record_id_1)
+        h2_members_fresh = get_household_members(repo, record_id_2)
 
-            # Create Relationships from household structure (item 24: provenance
-            # is populated inside ensure_relationship)
-            rels_created = create_relationships_from_household(conn, h1_members_fresh)
-            rels_created += create_relationships_from_household(conn, h2_members_fresh)
-            result.relationships_created += rels_created
+        # Create Relationships from household structure (item 24: provenance
+        # is populated inside ensure_relationship)
+        rels_created = create_relationships_from_household(repo, h1_members_fresh)
+        rels_created += create_relationships_from_household(repo, h2_members_fresh)
+        result.relationships_created += rels_created
 
         result.households_processed += 1
 
     # Step 3: Detect merge candidates
-    result.merge_candidates = _detect_spouse_triangulation_conflicts(conn)
+    result.merge_candidates = _detect_spouse_triangulation_conflicts(repo)
 
     # Step 4: Clean up orphaned Persons (created but lost all RecordedPersons to conflicts)
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT p.person_id
-            FROM person p
-            LEFT JOIN person_recorded_person prp ON prp.person_id = p.person_id
-            WHERE prp.person_id IS NULL
-            """
-        )
-        orphaned_person_ids = [row["person_id"] for row in cur.fetchall()]
+    orphaned_rows = repo.fetch_all(
+        """
+        SELECT p.person_id
+        FROM person p
+        LEFT JOIN person_recorded_person prp ON prp.person_id = p.person_id
+        WHERE prp.person_id IS NULL
+        """
+    )
+    orphaned_person_ids = [row["person_id"] for row in orphaned_rows]
 
     if orphaned_person_ids:
         result.persons_orphaned = len(orphaned_person_ids)
         placeholders = ",".join(["%s"] * len(orphaned_person_ids))
-        with conn.cursor() as cur:
-            # Delete orphaned Persons (also cascades to relationships)
-            cur.execute(
-                f"""
-                DELETE FROM person
-                WHERE person_id IN ({placeholders})
-                """,
-                orphaned_person_ids,
-            )
+        repo.execute(
+            f"""
+            DELETE FROM person
+            WHERE person_id IN ({placeholders})
+            """,
+            tuple(orphaned_person_ids),
+        )
 
     return result
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 # Stable reviewer IDs — seeded at init time (seed.sql)
 REVIEWER_PIPELINE: int = 1
@@ -31,7 +31,7 @@ REVIEWER_UNKNOWN: int  = 2
 # ---------------------------------------------------------------------------
 
 def get_or_create_reviewer(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     name: str,
     reviewer_type: str,
     notes: str | None = None,
@@ -42,24 +42,22 @@ def get_or_create_reviewer(
 
     reviewer_type must be one of: 'pipeline', 'human', 'ai'.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT reviewer_id FROM reviewer WHERE name = %s AND type = %s",
-            (name, reviewer_type),
-        )
-        row = cur.fetchone()
-        if row:
-            return row["reviewer_id"]
+    row = repo.fetch_one(
+        "SELECT reviewer_id FROM reviewer WHERE name = %s AND type = %s",
+        (name, reviewer_type),
+    )
+    if row:
+        return row["reviewer_id"]
 
-        cur.execute(
-            """
-            INSERT INTO reviewer (name, type, notes)
-            VALUES (%s, %s, %s)
-            RETURNING reviewer_id
-            """,
-            (name, reviewer_type, notes),
-        )
-        return cur.fetchone()["reviewer_id"]
+    result = repo.execute_returning(
+        """
+        INSERT INTO reviewer (name, type, notes)
+        VALUES (%s, %s, %s)
+        RETURNING reviewer_id
+        """,
+        (name, reviewer_type, notes),
+    )
+    return result["reviewer_id"]
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +70,7 @@ def new_change_group() -> str:
 
 
 def log_action(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     reviewer_id: int,
     action: str,
     entity_type: str,
@@ -108,31 +106,30 @@ def log_action(
     old_str = str(old_value) if old_value is not None else None
     new_str = str(new_value) if new_value is not None else None
 
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO conclusion_log (
-                reviewer_id, action, entity_type, entity_id,
-                field_name, old_value, new_value,
-                reason, change_group_id, session_ref
-            ) VALUES (
-                %s, %s, %s, %s,
-                %s, %s, %s,
-                %s, %s, %s
-            )
-            RETURNING log_id
-            """,
-            (
-                reviewer_id, action, entity_type, entity_id,
-                field_name, old_str, new_str,
-                reason, change_group_id, session_ref,
-            ),
+    result = repo.execute_returning(
+        """
+        INSERT INTO conclusion_log (
+            reviewer_id, action, entity_type, entity_id,
+            field_name, old_value, new_value,
+            reason, change_group_id, session_ref
+        ) VALUES (
+            %s, %s, %s, %s,
+            %s, %s, %s,
+            %s, %s, %s
         )
-        return cur.fetchone()["log_id"]
+        RETURNING log_id
+        """,
+        (
+            reviewer_id, action, entity_type, entity_id,
+            field_name, old_str, new_str,
+            reason, change_group_id, session_ref,
+        ),
+    )
+    return result["log_id"]
 
 
 def log_create(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     reviewer_id: int,
     entity_type: str,
     entity_id: int,
@@ -142,7 +139,7 @@ def log_create(
 ) -> int:
     """Convenience wrapper: log a create action."""
     return log_action(
-        conn, reviewer_id, "create", entity_type, entity_id,
+        repo, reviewer_id, "create", entity_type, entity_id,
         reason=reason,
         change_group_id=change_group_id,
         session_ref=session_ref,
@@ -150,7 +147,7 @@ def log_create(
 
 
 def log_update(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     reviewer_id: int,
     entity_type: str,
     entity_id: int,
@@ -163,7 +160,7 @@ def log_update(
 ) -> int:
     """Convenience wrapper: log an update action."""
     return log_action(
-        conn, reviewer_id, "update", entity_type, entity_id,
+        repo, reviewer_id, "update", entity_type, entity_id,
         field_name=field_name,
         old_value=old_value,
         new_value=new_value,
@@ -174,7 +171,7 @@ def log_update(
 
 
 def log_delete(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     reviewer_id: int,
     entity_type: str,
     entity_id: int,
@@ -184,7 +181,7 @@ def log_delete(
 ) -> int:
     """Convenience wrapper: log a delete action."""
     return log_action(
-        conn, reviewer_id, "delete", entity_type, entity_id,
+        repo, reviewer_id, "delete", entity_type, entity_id,
         reason=reason,
         change_group_id=change_group_id,
         session_ref=session_ref,
@@ -192,7 +189,7 @@ def log_delete(
 
 
 def log_verify(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     reviewer_id: int,
     entity_type: str,
     entity_id: int,
@@ -202,7 +199,7 @@ def log_verify(
 ) -> int:
     """Convenience wrapper: log a verify action (junction row marked verified=1)."""
     return log_action(
-        conn, reviewer_id, "verify", entity_type, entity_id,
+        repo, reviewer_id, "verify", entity_type, entity_id,
         reason=reason,
         change_group_id=change_group_id,
         session_ref=session_ref,
@@ -214,39 +211,35 @@ def log_verify(
 # ---------------------------------------------------------------------------
 
 def get_log_for_entity(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     entity_type: str,
     entity_id: int,
 ) -> list[dict]:
     """Return all log entries for a given entity, oldest first."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT cl.*, r.name AS reviewer_name, r.type AS reviewer_type
-            FROM conclusion_log cl
-            JOIN reviewer r ON r.reviewer_id = cl.reviewer_id
-            WHERE cl.entity_type = %s AND cl.entity_id = %s
-            ORDER BY cl.created_at ASC
-            """,
-            (entity_type, entity_id),
-        )
-        return [dict(row) for row in cur.fetchall()]
+    return repo.fetch_all(
+        """
+        SELECT cl.*, r.name AS reviewer_name, r.type AS reviewer_type
+        FROM conclusion_log cl
+        JOIN reviewer r ON r.reviewer_id = cl.reviewer_id
+        WHERE cl.entity_type = %s AND cl.entity_id = %s
+        ORDER BY cl.created_at ASC
+        """,
+        (entity_type, entity_id),
+    )
 
 
 def get_log_for_change_group(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     change_group_id: str,
 ) -> list[dict]:
     """Return all log entries belonging to a change group, oldest first."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT cl.*, r.name AS reviewer_name, r.type AS reviewer_type
-            FROM conclusion_log cl
-            JOIN reviewer r ON r.reviewer_id = cl.reviewer_id
-            WHERE cl.change_group_id = %s
-            ORDER BY cl.created_at ASC
-            """,
-            (change_group_id,),
-        )
-        return [dict(row) for row in cur.fetchall()]
+    return repo.fetch_all(
+        """
+        SELECT cl.*, r.name AS reviewer_name, r.type AS reviewer_type
+        FROM conclusion_log cl
+        JOIN reviewer r ON r.reviewer_id = cl.reviewer_id
+        WHERE cl.change_group_id = %s
+        ORDER BY cl.created_at ASC
+        """,
+        (change_group_id,),
+    )

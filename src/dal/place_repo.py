@@ -6,55 +6,49 @@ All SQL touching place_authority or place_record lives here.
 
 from __future__ import annotations
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 
-def get_authority_count(conn: psycopg2.extensions.connection) -> int:
+def get_authority_count(repo: Repository) -> int:
     """Return the number of rows in place_authority."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM place_authority")
-        return cur.fetchone()["count"]
+    result = repo.fetch_one("SELECT COUNT(*) FROM place_authority")
+    return result["count"]
 
 
-def get_all_authorities(conn: psycopg2.extensions.connection) -> list[dict]:
+def get_all_authorities(repo: Repository) -> list[dict]:
     """
     Return all place_authority rows as dicts with keys:
         place_id, name_en, place_type
     """
-    with conn.cursor() as cur:
-        cur.execute("SELECT place_id, name_en, place_type FROM place_authority")
-        return cur.fetchall()
+    return repo.fetch_all("SELECT place_id, name_en, place_type FROM place_authority")
 
 
-def get_linked_record_ids(conn: psycopg2.extensions.connection) -> set[int]:
+def get_linked_record_ids(repo: Repository) -> set[int]:
     """Return the set of record_ids already present in place_record."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT record_id FROM place_record")
-        return {row["record_id"] for row in cur.fetchall()}
+    rows = repo.fetch_all("SELECT record_id FROM place_record")
+    return {row["record_id"] for row in rows}
 
 
-def get_place_for_records(conn: psycopg2.extensions.connection) -> dict[int, int | None]:
+def get_place_for_records(repo: Repository) -> dict[int, int | None]:
     """
     Return a dict mapping record_id → place_id for all rows in place_record.
     Used by household_inference to attach a resolved place_id to each Event.
     """
-    with conn.cursor() as cur:
-        cur.execute("SELECT record_id, place_id FROM place_record")
-        return {row["record_id"]: row["place_id"] for row in cur.fetchall()}
+    rows = repo.fetch_all("SELECT record_id, place_id FROM place_record")
+    return {row["record_id"]: row["place_id"] for row in rows}
 
 
 def insert_place_record(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     place_id: int,
     record_id: int,
     score: float,
     score_version: str,
 ) -> None:
     """Insert a single place_record linkage row."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO place_record "
-            "(place_id, record_id, score, score_version, verified) "
-            "VALUES (%s, %s, %s, %s, 0)",
-            (place_id, record_id, score, score_version),
-        )
+    repo.execute(
+        "INSERT INTO place_record "
+        "(place_id, record_id, score, score_version, verified) "
+        "VALUES (%s, %s, %s, %s, 0)",
+        (place_id, record_id, score, score_version),
+    )
