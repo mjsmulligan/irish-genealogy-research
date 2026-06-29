@@ -1,8 +1,20 @@
 -- GRA — Genealogy Research Assistant
--- Schema version 4.0 — 23 June 2026
+-- Schema version 4.3 — 29 June 2026
 -- PostgreSQL 15+ required
 --
--- Changes from v3.2 → v4.0 (Review Layer):
+-- Changes from v4.2 → v4.3 (migration 005):
+--   - check_no_same_census_link() trigger function added
+--   - prevent_same_census_link trigger on person_recorded_person
+--     (DB-level enforcement: one Person cannot link to two RecordedPersons
+--      from the same census source)
+--
+-- Changes from v4.1 → v4.2 (migration 004):
+--   - pipeline_run.stage CHECK constraint extended to include 'conclusion'
+--
+-- Changes from v4.0 → v4.1 (migration 003):
+--   - pipeline_run table added (pipeline timing instrumentation)
+--
+-- Changes from v3.2 → v4.0 (migration 002 / Review Layer):
 --   - reviewer table added (first-class entity: pipeline / human / ai)
 --   - conclusion_log table added (append-only audit trail for all conclusion mutations)
 --   - person, relationship, event: status + pending_delete_at columns added
@@ -404,6 +416,30 @@ CREATE TABLE conclusion_log (
 );
 
 -- ---------------------------------------------------------------------------
+-- METRICS LAYER
+-- ---------------------------------------------------------------------------
+-- pipeline_run: one row per pipeline step execution.
+-- stage 'conclusion' added in v4.2; all other stages present since v4.1.
+
+CREATE TABLE pipeline_run (
+    run_id               INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    stage                TEXT        NOT NULL,
+    step_name            TEXT        NOT NULL,   -- e.g. 'ingest_census', 'run_person_resolution'
+    records_processed    INTEGER,                -- count of items processed by this step
+    duration_ms          INTEGER     NOT NULL,   -- elapsed time in milliseconds
+    source_id            INTEGER,                -- optional: which census source (3=1901, 4=1911, 5=1926)
+    notes                TEXT,                   -- optional: parse notes, errors, warnings
+    session_ref          TEXT,                   -- optional: commit hash, Claude session ID, batch ID
+    start_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    end_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (stage IN (
+        'ingest', 'place', 'similarity', 'person',
+        'relationship', 'event', 'validation', 'fetch', 'conclusion'
+    ))
+);
+
+-- ---------------------------------------------------------------------------
 -- INDEXES
 -- ---------------------------------------------------------------------------
 
@@ -486,3 +522,46 @@ CREATE INDEX idx_relationship_pending_delete  ON relationship (pending_delete_at
     WHERE status = 'pending_delete';
 CREATE INDEX idx_event_pending_delete         ON event (pending_delete_at)
     WHERE status = 'pending_delete';
+
+-- pipeline_run access patterns
+CREATE INDEX idx_pipeline_run_start_at    ON pipeline_run (start_at DESC);
+CREATE INDEX idx_pipeline_run_stage_step  ON pipeline_run (stage, step_name);
+CREATE INDEX idx_pipeline_run_source_id   ON pipeline_run (source_id)
+    WHERE source_id IS NOT NULL;
+CREATE INDEX idx_pipeline_run_session_ref ON pipeline_run (session_ref)
+    WHERE session_ref IS NOT NULL;
+
+-- ---------------------------------------------------------------------------
+-- TRIGGERS
+-- ---------------------------------------------------------------------------
+-- prevent_same_census_link: DB-level enforcement that a single Person conclusion
+-- cannot be linked to two RecordedPersons from the same census source.
+-- Mirrors the link_type=link_only constraint enforced at the Splink layer.
+
+CREATE OR REPLACE FUNCTION check_no_same_census_link()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM person_recorded_person prp
+        JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+        JOIN record r            ON rp.record_id = r.record_id
+        WHERE prp.person_id = NEW.person_id
+          AND r.source_id = (
+              SELECT r2.source_id FROM recorded_person rp2
+              JOIN record r2 ON rp2.record_id = r2.record_id
+              WHERE rp2.recorded_person_id = NEW.recorded_person_id
+          )
+          AND prp.recorded_person_id != NEW.recorded_person_id
+    ) THEN
+        RAISE EXCEPTION
+            'Cannot link person % to recorded_person % from same census source',
+            NEW.person_id, NEW.recorded_person_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER prevent_same_census_link
+BEFORE INSERT ON person_recorded_person
+FOR EACH ROW
+EXECUTE FUNCTION check_no_same_census_link();
