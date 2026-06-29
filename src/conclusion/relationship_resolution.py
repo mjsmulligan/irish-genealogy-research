@@ -39,6 +39,7 @@ from src.conclusion.household_utils import (
     ensure_relationship,
     create_relationships_from_household,
 )
+from src.genealogy import evaluate_age_progression, CENSUS_YEAR
 
 
 # ---------------------------------------------------------------------------
@@ -306,7 +307,7 @@ def _link_recorded_person_to_person(
         row = cur.fetchone()
         new_source_id = row["source_id"] if row else None
         new_age = row["age"] if row else None
-        new_year = {3: 1901, 4: 1911, 5: 1926}.get(new_source_id)
+        new_year = CENSUS_YEAR.get(new_source_id)
 
     if new_source_id:
         # Check if person is already linked to another recorded_person from same source
@@ -327,7 +328,6 @@ def _link_recorded_person_to_person(
 
         # Check for age regression: reject if any linked recorded_person would create backward age progression
         if new_age and new_year:
-            from src.validation import validate_age_progression
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -341,16 +341,12 @@ def _link_recorded_person_to_person(
                 for other_row in cur.fetchall():
                     other_age = other_row["age"]
                     other_source_id = other_row["source_id"]
-                    other_year = {3: 1901, 4: 1911, 5: 1926}.get(other_source_id)
-
-                    if other_age and other_year:
-                        age_check = validate_age_progression(
-                            other_age, other_year,
-                            new_age, new_year,
-                            tolerance_years=2.0
+                    if other_age:
+                        age_check = evaluate_age_progression(
+                            other_age, other_source_id,
+                            new_age, new_source_id,
                         )
                         if not age_check.valid:
-                            # Age regression detected; skip this linkage
                             return "skipped_age_regression", None
 
     existing = _get_recorded_person_link(conn, recorded_person_id)

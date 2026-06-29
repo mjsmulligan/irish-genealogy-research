@@ -45,7 +45,7 @@ import psycopg2.extensions
 from src.db.db import open_db, init_db, check_version
 from src.constants import CENSUS_SOURCE_IDS
 from src.export_validation_dataset import export_validation_dataset
-from src.validation import validate_all_linkages, remove_flagged_linkages
+from src.genealogy import apply_constraints_to_linkages, remove_flagged_linkages, ConstraintReport
 
 
 # ---------------------------------------------------------------------------
@@ -748,21 +748,22 @@ def _cmd_validate_linkages(args: argparse.Namespace) -> None:
     conn = open_db()
     check_version(conn)
     try:
-        report = validate_all_linkages(conn)
+        report = apply_constraints_to_linkages(conn)
 
         print()
         print("=" * 80)
-        print("  LINKAGE VALIDATION REPORT")
+        print("  GENEALOGICAL CONSTRAINT REPORT")
         print("=" * 80)
         print(f"\n  Total linkages checked: {report.total_linkages_checked:,}")
         print(f"  Total violations found: {report.total_violations} ({report.violation_rate:.1f}%)")
         print(f"\n  Violations by type:")
         print(f"    Age progression errors: {report.age_violations}")
         print(f"    Name mismatch errors:   {report.name_mismatches}")
+        print(f"    Gender flips:           {report.gender_flips}")
         print(f"    Household coherence:    {report.household_errors}")
 
         if report.flagged_pairs:
-            print(f"\n  Flagged pairs (details saved to validation_flags.csv if requested):")
+            print(f"\n  Flagged pairs (details saved to CSV if --save-csv provided):")
             for i, pair in enumerate(report.flagged_pairs[:10], 1):
                 print(f"    {i}. Person {pair['person_id']}: {pair['violations']}")
             if len(report.flagged_pairs) > 10:

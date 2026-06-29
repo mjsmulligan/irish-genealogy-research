@@ -2,7 +2,7 @@
 
 *grá — Irish for love*
 
-A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
+A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, and Irish genealogical domain knowledge codified as a dedicated constraint layer. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
 Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
@@ -52,11 +52,19 @@ irish-genealogy-research/
 │   │       ├── census.py              # Splink household feature extractor
 │   │       └── census_person.py       # Splink person feature extractor
 │   │
-│   ├── conclusion/                    # Conclusion layer steps 1–4
-│   │   ├── person_resolution.py       # [1/4] Cluster RecordedPersons → Person conclusions (same-census filtered)
-│   │   ├── relationship_resolution.py # [2/4] Household matching → Relationship conclusions (same-census + age regression checks)
-│   │   ├── event_resolution.py        # [3/4] Census + birth + marriage Event conclusions
-│   │   └── validation_cleanup.py      # [4/4] Validation gate before finalizing conclusions
+│   ├── conclusion/                    # Conclusion layer steps 1–5
+│   │   ├── person_resolution.py       # [1/5] Cluster RecordedPersons → Person conclusions (same-census filtered)
+│   │   ├── relationship_resolution.py # [2/5] Household matching → Relationship conclusions (age regression check)
+│   │   ├── household_resolution.py    # [3/5] Anchor-extension for unlinked household members
+│   │   ├── household_utils.py         # Shared helpers: get_household_members, ensure_relationship, create_relationships
+│   │   ├── event_resolution.py        # [4/5] Census + birth + marriage Event conclusions
+│   │   └── validation_cleanup.py      # [5/5] Genealogical constraint sweep before finalising conclusions
+│   │
+│   ├── genealogy/                     # Genealogical domain knowledge — materialisation of genealogical_constraints.md
+│   │   ├── names.py                   # APPROVED_NAME_VARIANTS, IRISH_MALE/FEMALE_NAMES, classify_forename(), infer_gender()
+│   │   ├── ages.py                    # CENSUS_AGE_TOLERANCE, CENSUS_YEAR, evaluate_age_progression()
+│   │   ├── constraints.py             # evaluate_pair(), apply_constraints_to_linkages(), remove_flagged_linkages()
+│   │   └── __init__.py                # Full public interface
 │   │
 │   ├── review/                        # Review layer — researcher report module
 │   │   ├── report.py                  # ReportItem + Report dataclasses; JSON + Markdown serialisers
@@ -65,13 +73,6 @@ irish-genealogy-research/
 │   │   └── runner.py                  # run_review(), write_report() → reports/ dir
 │   │
 │   ├── metrics/                       # Performance tracking
-│   │   ├── tracker.py                 # Timer context manager, pipeline_run logging, timing report generation
-│   │   └── __init__.py
-│   │
-│   ├── validation/                    # Linkage validation
-│   │   ├── linkage_validation.py      # Age progression, name variants, gender consistency, household coherence
-│   │   └── __init__.py
-│   │
 │   └── dal/                           # Data access layer
 │       ├── source_repo.py
 │       ├── record_repo.py
@@ -121,10 +122,11 @@ python -m src.cli add-evidence --source 4 --file data/tullynaught_1911.csv
 python -m src.cli add-evidence --source 5 --file data/tullynaught_1926.csv
 
 # Build conclusions from evidence
-# [1/4] Person resolution  — cluster RecordedPersons into Person conclusions
-# [2/4] Relationship resolution — create Relationships from household structure
-# [3/4] Event resolution   — create census, birth, and marriage Events
-# [4/4] Validation cleanup — remove linkages failing validation checks
+# [1/5] Person resolution      — cluster RecordedPersons into Person conclusions (threshold 0.45)
+# [2/5] Relationship resolution — create Relationships from household structure
+# [3/5] Household resolution   — anchor-extension for unlinked household members
+# [4/5] Event resolution       — create census, birth, and marriage Events
+# [5/5] Validation cleanup     — remove linkages failing genealogical constraints
 python -m src.cli conclude
 
 # Inspect

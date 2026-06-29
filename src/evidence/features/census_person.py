@@ -52,10 +52,10 @@ import psycopg2.extensions
 
 from src.constants import CENSUS_SOURCE_IDS
 from src.evidence.features.census import _soundex
-from src.validation import APPROVED_NAME_VARIANTS
+from src.genealogy import classify_forename, CENSUS_YEAR
 
 # Map source_id → approximate census year for birth_year_est calculation.
-_SOURCE_YEAR: dict[int, int] = {3: 1901, 4: 1911, 5: 1926}
+_SOURCE_YEAR: dict[int, int] = CENSUS_YEAR
 
 
 # ---------------------------------------------------------------------------
@@ -143,34 +143,11 @@ def _forename_from(name: str | None) -> str | None:
 
 def _classify_first_name_variant(forename: str | None) -> str:
     """
-    Classify first name variant status for validation in Splink.
+    Classify first name variant for Splink.  Delegates to src.genealogy.classify_forename().
 
-    Returns:
-        'exact' if forename matches exactly (case-insensitive)
-        'approved' if forename is in approved Irish name variants
-        'suspicious' if forename is not in approved variants (default)
-
-    Used by Splink to score name consistency: exact and approved get
-    higher comparison levels, suspicious gets lower levels.
+    Returns 'exact' | 'approved' | 'suspicious' — see genealogy/names.py for semantics.
     """
-    if not forename:
-        return 'suspicious'
-
-    norm = _norm(forename).split()[0] if forename else ""  # Extract first word only
-    if not norm:
-        return 'suspicious'
-
-    # Check if this first name is in the approved variants dictionary
-    if norm in APPROVED_NAME_VARIANTS:
-        return 'approved'
-
-    # Check if it's a value in any variant set (e.g., 'annie' is a value in alice's set)
-    for variants in APPROVED_NAME_VARIANTS.values():
-        if norm in variants:
-            return 'approved'
-
-    # If not found in dictionary, mark as suspicious
-    return 'suspicious'
+    return classify_forename(forename)
 
 
 # ---------------------------------------------------------------------------

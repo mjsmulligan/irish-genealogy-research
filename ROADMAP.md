@@ -1,12 +1,12 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*Last updated: 27 June 2026*
+*Last updated: 28 June 2026*
 
 ---
 
-## 1. Latest Update (27 June 2026)
+## 1. Latest Update (28 June 2026)
 
-Splink v1.2–v1.3: separated surname/forename features, disabled TF adjustment, added Soundex phonetic blocking for Irish surname variants. Threshold tuned 0.65→0.60 (+3.7pp linkage). Double-link prevention implemented (conflict detection, orphan cleanup, audit trail). Phase 1 linkage analysis complete: 21.1% overall = ~25–34% of the linkable population after demographic loss.
+`src/validation/` retired. New `src/genealogy/` module created as the materialisation of `docs/genealogical_constraints.md` — Irish name knowledge, census age tolerance rules, and pairwise constraint evaluation in one authoritative layer, callable by evidence, conclusion, and review. Seven bugs fixed in the same pass, including age tolerances that were too tight (±2 flat vs. ±3/±4 per census pair), a deletion bug that removed only one side of each flagged pair, and a `classify_forename()` flaw that made the highest Splink name-comparison tier permanently dead.
 
 Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
@@ -22,9 +22,9 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 | `docs/data_dictionary.md` | v2.7 | ✅ Current |
 | `docs/database_schema.md` | v3.2 | ✅ Current |
 | `docs/repositories.md` | v1.6 | ✅ Current |
-| `docs/validation_rules.md` | v2.8 | ✅ Current |
+| `docs/genealogical_constraints.md` | v1.3 | ✅ Current — sole authority for constraint rules and GC codes |
+| `docs/validation_rules.md` | v2.8 | ⚠ Pending consolidation into `genealogical_constraints.md` (item 42) |
 | `docs/reconstruction_algorithms.md` | v1.3 | ✅ Current |
-| `docs/genealogical_constraints.md` | v1.3 | ✅ Current |
 | `docs/review_layer.md` | v1.0 | ✅ Current |
 | `ROADMAP.md` | — | ✅ Current |
 
@@ -32,9 +32,10 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
 | Layer | Status | Notes |
 |---|---|---|
-| Foundation | ✅ Complete (v3.2) | Schema v3.2: scores allowed for all relationship types |
+| Foundation | ✅ Complete (v3.2) | Schema v4.3: scores allowed for all relationship types |
 | Evidence | ✅ Complete | `add-evidence` CLI: steps [1/5]–[5/5] |
-| Conclusion | ✅ Complete | `conclude` CLI: steps [1/3]–[3/3] |
+| Conclusion | ✅ Complete | `conclude` CLI: steps [1/5]–[5/5] |
+| Genealogy | ✅ Complete | `src/genealogy/`: names, ages, constraints — replaces `src/validation/` |
 | Testing | ✅ Complete | 59 tests passing (100%), fixed-fixture exact assertions |
 | Review | ✅ Complete (v2.0) | `report.py`, `findings.py`, `priority.py`, `runner.py`. First run + training session next. |
 
@@ -56,11 +57,13 @@ Five-step pipeline via `python -m src.cli add-evidence`:
 
 ### 3.3 Conclusion Layer ✅
 
-Three-step pipeline via `python -m src.cli conclude`:
+Five-step pipeline via `python -m src.cli conclude`:
 
-1. **Person Resolution** — Union-Find clustering on person similarity ≥ 0.60 (`src/conclusion/person_resolution.py`)
+1. **Person Resolution** — Union-Find clustering on person similarity ≥ 0.45 (`src/conclusion/person_resolution.py`)
 2. **Relationship Resolution** — household matching → Person creation + Relationship conclusions (`src/conclusion/relationship_resolution.py`)
-3. **Event Resolution** — census, calculated birth, and marriage Events (`src/conclusion/event_resolution.py`)
+3. **Household Resolution** — anchor-extension for unlinked household members (`src/conclusion/household_resolution.py`)
+4. **Event Resolution** — census, calculated birth, and marriage Events (`src/conclusion/event_resolution.py`)
+5. **Validation Cleanup** — genealogical constraint sweep via `src/genealogy/` (`src/conclusion/validation_cleanup.py`)
 
 ### 3.4 Integration Test Harness ✅
 
@@ -87,6 +90,12 @@ Active and open items only. Completed items are in §8 (Version History).
 | 39 | **Spawn transcription repo.** Create new GitHub repository for the NLI Catholic parish register transcription pipeline. The three CSV schemas (register index, parish baptism, parish marriage) plus bounding box envelope fields are the formal interface contract with GRA. | High (R3) | Prerequisite for item 36 |
 | 40 | **Test harness: household_resolution coverage.** Add tests for `src/conclusion/household_resolution.py` and `src/conclusion/household_utils.py`. Cases to cover: (a) anchor-extension creates Person for unlinked spouse/child; (b) anchor as non-head (Case B/C); (c) no RecordedRelationship to anchor — member skipped; (d) score inherited from RecordedRelationship prior; (e) idempotency (re-run adds no duplicate Persons or Relationships). Update step-counter assertions from [4/4] to [5/5]. | High | After household_resolution merged |
 | 41 | **Household contradiction validation (review layer).** After `household_resolution` is proven in production, add a validation finding that flags Relationship conclusions contradicted by intra-census household evidence — e.g. two Persons concluded as `couple` whose RecordedPersons appear in the same household as `head` and `son`. Warning-level only at v1; auto-action to be decided after first review run. | Medium | After item 40 |
+| 42 | **`validation_rules.md` → `genealogical_constraints.md` consolidation.** Two documents cover overlapping content with two numbering schemes (R-codes and GC-codes). `genealogical_constraints.md` v1.4 is the sole authority; code references GC codes only. Merge remaining `validation_rules.md` content; retire the file or reduce it to a pointer. Update `review_layer.md` §6.1 reference. | Medium | |
+| 43 | **`is_primary = 1` → `is_primary = TRUE` sweep in `findings.py`.** PostgreSQL boolean idiom; correctness risk if column type ever tightened. | Low | |
+| 44 | **Sequence check should prefer `is_primary` dates (`find_life_event_sequence_violations()`).** Currently uses `earliest_year()` across all events of a type — a non-primary event with a bad date can trigger a spurious violation. Use `_derive_birth_year()` / `_derive_death_year()` helpers instead. | Medium | |
+| 45 | **Marriage singularity (GC06) not in findings layer.** Birth (GC04) and death (GC05) have singularity findings; marriage does not. Add `find_marriage_singularity_violation()`. See `genealogical_constraints.md` GC06. | Medium | |
+| 46 | **N+1 birth/death year queries in `findings.py`.** `_derive_birth_year()` / `_derive_death_year()` issue 2–3 queries per person in per-person loops. Pre-fetch all birth/death years for active persons in a single query at `run_all_findings()` start. | High | Before Donegal-scale data |
+| 47 | **`find_link_conflicts_resolved()` is a permanent placeholder.** Always returns `[]`. Either implement (requires conclusion_log to record opinion revisions) or remove from `run_all_findings()` and taxonomy. | Low | |
 
 ---
 
@@ -165,7 +174,8 @@ Full session history with links to detailed changelog files: [`changelog/changel
 
 | Date | Milestone |
 |---|---|
-| 27 June 2026 | Splink v1.3 phonetic blocking. v1.2 separated name components, disabled TF adjustment. Threshold 0.65→0.60 (+3.7pp linkage). Double-link prevention. Phase 1 linkage analysis complete. |
+| 28 June 2026 | `src/validation/` retired. `src/genealogy/` created as materialisation of `genealogical_constraints.md`. Seven bugs fixed: age tolerances (±2 flat → ±3/±4 per census pair), deletion of both sides of flagged pairs, `classify_forename()` `'exact'` return, `household_same_census_errors` always zero, five duplicate inline source-year dicts, deferred import in `relationship_resolution.py`, duplicate dict key in `APPROVED_NAME_VARIANTS`. Six callers updated. `genealogical_constraints.md` v1.4: `[→ Validation rule candidate]` pattern retired; §10 implementation table rewritten against actual code. |
+| 28 June 2026 | Household resolution new conclusion step [3/5]. Anchor-extension for unlinked household members via RecordedRelationship paths. `household_utils.py` extracted. Conclusion pipeline 3-step → 5-step. |
 | 26 June 2026 | R3 transcription pipeline discovery. Spawned as independent repo. Hybrid HTR pipeline designed. Bounding box fields added to CSV schemas. Vocabulary file contract drafted. |
 | 25 June 2026 | R3 parish records early discovery. Recorded-as-is contract. Three-file register structure. `sponsor` and `witness` vocabulary added. |
 | 24 June 2026 | Review layer design (session 18) and implementation (session 19) complete. `validator.py` replaced by four-module report system. |

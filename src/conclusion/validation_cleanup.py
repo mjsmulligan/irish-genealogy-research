@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import psycopg2.extensions
 
-from src.validation import validate_all_linkages, remove_flagged_linkages
+from src.genealogy import apply_constraints_to_linkages, remove_flagged_linkages, ConstraintReport
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,6 @@ class ValidationCleanupResult:
     age_violations_removed: int = 0
     name_violations_removed: int = 0
     gender_flips_removed: int = 0
-    household_same_census_violations_removed: int = 0
     household_violations_removed: int = 0
 
 
@@ -54,22 +53,21 @@ def run_validation_cleanup(
     """
     result = ValidationCleanupResult()
 
-    # Step 1: Validate all current linkages
-    report = validate_all_linkages(conn)
+    # Apply all genealogical constraints to current linkages
+    report = apply_constraints_to_linkages(conn)
 
     result.linkages_checked = report.total_linkages_checked
     result.violations_found = report.total_violations
     result.age_violations_removed = report.age_violations
     result.name_violations_removed = report.name_mismatches
     result.gender_flips_removed = report.gender_flips
-    result.household_same_census_violations_removed = report.household_same_census_errors
     result.household_violations_removed = report.household_errors
 
     if not report.flagged_pairs:
         # No violations found, nothing to remove
         return result
 
-    # Step 2: Remove flagged linkages
+    # Remove both sides of each flagged pair
     count_removed, _ = remove_flagged_linkages(conn, report, dry_run=False)
     result.linkages_removed = count_removed
 
@@ -81,15 +79,14 @@ def run_validation_cleanup(
 # ---------------------------------------------------------------------------
 
 def print_validation_cleanup_report(result: ValidationCleanupResult) -> None:
-    print("\n[4/4] Validation cleanup...")
+    print("\n[5/5] Validation cleanup...")
     print()
-    print(f"  VALIDATION CLEANUP")
+    print(f"  CONSTRAINT CLEANUP")
     print(f"    Linkages checked:        {result.linkages_checked:>6}")
     print(f"    Violations found:        {result.violations_found:>6}")
     print(f"      Age progression:       {result.age_violations_removed:>6}")
     print(f"      Name mismatches:       {result.name_violations_removed:>6}")
     print(f"      Gender flips:          {result.gender_flips_removed:>6}")
-    print(f"      Household (same):      {result.household_violations_removed:>6}")
-    print(f"      Household (same census):{result.household_same_census_violations_removed:>6}")
+    print(f"      Household coherence:   {result.household_violations_removed:>6}")
     print(f"    Linkages removed:        {result.linkages_removed:>6}")
     print()
