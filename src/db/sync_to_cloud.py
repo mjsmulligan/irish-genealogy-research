@@ -59,6 +59,7 @@ def dump_local_db() -> str:
                 "-d", dbname,
                 "--no-owner",
                 "--no-privileges",
+                "--data-only",
             ],
             env=env,
             capture_output=True,
@@ -79,9 +80,10 @@ def dump_local_db() -> str:
 def restore_to_supabase(sql_content: str) -> None:
     """
     Restore SQL dump to Supabase via REST API.
-    Splits SQL into statements and executes via execute_sql RPC.
+    Converts COPY statements to INSERTs (pg_dump --data-only uses COPY FROM stdin).
     """
     from supabase import create_client
+    import re
 
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SECRET_KEY")
@@ -94,44 +96,65 @@ def restore_to_supabase(sql_content: str) -> None:
 
     client = create_client(url, key)
 
-    # Split SQL into individual statements
-    # Simple split by semicolon (adequate for most dumps)
-    statements = [stmt.strip() for stmt in sql_content.split(";") if stmt.strip()]
+    # Parse COPY statements and convert to INSERTs
+    insert_statements = []
+    lines = sql_content.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
 
-    print(f"Restoring {len(statements)} SQL statements to Supabase...")
+        # Look for COPY statement
+        copy_match = re.match(r'^COPY\s+public\.(\w+)\s*\((.*?)\)\s+FROM\s+stdin', line)
+        if copy_match:
+            table_name = copy_match.group(1)
+            columns = [col.strip() for col in copy_match.group(2).split(",")]
+
+            i += 1
+            # Read data lines until we hit \. (terminator)
+            data_lines = []
+            while i < len(lines) and not lines[i].strip().startswith("\\"):
+                if lines[i].strip():
+                    data_lines.append(lines[i])
+                i += 1
+
+            # Convert each data line to INSERT
+            for data_line in data_lines:
+                values = data_line.split("\t")
+                # Quote and escape string values
+                quoted_values = []
+                for v in values:
+                    if v == "\\N":
+                        quoted_values.append("NULL")
+                    else:
+                        # Escape single quotes
+                        escaped = v.replace("'", "''")
+                        quoted_values.append(f"'{escaped}'")
+
+                insert_stmt = f"INSERT INTO public.{table_name} ({', '.join(columns)}) OVERRIDING SYSTEM VALUE VALUES ({', '.join(quoted_values)}) ON CONFLICT DO NOTHING"
+                insert_statements.append(insert_stmt)
+
+        i += 1
+
+    print(f"Converted COPY statements to {len(insert_statements)} INSERT statements")
+    print(f"Restoring to Supabase...")
 
     executed = 0
-    skipped = 0
+    failed = 0
 
-    for i, stmt in enumerate(statements, 1):
+    for i, stmt in enumerate(insert_statements, 1):
         try:
-            # Normalize statement
-            stmt = " ".join(stmt.split())
-
-            # Skip comments and metadata
-            if stmt.startswith("--"):
-                skipped += 1
-                continue
-
-            # Skip pg_dump metadata comments (Type, Schema, Owner, etc.)
-            if any(stmt.startswith(f"-- {prefix}") for prefix in ["Type:", "Schema:", "Owner:", "SET ", "BEGIN", "COMMIT"]):
-                skipped += 1
-                continue
-
-            # Execute via execute_sql RPC
             client.rpc("execute_sql", {"sql_text": stmt}).execute()
             executed += 1
 
-            if executed % 100 == 0:
-                print(f"  {executed} statements executed...")
+            if executed % 500 == 0:
+                print(f"  {executed} rows inserted...")
 
         except Exception as e:
-            # Log but continue — some statements may fail (e.g., index creation)
-            # but data should be intact
-            if i % 50 == 0:  # Only log every 50th error to reduce noise
-                print(f"  Warning: Statement {i} failed: {e}")
+            failed += 1
+            if failed <= 10:  # Only log first 10 errors
+                print(f"  Warning: Row {i} failed: {str(e)[:100]}")
 
-    print(f"✓ Restored {executed} statements ({skipped} skipped) to Supabase")
+    print(f"✓ Restored {executed} rows to Supabase ({failed} failed)")
 
 
 def sync_to_cloud() -> None:
