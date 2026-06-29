@@ -1,32 +1,28 @@
 """
-GRA — Database connection and schema management (PostgreSQL / Supabase).
+GRA — Database connection and repository factory.
 
-Public API
-----------
-open_db()           → psycopg2 connection  (reads DATABASE_URL from env)
-init_db()           → psycopg2 connection  (creates schema + seeds data)
-check_version(conn)
-build_record_url(source, record) → str | None
-
-Constants
----------
-SCHEMA_VERSION      int     (imported from src.constants)
-SCHEMA_SQL          Path
-SEED_SQL            Path
+Uses the Repository pattern to abstract database choice.
+Business logic uses Repository interface, not database-specific code.
 """
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
-from typing import Any
 
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
+
 from src.constants import SCHEMA_VERSION
+from src.db.repository import Repository
+from src.db.postgres_repo import PostgresRepository
+from src.db.supabase_repo import SupabaseRepository
 
 load_dotenv()
 
@@ -35,146 +31,164 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 SCHEMA_SQL = Path(__file__).parent / "schema.sql"
-SEED_SQL   = Path(__file__).parent / "seed.sql"
+SEED_SQL = Path(__file__).parent / "seed.sql"
 
 
 # ---------------------------------------------------------------------------
-# Connection
+# Factory
 # ---------------------------------------------------------------------------
 
 
-def open_db() -> psycopg2.extensions.connection:
+def open_db() -> Repository:
     """
-    Open a connection to the PostgreSQL database.
+    Open a database connection and return a Repository.
 
     Reads DATABASE_ENVIRONMENT to determine local vs. cloud:
-      - local: uses DATABASE_URL_LOCAL (localhost:5432)
-      - cloud: uses DATABASE_URL_CLOUD (Supabase)
+      - local: PostgreSQL via psycopg2
+      - cloud: Supabase via REST API
 
-    If DATABASE_ENVIRONMENT is not set, defaults to 'local'.
-
-    Returns a psycopg2 connection using RealDictCursor as the default
-    cursor factory, so rows support dict-style key access: row["col"].
-
-    Raises EnvironmentError if the selected URL is not set.
+    Defaults to 'local' if not set.
     """
     env = os.environ.get("DATABASE_ENVIRONMENT", "local").lower().strip()
 
     if env == "cloud":
-        url = os.environ.get("DATABASE_URL_CLOUD")
-        if not url:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_SECRET_KEY")
+        if not url or not key:
             raise EnvironmentError(
-                "DATABASE_ENVIRONMENT=cloud but DATABASE_URL_CLOUD is not set.\n"
-                "Add DATABASE_URL_CLOUD to your .env file.\n"
-                "  Format: postgresql://postgres:[password]@[host]:5432/postgres"
+                "DATABASE_ENVIRONMENT=cloud but SUPABASE_URL or SUPABASE_SECRET_KEY not set.\n"
+                "Add to .env:\n"
+                "  SUPABASE_URL=https://[project-id].supabase.co\n"
+                "  SUPABASE_SECRET_KEY=your_service_role_key"
             )
-    else:  # default to local
+        if not create_client:
+            raise ImportError("supabase package not installed")
+        client = create_client(url, key)
+        return SupabaseRepository(client)
+    else:
         url = os.environ.get("DATABASE_URL_LOCAL")
         if not url:
             raise EnvironmentError(
-                "DATABASE_ENVIRONMENT=local but DATABASE_URL_LOCAL is not set.\n"
-                "Add DATABASE_URL_LOCAL to your .env file.\n"
-                "  Format: postgresql://[user]@[host]:5432/[database]"
+                "DATABASE_ENVIRONMENT=local but DATABASE_URL_LOCAL not set.\n"
+                "Add to .env:\n"
+                "  DATABASE_URL_LOCAL=postgresql://[user]@[host]:5432/[database]"
             )
+        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+        conn.autocommit = False
+        return PostgresRepository(conn)
 
-    conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
-    conn.autocommit = False
-    return conn
 
-
-def _execute_sql_file(cur: Any, sql: str) -> None:
-    """
-    Execute a multi-statement SQL file.
-
-    PostgreSQL allows executing multiple statements in one execute() call,
-    so we just pass the entire file contents. Comments are preserved and
-    handled correctly by the PostgreSQL parser.
-    """
+def _execute_sql_file(cur, sql: str) -> None:
+    """Execute multi-statement SQL file."""
     cur.execute(sql)
 
 
-def init_db() -> psycopg2.extensions.connection:
+def init_db() -> Repository:
     """
     Initialise a fresh database: create schema, insert seed data, record version.
 
-    Safe to call on a blank Supabase project. Raises if gra_meta already exists
-    (indicates the database has already been initialised).
-
-    Rolls back and closes the connection on any failure so the caller is never
-    left with a half-initialised database or a dangling connection.
+    Safe to call on a blank Supabase project. Raises if gra_meta already exists.
     """
-    conn = open_db()
-    try:
-        with conn.cursor() as cur:
-            # Guard: refuse to re-initialise an existing GRA database.
-            cur.execute("""
-                SELECT EXISTS (
-                    SELECT 1 FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'gra_meta'
-                )
-            """)
-            if cur.fetchone()["exists"]:
-                raise RuntimeError(
-                    "Database already contains a gra_meta table — it appears to have been "
-                    "initialised already. Drop the schema manually before reinitialising."
-                )
+    env = os.environ.get("DATABASE_ENVIRONMENT", "local").lower().strip()
 
-            _execute_sql_file(cur, SCHEMA_SQL.read_text())
-            _execute_sql_file(cur, SEED_SQL.read_text())
-            cur.execute(
-                "INSERT INTO gra_meta (key, value) VALUES (%s, %s)",
-                ("schema_version", str(SCHEMA_VERSION)),
+    if env == "cloud":
+        return _init_db_cloud()
+    else:
+        return _init_db_local()
+
+
+def _init_db_local() -> Repository:
+    """Initialize local PostgreSQL database."""
+    repo = open_db()
+
+    try:
+        # Check if already initialized
+        result = repo.fetch_one("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'gra_meta'
+            ) AS exists
+        """)
+        if result and result.get("exists"):
+            raise RuntimeError(
+                "Database already contains gra_meta table.\n"
+                "Drop the schema manually before reinitialising."
             )
 
-        conn.commit()
+        # Create schema and seed
+        schema_sql = SCHEMA_SQL.read_text()
+        seed_sql = SEED_SQL.read_text()
+
+        # Execute as raw SQL
+        repo.execute(schema_sql)
+        repo.execute(seed_sql)
+
+        # Record version
+        repo.execute(
+            "INSERT INTO gra_meta (key, value) VALUES (%s, %s)",
+            ("schema_version", str(SCHEMA_VERSION)),
+        )
+        repo.commit()
     except Exception:
-        conn.rollback()
-        conn.close()
+        repo.rollback()
+        repo.close()
         raise
 
     print(f"Initialised database (schema v{SCHEMA_VERSION // 10}.{SCHEMA_VERSION % 10}).")
-    return conn
+    return repo
 
 
-def check_version(conn: psycopg2.extensions.connection) -> None:
-    """Raise RuntimeError if the database schema version does not match SCHEMA_VERSION."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT value FROM gra_meta WHERE key = 'schema_version'")
-        row = cur.fetchone()
+def _init_db_cloud() -> Repository:
+    """Verify Supabase cloud database is initialized (schema must exist already)."""
+    repo = open_db()
 
-    if row is None:
+    try:
+        result = repo.fetch_one("SELECT * FROM gra_meta LIMIT 1")
+        if result:
+            print("Cloud database already initialized.")
+            return repo
+    except Exception as e:
         raise RuntimeError(
-            "gra_meta table is empty — cannot determine schema version. "
-            "Reinitialise the database with 'python -m src.cli init'."
+            "Could not find gra_meta table. Schema not initialized.\n"
+            "Initialize via Supabase SQL Editor:\n"
+            "1. Go to https://app.supabase.com → select project\n"
+            "2. SQL Editor → New query\n"
+            "3. Copy schema.sql and seed.sql, run each\n"
+            f"Error: {e}"
         )
 
-    version = int(row["value"])
+    return repo
+
+
+def check_version(repo: Repository) -> None:
+    """Raise RuntimeError if schema version does not match."""
+    result = repo.fetch_one(
+        "SELECT value FROM gra_meta WHERE key = 'schema_version'"
+    )
+
+    if not result:
+        raise RuntimeError(
+            "gra_meta table is empty.\n"
+            "Reinitialise with 'python -m src.cli init'."
+        )
+
+    version = int(result["value"])
     if version != SCHEMA_VERSION:
         raise RuntimeError(
-            f"Schema version mismatch: expected {SCHEMA_VERSION}, got {version}. "
+            f"Schema version mismatch: expected {SCHEMA_VERSION}, got {version}.\n"
             "Run migrations before using this database."
         )
 
 
-# ---------------------------------------------------------------------------
-# URL builder
-# ---------------------------------------------------------------------------
-
-
 def build_record_url(source: dict, record: dict) -> str | None:
-    """
-    Construct a deep link URL for a Record by merging source_parameters
-    (Source-level constants) with record_parameters (Record-level values)
-    and substituting into the record_url_template.
+    """Construct a deep link URL for a Record."""
+    import json
 
-    Returns None if the source has no record_url_template.
-    Raises ValueError if any placeholder remains unresolved after the merge.
-    """
     template = source.get("record_url_template")
     if not template:
         return None
 
-    params: dict[str, Any] = {}
+    params: dict = {}
 
     raw_sp = source.get("source_parameters")
     if raw_sp:
@@ -192,6 +206,5 @@ def build_record_url(source: dict, record: dict) -> str | None:
         return template.format(**params)
     except KeyError as e:
         raise ValueError(
-            f"Unresolved placeholder {e} in URL template '{template}' "
-            f"after merging source_parameters and record_parameters."
+            f"Unresolved placeholder {e} in URL template '{template}'"
         ) from e

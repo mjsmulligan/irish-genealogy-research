@@ -11,11 +11,11 @@ the relationship_recorded_relationship junction table.
 
 from __future__ import annotations
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 
 def insert_recorded_relationship(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     recorded_person_id_1: int,
     recorded_person_id_2: int,
     rel_type: str,
@@ -31,20 +31,19 @@ def insert_recorded_relationship(
     score: Prior score for role-pair types (0.75-0.90), Splink score for 'similarity'
     score_version: Algorithm identifier for provenance tracking
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO recorded_relationship "
-            "(recorded_person_id_1, recorded_person_id_2, type, score, score_version, notes) "
-            "VALUES (%s, %s, %s, %s, %s, %s) "
-            "RETURNING recorded_relationship_id",
-            (recorded_person_id_1, recorded_person_id_2, rel_type,
-             score, score_version, notes),
-        )
-        return cur.fetchone()["recorded_relationship_id"]
+    result = repo.execute_returning(
+        "INSERT INTO recorded_relationship "
+        "(recorded_person_id_1, recorded_person_id_2, type, score, score_version, notes) "
+        "VALUES (%s, %s, %s, %s, %s, %s) "
+        "RETURNING recorded_relationship_id",
+        (recorded_person_id_1, recorded_person_id_2, rel_type,
+         score, score_version, notes),
+    )
+    return result["recorded_relationship_id"]
 
 
 def get_recorded_relationships_for_record(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     record_id: int,
 ) -> list[dict]:
     """
@@ -54,26 +53,24 @@ def get_recorded_relationships_for_record(
     Row keys: recorded_relationship_id, recorded_person_id_1,
               recorded_person_id_2, type, score, score_version, notes
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT rr.*
-            FROM recorded_relationship rr
-            JOIN recorded_person rp1
-              ON rp1.recorded_person_id = rr.recorded_person_id_1
-            JOIN recorded_person rp2
-              ON rp2.recorded_person_id = rr.recorded_person_id_2
-            WHERE rp1.record_id = %s
-              AND rp2.record_id = %s
-            ORDER BY rr.recorded_relationship_id
-            """,
-            (record_id, record_id),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT rr.*
+        FROM recorded_relationship rr
+        JOIN recorded_person rp1
+          ON rp1.recorded_person_id = rr.recorded_person_id_1
+        JOIN recorded_person rp2
+          ON rp2.recorded_person_id = rr.recorded_person_id_2
+        WHERE rp1.record_id = %s
+          AND rp2.record_id = %s
+        ORDER BY rr.recorded_relationship_id
+        """,
+        (record_id, record_id),
+    )
 
 
 def get_similarity_pairs(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     min_score: float = 0.0,
 ) -> list[dict]:
     """
@@ -86,19 +83,17 @@ def get_similarity_pairs(
     Row keys: recorded_relationship_id, recorded_person_id_1,
               recorded_person_id_2, score, score_version
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT recorded_relationship_id,
-                   recorded_person_id_1,
-                   recorded_person_id_2,
-                   score,
-                   score_version
-            FROM recorded_relationship
-            WHERE type = 'similarity'
-              AND score >= %s
-            ORDER BY score DESC
-            """,
-            (min_score,),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT recorded_relationship_id,
+               recorded_person_id_1,
+               recorded_person_id_2,
+               score,
+               score_version
+        FROM recorded_relationship
+        WHERE type = 'similarity'
+          AND score >= %s
+        ORDER BY score DESC
+        """,
+        (min_score,),
+    )

@@ -48,8 +48,8 @@ Entry point:
 from __future__ import annotations
 
 import pandas as pd
-import psycopg2.extensions
 
+from src.db.repository import Repository
 from src.constants import CENSUS_SOURCE_IDS
 from src.evidence.features.census import _soundex
 from src.genealogy import classify_forename, CENSUS_YEAR
@@ -63,7 +63,7 @@ _SOURCE_YEAR: dict[int, int] = CENSUS_YEAR
 # ---------------------------------------------------------------------------
 
 def _build_household_score_lookup(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> dict[tuple[int, int, int], float]:
     """
     Build a lookup: (record_id, source_id, target_source_id) → max household match score.
@@ -81,32 +81,30 @@ def _build_household_score_lookup(
     lookup: dict[tuple[int, int, int], float] = {}
 
     # Get source_id for each record first
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT r.record_id, r.source_id
-            FROM record r
-            WHERE r.source_id IN ({','.join(str(s) for s in CENSUS_SOURCE_IDS)})
-            """
-        )
-        record_sources = {row["record_id"]: row["source_id"] for row in cur.fetchall()}
+    record_source_rows = repo.fetch_all(
+        f"""
+        SELECT r.record_id, r.source_id
+        FROM record r
+        WHERE r.source_id IN ({','.join(str(s) for s in CENSUS_SOURCE_IDS)})
+        """
+    )
+    record_sources = {row["record_id"]: row["source_id"] for row in record_source_rows}
 
     # Now build per-source household match scores
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                rs.record_id_1,
-                rs.record_id_2,
-                rs.score,
-                r1.source_id AS source_1,
-                r2.source_id AS source_2
-            FROM record_similarity rs
-            JOIN record r1 ON r1.record_id = rs.record_id_1
-            JOIN record r2 ON r2.record_id = rs.record_id_2
-            """
-        )
-        for row in cur.fetchall():
+    similarity_rows = repo.fetch_all(
+        """
+        SELECT
+            rs.record_id_1,
+            rs.record_id_2,
+            rs.score,
+            r1.source_id AS source_1,
+            r2.source_id AS source_2
+        FROM record_similarity rs
+        JOIN record r1 ON r1.record_id = rs.record_id_1
+        JOIN record r2 ON r2.record_id = rs.record_id_2
+        """
+    )
+    for row in similarity_rows:
             rid_1 = row["record_id_1"]
             rid_2 = row["record_id_2"]
             score = row["score"]
@@ -155,7 +153,7 @@ def _classify_first_name_variant(forename: str | None) -> str:
 # ---------------------------------------------------------------------------
 
 def build_census_person_features(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[pd.DataFrame]:
     """
     Build one Pandas DataFrame per active census source for Splink
@@ -174,31 +172,29 @@ def build_census_person_features(
 
     # Build a lookup: (record_id, source_id, target_source_id) → household match score
     # Provides per-source household context for each person pair
-    household_scores: dict[tuple[int, int, int], float] = _build_household_score_lookup(conn)
+    household_scores: dict[tuple[int, int, int], float] = _build_household_score_lookup(repo)
 
     for source_id in CENSUS_SOURCE_IDS:
         census_year = _SOURCE_YEAR.get(source_id)
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                    rp.recorded_person_id,
-                    rp.name_as_recorded,
-                    rp.age,
-                    rp.sex_as_recorded,
-                    rp.role,
-                    pr.place_id,
-                    rp.record_id
-                FROM recorded_person rp
-                JOIN record r ON r.record_id = rp.record_id
-                LEFT JOIN place_record pr ON pr.record_id = r.record_id
-                WHERE r.source_id = %s
-                ORDER BY rp.recorded_person_id
-                """,
-                (source_id,),
-            )
-            persons = cur.fetchall()
+        persons = repo.fetch_all(
+            """
+            SELECT
+                rp.recorded_person_id,
+                rp.name_as_recorded,
+                rp.age,
+                rp.sex_as_recorded,
+                rp.role,
+                pr.place_id,
+                rp.record_id
+            FROM recorded_person rp
+            JOIN record r ON r.record_id = rp.record_id
+            LEFT JOIN place_record pr ON pr.record_id = r.record_id
+            WHERE r.source_id = %s
+            ORDER BY rp.recorded_person_id
+            """,
+            (source_id,),
+        )
 
         if not persons:
             continue

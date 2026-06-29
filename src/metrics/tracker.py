@@ -9,7 +9,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 
 @dataclass
@@ -52,36 +52,35 @@ class Timer:
 
 
 def log_run(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     run: PipelineRun,
 ) -> None:
     """Write pipeline run metrics to the database.
 
     Args:
-        conn: Database connection
+        repo: Database repository
         run: PipelineRun with stage, step_name, duration_ms, etc.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO pipeline_run
-            (stage, step_name, records_processed, duration_ms, source_id, notes, session_ref)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                run.stage,
-                run.step_name,
-                run.records_processed,
-                run.duration_ms,
-                run.source_id,
-                run.notes,
-                run.session_ref,
-            ),
-        )
+    repo.execute(
+        """
+        INSERT INTO pipeline_run
+        (stage, step_name, records_processed, duration_ms, source_id, notes, session_ref)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            run.stage,
+            run.step_name,
+            run.records_processed,
+            run.duration_ms,
+            run.source_id,
+            run.notes,
+            run.session_ref,
+        ),
+    )
 
 
 def get_recent_runs(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     stage: str | None = None,
     step_name: str | None = None,
     limit: int = 20,
@@ -89,7 +88,7 @@ def get_recent_runs(
     """Query recent pipeline runs.
 
     Args:
-        conn: Database connection
+        repo: Database repository
         stage: Filter by stage (optional)
         step_name: Filter by step name (optional)
         limit: Maximum rows to return
@@ -112,55 +111,51 @@ def get_recent_runs(
 
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT run_id, stage, step_name, records_processed, duration_ms,
-                   source_id, notes, start_at
-            FROM pipeline_run
-            {where_sql}
-            ORDER BY start_at DESC
-            LIMIT %s
-            """,
-            params,
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        f"""
+        SELECT run_id, stage, step_name, records_processed, duration_ms,
+               source_id, notes, start_at
+        FROM pipeline_run
+        {where_sql}
+        ORDER BY start_at DESC
+        LIMIT %s
+        """,
+        tuple(params),
+    )
 
 
 def print_timing_report(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     stage: str | None = None,
     limit: int = 50,
 ) -> None:
     """Print a formatted timing report of recent pipeline runs.
 
     Args:
-        conn: Database connection
+        repo: Database repository
         stage: Filter by stage (optional)
         limit: Maximum runs to display
     """
-    with conn.cursor() as cur:
-        where_sql = "WHERE stage = %s" if stage else ""
-        params = [stage] if stage else []
-        params.append(limit)
+    where_sql = "WHERE stage = %s" if stage else ""
+    params = [stage] if stage else []
+    params.append(limit)
 
-        cur.execute(
-            f"""
-            SELECT stage, step_name, COUNT(*) as count,
-                   ROUND(AVG(duration_ms)::numeric, 0)::int as avg_ms,
-                   MIN(duration_ms) as min_ms,
-                   MAX(duration_ms) as max_ms,
-                   SUM(duration_ms) as total_ms,
-                   SUM(records_processed) as total_records
-            FROM pipeline_run
-            {where_sql}
-            GROUP BY stage, step_name
-            ORDER BY stage, total_ms DESC
-            LIMIT %s
-            """,
-            params,
-        )
-        runs = cur.fetchall()
+    runs = repo.fetch_all(
+        f"""
+        SELECT stage, step_name, COUNT(*) as count,
+               ROUND(AVG(duration_ms)::numeric, 0)::int as avg_ms,
+               MIN(duration_ms) as min_ms,
+               MAX(duration_ms) as max_ms,
+               SUM(duration_ms) as total_ms,
+               SUM(records_processed) as total_records
+        FROM pipeline_run
+        {where_sql}
+        GROUP BY stage, step_name
+        ORDER BY stage, total_ms DESC
+        LIMIT %s
+        """,
+        tuple(params),
+    )
 
     if not runs:
         print("No timing data available.")

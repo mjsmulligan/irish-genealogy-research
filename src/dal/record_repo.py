@@ -9,9 +9,8 @@ only by the insert functions below, called from src/evidence/census.py.
 
 from __future__ import annotations
 
-import psycopg2.extensions
-
 from src.constants import CENSUS_SOURCE_IDS
+from src.db.repository import Repository
 
 
 # ---------------------------------------------------------------------------
@@ -19,22 +18,21 @@ from src.constants import CENSUS_SOURCE_IDS
 # ---------------------------------------------------------------------------
 
 
-def get_active_census_source_ids(conn: psycopg2.extensions.connection) -> list[int]:
+def get_active_census_source_ids(repo: Repository) -> list[int]:
     """
     Return the census source_ids that have at least one ingested record.
     Sources not yet ingested are excluded.
     """
     placeholders = ",".join(["%s"] * len(CENSUS_SOURCE_IDS))
-    with conn.cursor() as cur:
-        cur.execute(
-            f"SELECT DISTINCT source_id FROM record WHERE source_id IN ({placeholders})",
-            CENSUS_SOURCE_IDS,
-        )
-        return [row["source_id"] for row in cur.fetchall()]
+    rows = repo.fetch_all(
+        f"SELECT DISTINCT source_id FROM record WHERE source_id IN ({placeholders})",
+        CENSUS_SOURCE_IDS,
+    )
+    return [row["source_id"] for row in rows]
 
 
 def get_unprocessed_census_records(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     source_id: int,
 ) -> list[dict]:
     """
@@ -50,24 +48,22 @@ def get_unprocessed_census_records(
     correct and performs acceptably at Donegal scale (avoids the N² scan of
     the previous NOT IN approach).
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT r.record_id, r.date, r.place_as_recorded
-            FROM record r
-            WHERE r.source_id = %s
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM recorded_person rp
-                  JOIN person_recorded_person prp
-                    ON prp.recorded_person_id = rp.recorded_person_id
-                  WHERE rp.record_id = r.record_id
-              )
-            ORDER BY r.record_id
-            """,
-            (source_id,),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT r.record_id, r.date, r.place_as_recorded
+        FROM record r
+        WHERE r.source_id = %s
+          AND NOT EXISTS (
+              SELECT 1
+              FROM recorded_person rp
+              JOIN person_recorded_person prp
+                ON prp.recorded_person_id = rp.recorded_person_id
+              WHERE rp.record_id = r.record_id
+          )
+        ORDER BY r.record_id
+        """,
+        (source_id,),
+    )
 
 
 
@@ -77,24 +73,22 @@ def get_unprocessed_census_records(
 # ---------------------------------------------------------------------------
 
 
-def next_record_id(conn: psycopg2.extensions.connection) -> int:
+def next_record_id(repo: Repository) -> int:
     """Return the next available record_id (MAX + 1)."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT COALESCE(MAX(record_id), 0) + 1 AS next_id FROM record")
-        return cur.fetchone()["next_id"]
+    result = repo.fetch_one("SELECT COALESCE(MAX(record_id), 0) + 1 AS next_id FROM record")
+    return result["next_id"]
 
 
-def next_recorded_person_id(conn: psycopg2.extensions.connection) -> int:
+def next_recorded_person_id(repo: Repository) -> int:
     """Return the next available recorded_person_id (MAX + 1)."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT COALESCE(MAX(recorded_person_id), 0) + 1 AS next_id FROM recorded_person"
-        )
-        return cur.fetchone()["next_id"]
+    result = repo.fetch_one(
+        "SELECT COALESCE(MAX(recorded_person_id), 0) + 1 AS next_id FROM recorded_person"
+    )
+    return result["next_id"]
 
 
 def insert_record(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     record_id: int,
     source_id: int,
     record_parameters: str | None,
@@ -107,22 +101,21 @@ def insert_record(
     notes: str | None = None,
 ) -> None:
     """Insert a single Record (evidence layer). Called only from ingest."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO record "
-            "(record_id, source_id, record_parameters, raw_text, event_type, "
-            " date_as_recorded, date, date_qualifier, place_as_recorded, notes) "
-            "OVERRIDING SYSTEM VALUE "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                record_id, source_id, record_parameters, raw_text, event_type,
-                date_as_recorded, date, date_qualifier, place_as_recorded, notes,
-            ),
-        )
+    repo.execute(
+        "INSERT INTO record "
+        "(record_id, source_id, record_parameters, raw_text, event_type, "
+        " date_as_recorded, date, date_qualifier, place_as_recorded, notes) "
+        "OVERRIDING SYSTEM VALUE "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (
+            record_id, source_id, record_parameters, raw_text, event_type,
+            date_as_recorded, date, date_qualifier, place_as_recorded, notes,
+        ),
+    )
 
 
 def insert_recorded_person(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     recorded_person_id: int,
     record_id: int,
     name_as_recorded: str,
@@ -135,24 +128,23 @@ def insert_recorded_person(
     notes: str | None = None,
 ) -> None:
     """Insert a single RecordedPerson (evidence layer). Called only from ingest."""
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO recorded_person "
-            "(recorded_person_id, record_id, name_as_recorded, role, "
-            " age_as_recorded, age, sex_as_recorded, occupation_as_recorded, "
-            " place_as_recorded, notes) "
-            "OVERRIDING SYSTEM VALUE "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                recorded_person_id, record_id, name_as_recorded, role,
-                age_as_recorded, age, sex_as_recorded, occupation_as_recorded,
-                place_as_recorded, notes,
-            ),
-        )
+    repo.execute(
+        "INSERT INTO recorded_person "
+        "(recorded_person_id, record_id, name_as_recorded, role, "
+        " age_as_recorded, age, sex_as_recorded, occupation_as_recorded, "
+        " place_as_recorded, notes) "
+        "OVERRIDING SYSTEM VALUE "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (
+            recorded_person_id, record_id, name_as_recorded, role,
+            age_as_recorded, age, sex_as_recorded, occupation_as_recorded,
+            place_as_recorded, notes,
+        ),
+    )
 
 
 def bulk_insert_records(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     records: list[dict],
 ) -> None:
     """
@@ -164,33 +156,32 @@ def bulk_insert_records(
     if not records:
         return
 
-    with conn.cursor() as cur:
-        # Build VALUES clause with placeholders
-        values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        values_clause = ", ".join([values_template] * len(records))
+    # Build VALUES clause with placeholders
+    values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    values_clause = ", ".join([values_template] * len(records))
 
-        # Flatten all record values into a single tuple
-        values = []
-        for r in records:
-            values.extend([
-                r["record_id"], r["source_id"], r["record_parameters"],
-                r["raw_text"], r["event_type"], r["date_as_recorded"],
-                r["date"], r["date_qualifier"], r["place_as_recorded"],
-                r["notes"]
-            ])
+    # Flatten all record values into a single tuple
+    values = []
+    for r in records:
+        values.extend([
+            r["record_id"], r["source_id"], r["record_parameters"],
+            r["raw_text"], r["event_type"], r["date_as_recorded"],
+            r["date"], r["date_qualifier"], r["place_as_recorded"],
+            r["notes"]
+        ])
 
-        cur.execute(
-            f"INSERT INTO record "
-            f"(record_id, source_id, record_parameters, raw_text, event_type, "
-            f" date_as_recorded, date, date_qualifier, place_as_recorded, notes) "
-            f"OVERRIDING SYSTEM VALUE "
-            f"VALUES {values_clause}",
-            values
-        )
+    repo.execute(
+        f"INSERT INTO record "
+        f"(record_id, source_id, record_parameters, raw_text, event_type, "
+        f" date_as_recorded, date, date_qualifier, place_as_recorded, notes) "
+        f"OVERRIDING SYSTEM VALUE "
+        f"VALUES {values_clause}",
+        values
+    )
 
 
 def bulk_insert_recorded_persons(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     persons: list[dict],
 ) -> None:
     """
@@ -203,31 +194,30 @@ def bulk_insert_recorded_persons(
     if not persons:
         return
 
-    with conn.cursor() as cur:
-        values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        values_clause = ", ".join([values_template] * len(persons))
+    values_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    values_clause = ", ".join([values_template] * len(persons))
 
-        values = []
-        for p in persons:
-            values.extend([
-                p["recorded_person_id"], p["record_id"], p["name_as_recorded"],
-                p["role"], p["age_as_recorded"], p["age"], p["sex_as_recorded"],
-                p["occupation_as_recorded"], p["place_as_recorded"], p["notes"]
-            ])
+    values = []
+    for p in persons:
+        values.extend([
+            p["recorded_person_id"], p["record_id"], p["name_as_recorded"],
+            p["role"], p["age_as_recorded"], p["age"], p["sex_as_recorded"],
+            p["occupation_as_recorded"], p["place_as_recorded"], p["notes"]
+        ])
 
-        cur.execute(
-            f"INSERT INTO recorded_person "
-            f"(recorded_person_id, record_id, name_as_recorded, role, "
-            f" age_as_recorded, age, sex_as_recorded, occupation_as_recorded, "
-            f" place_as_recorded, notes) "
-            f"OVERRIDING SYSTEM VALUE "
-            f"VALUES {values_clause}",
-            values
-        )
+    repo.execute(
+        f"INSERT INTO recorded_person "
+        f"(recorded_person_id, record_id, name_as_recorded, role, "
+        f" age_as_recorded, age, sex_as_recorded, occupation_as_recorded, "
+        f" place_as_recorded, notes) "
+        f"OVERRIDING SYSTEM VALUE "
+        f"VALUES {values_clause}",
+        values
+    )
 
 
 def get_recorded_persons_for_record(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     record_id: int,
 ) -> list[dict]:
     """
@@ -238,14 +228,12 @@ def get_recorded_persons_for_record(
               age_as_recorded, age, sex_as_recorded,
               occupation_as_recorded, place_as_recorded, notes
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT recorded_person_id, record_id, name_as_recorded, role, "
-            "       age_as_recorded, age, sex_as_recorded, "
-            "       occupation_as_recorded, place_as_recorded, notes "
-            "FROM recorded_person "
-            "WHERE record_id = %s "
-            "ORDER BY recorded_person_id",
-            (record_id,),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        "SELECT recorded_person_id, record_id, name_as_recorded, role, "
+        "       age_as_recorded, age, sex_as_recorded, "
+        "       occupation_as_recorded, place_as_recorded, notes "
+        "FROM recorded_person "
+        "WHERE record_id = %s "
+        "ORDER BY recorded_person_id",
+        (record_id,),
+    )

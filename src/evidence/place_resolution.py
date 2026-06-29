@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-import psycopg2.extensions
+from src.db.repository import Repository
 from rapidfuzz.distance import JaroWinkler
 
 SCORE_VERSION = "place_v2.0"
@@ -110,16 +110,14 @@ class PlaceResolutionResult:
 # Core algorithm
 # ---------------------------------------------------------------------------
 
-def _load_authorities(conn: psycopg2.extensions.connection) -> list[dict]:
+def _load_authorities(repo: Repository) -> list[dict]:
     """
     Load all place_authority rows. For each row build a list of normalised
     name strings to match against: name_en is always included; any
     non-empty barony_name, civil_parish_name, ded_name are not used as
     match candidates (they are parent names, not this place's name).
     """
-    with conn.cursor() as cur:
-        cur.execute("SELECT place_id, name_en, place_type FROM place_authority")
-        rows = cur.fetchall()
+    rows = repo.fetch_all("SELECT place_id, name_en, place_type FROM place_authority")
 
     authorities = []
     for row in rows:
@@ -134,25 +132,23 @@ def _load_authorities(conn: psycopg2.extensions.connection) -> list[dict]:
 
 
 def _collect_evidence_tokens(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> tuple[dict[str, dict], int]:
     """
     Collect all distinct place_as_recorded strings from record,
     grouped by normalised token.
     Returns (token_map, blank_count).
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT record_id, place_as_recorded FROM record "
-            "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        "SELECT record_id, place_as_recorded FROM record "
+        "WHERE place_as_recorded IS NOT NULL AND trim(place_as_recorded) != ''"
+    )
 
-        cur.execute(
-            "SELECT COUNT(*) AS count FROM record "
-            "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
-        )
-        blank_count = cur.fetchone()["count"]
+    blank_count_row = repo.fetch_one(
+        "SELECT COUNT(*) AS count FROM record "
+        "WHERE place_as_recorded IS NULL OR trim(place_as_recorded) = ''"
+    )
+    blank_count = blank_count_row["count"]
 
     token_map: dict[str, dict] = {}
     for row in rows:
@@ -192,7 +188,7 @@ def _best_match(
 # Entry point
 # ---------------------------------------------------------------------------
 
-def run_place_resolution(conn: psycopg2.extensions.connection) -> PlaceResolutionResult:
+def run_place_resolution(repo: Repository) -> PlaceResolutionResult:
     """
     Match all unresolved place_as_recorded strings in the evidence layer
     against place_authority. Commits matched linkages to place_record.
@@ -203,9 +199,8 @@ def run_place_resolution(conn: psycopg2.extensions.connection) -> PlaceResolutio
     """
     result = PlaceResolutionResult()
 
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) AS count FROM place_authority")
-        authority_count = cur.fetchone()["count"]
+    authority_count_row = repo.fetch_one("SELECT COUNT(*) AS count FROM place_authority")
+    authority_count = authority_count_row["count"]
     if authority_count == 0:
         print(
             "  Place resolution: place_authority is empty.\n"
@@ -213,17 +208,16 @@ def run_place_resolution(conn: psycopg2.extensions.connection) -> PlaceResolutio
         )
         return result
 
-    authorities = _load_authorities(conn)
-    token_map, blank_count = _collect_evidence_tokens(conn)
+    authorities = _load_authorities(repo)
+    token_map, blank_count = _collect_evidence_tokens(repo)
     result.skipped_blank = blank_count
 
     if not token_map:
         print("  Place resolution: no place strings found in evidence layer.")
         return result
 
-    with conn.cursor() as cur:
-        cur.execute("SELECT record_id FROM place_record")
-        already_linked: set[int] = {row["record_id"] for row in cur.fetchall()}
+    already_linked_rows = repo.fetch_all("SELECT record_id FROM place_record")
+    already_linked: set[int] = {row["record_id"] for row in already_linked_rows}
 
     matches: list[PlaceMatch] = []
     unresolved: list[UnresolvedPlace] = []
@@ -253,21 +247,19 @@ def run_place_resolution(conn: psycopg2.extensions.connection) -> PlaceResolutio
                 best_score=score,
             ))
 
-    with conn:
-        with conn.cursor() as cur:
-            for match in matches:
-                for record_id in match.record_ids:
-                    if record_id in already_linked:
-                        result.records_already_linked += 1
-                        continue
-                    cur.execute(
-                        "INSERT INTO place_record "
-                        "(place_id, record_id, score, score_version, verified) "
-                        "VALUES (%s, %s, %s, %s, 0)",
-                        (match.place_id, record_id, match.score, SCORE_VERSION),
-                    )
-                already_linked.add(record_id)
-                result.records_linked += 1
+    for match in matches:
+        for record_id in match.record_ids:
+            if record_id in already_linked:
+                result.records_already_linked += 1
+                continue
+            repo.execute(
+                "INSERT INTO place_record "
+                "(place_id, record_id, score, score_version, verified) "
+                "VALUES (%s, %s, %s, %s, 0)",
+                (match.place_id, record_id, match.score, SCORE_VERSION),
+            )
+        already_linked.add(record_id)
+        result.records_linked += 1
 
     result.matched = matches
     result.unresolved = unresolved

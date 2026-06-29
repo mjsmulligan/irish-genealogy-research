@@ -34,8 +34,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import psycopg2.extensions
-
+from src.db.repository import Repository
 from src.constants import SCORE_VERSION_HOUSEHOLD_EXTENSION
 from src.conclusion.household_utils import (
     get_household_members,
@@ -72,7 +71,7 @@ def _get_unlinked_members(members: list[dict]) -> list[dict]:
 
 
 def _get_rr_to_anchor(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     unlinked_rp_id: int,
     anchor_person_ids: set[int],
 ) -> dict | None:
@@ -83,25 +82,23 @@ def _get_rr_to_anchor(
     Returns the first matching RecordedRelationship row (with score), or None
     if no path exists.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT rr.recorded_relationship_id, rr.type, rr.score
-            FROM recorded_relationship rr
-            JOIN person_recorded_person prp
-                ON prp.recorded_person_id IN (rr.recorded_person_id_1, rr.recorded_person_id_2)
-            WHERE
-                (rr.recorded_person_id_1 = %s OR rr.recorded_person_id_2 = %s)
-                AND prp.person_id = ANY(%s)
-            LIMIT 1
-            """,
-            (unlinked_rp_id, unlinked_rp_id, list(anchor_person_ids)),
-        )
-        return cur.fetchone()
+    return repo.fetch_one(
+        """
+        SELECT rr.recorded_relationship_id, rr.type, rr.score
+        FROM recorded_relationship rr
+        JOIN person_recorded_person prp
+            ON prp.recorded_person_id IN (rr.recorded_person_id_1, rr.recorded_person_id_2)
+        WHERE
+            (rr.recorded_person_id_1 = %s OR rr.recorded_person_id_2 = %s)
+            AND prp.person_id = ANY(%s)
+        LIMIT 1
+        """,
+        (unlinked_rp_id, unlinked_rp_id, list(anchor_person_ids)),
+    )
 
 
 def _create_person_for_recorded_person(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     rp: dict,
     score: float,
 ) -> int:
@@ -124,26 +121,24 @@ def _create_person_for_recorded_person(
         gender = "male" if sex.upper() == "M" else "female"
 
     # Build label from name + place (fetched from parent Record)
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT place_as_recorded FROM record
-            WHERE record_id = (
-                SELECT record_id FROM recorded_person
-                WHERE recorded_person_id = %s
-            )
-            """,
-            (rp["recorded_person_id"],),
+    place_row = repo.fetch_one(
+        """
+        SELECT place_as_recorded FROM record
+        WHERE record_id = (
+            SELECT record_id FROM recorded_person
+            WHERE recorded_person_id = %s
         )
-        place_row = cur.fetchone()
-        place = place_row["place_as_recorded"] if place_row else "Unknown"
+        """,
+        (rp["recorded_person_id"],),
+    )
+    place = place_row["place_as_recorded"] if place_row else "Unknown"
 
     label = f"{name} ({place})"
 
-    person_id = create_person(conn, label=label, gender=gender)
+    person_id = create_person(repo, label=label, gender=gender)
 
     link_person_to_recorded_person(
-        conn,
+        repo,
         person_id=person_id,
         recorded_person_id=rp["recorded_person_id"],
         score=score,
@@ -159,7 +154,7 @@ def _create_person_for_recorded_person(
 # ---------------------------------------------------------------------------
 
 def run_household_resolution(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> HouseholdResolutionResult:
     """
     Run Household Resolution: for each Record that has at least one anchored
@@ -181,29 +176,28 @@ def run_household_resolution(
 
     # Find Records with a mix of anchored and unlinked RecordedPersons.
     # Uses two subqueries to avoid fetching all Records.
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT DISTINCT rp.record_id
-            FROM recorded_person rp
-            WHERE EXISTS (
-                SELECT 1 FROM person_recorded_person prp
-                WHERE prp.recorded_person_id = rp.recorded_person_id
-            )
-            AND EXISTS (
-                SELECT 1 FROM recorded_person rp2
-                LEFT JOIN person_recorded_person prp2
-                    ON prp2.recorded_person_id = rp2.recorded_person_id
-                WHERE rp2.record_id = rp.record_id
-                  AND prp2.person_id IS NULL
-            )
-            ORDER BY rp.record_id
-            """
+    candidate_record_rows = repo.fetch_all(
+        """
+        SELECT DISTINCT rp.record_id
+        FROM recorded_person rp
+        WHERE EXISTS (
+            SELECT 1 FROM person_recorded_person prp
+            WHERE prp.recorded_person_id = rp.recorded_person_id
         )
-        candidate_record_ids = [row["record_id"] for row in cur.fetchall()]
+        AND EXISTS (
+            SELECT 1 FROM recorded_person rp2
+            LEFT JOIN person_recorded_person prp2
+                ON prp2.recorded_person_id = rp2.recorded_person_id
+            WHERE rp2.record_id = rp.record_id
+              AND prp2.person_id IS NULL
+        )
+        ORDER BY rp.record_id
+        """
+    )
+    candidate_record_ids = [row["record_id"] for row in candidate_record_rows]
 
     for record_id in candidate_record_ids:
-        members = get_household_members(conn, record_id)
+        members = get_household_members(repo, record_id)
         anchor_person_ids = _get_anchored_person_ids(members)
         unlinked = _get_unlinked_members(members)
 
@@ -215,33 +209,32 @@ def run_household_resolution(
 
         newly_created_this_record = 0
 
-        with conn:
-            for rp in unlinked:
-                rr_row = _get_rr_to_anchor(conn, rp["recorded_person_id"], anchor_person_ids)
+        for rp in unlinked:
+            rr_row = _get_rr_to_anchor(repo, rp["recorded_person_id"], anchor_person_ids)
 
-                if rr_row is None:
-                    result.skipped_no_rr += 1
-                    continue
+            if rr_row is None:
+                result.skipped_no_rr += 1
+                continue
 
-                # Inherit the RecordedRelationship prior score; fall back to
-                # a conservative 0.75 if the score is somehow null.
-                score = rr_row["score"] if rr_row["score"] is not None else 0.75
+            # Inherit the RecordedRelationship prior score; fall back to
+            # a conservative 0.75 if the score is somehow null.
+            score = rr_row["score"] if rr_row["score"] is not None else 0.75
 
-                person_id = _create_person_for_recorded_person(conn, rp, score)
+            person_id = _create_person_for_recorded_person(repo, rp, score)
 
-                # Add to anchor set so subsequent siblings in the same loop
-                # can use this new Person as an anchor for one another.
-                anchor_person_ids.add(person_id)
+            # Add to anchor set so subsequent siblings in the same loop
+            # can use this new Person as an anchor for one another.
+            anchor_person_ids.add(person_id)
 
-                result.persons_created += 1
-                result.linkages_created += 1
-                newly_created_this_record += 1
+            result.persons_created += 1
+            result.linkages_created += 1
+            newly_created_this_record += 1
 
-            if newly_created_this_record > 0:
-                # Re-fetch so relationship creation sees the full updated household
-                members_fresh = get_household_members(conn, record_id)
-                rels_created = create_relationships_from_household(conn, members_fresh)
-                result.relationships_created += rels_created
+        if newly_created_this_record > 0:
+            # Re-fetch so relationship creation sees the full updated household
+            members_fresh = get_household_members(repo, record_id)
+            rels_created = create_relationships_from_household(repo, members_fresh)
+            result.relationships_created += rels_created
 
     return result
 

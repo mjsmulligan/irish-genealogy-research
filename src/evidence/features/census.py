@@ -29,9 +29,9 @@ from __future__ import annotations
 from collections import Counter
 
 import pandas as pd
-import psycopg2.extensions
 
 from src.constants import CENSUS_SOURCE_IDS, CHILD_DEPARTURE_AGE
+from src.db.repository import Repository
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +191,7 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
 # ---------------------------------------------------------------------------
 
 def build_census_household_features(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
 ) -> list[pd.DataFrame]:
     """
     Build one Pandas DataFrame per active census source for Splink
@@ -207,19 +207,17 @@ def build_census_household_features(
 
     for source_id in CENSUS_SOURCE_IDS:
         # Fetch all Records for this source
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT r.record_id, r.source_id,
-                       pr.place_id
-                FROM record r
-                LEFT JOIN place_record pr ON pr.record_id = r.record_id
-                WHERE r.source_id = %s
-                ORDER BY r.record_id
-                """,
-                (source_id,),
-            )
-            records = cur.fetchall()
+        records = repo.fetch_all(
+            """
+            SELECT r.record_id, r.source_id,
+                   pr.place_id
+            FROM record r
+            LEFT JOIN place_record pr ON pr.record_id = r.record_id
+            WHERE r.source_id = %s
+            ORDER BY r.record_id
+            """,
+            (source_id,),
+        )
 
         if not records:
             continue
@@ -230,17 +228,15 @@ def build_census_household_features(
             place_id = rec["place_id"]
 
             # Fetch all RecordedPersons for this household
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT name_as_recorded, role, age
-                    FROM recorded_person
-                    WHERE record_id = %s
-                    ORDER BY recorded_person_id
-                    """,
-                    (record_id,),
-                )
-                members = cur.fetchall()
+            members = repo.fetch_all(
+                """
+                SELECT name_as_recorded, role, age
+                FROM recorded_person
+                WHERE record_id = %s
+                ORDER BY recorded_person_id
+                """,
+                (record_id,),
+            )
 
             rows.append(
                 _build_household_row(record_id, source_id, members, place_id)

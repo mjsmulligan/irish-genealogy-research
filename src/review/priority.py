@@ -32,7 +32,7 @@ be tuned without hunting through logic.
 
 from __future__ import annotations
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 from src.review.report import ReportItem
 
@@ -73,7 +73,7 @@ _DEFAULT_BASE_SCORE: int = _TIER_RESEARCH_PROMPT + 50  # fallback for unknown ty
 # ---------------------------------------------------------------------------
 
 def _scope_weight(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     person_id: int | None,
 ) -> float:
     """
@@ -88,19 +88,17 @@ def _scope_weight(
     if person_id is None:
         return 1.0
 
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT COUNT(DISTINCT r.source_id) AS source_count
-            FROM person_recorded_person prp
-            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-            JOIN record r ON r.record_id = rp.record_id
-            JOIN source s ON s.source_id = r.source_id
-            WHERE prp.person_id = %s AND s.type = 'census'
-            """,
-            (person_id,),
-        )
-        row = cur.fetchone()
+    row = repo.fetch_one(
+        """
+        SELECT COUNT(DISTINCT r.source_id) AS source_count
+        FROM person_recorded_person prp
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        WHERE prp.person_id = %s AND s.type = 'census'
+        """,
+        (person_id,),
+    )
 
     source_count = row["source_count"] if row else 0
     if source_count >= 3:
@@ -115,7 +113,7 @@ def _scope_weight(
 # ---------------------------------------------------------------------------
 
 def assign_priorities(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     items: list[ReportItem],
 ) -> list[ReportItem]:
     """
@@ -131,7 +129,7 @@ def assign_priorities(
     raw_scores: list[float] = []
     for item in items:
         base = _BASE_SCORE.get(item.finding_type, _DEFAULT_BASE_SCORE)
-        weight = _scope_weight(conn, item.person_id)
+        weight = _scope_weight(repo, item.person_id)
         raw_scores.append(base * weight)
 
     # Step 2: sort items by raw score ascending (lower = higher priority)

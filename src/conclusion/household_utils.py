@@ -14,8 +14,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-import psycopg2.extensions
-
+from src.db.repository import Repository
 from src.constants import SCORE_VERSION_ROLE_PAIR
 
 
@@ -24,7 +23,7 @@ from src.constants import SCORE_VERSION_ROLE_PAIR
 # ---------------------------------------------------------------------------
 
 def get_household_members(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     record_id: int,
 ) -> list[dict]:
     """
@@ -33,33 +32,31 @@ def get_household_members(
     Returns list of dicts with keys: recorded_person_id, name_as_recorded, role,
     age, sex_as_recorded, person_id (or None if orphan).
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                rp.recorded_person_id,
-                rp.name_as_recorded,
-                rp.role,
-                rp.age,
-                rp.sex_as_recorded,
-                prp.person_id
-            FROM recorded_person rp
-            LEFT JOIN person_recorded_person prp
-                ON prp.recorded_person_id = rp.recorded_person_id
-            WHERE rp.record_id = %s
-            ORDER BY
-                CASE rp.role
-                    WHEN 'head' THEN 1
-                    WHEN 'spouse' THEN 2
-                    WHEN 'son' THEN 3
-                    WHEN 'daughter' THEN 4
-                    ELSE 5
-                END,
-                rp.age DESC NULLS LAST
-            """,
-            (record_id,),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT
+            rp.recorded_person_id,
+            rp.name_as_recorded,
+            rp.role,
+            rp.age,
+            rp.sex_as_recorded,
+            prp.person_id
+        FROM recorded_person rp
+        LEFT JOIN person_recorded_person prp
+            ON prp.recorded_person_id = rp.recorded_person_id
+        WHERE rp.record_id = %s
+        ORDER BY
+            CASE rp.role
+                WHEN 'head' THEN 1
+                WHEN 'spouse' THEN 2
+                WHEN 'son' THEN 3
+                WHEN 'daughter' THEN 4
+                ELSE 5
+            END,
+            rp.age DESC NULLS LAST
+        """,
+        (record_id,),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +64,7 @@ def get_household_members(
 # ---------------------------------------------------------------------------
 
 def ensure_relationship(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     person_id_1: int,
     person_id_2: int,
     rel_type: str,
@@ -88,60 +85,55 @@ def ensure_relationship(
     from src.dal.relationship_repo import insert_relationship_recorded_relationship
 
     # Check if relationship already exists (either direction)
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT relationship_id
-            FROM relationship
-            WHERE type = %s
-              AND ((person_id_1 = %s AND person_id_2 = %s)
-                OR (person_id_1 = %s AND person_id_2 = %s))
-            """,
-            (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
-        )
-        existing = cur.fetchone()
+    existing = repo.fetch_one(
+        """
+        SELECT relationship_id
+        FROM relationship
+        WHERE type = %s
+          AND ((person_id_1 = %s AND person_id_2 = %s)
+            OR (person_id_1 = %s AND person_id_2 = %s))
+        """,
+        (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
+    )
 
     if existing:
         rel_id = existing["relationship_id"]
         created = False
     else:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO relationship (type, person_id_1, person_id_2)
-                VALUES (%s, %s, %s)
-                RETURNING relationship_id
-                """,
-                (rel_type, person_id_1, person_id_2),
-            )
-            rel_id = cur.fetchone()["relationship_id"]
+        result = repo.execute_returning(
+            """
+            INSERT INTO relationship (type, person_id_1, person_id_2)
+            VALUES (%s, %s, %s)
+            RETURNING relationship_id
+            """,
+            (rel_type, person_id_1, person_id_2),
+        )
+        rel_id = result["relationship_id"]
         created = True
 
     # Populate provenance: find RecordedRelationships of this type linking the
     # two Persons' RecordedPersons, then write to relationship_recorded_relationship.
     # ON CONFLICT DO NOTHING in the DAL function makes this idempotent.
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT rr.recorded_relationship_id, rr.score
-            FROM recorded_relationship rr
-            JOIN person_recorded_person prp1
-                ON prp1.recorded_person_id = rr.recorded_person_id_1
-            JOIN person_recorded_person prp2
-                ON prp2.recorded_person_id = rr.recorded_person_id_2
-            WHERE rr.type = %s
-              AND (
-                  (prp1.person_id = %s AND prp2.person_id = %s)
-               OR (prp1.person_id = %s AND prp2.person_id = %s)
-              )
-            """,
-            (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
-        )
-        rr_rows = cur.fetchall()
+    rr_rows = repo.fetch_all(
+        """
+        SELECT rr.recorded_relationship_id, rr.score
+        FROM recorded_relationship rr
+        JOIN person_recorded_person prp1
+            ON prp1.recorded_person_id = rr.recorded_person_id_1
+        JOIN person_recorded_person prp2
+            ON prp2.recorded_person_id = rr.recorded_person_id_2
+        WHERE rr.type = %s
+          AND (
+              (prp1.person_id = %s AND prp2.person_id = %s)
+           OR (prp1.person_id = %s AND prp2.person_id = %s)
+          )
+        """,
+        (rel_type, person_id_1, person_id_2, person_id_2, person_id_1),
+    )
 
     for rr in rr_rows:
         insert_relationship_recorded_relationship(
-            conn,
+            repo,
             relationship_id=rel_id,
             recorded_relationship_id=rr["recorded_relationship_id"],
             score=rr["score"] if rr["score"] is not None else 0.0,
@@ -152,7 +144,7 @@ def ensure_relationship(
 
 
 def create_relationships_from_household(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     household_members: list[dict],
 ) -> int:
     """
@@ -174,7 +166,7 @@ def create_relationships_from_household(
 
     # Couple
     if head and spouse and head["person_id"] != spouse["person_id"]:
-        rel_id = ensure_relationship(conn, head["person_id"], spouse["person_id"], "couple")
+        rel_id = ensure_relationship(repo, head["person_id"], spouse["person_id"], "couple")
         if rel_id:
             count += 1
 
@@ -182,11 +174,11 @@ def create_relationships_from_household(
     children = [m for m in members_with_persons if m["role"] in ("son", "daughter")]
     for child in children:
         if head and head["person_id"] != child["person_id"]:
-            rel_id = ensure_relationship(conn, head["person_id"], child["person_id"], "parent_child")
+            rel_id = ensure_relationship(repo, head["person_id"], child["person_id"], "parent_child")
             if rel_id:
                 count += 1
         if spouse and spouse["person_id"] != child["person_id"]:
-            rel_id = ensure_relationship(conn, spouse["person_id"], child["person_id"], "parent_child")
+            rel_id = ensure_relationship(repo, spouse["person_id"], child["person_id"], "parent_child")
             if rel_id:
                 count += 1
 
@@ -195,7 +187,7 @@ def create_relationships_from_household(
         for child2 in children[i + 1:]:
             if child1["person_id"] == child2["person_id"]:
                 continue
-            rel_id = ensure_relationship(conn, child1["person_id"], child2["person_id"], "sibling")
+            rel_id = ensure_relationship(repo, child1["person_id"], child2["person_id"], "sibling")
             if rel_id:
                 count += 1
 

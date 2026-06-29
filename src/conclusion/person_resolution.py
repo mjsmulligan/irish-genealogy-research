@@ -27,8 +27,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-import psycopg2.extensions
-
+from src.db.repository import Repository
 from src.constants import PERSON_RESOLUTION_THRESHOLD
 from src.genealogy import evaluate_pair, CENSUS_YEAR
 
@@ -110,7 +109,7 @@ class UnionFind:
 # ---------------------------------------------------------------------------
 
 def _generate_person_label(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     recorded_person_ids: list[int],
 ) -> str:
     """
@@ -130,17 +129,15 @@ def _generate_person_label(
 
     # Fetch all RecordedPersons in this cluster
     placeholders = ",".join(["%s"] * len(recorded_person_ids))
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT rp.name_as_recorded, r.place_as_recorded
-            FROM recorded_person rp
-            JOIN record r ON r.record_id = rp.record_id
-            WHERE rp.recorded_person_id IN ({placeholders})
-            """,
-            recorded_person_ids,
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        f"""
+        SELECT rp.name_as_recorded, r.place_as_recorded
+        FROM recorded_person rp
+        JOIN record r ON r.record_id = rp.record_id
+        WHERE rp.recorded_person_id IN ({placeholders})
+        """,
+        tuple(recorded_person_ids),
+    )
 
     if not rows:
         return "Unknown Person"
@@ -175,7 +172,7 @@ def _generate_person_label(
 # ---------------------------------------------------------------------------
 
 def _resolve_gender(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     recorded_person_ids: list[int],
 ) -> str | None:
     """
@@ -184,17 +181,16 @@ def _resolve_gender(
     Returns 'male', 'female', or None if no consensus or all NULL.
     """
     placeholders = ",".join(["%s"] * len(recorded_person_ids))
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT sex_as_recorded
-            FROM recorded_person
-            WHERE recorded_person_id IN ({placeholders})
-              AND sex_as_recorded IS NOT NULL
-            """,
-            recorded_person_ids,
-        )
-        sex_values = [row["sex_as_recorded"] for row in cur.fetchall()]
+    rows = repo.fetch_all(
+        f"""
+        SELECT sex_as_recorded
+        FROM recorded_person
+        WHERE recorded_person_id IN ({placeholders})
+          AND sex_as_recorded IS NOT NULL
+        """,
+        tuple(recorded_person_ids),
+    )
+    sex_values = [row["sex_as_recorded"] for row in rows]
 
     if not sex_values:
         return None
@@ -225,7 +221,7 @@ def _resolve_gender(
 # ---------------------------------------------------------------------------
 
 def _filter_invalid_pairs(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     pairs: list[dict],
 ) -> list[dict]:
     """
@@ -242,18 +238,16 @@ def _filter_invalid_pairs(
         rp_id_1 = pair["recorded_person_id_1"]
         rp_id_2 = pair["recorded_person_id_2"]
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT rp.age, r.source_id, rp.name_as_recorded
-                FROM recorded_person rp
-                JOIN record r ON r.record_id = rp.record_id
-                WHERE rp.recorded_person_id IN (%s, %s)
-                ORDER BY rp.recorded_person_id
-                """,
-                (rp_id_1, rp_id_2),
-            )
-            rows = cur.fetchall()
+        rows = repo.fetch_all(
+            """
+            SELECT rp.age, r.source_id, rp.name_as_recorded
+            FROM recorded_person rp
+            JOIN record r ON r.record_id = rp.record_id
+            WHERE rp.recorded_person_id IN (%s, %s)
+            ORDER BY rp.recorded_person_id
+            """,
+            (rp_id_1, rp_id_2),
+        )
 
         if len(rows) != 2:
             continue
@@ -284,7 +278,7 @@ def _filter_invalid_pairs(
 # ---------------------------------------------------------------------------
 
 def run_person_resolution(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     threshold: float = PERSON_RESOLUTION_THRESHOLD,
 ) -> PersonResolutionResult:
     """
@@ -306,36 +300,32 @@ def run_person_resolution(
     result = PersonResolutionResult(threshold=threshold)
 
     # Step 1: Fetch similarity pairs above threshold
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT recorded_person_id_1, recorded_person_id_2, score
-            FROM recorded_relationship
-            WHERE type = 'similarity'
-              AND score >= %s
-            ORDER BY score DESC
-            """,
-            (threshold,),
-        )
-        similarity_pairs = cur.fetchall()
+    similarity_pairs = repo.fetch_all(
+        """
+        SELECT recorded_person_id_1, recorded_person_id_2, score
+        FROM recorded_relationship
+        WHERE type = 'similarity'
+          AND score >= %s
+        ORDER BY score DESC
+        """,
+        (threshold,),
+    )
 
     result.similarity_pairs_used = len(similarity_pairs)
 
     if not similarity_pairs:
         # No similarities above threshold — all RecordedPersons are orphans
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) as count FROM recorded_person")
-            result.orphans_count = cur.fetchone()["count"]
+        count_row = repo.fetch_one("SELECT COUNT(*) as count FROM recorded_person")
+        result.orphans_count = count_row["count"]
         return result
 
     # Step 1b: Filter out invalid pairs (Option 2 pre-clustering validation)
-    similarity_pairs = _filter_invalid_pairs(conn, similarity_pairs)
+    similarity_pairs = _filter_invalid_pairs(repo, similarity_pairs)
 
     if not similarity_pairs:
         # All pairs filtered out by validation — all RecordedPersons are orphans
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) as count FROM recorded_person")
-            result.orphans_count = cur.fetchone()["count"]
+        count_row = repo.fetch_one("SELECT COUNT(*) as count FROM recorded_person")
+        result.orphans_count = count_row["count"]
         return result
 
     # Step 2: Build connected components
@@ -364,16 +354,15 @@ def run_person_resolution(
         member_sources: dict[int, int] = {}  # rp_id -> source_id
 
         # Get source_id for each member
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT rp.recorded_person_id, r.source_id "
-                "FROM recorded_person rp "
-                "JOIN record r ON rp.record_id = r.record_id "
-                "WHERE rp.recorded_person_id = ANY(%s)",
-                (members,),
-            )
-            for row in cur.fetchall():
-                member_sources[row["recorded_person_id"]] = row["source_id"]
+        member_source_rows = repo.fetch_all(
+            "SELECT rp.recorded_person_id, r.source_id "
+            "FROM recorded_person rp "
+            "JOIN record r ON rp.record_id = r.record_id "
+            "WHERE rp.recorded_person_id = ANY(%s)",
+            (members,),
+        )
+        for row in member_source_rows:
+            member_sources[row["recorded_person_id"]] = row["source_id"]
 
         # Keep only members that don't share source_id with any other member
         for rp_id in members:
@@ -387,30 +376,28 @@ def run_person_resolution(
             continue
 
         # Generate label and resolve gender
-        label = _generate_person_label(conn, valid_members)
-        gender = _resolve_gender(conn, valid_members)
+        label = _generate_person_label(repo, valid_members)
+        gender = _resolve_gender(repo, valid_members)
 
         # Create Person
-        with conn:
-            person_id = create_person(conn, label=label, gender=gender)
-            result.persons_created += 1
+        person_id = create_person(repo, label=label, gender=gender)
+        result.persons_created += 1
 
-            # Link all RecordedPersons to this Person
-            for rp_id in valid_members:
-                link_person_to_recorded_person(
-                    conn,
-                    person_id=person_id,
-                    recorded_person_id=rp_id,
-                    score=None,  # No score for clustering-based linkage
-                    score_version=None,
-                    verified=False,
-                )
-                result.linkages_created += 1
+        # Link all RecordedPersons to this Person
+        for rp_id in valid_members:
+            link_person_to_recorded_person(
+                repo,
+                person_id=person_id,
+                recorded_person_id=rp_id,
+                score=None,  # No score for clustering-based linkage
+                score_version=None,
+                verified=False,
+            )
+            result.linkages_created += 1
 
     # Step 4: Count orphans (RecordedPersons not in any cluster)
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) as count FROM recorded_person")
-        total_rp = cur.fetchone()["count"]
+    total_rp_row = repo.fetch_one("SELECT COUNT(*) as count FROM recorded_person")
+    total_rp = total_rp_row["count"]
 
     result.orphans_count = total_rp - result.linkages_created
 

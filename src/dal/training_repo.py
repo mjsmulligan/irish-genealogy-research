@@ -13,11 +13,11 @@ it is not the correct signal for proposal state.
 
 from __future__ import annotations
 
-import psycopg2.extensions
+from src.db.repository import Repository
 
 
 def write_proposal(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     person_id_1: int,
     person_id_2: int,
     score: float,
@@ -32,19 +32,18 @@ def write_proposal(
     ON CONFLICT DO NOTHING — duplicate proposals (same pair, different
     pipeline runs) are silently dropped.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO training_labels
-                (person_id_1, person_id_2, score, score_version, decision)
-            VALUES (%s, %s, %s, %s, 'proposed')
-            ON CONFLICT DO NOTHING
-            """,
-            (person_id_1, person_id_2, score, score_version),
-        )
+    repo.execute(
+        """
+        INSERT INTO training_labels
+            (person_id_1, person_id_2, score, score_version, decision)
+        VALUES (%s, %s, %s, %s, 'proposed')
+        ON CONFLICT DO NOTHING
+        """,
+        (person_id_1, person_id_2, score, score_version),
+    )
 
 
-def get_proposals(conn: psycopg2.extensions.connection) -> list[dict]:
+def get_proposals(repo: Repository) -> list[dict]:
     """
     Return all pending linkage proposals awaiting researcher review.
 
@@ -54,21 +53,19 @@ def get_proposals(conn: psycopg2.extensions.connection) -> list[dict]:
     Row keys: label_id, person_id_1, person_id_2, score, score_version,
               decision, note, created_at, reviewed_at
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT label_id, person_id_1, person_id_2, score, score_version,
-                   decision, note, created_at, reviewed_at
-            FROM training_labels
-            WHERE decision = 'proposed'
-            ORDER BY score DESC
-            """
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT label_id, person_id_1, person_id_2, score, score_version,
+               decision, note, created_at, reviewed_at
+        FROM training_labels
+        WHERE decision = 'proposed'
+        ORDER BY score DESC
+        """
+    )
 
 
 def delete_pair(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     canonical_id: int,
     duplicate_id: int,
 ) -> None:
@@ -77,19 +74,18 @@ def delete_pair(
     Called during _merge_persons — the merge supersedes the proposal.
     Handles both orderings of the pair.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            DELETE FROM training_labels
-            WHERE (person_id_1 = %s AND person_id_2 = %s)
-               OR (person_id_1 = %s AND person_id_2 = %s)
-            """,
-            (canonical_id, duplicate_id, duplicate_id, canonical_id),
-        )
+    repo.execute(
+        """
+        DELETE FROM training_labels
+        WHERE (person_id_1 = %s AND person_id_2 = %s)
+           OR (person_id_1 = %s AND person_id_2 = %s)
+        """,
+        (canonical_id, duplicate_id, duplicate_id, canonical_id),
+    )
 
 
 def get_stale_rows(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     duplicate_id: int,
 ) -> list[dict]:
     """
@@ -99,36 +95,33 @@ def get_stale_rows(
     Row keys: label_id, person_id_1, person_id_2, score, score_version,
               decision, note, created_at, reviewed_at
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT label_id, person_id_1, person_id_2, score, score_version,
-                   decision, note, created_at, reviewed_at
-            FROM training_labels
-            WHERE person_id_1 = %s OR person_id_2 = %s
-            """,
-            (duplicate_id, duplicate_id),
-        )
-        return cur.fetchall()
+    return repo.fetch_all(
+        """
+        SELECT label_id, person_id_1, person_id_2, score, score_version,
+               decision, note, created_at, reviewed_at
+        FROM training_labels
+        WHERE person_id_1 = %s OR person_id_2 = %s
+        """,
+        (duplicate_id, duplicate_id),
+    )
 
 
 def delete_by_ids(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     label_ids: list[int],
 ) -> None:
     """Delete training_labels rows by label_id. Used during merge repointing."""
     if not label_ids:
         return
     placeholders = ",".join(["%s"] * len(label_ids))
-    with conn.cursor() as cur:
-        cur.execute(
-            f"DELETE FROM training_labels WHERE label_id IN ({placeholders})",
-            label_ids,
-        )
+    repo.execute(
+        f"DELETE FROM training_labels WHERE label_id IN ({placeholders})",
+        label_ids,
+    )
 
 
 def reinsert_repointed(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     stale_rows: list[dict],
     canonical_id: int,
     duplicate_id: int,
@@ -141,21 +134,20 @@ def reinsert_repointed(
 
     Called after delete_by_ids() during _merge_persons.
     """
-    with conn.cursor() as cur:
-        for row in stale_rows:
-            p1 = canonical_id if row["person_id_1"] == duplicate_id else row["person_id_1"]
-            p2 = canonical_id if row["person_id_2"] == duplicate_id else row["person_id_2"]
-            lo, hi = min(p1, p2), max(p1, p2)
-            if lo == hi:
-                continue  # self-referential after substitution — drop
-            cur.execute(
-                """
-                INSERT INTO training_labels
-                    (person_id_1, person_id_2, score, score_version,
-                     decision, note, created_at, reviewed_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-                """,
-                (lo, hi, row["score"], row["score_version"],
-                 row["decision"], row["note"], row["created_at"], row["reviewed_at"]),
-            )
+    for row in stale_rows:
+        p1 = canonical_id if row["person_id_1"] == duplicate_id else row["person_id_1"]
+        p2 = canonical_id if row["person_id_2"] == duplicate_id else row["person_id_2"]
+        lo, hi = min(p1, p2), max(p1, p2)
+        if lo == hi:
+            continue  # self-referential after substitution — drop
+        repo.execute(
+            """
+            INSERT INTO training_labels
+                (person_id_1, person_id_2, score, score_version,
+                 decision, note, created_at, reviewed_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (lo, hi, row["score"], row["score_version"],
+             row["decision"], row["note"], row["created_at"], row["reviewed_at"]),
+        )

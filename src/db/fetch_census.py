@@ -27,8 +27,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-import psycopg2.extensions
 import requests
+
+from src.db.repository import Repository
 
 
 # Base URLs for census APIs
@@ -58,24 +59,21 @@ def _ensure_data_dir() -> None:
     DATA_DIR.mkdir(exist_ok=True)
 
 
-def _logainm_id_exists(conn: psycopg2.extensions.connection, logainm_id: int) -> bool:
+def _logainm_id_exists(repo: Repository, logainm_id: int) -> bool:
     """
     Check if a logainm_id already exists in place_authority.
 
     Returns:
         True if DED with logainm_id exists, False otherwise
     """
-    cur = conn.cursor()
-    cur.execute(
+    row = repo.fetch_one(
         "SELECT 1 FROM place_authority WHERE logainm_id = %s AND place_type = 'ded' LIMIT 1",
         (logainm_id,),
     )
-    exists = cur.fetchone() is not None
-    cur.close()
-    return exists
+    return row is not None
 
 
-def _get_ded_context(conn: psycopg2.extensions.connection, logainm_id: int) -> tuple[str, str]:
+def _get_ded_context(repo: Repository, logainm_id: int) -> tuple[str, str]:
     """
     Query place_authority to get county and DED names for a logainm_id.
 
@@ -85,13 +83,10 @@ def _get_ded_context(conn: psycopg2.extensions.connection, logainm_id: int) -> t
     Raises:
         ValueError: If no DED with matching logainm_id found.
     """
-    cur = conn.cursor()
-    cur.execute(
+    row = repo.fetch_one(
         "SELECT county_name, name_en, ded_name FROM place_authority WHERE logainm_id = %s AND place_type = 'ded'",
         (logainm_id,),
     )
-    row = cur.fetchone()
-    cur.close()
 
     if not row:
         raise ValueError(
@@ -233,7 +228,7 @@ def _fetch_census_year(county: str, ded: str, year: int) -> list[dict]:
 
 
 def fetch_census(
-    conn: psycopg2.extensions.connection,
+    repo: Repository,
     logainm_id: int,
     years: list[int] | None = None,
 ) -> FetchCensusResult:
@@ -244,7 +239,7 @@ def fetch_census(
     census CSV files from National Archives API.
 
     Args:
-        conn: Database connection
+        repo: Repository instance for database access
         logainm_id: Logainm ID of the DED
         years: List of census years to fetch (default: [1901, 1911, 1926])
 
@@ -259,7 +254,7 @@ def fetch_census(
 
     # Get county and DED from place_authority
     try:
-        county_name, ded_name = _get_ded_context(conn, logainm_id)
+        county_name, ded_name = _get_ded_context(repo, logainm_id)
     except ValueError as e:
         return FetchCensusResult(
             ded_name="",
