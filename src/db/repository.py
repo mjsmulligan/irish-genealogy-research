@@ -50,11 +50,14 @@ class Repository(ABC):
         pass
 
     def __enter__(self):
-        """Context manager entry (no-op)."""
+        """Context manager entry."""
         return self
 
-    def __exit__(self, *args):
-        """Context manager exit (no-op)."""
-        # Don't close on exit — let caller explicitly call .close() if needed
-        # This allows reuse of the repository within a function
-        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit: commit if no exception."""
+        if exc_type is None:
+            self.commit()
+        else:
+            self.rollback()
+        # Don't close — allows reuse of the repository within a function
+        return False
