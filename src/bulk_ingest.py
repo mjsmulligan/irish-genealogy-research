@@ -108,7 +108,7 @@ def bulk_ingest_and_add_evidence() -> None:
                     rr_totals["skipped_no_rule"] += rr.skipped_no_rule
 
             log_run(repo, PipelineRun(
-                stage='evidence',
+                stage='ingest',
                 step_name='assign_role_relationships',
                 records_processed=len(record_ids),
                 duration_ms=timer.duration_ms,
@@ -126,7 +126,7 @@ def bulk_ingest_and_add_evidence() -> None:
             with Timer('evidence', 'run_place_resolution', source_id=source_id) as timer:
                 place_result = run_place_resolution(repo)
             log_run(repo, PipelineRun(
-                stage='evidence',
+                stage='place',
                 step_name='run_place_resolution',
                 records_processed=place_result.records_linked,
                 duration_ms=timer.duration_ms,

@@ -90,7 +90,7 @@ def print_summary(repo: Repository) -> None:
     print(f"    Recorded Relationships:    {_q(repo, 'SELECT COUNT(*) FROM recorded_relationship'):>6}")
     print(f"    Record Similarities:       {_q(repo, 'SELECT COUNT(*) FROM record_similarity'):>6}")
 
-    print("\n  CENSUS COMPOSITION (3,167 total persons)")
+    print(f"\n  CENSUS COMPOSITION ({recorded_persons:,} total recorded persons)")
     census_counts = repo.fetch_all("""
         SELECT s.source_id, s.title,
                COUNT(DISTINCT rp.recorded_person_id) AS count
@@ -102,7 +102,7 @@ def print_summary(repo: Repository) -> None:
         ORDER BY s.source_id
     """)
     for row in census_counts:
-        pct = 100.0 * row['count'] / 3167 if row['count'] else 0
+        pct = 100.0 * row['count'] / recorded_persons if recorded_persons > 0 else 0
         print(f"    {row['title']:<20} {row['count']:>5} persons  ({pct:>5.1f}%)")
 
     print("\n  CONCLUSION LAYER")
