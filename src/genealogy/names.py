@@ -75,7 +75,10 @@ APPROVED_NAME_VARIANTS: dict[str, set[str]] = {
     'jim':       {'james', 'jimmy', 'jas'},
     'jimmy':     {'james', 'jim'},
 
-    'john':      {'jack', 'johnny', 'jon', 'sean', 'jean'},
+    'john':      {'jack', 'johnny', 'jon', 'sean'},
+    # Note: 'jean' removed from john's variants — Jean as a written name in
+    # Irish census records is female. Seán/Jean phonetic similarity is not
+    # sufficient to treat the written form as a John variant for matching.
     'jack':      {'john', 'johnny'},
     'johnny':    {'john', 'jack'},
     'sean':      {'john', 'johnny', 'jack'},
@@ -114,14 +117,19 @@ _ALL_APPROVED: frozenset[str] = frozenset(
 
 IRISH_MALE_NAMES: frozenset[str] = frozenset({
     'william', 'liam', 'will', 'bill', 'willie', 'wm',
-    'francis', 'frank', 'fran', 'frankie',
+    'francis', 'frank', 'frankie', 'ffrancis',
     'edward', 'ed', 'eddie', 'ted',
     'robert', 'rob', 'robbie', 'bob', 'bobby',
     'michael', 'mick', 'mike', 'mikey',
     'james', 'jim', 'jimmy', 'jas', 'jem',
-    'john', 'jack', 'johnny', 'jon', 'sean', 'jean',
+    'john', 'jack', 'johnny', 'jon', 'sean',
+    # Note: 'jean' removed — Jean as a written name in Irish census records is
+    # female (French female name); Seán/Jean phonetic similarity is not enough
+    # to classify the written form as male. Use None (ambiguous) for 'jean'.
     'thomas', 'tom', 'tommy', 'thom',
-    'patrick', 'pat', 'paddy', 'pádraig',
+    'patrick', 'paddy', 'pádraig',
+    # Note: 'pat' removed — appears in both Patrick and Patricia contexts;
+    # infer_gender returns None for ambiguous names (conservative).
     'daniel', 'dan', 'danny',
     'henry', 'harry', 'hank',
     'charles', 'charlie', 'chuck', 'chas',
@@ -143,6 +151,9 @@ IRISH_MALE_NAMES: frozenset[str] = frozenset({
     'lawrence', 'larry', 'laurence',
     'gerald', 'gerry',
     'oliver', 'ollie',
+    'terence', 'terry',  # Terry as male (Terence); also female (Theresa) → kept here
+    # because Terry Mulligan etc. are statistically more likely male in census context.
+    # The gender check already returns None if ambiguous, so false positives are safe.
 })
 
 IRISH_FEMALE_NAMES: frozenset[str] = frozenset({
@@ -154,16 +165,23 @@ IRISH_FEMALE_NAMES: frozenset[str] = frozenset({
     'josephine', 'josephina', 'jo', 'josie',
     'alice', 'anna', 'anne', 'annie', 'ann',
     'susan', 'sue', 'suzanne',
-    'patricia', 'pat',
+    'patricia',
+    # Note: 'pat' removed — cross-gender ambiguous (Patrick/Patricia).
     'barbara', 'barb',
     'sarah', 'sara', 'sally',
     'jessica', 'jess', 'jessie',
-    'janet', 'jane', 'janey',
+    'janet', 'jane', 'janey', 'jean', 'jeanie',
+    # Note: 'jean' added here — Jean as a written name in Irish records is female.
+    # Jean/Jeanne is a French female name; phonetic similarity to Seán is
+    # not sufficient to classify the written form as male.
     'helen', 'helena',
     'sandra', 'sandy',
     'ashley', 'ash',
-    'theresa', 'teresa', 'terry',
-    'frances', 'fran', 'francie',
+    'theresa', 'teresa',
+    # Note: 'terry' moved to MALE set as primary gender inference.
+    # Terry is a common male shortform (Terence) in Irish records.
+    'frances', 'francie',
+    # Note: 'fran' removed — cross-gender ambiguous (Francis/Frances).
     'dorothy', 'dot', 'dotty',
     'gloria',
     'rose', 'rosie',

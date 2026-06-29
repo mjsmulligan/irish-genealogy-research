@@ -1,12 +1,21 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*Last updated: 28 June 2026*
+*Last updated: 29 June 2026*
 
 ---
 
-## 1. Latest Update (28 June 2026)
+## 1. Latest Update (29 June 2026)
 
-`src/validation/` retired. New `src/genealogy/` module created as the materialisation of `docs/genealogical_constraints.md` — Irish name knowledge, census age tolerance rules, and pairwise constraint evaluation in one authoritative layer, callable by evidence, conclusion, and review. Seven bugs fixed in the same pass, including age tolerances that were too tight (±2 flat vs. ±3/±4 per census pair), a deletion bug that removed only one side of each flagged pair, and a `classify_forename()` flaw that made the highest Splink name-comparison tier permanently dead.
+Roadmap low-hanging-fruit pass (items 7, 14, 26, 43, 47) plus systematic foundation and evidence layer review.
+
+**Roadmap items closed:** Item 7 (stale doc footers — `database_schema.md` and `reconstruction_algorithms.md` updated); Item 14 (`place_resolution.py` sqlite3 type hints — all three fixed, psycopg2.extensions import added); Item 47 (`find_link_conflicts_resolved` removed from `run_all_findings()`). Items 26 and 43 de-scoped (design intent confirmed).
+
+**Bugs fixed in evidence/genealogy layer review:**
+
+- **B1 — `jean` in `IRISH_MALE_NAMES` (wrong):** Jean as a written name in Irish census records is female (French female name). Removed from MALE set, added to FEMALE set. Also removed `jean` from `john`\'s variant set in `APPROVED_NAME_VARIANTS` — Seán/Jean phonetic similarity does not make written Jean a John variant for Splink matching.
+- **B2 — `pat` and `fran` in both gender sets:** `infer_gender` checks MALE first, so `Pat Smith` and `Fran Kelly` always returned `'M'`. This caused false gender-flip violations for valid Patricia/Pat and Frances/Fran cross-census pairs. Both removed from both sets — ambiguous names now correctly return `None` (conservative; no false flip triggered).
+- **B3 — `constraints.py` used explicit `DictCursor` override:** Both DB-sweeping functions overrode the connection\'s default `RealDictCursor` with `DictCursor` unnecessarily. Removed the overrides; `psycopg2.extras` import cleaned up.
+- **B4 — `record_repo.py` docstring stale path:** Said `src/ingest/` (doesn\'t exist); corrected to `src/evidence/census.py`.
 
 Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
@@ -79,11 +88,11 @@ Active and open items only. Completed items are in §8 (Version History).
 |---|---|---|---|
 | 15 | **Pin floor counts in test harness.** Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` — pin after first confirmed clean run. | High | Next session |
 | 20 | **Manual ID management in DAL.** `record_repo.py`, `person_repo.py`, `relationship_repo.py`, `event_repo.py` pre-calculate `MAX(...) + 1` IDs and use `OVERRIDING SYSTEM VALUE` inserts. Migrate all writes to RETURNING throughout. | Medium | |
-| 26 | **`event_resolution.py` marriage event `date_qualifier`.** `_create_marriage_event()` passes `date_qualifier=None` when date is also None. Consider using `'estimated'` to signal inference rather than true absence. Minor consistency point. | Low | |
+| 26 | **`event_resolution.py` marriage event `date_qualifier`.** De-scoped: `NULL` is intentional — it signals true absence (census doesn't record marriage date), not inference. Module header at line 29 documents this. | Low | ✅ De-scoped |
 | 34 | **Test harness: schema v4.0 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run; (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency. Update `SCHEMA_VERSION` assertion from 32 → 40. | High | Next session |
-| 7 | **Stale schema-version footers** — audit all `docs/` files. | Low | |
-| 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5); removal deferred. | Low | |
-| 14 | **`place_resolution.py` stale type hints** — `sqlite3.Connection` at lines 99 and 181. Cosmetic only; fix when next touching that file. | Low | |
+| 7 | **Stale schema-version footers.** `database_schema.md` footer referenced `PRAGMA user_version` and v3.0; `reconstruction_algorithms.md` footer said "v3.1 target" and referenced non-existent `session_bootstrap.md`. Both corrected. | Low | ✅ Done 29 June 2026 |
+| 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5). `training_repo.py` not imported anywhere in `src/`; `cli.py` only references table name in reset/truncate lists. Requires a schema migration bump to remove. | Low | Pending migration |
+| 14 | **`place_resolution.py` stale type hints** — `sqlite3.Connection` at three locations (lines 112, 137 inline comment, 194). Added `import psycopg2.extensions`; all three corrected. | Low | ✅ Done 29 June 2026 |
 | 36 | **Parish ingest pipeline.** Implement `src/evidence/parish.py`: baptism CSV → Record + RecordedPersons (child, father, mother, sponsors) + RecordedRelationships; marriage CSV → Record + RecordedPersons (groom, bride, witnesses) + RecordedRelationships. Blocked on item 37 (data dictionary) and item 39 (transcription repo CSV output). | High (R3) | |
 | 37 | **Data dictionary update for parish records.** Add `sponsor` to RecordedPerson role vocabulary. Add `sponsor` and `witness` to RecordedRelationship type vocabulary. Document three-state transcription field convention: empty (absent), `[?]` (illegible), value (as written). | Medium (R3) | Before item 36 |
 | 38 | **`export-vocab` CLI command.** Aggregate census name/place distributions by parish and export to `{parish_id}_vocab.json` for the transcription pipeline's confidence scoring module. Blocked on vocabulary file contract — dedicated session required. See §6.2. | Medium (R3) | After vocabulary contract session |
@@ -91,11 +100,11 @@ Active and open items only. Completed items are in §8 (Version History).
 | 40 | **Test harness: household_resolution coverage.** Add tests for `src/conclusion/household_resolution.py` and `src/conclusion/household_utils.py`. Cases to cover: (a) anchor-extension creates Person for unlinked spouse/child; (b) anchor as non-head (Case B/C); (c) no RecordedRelationship to anchor — member skipped; (d) score inherited from RecordedRelationship prior; (e) idempotency (re-run adds no duplicate Persons or Relationships). Update step-counter assertions from [4/4] to [5/5]. | High | After household_resolution merged |
 | 41 | **Household contradiction validation (review layer).** After `household_resolution` is proven in production, add a validation finding that flags Relationship conclusions contradicted by intra-census household evidence — e.g. two Persons concluded as `couple` whose RecordedPersons appear in the same household as `head` and `son`. Warning-level only at v1; auto-action to be decided after first review run. | Medium | After item 40 |
 | 42 | **`validation_rules.md` → `genealogical_constraints.md` consolidation.** Two documents cover overlapping content with two numbering schemes (R-codes and GC-codes). `genealogical_constraints.md` v1.4 is the sole authority; code references GC codes only. Merge remaining `validation_rules.md` content; retire the file or reduce it to a pointer. Update `review_layer.md` §6.1 reference. | Medium | |
-| 43 | **`is_primary = 1` → `is_primary = TRUE` sweep in `findings.py`.** PostgreSQL boolean idiom; correctness risk if column type ever tightened. | Low | |
+| 43 | **`is_primary = 1` → `is_primary = TRUE` sweep in `findings.py`.** De-scoped: `event.is_primary` is `INTEGER CHECK (is_primary IN (0, 1))` — not BOOLEAN. `= 1` is the correct SQL predicate now. Revisit if column type migrates to BOOLEAN. | Low | ✅ De-scoped |
 | 44 | **Sequence check should prefer `is_primary` dates (`find_life_event_sequence_violations()`).** Currently uses `earliest_year()` across all events of a type — a non-primary event with a bad date can trigger a spurious violation. Use `_derive_birth_year()` / `_derive_death_year()` helpers instead. | Medium | |
 | 45 | **Marriage singularity (GC06) not in findings layer.** Birth (GC04) and death (GC05) have singularity findings; marriage does not. Add `find_marriage_singularity_violation()`. See `genealogical_constraints.md` GC06. | Medium | |
 | 46 | **N+1 birth/death year queries in `findings.py`.** `_derive_birth_year()` / `_derive_death_year()` issue 2–3 queries per person in per-person loops. Pre-fetch all birth/death years for active persons in a single query at `run_all_findings()` start. | High | Before Donegal-scale data |
-| 47 | **`find_link_conflicts_resolved()` is a permanent placeholder.** Always returns `[]`. Either implement (requires conclusion_log to record opinion revisions) or remove from `run_all_findings()` and taxonomy. | Low | |
+| 47 | **`find_link_conflicts_resolved()` permanent placeholder.** Removed from `run_all_findings()`. Function and taxonomy entry retained with deferred-status note for when `conclusion_log` audit trail persistence is implemented. | Low | ✅ Done 29 June 2026 |
 
 ---
 

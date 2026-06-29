@@ -18,6 +18,7 @@ lifespan_boundary_violated    GC01  Record date outside concluded lifespan
 unlinked_recorded_person       —    RecordedPerson with no Person conclusion
 single_census_appearance       —    Person appears in only one census, no death Event
 link_conflict_resolved         —    RecordedPerson's opinion revised during relationship resolution
+                                    [deferred: always returns []; blocked on conclusion_log persistence]
 
 Design notes
 ------------
@@ -1031,11 +1032,14 @@ def find_link_conflicts_resolved(
 
     Note: This is metadata audit trail, not an error. It helps researchers
     understand why their conclusion diverged from simpler step 1 clustering.
+
+    Status: DEFERRED — not called from run_all_findings() until audit trail
+    persistence is implemented (requires conclusion_log to record opinion
+    revisions). See ROADMAP item 47.
     """
-    # Query metadata table tracking opinion revisions
-    # (Currently tracked in memory only; stored for next audit session)
-    # This is a placeholder for future integration with audit trail storage.
-    # For now, return empty list until audit trail persistence is implemented.
+    # Blocked on conclusion_log storing opinion revision events.
+    # Opinion revisions are currently tracked in memory only during the
+    # relationship_resolution step and are not persisted.
     return []
 
 
@@ -1244,6 +1248,5 @@ def run_all_findings(
     items.extend(find_lifespan_boundary_violated(conn))
     items.extend(find_unlinked_recorded_persons(conn))
     items.extend(find_single_census_appearance(conn))
-    items.extend(find_link_conflicts_resolved(conn))
     items.extend(find_unlinked_in_populated_households(conn))
     return items

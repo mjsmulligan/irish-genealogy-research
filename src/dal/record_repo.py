@@ -4,7 +4,7 @@ GRA — DAL: record and recorded_person queries (evidence layer).
 All SQL touching the record and recorded_person tables lives here,
 including the ingest-time writes that populate the evidence layer.
 The evidence layer is never written by the pipeline after ingest —
-only by the insert functions below, called from src/ingest/.
+only by the insert functions below, called from src/evidence/census.py.
 """
 
 from __future__ import annotations

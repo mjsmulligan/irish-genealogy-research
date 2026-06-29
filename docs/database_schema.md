@@ -863,4 +863,4 @@ ______________________________________________________________________
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `validation_rules.md`, `reconstruction_algorithms.md`*
 
-*Document version: 3.2 — 19 June 2026. Implemented schema version (`PRAGMA user_version`): 30 (v3.0) — see §1 and §9 for what's target vs. implemented.*
+*Document version: 3.2 — 19 June 2026. Implemented schema version: 4.3 — tracked via `gra_meta` table (replaces `PRAGMA user_version` from v4.0 onward). See §1 for the version history.*
