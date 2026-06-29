@@ -4,6 +4,32 @@ Complete session history for the Genealogy Research Assistant project. Detailed 
 
 ---
 
+## 28 June 2026 — Genealogy Layer (`src/genealogy/`)
+
+Detailed file: [`session_changelog_2026-06-28b.md`](session_changelog_2026-06-28b.md)
+
+Full pipeline validation audit followed by architectural refactor. The core finding: genealogical domain knowledge had no authoritative home — it was duplicated across three modules with inconsistent tolerances, partially bypassed, and mixed with pipeline orchestration logic.
+
+**Decision:** `src/validation/` retired. New `src/genealogy/` module created as the materialisation of `docs/genealogical_constraints.md`. Three sub-modules: `names.py` (Irish name variant and gender dictionaries), `ages.py` (census age tolerance rules), `constraints.py` (pairwise evaluation, DB sweeps, deletion). Single public interface via `__init__.py`.
+
+**Bugs fixed in the same pass:**
+
+- **Age tolerance** (B1): flat ±2 years replaced by per-pair tolerances from `CENSUS_AGE_TOLERANCE` dict (1901↔1911: ±3, 1911↔1926: ±3, 1901↔1926: ±4). Was a material contributor to false negatives pushing `PERSON_RESOLUTION_THRESHOLD` to 0.45.
+- **Deletion only one side of flagged pair** (B2): `recorded_person_id_2` was always a copy of `recorded_person_id_1` in the flagged pair dict. `remove_flagged_linkages()` now deletes both linkages per pair.
+- **`classify_forename()` never returned `'exact'`** (B3): the highest Splink comparison tier (`name_first_name_variant = 'exact'`) was permanently dead. Fixed — canonical names (dict keys) now return `'exact'`, aliases return `'approved'`.
+- **`household_same_census_errors` always zero** (B4): field declared but never assigned. Stale field removed; `check_household_coherence()` returns distinct counts.
+- **Inline `{3: 1901, 4: 1911, 5: 1926}` dict** (B5): appeared in five files independently. All replaced by `CENSUS_YEAR` from `src/genealogy/ages.py`.
+- **Deferred import in `relationship_resolution.py`** (B6): `from src.validation import validate_age_progression` inside function body replaced by top-level import from `src.genealogy`.
+- **Duplicate `william` key in `APPROVED_NAME_VARIANTS`** (B7): second entry silently overwrote first, losing three variant aliases.
+
+**Six callers updated:** `census_person.py`, `similarity.py`, `person_resolution.py`, `relationship_resolution.py`, `validation_cleanup.py`, `cli.py`.
+
+**`validate-linkages` CLI output** updated: heading renamed to "GENEALOGICAL CONSTRAINT REPORT"; gender flips now shown as a distinct violation count.
+
+**ROADMAP items added:** 42 (`validation_rules.md` consolidation into `genealogical_constraints.md`), 43 (`is_primary = TRUE` sweep in `findings.py`), 44 (sequence check prefer `is_primary` dates), 45 (marriage singularity finding GC3.3), 46 (N+1 query fix in `findings.py`), 47 (`find_link_conflicts_resolved` placeholder — implement or remove).
+
+---
+
 ## 28 June 2026 — Household Resolution (New Conclusion Pipeline Step)
 
 Detailed file: [`session_changelog_2026-06-28.md`](session_changelog_2026-06-28.md)

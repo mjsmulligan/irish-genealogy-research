@@ -187,7 +187,7 @@ def _build_settings() -> SettingsCreator:
 # Source-pair label helper
 # ---------------------------------------------------------------------------
 
-_CENSUS_YEAR: dict[int, int] = {3: 1901, 4: 1911, 5: 1926}
+from src.genealogy import CENSUS_YEAR as _CENSUS_YEAR
 
 
 def _pair_label(source_id_l: int, source_id_r: int) -> str:
