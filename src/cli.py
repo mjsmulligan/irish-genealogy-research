@@ -31,6 +31,8 @@ Commands:
                         and household coherence errors. Flags problematic linkages.
     sync-to-cloud       Dump local database and restore to Supabase. One-way sync
                         from local (primary) to cloud (backup).
+    bulk-ingest         Ingest and add evidence for all CSV files in /data folder.
+                        Runs full 5-step evidence pipeline on each CSV.
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -231,7 +233,7 @@ def _cmd_clear_evidence(args: argparse.Namespace) -> None:
 
     print("Clearing evidence + conclusion layers (place_authority preserved)...")
     for table in tables:
-        repo.execute(f"DELETE FROM {table}")
+        repo.execute(f"TRUNCATE TABLE {table} CASCADE")
         print(f"  cleared: {table}")
     repo.commit()
 
@@ -786,6 +788,12 @@ def _cmd_validate_linkages(args: argparse.Namespace) -> None:
         repo.close()
 
 
+def _cmd_bulk_ingest(args: argparse.Namespace) -> None:
+    """Ingest and add evidence for all CSV files in /data folder."""
+    from src.bulk_ingest import bulk_ingest_and_add_evidence
+    bulk_ingest_and_add_evidence()
+
+
 # ---------------------------------------------------------------------------
 # Argparse + dispatch
 # ---------------------------------------------------------------------------
@@ -907,6 +915,11 @@ def main() -> None:
         help="Dump local database and restore to Supabase (one-way backup)",
     )
 
+    sub.add_parser(
+        "bulk-ingest",
+        help="Ingest and add evidence for all CSV files in /data folder",
+    )
+
     dispatch = {
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
@@ -923,6 +936,7 @@ def main() -> None:
         "export-validation": _cmd_export_validation,
         "validate-linkages": _cmd_validate_linkages,
         "sync-to-cloud":     _cmd_sync_to_cloud,
+        "bulk-ingest":       _cmd_bulk_ingest,
     }
 
     args = parser.parse_args()
