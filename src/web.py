@@ -382,6 +382,10 @@ def audit_log():
             grouped[group_id] = []
         grouped[group_id].append(log)
 
+    # Sort logs within each group by created_at (ascending) to preserve creation order
+    for group_id in grouped:
+        grouped[group_id].sort(key=lambda x: x['created_at'])
+
     # Limit to first 20 groups
     grouped_limited = dict(list(grouped.items())[:20])
 
