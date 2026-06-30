@@ -33,6 +33,7 @@ Entry point:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import uuid
 
 from src.db.repository import Repository
 from src.constants import SCORE_VERSION_HOUSEHOLD_EXTENSION
@@ -40,6 +41,7 @@ from src.conclusion.household_utils import (
     get_household_members,
     create_relationships_from_household,
 )
+from src.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +103,7 @@ def _create_person_for_recorded_person(
     repo: Repository,
     rp: dict,
     score: float,
+    change_group_id: str = "",
 ) -> int:
     """
     Create a Person conclusion for an unlinked RecordedPerson and link them.
@@ -137,6 +140,16 @@ def _create_person_for_recorded_person(
 
     person_id = create_person(repo, label=label, gender=gender)
 
+    # Log person creation
+    AuditLog.log_create(
+        repo,
+        entity_type="person",
+        entity_id=person_id,
+        values={"label": label, "gender": gender or "unknown", "status": "active"},
+        reason="Created via household resolution (anchor extension)",
+        change_group_id=change_group_id,
+    )
+
     link_person_to_recorded_person(
         repo,
         person_id=person_id,
@@ -144,6 +157,16 @@ def _create_person_for_recorded_person(
         score=score,
         score_version=SCORE_VERSION_HOUSEHOLD_EXTENSION,
         verified=False,
+    )
+
+    # Log the linkage
+    AuditLog.log_create(
+        repo,
+        entity_type="person_recorded_person",
+        entity_id=person_id,
+        values={"recorded_person_id": rp["recorded_person_id"]},
+        reason="Linked via household resolution",
+        change_group_id=change_group_id,
     )
 
     return person_id
@@ -173,6 +196,7 @@ def run_household_resolution(
     Returns HouseholdResolutionResult with counts.
     """
     result = HouseholdResolutionResult()
+    run_change_group_id = str(uuid.uuid4())
 
     # Find Records with a mix of anchored and unlinked RecordedPersons.
     # Uses two subqueries to avoid fetching all Records.
@@ -220,7 +244,7 @@ def run_household_resolution(
             # a conservative 0.75 if the score is somehow null.
             score = rr_row["score"] if rr_row["score"] is not None else 0.75
 
-            person_id = _create_person_for_recorded_person(repo, rp, score)
+            person_id = _create_person_for_recorded_person(repo, rp, score, run_change_group_id)
 
             # Add to anchor set so subsequent siblings in the same loop
             # can use this new Person as an anchor for one another.
@@ -233,7 +257,7 @@ def run_household_resolution(
         if newly_created_this_record > 0:
             # Re-fetch so relationship creation sees the full updated household
             members_fresh = get_household_members(repo, record_id)
-            rels_created = create_relationships_from_household(repo, members_fresh)
+            rels_created = create_relationships_from_household(repo, members_fresh, run_change_group_id)
             result.relationships_created += rels_created
 
     return result

@@ -29,6 +29,7 @@ Entry point:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import uuid
 
 from src.db.repository import Repository
 from rapidfuzz.distance import JaroWinkler
@@ -40,6 +41,7 @@ from src.conclusion.household_utils import (
     create_relationships_from_household,
 )
 from src.genealogy import evaluate_age_progression, CENSUS_YEAR
+from src.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +194,7 @@ def _get_or_create_person_for_pair(
     repo: Repository,
     rp1: dict,
     rp2: dict,
+    change_group_id: str = "",
 ) -> tuple[int, bool]:
     """
     Get existing Person for this pair, or create new one.
@@ -240,6 +243,17 @@ def _get_or_create_person_for_pair(
         gender = "male" if sex2.upper() == "M" else "female"
 
     person_id = create_person(repo, label=label, gender=gender)
+
+    # Log person creation
+    AuditLog.log_create(
+        repo,
+        entity_type="person",
+        entity_id=person_id,
+        values={"label": label, "gender": gender or "unknown", "status": "active"},
+        reason="Created via relationship resolution from household matching",
+        change_group_id=change_group_id,
+    )
+
     return (person_id, True)
 
 
@@ -268,6 +282,7 @@ def _link_recorded_person_to_person(
     person_id: int,
     recorded_person_id: int,
     force_overwrite: bool = False,
+    change_group_id: str = "",
 ) -> tuple[str, LinkConflict | None]:
     """
     Link a RecordedPerson to a Person, resolving conflicts by choosing the strongest link.
@@ -353,6 +368,15 @@ def _link_recorded_person_to_person(
             score_version=None,
             verified=False,
         )
+        # Log the linkage
+        AuditLog.log_create(
+            repo,
+            entity_type="person_recorded_person",
+            entity_id=person_id,
+            values={"recorded_person_id": recorded_person_id},
+            reason="Linked via relationship resolution",
+            change_group_id=change_group_id,
+        )
         return "linked", None
 
     existing_person_id, existing_score = existing
@@ -386,6 +410,17 @@ def _link_recorded_person_to_person(
             score=None,
             score_version=None,
             verified=False,
+        )
+        # Log the replacement linkage
+        AuditLog.log_update(
+            repo,
+            entity_type="person_recorded_person",
+            entity_id=person_id,
+            field_name="recorded_person_id",
+            old_value=str(existing_person_id),
+            new_value=str(recorded_person_id),
+            reason=f"Conflict resolved: overridden from person {existing_person_id}",
+            change_group_id=change_group_id,
         )
         return "conflict_resolved", conflict_record
     else:
@@ -489,6 +524,7 @@ def run_relationship_resolution(
     Returns RelationshipResolutionResult with counts and merge candidates.
     """
     result = RelationshipResolutionResult()
+    run_change_group_id = str(uuid.uuid4())
 
     # Step 1: Fetch high-similarity household pairs with their record dates
     household_pairs = repo.fetch_all(
@@ -545,7 +581,7 @@ def run_relationship_resolution(
         # Process matches
         for rp1, rp2 in matches:
             # Get or create Person
-            person_id, was_created = _get_or_create_person_for_pair(repo, rp1, rp2)
+            person_id, was_created = _get_or_create_person_for_pair(repo, rp1, rp2, run_change_group_id)
 
             if was_created:
                 result.persons_created += 1
@@ -554,8 +590,8 @@ def run_relationship_resolution(
 
             # Link both RecordedPersons to Person
             # With conflict resolution: if already linked elsewhere, keep existing (conservative)
-            status1, conflict1 = _link_recorded_person_to_person(repo, person_id, rp1["recorded_person_id"])
-            status2, conflict2 = _link_recorded_person_to_person(repo, person_id, rp2["recorded_person_id"])
+            status1, conflict1 = _link_recorded_person_to_person(repo, person_id, rp1["recorded_person_id"], run_change_group_id)
+            status2, conflict2 = _link_recorded_person_to_person(repo, person_id, rp2["recorded_person_id"], run_change_group_id)
 
             if status1 == "linked":
                 result.linkages_created += 1
@@ -585,8 +621,8 @@ def run_relationship_resolution(
 
         # Create Relationships from household structure (item 24: provenance
         # is populated inside ensure_relationship)
-        rels_created = create_relationships_from_household(repo, h1_members_fresh)
-        rels_created += create_relationships_from_household(repo, h2_members_fresh)
+        rels_created = create_relationships_from_household(repo, h1_members_fresh, run_change_group_id)
+        rels_created += create_relationships_from_household(repo, h2_members_fresh, run_change_group_id)
         result.relationships_created += rels_created
 
         result.households_processed += 1
