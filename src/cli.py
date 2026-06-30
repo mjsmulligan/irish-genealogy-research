@@ -9,6 +9,9 @@ Commands:
     init                Initialise a new Supabase database (schema + seed data)
     clear-evidence      Wipe evidence + conclusions, preserving place_authority
     clear-conclusions   Wipe conclusion layer only (person, relationship, event)
+    restart-scoring     Clear similarity scores + conclusions, rerun from scoring
+                        step. Preserves ingested records. Allows testing algo
+                        improvements without re-ingesting data.
     add-evidence        Run full evidence pipeline (5 steps): ingest CSV + role
                         relationships + place resolution + record similarity +
                         person similarity
@@ -271,6 +274,170 @@ def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
     repo.commit()
 
     print("\nReady to re-run conclude.\n")
+    repo.close()
+
+
+def _cmd_restart_scoring(args: argparse.Namespace) -> None:
+    """
+    Restart the pipeline from the scoring step.
+
+    Clears similarity scores and conclusions, but preserves ingested evidence
+    (records, recorded_persons, recorded_relationships). Allows re-running the
+    scoring algorithm (record similarity, person similarity, and all conclusion
+    steps) without re-ingesting census data.
+
+    Useful for testing algorithm improvements (e.g., forename normalization)
+    and seeing audit logs as persons are re-created.
+
+    Steps cleared:
+      - recorded_relationship (similarity links only)
+      - person, relationships, events (conclusions)
+      - conclusion_log (audit entries)
+    """
+    repo = open_db()
+    check_version(repo)
+
+    print("\nClearing similarity scores and conclusions (ingested records preserved)...")
+
+    # Clear similarity-type relationships (keep role relationships)
+    repo.execute("DELETE FROM recorded_relationship WHERE type = 'similarity'")
+    print("  cleared: recorded_relationship (similarity type only)")
+
+    # Clear conclusion layer
+    conclusion_tables = [
+        "training_labels",
+        "relationship_recorded_relationship",
+        "person_recorded_person",
+        "event_record",
+        "person_event",
+        "event",
+        "relationship",
+        "person",
+        "person_name",
+        "conclusion_log",
+    ]
+    for table in conclusion_tables:
+        repo.execute(f"DELETE FROM {table}")
+        print(f"  cleared: {table}")
+
+    repo.commit()
+
+    print("\nRunning scoring and conclusion pipeline from scratch...\n")
+
+    # Run the full scoring + conclusion pipeline
+    from src.evidence.similarity import (
+        run_record_similarity,
+        print_record_similarity_report,
+        run_person_similarity,
+        print_person_similarity_report,
+    )
+    from src.conclusion.person_resolution import (
+        run_person_resolution,
+        print_person_resolution_report,
+    )
+    from src.conclusion.relationship_resolution import (
+        run_relationship_resolution,
+        print_relationship_resolution_report,
+    )
+    from src.conclusion.household_resolution import (
+        run_household_resolution,
+        print_household_resolution_report,
+    )
+    from src.conclusion.event_resolution import (
+        run_event_resolution,
+        print_event_resolution_report,
+    )
+    from src.conclusion.validation_cleanup import (
+        run_validation_cleanup,
+        print_validation_cleanup_report,
+    )
+    from src.metrics import Timer, PipelineRun, log_run
+
+    print("[1/8] Record similarity...")
+    with Timer('evidence', 'run_record_similarity') as timer:
+        record_sim_result = run_record_similarity(repo)
+    log_run(repo, PipelineRun(
+        stage='evidence',
+        step_name='run_record_similarity',
+        records_processed=record_sim_result.records_compared,
+        duration_ms=timer.duration_ms,
+    ))
+    print_record_similarity_report(record_sim_result)
+
+    print("\n[2/8] Person similarity...")
+    with Timer('evidence', 'run_person_similarity') as timer:
+        person_sim_result = run_person_similarity(repo)
+    log_run(repo, PipelineRun(
+        stage='evidence',
+        step_name='run_person_similarity',
+        records_processed=person_sim_result.persons_compared,
+        duration_ms=timer.duration_ms,
+    ))
+    print_person_similarity_report(person_sim_result)
+
+    print("\n[3/8] Person resolution...")
+    with Timer('conclusion', 'run_person_resolution') as timer:
+        person_result = run_person_resolution(repo)
+    log_run(repo, PipelineRun(
+        stage='conclusion',
+        step_name='run_person_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print_person_resolution_report(person_result)
+
+    print("\n[4/8] Relationship resolution...")
+    with Timer('conclusion', 'run_relationship_resolution') as timer:
+        rel_result = run_relationship_resolution(repo)
+    log_run(repo, PipelineRun(
+        stage='conclusion',
+        step_name='run_relationship_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print_relationship_resolution_report(rel_result)
+
+    if rel_result.merge_candidates:
+        print(f"\n  NOTE: {len(rel_result.merge_candidates)} merge candidate(s) detected.")
+        print("  Review and resolve manually before re-running.")
+
+    print("\n[5/8] Household resolution...")
+    with Timer('conclusion', 'run_household_resolution') as timer:
+        household_result = run_household_resolution(repo)
+    log_run(repo, PipelineRun(
+        stage='conclusion',
+        step_name='run_household_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print_household_resolution_report(household_result)
+
+    print("\n[6/8] Event resolution...")
+    with Timer('conclusion', 'run_event_resolution') as timer:
+        event_result = run_event_resolution(repo)
+    log_run(repo, PipelineRun(
+        stage='conclusion',
+        step_name='run_event_resolution',
+        records_processed=None,
+        duration_ms=timer.duration_ms,
+    ))
+    print_event_resolution_report(event_result)
+
+    if args.skip_validation:
+        print("\n[7/8] Validation cleanup... SKIPPED (--skip-validation)")
+    else:
+        print("\n[7/8] Validation cleanup...")
+        with Timer('conclusion', 'run_validation_cleanup') as timer:
+            cleanup_result = run_validation_cleanup(repo)
+        log_run(repo, PipelineRun(
+            stage='conclusion',
+            step_name='run_validation_cleanup',
+            records_processed=None,
+            duration_ms=timer.duration_ms,
+        ))
+        print_validation_cleanup_report(cleanup_result)
+
+    print("\n[8/8] Done.\n")
     repo.close()
 
 
@@ -831,6 +998,16 @@ def main() -> None:
         help="Wipe conclusion layer only; evidence and place_authority preserved",
     )
 
+    p_restart = sub.add_parser(
+        "restart-scoring",
+        help="Clear similarity scores + conclusions, rerun from scoring step (preserves ingested records)",
+    )
+    p_restart.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip final validation cleanup step (for faster iteration)"
+    )
+
     p_add_evidence = sub.add_parser(
         "add-evidence",
         help="Evidence pipeline [1/5–5/5]: ingest CSV + relationships + place + similarity",
@@ -942,6 +1119,7 @@ def main() -> None:
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
         "clear-conclusions": _cmd_clear_conclusions,
+        "restart-scoring":   _cmd_restart_scoring,
         "add-evidence":      _cmd_add_evidence,
         "ingest":            _cmd_ingest,
         "seed-places":       _cmd_seed_places,
