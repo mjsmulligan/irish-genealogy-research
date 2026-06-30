@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Persons - GRA Browser{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">{{ total }}</div>
+        <div class="stat-label">Clustered Persons</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">{{ total_pages }}</div>
+        <div class="stat-label">Pages</div>
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Records</th>
+                <th>Censuses</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in persons %}
+            <tr>
+                <td><strong>{{ person.label }}</strong><br><small style="color: #999;">ID: {{ person.person_id }}</small></td>
+                <td>{{ person.record_count }}</td>
+                <td>
+                    {% if person.censuses %}
+                        {{ person.census_count }}/3
+                        <br><small style="color: #666;">{{ person.censuses }}</small>
+                    {% else %}
+                        0/3
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status {{ person.status }}">{{ person.status }}</span>
+                </td>
+                <td><a href="/person/{{ person.person_id }}">View →</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="/?page=1">« First</a>
+        <a href="/?page={{ page - 1 }}">‹ Prev</a>
+    {% endif %}
+
+    {% set start = max(1, page - 2) %}
+    {% set end = min(total_pages, page + 2) %}
+
+    {% if start > 1 %}
+        <span>...</span>
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+        {% if p == page %}
+            <span class="current">{{ p }}</span>
+        {% else %}
+            <a href="/?page={{ p }}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if end < total_pages %}
+        <span>...</span>
+    {% endif %}
+
+    {% if page < total_pages %}
+        <a href="/?page={{ page + 1 }}">Next ›</a>
+        <a href="/?page={{ total_pages }}">Last »</a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<script>
+function max(a, b) { return a > b ? a : b; }
+function min(a, b) { return a < b ? a : b; }
+</script>
+{% endblock %}

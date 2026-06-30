@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Person {{ person.person_id }} - GRA Browser{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="/">&larr; Back to list</a>
+</div>
+
+<div class="card">
+    <h2>Person {{ person.person_id }}</h2>
+    <div style="margin-top: 20px;">
+        <p><strong>Status:</strong> <span class="status {{ person.status }}">{{ person.status }}</span></p>
+        {% if person.notes %}
+            <p><strong>Notes:</strong> {{ person.notes }}</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if by_census %}
+<div class="card">
+    <h3>Census Records</h3>
+    <p style="color: #666; margin-bottom: 20px;">{{ by_census|length }} census year(s) with records</p>
+
+    {% for census, records in by_census.items() | sort %}
+    <div style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid #eee;">
+        <h4 style="margin-bottom: 15px; color: #0066cc;">{{ census }}</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Age</th>
+                    <th>Townland</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.name_as_recorded }}</td>
+                    <td>{{ record.role or '—' }}</td>
+                    <td>{{ record.age or '—' }}</td>
+                    <td>{{ record.townland or '—' }}</td>
+                    <td>{{ record.date or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="background: #f0f0f0; padding: 40px; text-align: center;">
+    <p style="color: #666;">No census records linked to this person</p>
+</div>
+{% endif %}
+
+{% if relationships %}
+<div class="card">
+    <h3>Relationships</h3>
+    <p style="color: #666; margin-bottom: 20px;">{{ relationships|length }} relationship(s)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>With Person</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rel in relationships %}
+            <tr>
+                <td>
+                    <strong>{{ rel.type }}</strong>
+                    {% if rel.type == 'parent_child' %}
+                        <br><small style="color: #666;">
+                            {% if rel.person_id_1 == person.person_id %}
+                                this person is the child
+                            {% else %}
+                                this person is the parent
+                            {% endif %}
+                        </small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if rel.other_person_id %}
+                        <a href="/person/{{ rel.other_person_id }}"><strong>{{ rel.other_person_label or 'Unknown' }}</strong></a>
+                        <br><small style="color: #999;">ID: {{ rel.other_person_id }}</small>
+                    {% else %}
+                        (unknown person)
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
