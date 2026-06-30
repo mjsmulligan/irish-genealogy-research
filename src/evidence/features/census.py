@@ -32,6 +32,7 @@ import pandas as pd
 
 from src.constants import CENSUS_SOURCE_IDS, CHILD_DEPARTURE_AGE
 from src.db.repository import Repository
+from src.genealogy.names import APPROVED_NAME_VARIANTS
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +126,38 @@ def _forename_from(name: str | None) -> str:
     return parts[0] if parts else ""
 
 
+def _normalize_forename(forename: str | None) -> str:
+    """
+    Map forename variants to their canonical form using APPROVED_NAME_VARIANTS.
+
+    The APPROVED_NAME_VARIANTS dict is bidirectional (each variant is both a key
+    and a value). To canonicalize, we find all equivalent names in the equivalence
+    class and return the longest one (e.g., 'patrick' not 'pat', 'patrick').
+
+    This ensures Pat ↔ Patrick comparisons reach full similarity scores in Splink.
+    """
+    if not forename:
+        return ""
+
+    norm = _norm(forename)
+    if not norm:
+        return ""
+
+    if norm not in APPROVED_NAME_VARIANTS and not any(norm in variants for variants in APPROVED_NAME_VARIANTS.values()):
+        return norm
+
+    all_equiv = {norm}
+    if norm in APPROVED_NAME_VARIANTS:
+        all_equiv.update(APPROVED_NAME_VARIANTS[norm])
+
+    for canonical, variants in APPROVED_NAME_VARIANTS.items():
+        if norm in variants:
+            all_equiv.add(canonical)
+            all_equiv.update(variants)
+
+    return max(all_equiv, key=len)
+
+
 def _build_household_row(record_id: int, source_id: int, members: list[dict], place_id: int | None) -> dict:
     """
     Aggregate a list of RecordedPerson dicts into a single household feature row.
@@ -144,6 +177,7 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
         role = _norm(m.get("role"))
         age = m.get("age")
         forename = _forename_from(m.get("name_as_recorded"))
+        forename_normalized = _normalize_forename(forename)
         surname = _surname_from(m.get("name_as_recorded"))
 
         if surname:
@@ -154,14 +188,14 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
         is_older_child = (age is not None and age > CHILD_DEPARTURE_AGE and not is_adult_role)
 
         if is_adult_role or (age is not None and age > CHILD_DEPARTURE_AGE):
-            if forename:
-                adult_forenames.append(forename)
+            if forename_normalized:
+                adult_forenames.append(forename_normalized)
 
-        if is_young_child and forename:
-            child_forenames_young.append(forename)
+        if is_young_child and forename_normalized:
+            child_forenames_young.append(forename_normalized)
 
-        if is_older_child and forename:
-            child_forenames_older.append(forename)
+        if is_older_child and forename_normalized:
+            child_forenames_older.append(forename_normalized)
 
     # Modal surname across all members
     if surnames:

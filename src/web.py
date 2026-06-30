@@ -382,9 +382,12 @@ def audit_log():
             grouped[group_id] = []
         grouped[group_id].append(log)
 
+    # Limit to first 20 groups
+    grouped_limited = dict(list(grouped.items())[:20])
+
     return render_template('audit.html',
                          logs=logs,
-                         grouped_logs=grouped,
+                         grouped_logs=grouped_limited,
                          entity_type=entity_type,
                          entity_id=entity_id,
                          total_logs=len(logs))

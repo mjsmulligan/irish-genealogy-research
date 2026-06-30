@@ -13,9 +13,9 @@
 
     <form style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
         <input type="text" name="entity_type" placeholder="Entity type (person, relationship...)" value="{{ entity_type }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px;">
-        <input type="number" name="entity_id" placeholder="Entity ID" value="{{ entity_id if entity_id > 0 else '' }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px; width: 150px;">
+        <input type="number" name="entity_id" placeholder="Entity ID" value="{{ entity_id if entity_id else '' }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px; width: 150px;">
         <button type="submit" style="padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer;">Filter</button>
-        {% if entity_type or (entity_id > 0) %}
+        {% if entity_type or entity_id %}
             <a href="/audit" style="padding: 8px 16px; background: #ddd; color: #333; border: none; border-radius: 3px; text-decoration: none; display: inline-block;">Clear</a>
         {% endif %}
     </form>
@@ -25,7 +25,7 @@
 <div style="margin-bottom: 20px;">
     <h3 style="margin-bottom: 20px;">Changes grouped by operation</h3>
 
-    {% for group_id, group_logs in grouped_logs.items() | slice(20) %}
+    {% for group_id, group_logs in grouped_logs.items() %}
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
             <div>

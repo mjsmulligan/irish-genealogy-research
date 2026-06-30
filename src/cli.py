@@ -234,6 +234,7 @@ def _cmd_clear_evidence(args: argparse.Namespace) -> None:
         "person_name",
         "recorded_person",
         "record",
+        "conclusion_log",
     ]
 
     print("Clearing evidence + conclusion layers (place_authority preserved)...")
@@ -265,6 +266,7 @@ def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
         "relationship",
         "person",
         "person_name",
+        "conclusion_log",
     ]
 
     print("Clearing conclusion layer (evidence and place_authority preserved)...")
@@ -357,9 +359,9 @@ def _cmd_restart_scoring(args: argparse.Namespace) -> None:
     with Timer('evidence', 'run_record_similarity') as timer:
         record_sim_result = run_record_similarity(repo)
     log_run(repo, PipelineRun(
-        stage='evidence',
+        stage='similarity',
         step_name='run_record_similarity',
-        records_processed=record_sim_result.records_compared,
+        records_processed=record_sim_result.pairs_written,
         duration_ms=timer.duration_ms,
     ))
     print_record_similarity_report(record_sim_result)
@@ -368,9 +370,9 @@ def _cmd_restart_scoring(args: argparse.Namespace) -> None:
     with Timer('evidence', 'run_person_similarity') as timer:
         person_sim_result = run_person_similarity(repo)
     log_run(repo, PipelineRun(
-        stage='evidence',
+        stage='similarity',
         step_name='run_person_similarity',
-        records_processed=person_sim_result.persons_compared,
+        records_processed=person_sim_result.pairs_written,
         duration_ms=timer.duration_ms,
     ))
     print_person_similarity_report(person_sim_result)
@@ -498,7 +500,7 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
             rr_totals["skipped_null"] += rr.skipped_null_role_pairs
             rr_totals["skipped_no_rule"] += rr.skipped_no_rule
     log_run(repo, PipelineRun(
-        stage='evidence',
+        stage='similarity',
         step_name='assign_role_relationships',
         records_processed=len(record_ids),
         duration_ms=timer.duration_ms,
@@ -510,7 +512,7 @@ def _cmd_add_evidence(args: argparse.Namespace) -> None:
     with Timer('evidence', 'run_place_resolution', source_id=source_id) as timer:
         place_result = run_place_resolution(repo)
     log_run(repo, PipelineRun(
-        stage='evidence',
+        stage='similarity',
         step_name='run_place_resolution',
         records_processed=place_result.records_linked,
         duration_ms=timer.duration_ms,

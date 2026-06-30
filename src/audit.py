@@ -34,7 +34,7 @@ class AuditLog:
                 """,
                 (
                     reviewer_id,
-                    "CREATE",
+                    "create",
                     entity_type,
                     entity_id,
                     field_name,
@@ -69,7 +69,7 @@ class AuditLog:
             """,
             (
                 reviewer_id,
-                "UPDATE",
+                "update",
                 entity_type,
                 entity_id,
                 field_name,
@@ -101,7 +101,7 @@ class AuditLog:
             """,
             (
                 reviewer_id,
-                "DELETE",
+                "delete",
                 entity_type,
                 entity_id,
                 None,
