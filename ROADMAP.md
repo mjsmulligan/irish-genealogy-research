@@ -49,7 +49,6 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 | `docs/database_schema.md` | v3.2 | ✅ Current |
 | `docs/repositories.md` | v1.6 | ✅ Current |
 | `docs/genealogical_constraints.md` | v1.3 | ✅ Current — sole authority for constraint rules and GC codes |
-| `docs/validation_rules.md` | v2.8 | ⚠ Pending consolidation into `genealogical_constraints.md` (item 42) |
 | `docs/reconstruction_algorithms.md` | v1.3 | ✅ Current |
 | `docs/review_layer.md` | v1.0 | ✅ Current |
 | `ROADMAP.md` | — | ✅ Current |
@@ -103,10 +102,10 @@ Active and open items only. Completed items are in §8 (Version History).
 
 | # | Item | Priority | Notes |
 |---|---|---|---|
-| 15 | **Pin floor counts in test harness.** Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` — pin after first confirmed clean run. | High | Next session |
+| 15 | **Pin floor counts in test harness.** Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` — pin after first confirmed clean run. | High | ✅ Done 1 July 2026 — Repository pattern migration + multi-DED test run |
 | 20 | **Manual ID management in DAL.** `record_repo.py`, `person_repo.py`, `relationship_repo.py`, `event_repo.py` pre-calculate `MAX(...) + 1` IDs and use `OVERRIDING SYSTEM VALUE` inserts. Migrate all writes to RETURNING throughout. | Medium | |
 | 26 | **`event_resolution.py` marriage event `date_qualifier`.** De-scoped: `NULL` is intentional — it signals true absence (census doesn't record marriage date), not inference. Module header at line 29 documents this. | Low | ✅ De-scoped |
-| 34 | **Test harness: schema v4.0 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run; (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency. Update `SCHEMA_VERSION` assertion from 32 → 40. | High | Next session |
+| 34 | **Test harness: schema v4.3 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run; (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency. Update `SCHEMA_VERSION` assertion from 32 → 43. | High | ✅ Done 1 July 2026 — Repository pattern, audit logging, orphaned person deletion |
 | 7 | **Stale schema-version footers.** `database_schema.md` footer referenced `PRAGMA user_version` and v3.0; `reconstruction_algorithms.md` footer said "v3.1 target" and referenced non-existent `session_bootstrap.md`. Both corrected. | Low | ✅ Done 29 June 2026 |
 | 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5). `training_repo.py` not imported anywhere in `src/`; `cli.py` only references table name in reset/truncate lists. Requires a schema migration bump to remove. | Low | Pending migration |
 | 14 | **`place_resolution.py` stale type hints** — `sqlite3.Connection` at three locations (lines 112, 137 inline comment, 194). Added `import psycopg2.extensions`; all three corrected. | Low | ✅ Done 29 June 2026 |
@@ -116,7 +115,7 @@ Active and open items only. Completed items are in §8 (Version History).
 | 39 | **Spawn transcription repo.** Create new GitHub repository for the NLI Catholic parish register transcription pipeline. The three CSV schemas (register index, parish baptism, parish marriage) plus bounding box envelope fields are the formal interface contract with GRA. | High (R3) | Prerequisite for item 36 |
 | 40 | **Test harness: household_resolution coverage.** Add tests for `src/conclusion/household_resolution.py` and `src/conclusion/household_utils.py`. Cases to cover: (a) anchor-extension creates Person for unlinked spouse/child; (b) anchor as non-head (Case B/C); (c) no RecordedRelationship to anchor — member skipped; (d) score inherited from RecordedRelationship prior; (e) idempotency (re-run adds no duplicate Persons or Relationships). Update step-counter assertions from [4/4] to [5/5]. | High | After household_resolution merged |
 | 41 | **Household contradiction validation (review layer).** After `household_resolution` is proven in production, add a validation finding that flags Relationship conclusions contradicted by intra-census household evidence — e.g. two Persons concluded as `couple` whose RecordedPersons appear in the same household as `head` and `son`. Warning-level only at v1; auto-action to be decided after first review run. | Medium | After item 40 |
-| 42 | **`validation_rules.md` → `genealogical_constraints.md` consolidation.** Two documents cover overlapping content with two numbering schemes (R-codes and GC-codes). `genealogical_constraints.md` v1.4 is the sole authority; code references GC codes only. Merge remaining `validation_rules.md` content; retire the file or reduce it to a pointer. Update `review_layer.md` §6.1 reference. | Medium | |
+| 42 | **`validation_rules.md` → `genealogical_constraints.md` consolidation.** Two documents cover overlapping content with two numbering schemes (R-codes and GC-codes). `genealogical_constraints.md` v1.4 is the sole authority; code references GC codes only. Merge remaining `validation_rules.md` content; retire the file or reduce it to a pointer. Update `review_layer.md` §6.1 reference. | Medium | ✅ Done — `validation_rules.md` deleted, no stray references remain |
 | 43 | **`is_primary = 1` → `is_primary = TRUE` sweep in `findings.py`.** De-scoped: `event.is_primary` is `INTEGER CHECK (is_primary IN (0, 1))` — not BOOLEAN. `= 1` is the correct SQL predicate now. Revisit if column type migrates to BOOLEAN. | Low | ✅ De-scoped |
 | 44 | **Sequence check should prefer `is_primary` dates (`find_life_event_sequence_violations()`).** Currently uses `earliest_year()` across all events of a type — a non-primary event with a bad date can trigger a spurious violation. Use `_derive_birth_year()` / `_derive_death_year()` helpers instead. | Medium | |
 | 45 | **Marriage singularity (GC06) not in findings layer.** Birth (GC04) and death (GC05) have singularity findings; marriage does not. Add `find_marriage_singularity_violation()`. See `genealogical_constraints.md` GC06. | Medium | |
@@ -162,7 +161,7 @@ Active and open items only. Completed items are in §8 (Version History).
 
 Spec: [`docs/review_layer.md`](docs/review_layer.md)
 
-`ReportItem`/`Report` data structures, finding taxonomy (v1.0 implemented + deferred), priority scoring, and output format are all defined there. The retired `src/review/validator.py` and its rule codes (R40–R46) are documented in [`docs/validation_rules.md`](docs/validation_rules.md).
+`ReportItem`/`Report` data structures, finding taxonomy (v1.0 implemented + deferred), priority scoring, and output format are all defined there. The retired `src/review/validator.py` has been superseded by the `src/review/` finding module, which implements findings mapped to `genealogical_constraints.md` GC codes.
 
 ---
 

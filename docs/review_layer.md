@@ -1,7 +1,7 @@
 # Irish Genealogy Research — Review Layer
 
 *Version 1.0 — 24 June 2026*
-*Audience: Developers and researchers. This document is the authoritative specification for the review layer (`src/review/`). It is the companion to `conceptual_model.md` §7.4, `genealogical_constraints.md`, and `validation_rules.md`.*
+*Audience: Developers and researchers. This document is the authoritative specification for the review layer (`src/review/`). It is the companion to `conceptual_model.md` §7.4 and `genealogical_constraints.md`.*
 
 ______________________________________________________________________
 
