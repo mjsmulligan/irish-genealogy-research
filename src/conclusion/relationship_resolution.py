@@ -644,6 +644,29 @@ def run_relationship_resolution(
     if orphaned_person_ids:
         result.persons_orphaned = len(orphaned_person_ids)
         placeholders = ",".join(["%s"] * len(orphaned_person_ids))
+
+        # Delete relationship_recorded_relationship provenance first
+        repo.execute(
+            f"""
+            DELETE FROM relationship_recorded_relationship
+            WHERE relationship_id IN (
+                SELECT relationship_id FROM relationship
+                WHERE person_id_1 IN ({placeholders}) OR person_id_2 IN ({placeholders})
+            )
+            """,
+            tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
+        )
+
+        # Delete relationships referencing orphaned persons
+        repo.execute(
+            f"""
+            DELETE FROM relationship
+            WHERE person_id_1 IN ({placeholders}) OR person_id_2 IN ({placeholders})
+            """,
+            tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
+        )
+
+        # Then delete the orphaned persons
         repo.execute(
             f"""
             DELETE FROM person
