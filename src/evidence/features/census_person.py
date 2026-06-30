@@ -51,7 +51,7 @@ import pandas as pd
 
 from src.db.repository import Repository
 from src.constants import CENSUS_SOURCE_IDS
-from src.evidence.features.census import _soundex
+from src.evidence.features.census import _soundex, _normalize_forename
 from src.genealogy import classify_forename, CENSUS_YEAR
 
 # Map source_id → approximate census year for birth_year_est calculation.
@@ -206,9 +206,10 @@ def build_census_person_features(
 
             surname = _surname_from(p["name_as_recorded"])
             forename = _forename_from(p["name_as_recorded"])
+            forename_normalized = _normalize_forename(forename)
             name_norm = (
-                f"{forename} {surname}".strip()
-                if forename
+                f"{forename_normalized} {surname}".strip()
+                if forename_normalized
                 else surname
             ) or None
 
@@ -219,7 +220,7 @@ def build_census_person_features(
                 "place_id": p["place_id"],
                 "surname_norm": surname,
                 "soundex_surname": _soundex(surname),
-                "forename_norm": forename,
+                "forename_norm": forename_normalized,
                 "name_norm": name_norm,
                 "birth_year_est": birth_year_est,
                 "sex_as_recorded": _norm(p["sex_as_recorded"]) or None,

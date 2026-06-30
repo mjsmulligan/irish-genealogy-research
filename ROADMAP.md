@@ -1,10 +1,27 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*Last updated: 29 June 2026*
+*Last updated: 1 July 2026*
 
 ---
 
-## 1. Latest Update (29 June 2026)
+## 1. Latest Update (1 July 2026)
+
+**Person-level forename normalization completed + audit log integrity fixed.**
+
+Implemented forename normalization for person-level Splink similarity (Pat ↔ Patrick matching). Fixed critical bug where individual-level features weren't normalizing Irish name variants, preventing proper cross-census person matching despite strong household matches. Also fixed data integrity issue where audit logs weren't being cleared when conclusions were reset.
+
+**Key fixes:**
+- Forename normalization now applied at person level (`census_person.py`): "pat mccadden" and "patrick mccadden" both normalize to "patrick mccadden"
+- Person #118106 Patrick McCadden now has scores for ALL census pairs (previously 1901 had no person-level similarity with 1911/1926)
+- Audit log now properly cleared in `clear-conclusions`, `clear-evidence`, and `restart-scoring` commands (data integrity fix)
+- Web UI audit log page fixed: removed Jinja2 template filter conflicts, fixed None handling for entity_id filter
+- CLI restart-scoring command fixed: corrected attribute names and stage logging
+
+Full detail: [`changelog/session_changelog_2026-07-01.md`](changelog/session_changelog_2026-07-01.md)
+
+---
+
+## 1b. Previous Update (29 June 2026)
 
 Roadmap low-hanging-fruit pass (items 7, 14, 26, 43, 47) plus systematic foundation and evidence layer review.
 

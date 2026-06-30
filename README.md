@@ -7,7 +7,7 @@ A probabilistic genealogy research platform combining a PostgreSQL knowledge bas
 Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
 Implementation: Complete — all four layers (foundation, evidence, conclusion, review)  
-**Latest:** Same-census linking constraint enforced across all conclusion steps (zero merge errors)
+**Latest:** Irish forename normalization (Pat ↔ Patrick) now applied at person-level similarity. Audit log integrity fixed. Web UI person browser with dark theme and pairwise scores. ([1 July 2026](changelog/session_changelog_2026-07-01.md))
 
 ______________________________________________________________________
 
