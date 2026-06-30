@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log - GRA Browser{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="/">&larr; Back to persons</a>
+</div>
+
+<div class="card">
+    <h2>Audit Log</h2>
+    <p style="color: #666; margin-bottom: 20px;">Total entries: <strong>{{ total_logs }}</strong></p>
+
+    <form style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" name="entity_type" placeholder="Entity type (person, relationship...)" value="{{ entity_type }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px;">
+        <input type="number" name="entity_id" placeholder="Entity ID" value="{{ entity_id if entity_id > 0 else '' }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 3px; width: 150px;">
+        <button type="submit" style="padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer;">Filter</button>
+        {% if entity_type or (entity_id > 0) %}
+            <a href="/audit" style="padding: 8px 16px; background: #ddd; color: #333; border: none; border-radius: 3px; text-decoration: none; display: inline-block;">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if grouped_logs %}
+<div style="margin-bottom: 20px;">
+    <h3 style="margin-bottom: 20px;">Changes grouped by operation</h3>
+
+    {% for group_id, group_logs in grouped_logs.items() | slice(20) %}
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+            <div>
+                <strong style="color: #0066cc; font-family: monospace; font-size: 12px;">{{ group_id }}</strong>
+                <br><small style="color: #666;">
+                    {{ group_logs[0]['created_at'] if group_logs else '' }}
+                    — {{ group_logs | length }} change{{ 's' if group_logs | length != 1 else '' }}
+                </small>
+            </div>
+            <small style="color: #999;">
+                {{ group_logs[0]['action'] if group_logs else '' }}
+            </small>
+        </div>
+
+        <table style="width: 100%; font-size: 14px;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">Entity</th>
+                    <th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">Field</th>
+                    <th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">Old Value</th>
+                    <th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">New Value</th>
+                    <th style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in group_logs %}
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                        <small>{{ log['entity_type'] }} #{{ log['entity_id'] }}</small>
+                        {% if log['entity_type'] == 'person' %}
+                            <br><a href="/person/{{ log['entity_id'] }}" style="font-size: 12px;">view →</a>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                        <code style="background: #f5f5f5; padding: 2px 4px; border-radius: 2px; font-size: 12px;">{{ log['field_name'] or '—' }}</code>
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee; color: #999;">
+                        <small>{{ log['old_value'] or '—' }}</small>
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee; color: #0066cc; font-weight: 500;">
+                        <small>{{ log['new_value'] or '—' }}</small>
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                        <small style="color: #666;">{{ log['reason'] or '—' }}</small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="background: #f0f0f0; padding: 40px; text-align: center;">
+    <p style="color: #666;">No audit log entries found</p>
+</div>
+{% endif %}
+{% endblock %}
