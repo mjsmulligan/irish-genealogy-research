@@ -138,13 +138,13 @@ UNINHABITED_TOWNLANDS = frozenset({'Croaghnakern', "Rooney's Island"})
 BIRTH_YEAR_MIN          = 1807
 BIRTH_YEAR_MAX          = 1928
 
-# Similarity and conclusion counts: floors pending first confirmed clean run.
-# Replace with exact values after first successful pipeline execution.
-FLOOR_RECORD_SIMS       = 50    # TODO: replace with exact after first run
-FLOOR_PERSON_SIMS       = 100   # TODO: replace with exact after first run
-FLOOR_PERSONS           = 50    # TODO: replace with exact after first run
-FLOOR_RELATIONSHIPS     = 30    # TODO: replace with exact after first run
-FLOOR_EVENTS            = 100   # TODO: replace with exact after first run
+# Similarity and conclusion counts: established from Tullynaught 3-census baseline
+# (Updated 2026-07-01 after audit logging implementation verified pipeline correctness)
+FLOOR_RECORD_SIMS       = 300   # Cross-census record similarity pairs (Splink stage 1)
+FLOOR_PERSON_SIMS       = 700   # Person-level similarity pairs (Splink stage 2)
+FLOOR_PERSONS           = 1400  # Clustered Person conclusions after merging
+FLOOR_RELATIONSHIPS     = 3800  # Derived Relationship conclusions (couple/parent_child/sibling)
+FLOOR_EVENTS            = 2000  # Census/birth/marriage Event conclusions
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -175,7 +175,7 @@ def db_conn():
     conn.close()
 
 
-def _setup_data(conn: psycopg2.extensions.connection) -> None:
+def _setup_data(repo) -> None:
     """
     Wipe evidence + conclusion layers, ingest all three Tullynaught CSVs,
     run the full conclusion pipeline, and capture metrics.
@@ -211,21 +211,20 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
         "person_name",
         "recorded_person",
         "record",
+        "conclusion_log",
     ]
-    with conn:
-        with conn.cursor() as cur:
-            for table in clear_tables:
-                cur.execute(f"DELETE FROM {table}")
+    with repo:
+        for table in clear_tables:
+            repo.execute(f"DELETE FROM {table}")
 
     # Verify clean state: ensure person table is empty before ingest
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) as count FROM person")
-        person_count = cur.fetchone()["count"]
-        if person_count > 0:
-            raise AssertionError(
-                f"Database not clean: {person_count} persons exist after clear. "
-                "Run 'python -m src.cli clear-evidence' before tests."
-            )
+    row = repo.fetch_one("SELECT COUNT(*) as count FROM person")
+    person_count = row["count"]
+    if person_count > 0:
+        raise AssertionError(
+            f"Database not clean: {person_count} persons exist after clear. "
+            "Run 'python -m src.cli clear-evidence' before tests."
+        )
 
     print("  ingesting all sources...")
     for source_id, fixture_path in FIXTURES.items():
@@ -233,55 +232,54 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
             raise FileNotFoundError(f"Fixture not found: {fixture_path}")
         print(f"    source {source_id} ({fixture_path.name})...", end=" ", flush=True)
         t0 = time.perf_counter()
-        ingest_result = ingest_census(conn, str(fixture_path), source_id=source_id)
+        ingest_result = ingest_census(repo, str(fixture_path), source_id=source_id)
 
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT record_id FROM record WHERE source_id = %s "
-                "ORDER BY record_id DESC LIMIT %s",
-                (source_id, ingest_result["records_committed"]),
-            )
-            record_ids = [row["record_id"] for row in cur.fetchall()]
+        rows = repo.fetch_all(
+            "SELECT record_id FROM record WHERE source_id = %s "
+            "ORDER BY record_id DESC LIMIT %s",
+            (source_id, ingest_result["records_committed"]),
+        )
+        record_ids = [row["record_id"] for row in rows]
 
-        with conn:
+        with repo:
             for rid in record_ids:
-                assign_role_relationships(conn, rid)
+                assign_role_relationships(repo, rid)
         elapsed = time.perf_counter() - t0
         print(f"{ingest_result['records_committed']} records ({elapsed:.2f}s)")
 
     print("  running place resolution...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_place_resolution(conn)
+    run_place_resolution(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running record similarity...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_record_similarity(conn)
+    run_record_similarity(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running person similarity...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_person_similarity(conn)
+    run_person_similarity(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running person resolution...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_person_resolution(conn)
+    run_person_resolution(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running relationship resolution...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_relationship_resolution(conn)
+    run_relationship_resolution(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running household resolution...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_household_resolution(conn)
+    run_household_resolution(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     print("  running event resolution...", end=" ", flush=True)
     t0 = time.perf_counter()
-    run_event_resolution(conn)
+    run_event_resolution(repo)
     print(f"({time.perf_counter() - t0:.2f}s)")
 
     # METRICS CAPTURE: Three-Census Linkage and Pairwise Similarity
@@ -290,87 +288,85 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
     print("LINKAGE METRICS — v1.1 Baseline (Phase 3 Removed)")
     print("="*80)
 
-    with conn.cursor() as cur:
-        # ===== Three-Census Linkage Percentage =====
-        # Definition: Proportion of recorded persons linked into unified persons
-        # Formula: 100 × (Linked Recorded Persons) / (Total Recorded Persons)
-        # Numerator: COUNT(DISTINCT recorded_person_id) FROM person_recorded_person
-        # Denominator: EXACT_PERSONS_TOTAL = 3,167 (fixed, from all three census fixtures)
-        # Interpretation: % of all census persons that were merged via Splink + clustering
+    # ===== Three-Census Linkage Percentage =====
+    # Definition: Proportion of recorded persons linked into unified persons
+    # Formula: 100 × (Linked Recorded Persons) / (Total Recorded Persons)
+    # Numerator: COUNT(DISTINCT recorded_person_id) FROM person_recorded_person
+    # Denominator: EXACT_PERSONS_TOTAL = 3,167 (fixed, from all three census fixtures)
+    # Interpretation: % of all census persons that were merged via Splink + clustering
 
-        cur.execute("""
-            SELECT COUNT(DISTINCT recorded_person_id) as linked_rp
-            FROM person_recorded_person
-        """)
-        linked_recorded_persons = cur.fetchone()["linked_rp"]
-        linkage_pct = 100.0 * linked_recorded_persons / EXACT_PERSONS_TOTAL
+    row = repo.fetch_one("""
+        SELECT COUNT(DISTINCT recorded_person_id) as linked_rp
+        FROM person_recorded_person
+    """)
+    linked_recorded_persons = row["linked_rp"]
+    linkage_pct = 100.0 * linked_recorded_persons / EXACT_PERSONS_TOTAL
 
-        print(f"\nThree-Census Linkage (denominator: {EXACT_PERSONS_TOTAL} total persons)")
-        print(f"  Linked recorded persons: {linked_recorded_persons}")
-        print(f"  Linkage: {linkage_pct:.1f}%")
+    print(f"\nThree-Census Linkage (denominator: {EXACT_PERSONS_TOTAL} total persons)")
+    print(f"  Linked recorded persons: {linked_recorded_persons}")
+    print(f"  Linkage: {linkage_pct:.1f}%")
 
-        # Verify fixture ingestion: total persons should match expected
-        cur.execute("SELECT COUNT(DISTINCT person_id) FROM person")
-        clustered_persons = cur.fetchone()["count"]
-        print(f"  Clustered persons: {clustered_persons} (unique persons after merging)")
-        print(f"  Merge ratio: {linked_recorded_persons / clustered_persons:.2f}x " +
-              f"({linked_recorded_persons} recorded → {clustered_persons} clustered)")
+    # Verify fixture ingestion: total persons should match expected
+    row = repo.fetch_one("SELECT COUNT(DISTINCT person_id) as count FROM person")
+    clustered_persons = row["count"]
+    print(f"  Clustered persons: {clustered_persons} (unique persons after merging)")
+    print(f"  Merge ratio: {linked_recorded_persons / clustered_persons:.2f}x " +
+          f"({linked_recorded_persons} recorded → {clustered_persons} clustered)")
 
-        # ===== Pairwise Person Similarity Metrics =====
-        # Definition: Distribution and quality of similarity scores across all recorded_person pairs
-        # These scores come from Splink EM training and determine clustering at threshold=0.50
-        # Formula: Score tiers as % of total similarity pairs evaluated
-        # Interpretation: Concentration near threshold indicates good feature discrimination
+    # ===== Pairwise Person Similarity Metrics =====
+    # Definition: Distribution and quality of similarity scores across all recorded_person pairs
+    # These scores come from Splink EM training and determine clustering at threshold=0.50
+    # Formula: Score tiers as % of total similarity pairs evaluated
+    # Interpretation: Concentration near threshold indicates good feature discrimination
 
-        cur.execute("""
-            SELECT
-                COUNT(*) as total_pairs,
-                AVG(score)::numeric(5,3) as avg_score,
-                MIN(score)::numeric(5,3) as min_score,
-                MAX(score)::numeric(5,3) as max_score,
-                STDDEV(score)::numeric(5,3) as stddev_score,
-                COUNT(CASE WHEN score >= 0.65 THEN 1 END) as tier_65,
-                COUNT(CASE WHEN score >= 0.50 AND score < 0.65 THEN 1 END) as tier_50_65,
-                COUNT(CASE WHEN score >= 0.45 AND score < 0.50 THEN 1 END) as tier_45_50,
-                COUNT(CASE WHEN score < 0.45 THEN 1 END) as tier_below_45
-            FROM recorded_relationship
-            WHERE type = 'similarity'
-        """)
-        row = cur.fetchone()
+    row = repo.fetch_one("""
+        SELECT
+            COUNT(*) as total_pairs,
+            AVG(score)::numeric(5,3) as avg_score,
+            MIN(score)::numeric(5,3) as min_score,
+            MAX(score)::numeric(5,3) as max_score,
+            STDDEV(score)::numeric(5,3) as stddev_score,
+            COUNT(CASE WHEN score >= 0.65 THEN 1 END) as tier_65,
+            COUNT(CASE WHEN score >= 0.50 AND score < 0.65 THEN 1 END) as tier_50_65,
+            COUNT(CASE WHEN score >= 0.45 AND score < 0.50 THEN 1 END) as tier_45_50,
+            COUNT(CASE WHEN score < 0.45 THEN 1 END) as tier_below_45
+        FROM recorded_relationship
+        WHERE type = 'similarity'
+    """)
 
-        print(f"\nPairwise Person Similarity (person-level Splink scores)")
-        if row and row['total_pairs']:
-            total_pairs = row['total_pairs']
-            print(f"  Total pairs: {total_pairs}")
-            print(f"  Statistics:")
-            print(f"    Mean: {row['avg_score']:.3f}")
-            print(f"    Range: {row['min_score']:.3f} – {row['max_score']:.3f}")
-            print(f"    Std Dev: {row['stddev_score']:.3f}")
-            print(f"  Score distribution (tiers as % of total pairs):")
-            pct_65 = 100*row['tier_65']/total_pairs
-            pct_50_65 = 100*row['tier_50_65']/total_pairs
-            pct_45_50 = 100*row['tier_45_50']/total_pairs
-            pct_below_45 = 100*row['tier_below_45']/total_pairs
+    print(f"\nPairwise Person Similarity (person-level Splink scores)")
+    if row and row['total_pairs']:
+        total_pairs = row['total_pairs']
+        print(f"  Total pairs: {total_pairs}")
+        print(f"  Statistics:")
+        print(f"    Mean: {row['avg_score']:.3f}")
+        print(f"    Range: {row['min_score']:.3f} – {row['max_score']:.3f}")
+        print(f"    Std Dev: {row['stddev_score']:.3f}")
+        print(f"  Score distribution (tiers as % of total pairs):")
+        pct_65 = 100*row['tier_65']/total_pairs
+        pct_50_65 = 100*row['tier_50_65']/total_pairs
+        pct_45_50 = 100*row['tier_45_50']/total_pairs
+        pct_below_45 = 100*row['tier_below_45']/total_pairs
 
-            print(f"    ≥0.65 (high):      {row['tier_65']:4d} ({pct_65:5.1f}%)")
-            print(f"    0.50-0.65 (med):   {row['tier_50_65']:4d} ({pct_50_65:5.1f}%)")
-            print(f"    0.45-0.50 (marg):  {row['tier_45_50']:4d} ({pct_45_50:5.1f}%)")
-            print(f"    <0.45 (weak):      {row['tier_below_45']:4d} ({pct_below_45:5.1f}%)")
+        print(f"    ≥0.65 (high):      {row['tier_65']:4d} ({pct_65:5.1f}%)")
+        print(f"    0.50-0.65 (med):   {row['tier_50_65']:4d} ({pct_50_65:5.1f}%)")
+        print(f"    0.45-0.50 (marg):  {row['tier_45_50']:4d} ({pct_45_50:5.1f}%)")
+        print(f"    <0.45 (weak):      {row['tier_below_45']:4d} ({pct_below_45:5.1f}%)")
 
-            pairs_above_threshold = row['tier_65'] + row['tier_50_65'] + row['tier_45_50']
-            pct_above_threshold = 100*pairs_above_threshold/total_pairs
-            print(f"  Pairs ≥0.45 (above clustering threshold): {pairs_above_threshold} ({pct_above_threshold:.1f}%)")
-        else:
-            print(f"  (No similarity pairs)")
+        pairs_above_threshold = row['tier_65'] + row['tier_50_65'] + row['tier_45_50']
+        pct_above_threshold = 100*pairs_above_threshold/total_pairs
+        print(f"  Pairs ≥0.45 (above clustering threshold): {pairs_above_threshold} ({pct_above_threshold:.1f}%)")
+    else:
+        print(f"  (No similarity pairs)")
 
-        # ===== Variance Note =====
-        # Splink is probabilistic. EM training uses random sampling (estimate_u_using_random_sampling),
-        # causing natural variance across runs. This is expected behavior, not a bug.
-        # We report linkage as informational; track trends over sessions, not individual runs.
+    # ===== Variance Note =====
+    # Splink is probabilistic. EM training uses random sampling (estimate_u_using_random_sampling),
+    # causing natural variance across runs. This is expected behavior, not a bug.
+    # We report linkage as informational; track trends over sessions, not individual runs.
 
-        print(f"\nLinkage Metrics (Probabilistic — variance expected)")
-        print(f"  Linkage: {linkage_pct:.1f}% ({linked_recorded_persons} persons)")
-        print(f"  (Note: Each run produces slightly different results due to random sampling in EM)")
+    print(f"\nLinkage Metrics (Probabilistic — variance expected)")
+    print(f"  Linkage: {linkage_pct:.1f}% ({linked_recorded_persons} persons)")
+    print(f"  (Note: Each run produces slightly different results due to random sampling in EM)")
 
     print("="*80 + "\n")
 
@@ -381,22 +377,18 @@ def _setup_data(conn: psycopg2.extensions.connection) -> None:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _q(conn: psycopg2.extensions.connection, sql: str, params: tuple = ()) -> int:
+def _q(repo, sql: str, params: tuple = ()) -> int:
     """Execute a COUNT(*) query and return the integer result."""
-    with conn.cursor() as cur:
-        cur.execute(sql, params)
-        row = cur.fetchone()
-        return list(row.values())[0]
+    row = repo.fetch_one(sql, params)
+    return list(row.values())[0] if row else 0
 
 
-def _rows(conn: psycopg2.extensions.connection, sql: str, params: tuple = ()) -> list[dict]:
-    with conn.cursor() as cur:
-        cur.execute(sql, params)
-        return cur.fetchall()
+def _rows(repo, sql: str, params: tuple = ()) -> list[dict]:
+    return repo.fetch_all(sql, params)
 
 
-def _place_authority_seeded(conn: psycopg2.extensions.connection) -> bool:
-    return _q(conn, "SELECT COUNT(*) FROM place_authority") > 0
+def _place_authority_seeded(repo) -> bool:
+    return _q(repo, "SELECT COUNT(*) FROM place_authority") > 0
 
 
 
@@ -408,9 +400,7 @@ def _place_authority_seeded(conn: psycopg2.extensions.connection) -> bool:
 def test_schema_version(db_conn):
     """Schema version in gra_meta matches constants.SCHEMA_VERSION."""
     from src.constants import SCHEMA_VERSION
-    with db_conn.cursor() as cur:
-        cur.execute("SELECT value FROM gra_meta WHERE key = 'schema_version'")
-        row = cur.fetchone()
+    row = db_conn.fetch_one("SELECT value FROM gra_meta WHERE key = 'schema_version'")
     assert row is not None, "gra_meta has no schema_version row"
     assert int(row["value"]) == SCHEMA_VERSION, (
         f"Schema version mismatch: DB={row['value']}, code={SCHEMA_VERSION}"
@@ -1062,13 +1052,12 @@ def test_invariant_no_conclusion_points_to_conclusion(db_conn):
     This is a schema-level property but worth asserting explicitly.
     """
     # RecordedPerson has no person_id FK by design — verified by absence of column
-    with db_conn.cursor() as cur:
-        cur.execute("""
-            SELECT column_name FROM information_schema.columns
-            WHERE table_name = 'recorded_person'
-              AND column_name IN ('person_id', 'relationship_id', 'event_id')
-        """)
-        bad_columns = [row["column_name"] for row in cur.fetchall()]
+    rows = db_conn.fetch_all("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'recorded_person'
+          AND column_name IN ('person_id', 'relationship_id', 'event_id')
+    """)
+    bad_columns = [row["column_name"] for row in rows]
     assert bad_columns == [], (
         f"recorded_person has unexpected conclusion-layer FK columns: {bad_columns}"
     )
