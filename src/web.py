@@ -19,51 +19,105 @@ def get_db():
 
 @app.route('/')
 def index():
-    """List all persons with linkage stats."""
+    """List all persons with linkage stats, filters, and sorting."""
     repo = get_db()
 
-    # Get page params
+    # Get filter params
+    status = request.args.get('status', '')
+    score_band = request.args.get('score_band', '')
+    coverage = request.args.get('coverage', '')
     page = request.args.get('page', 1, type=int)
     per_page = 50
     offset = (page - 1) * per_page
 
-    # Get total count
-    result = repo.fetch_one('SELECT COUNT(*) as count FROM person')
-    total = result['count']
-    total_pages = (total + per_page - 1) // per_page
-
-    # Get persons with linkage stats and a label
+    # Build base query with weakest link score
     query = '''
-    SELECT
-      p.person_id,
-      p.status,
-      COUNT(DISTINCT prp.recorded_person_id) as record_count,
-      COUNT(DISTINCT CASE WHEN r.record_id IS NOT NULL THEN r.source_id END) as census_count,
-      STRING_AGG(DISTINCT s.title, ', ' ORDER BY s.title) as censuses,
-      COALESCE(MAX(rp.name_as_recorded), 'Unknown') as label
-    FROM person p
-    LEFT JOIN person_recorded_person prp ON p.person_id = prp.person_id
-    LEFT JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
-    LEFT JOIN record r ON rp.record_id = r.record_id
-    LEFT JOIN source s ON r.source_id = s.source_id
-    GROUP BY p.person_id, p.status
-    ORDER BY p.person_id
-    LIMIT %s OFFSET %s
+    WITH person_data AS (
+      SELECT
+        p.person_id,
+        p.status,
+        COUNT(DISTINCT prp.recorded_person_id) as record_count,
+        COUNT(DISTINCT CASE WHEN r.record_id IS NOT NULL THEN r.source_id END) as census_count,
+        STRING_AGG(DISTINCT s.title, ', ' ORDER BY s.title) as censuses,
+        COALESCE(MAX(rp.name_as_recorded), 'Unknown') as label,
+        MIN(rs.score) as weakest_link_score
+      FROM person p
+      LEFT JOIN person_recorded_person prp ON p.person_id = prp.person_id
+      LEFT JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
+      LEFT JOIN record r ON rp.record_id = r.record_id
+      LEFT JOIN source s ON r.source_id = s.source_id
+      LEFT JOIN (
+        SELECT DISTINCT
+          rs1.recorded_person_id_1,
+          rs1.recorded_person_id_2,
+          rs1.score
+        FROM recorded_relationship rs1
+        WHERE rs1.type = 'similarity'
+      ) rs ON (
+        prp.recorded_person_id = rs.recorded_person_id_1 OR
+        prp.recorded_person_id = rs.recorded_person_id_2
+      )
+      GROUP BY p.person_id, p.status
+    )
+    SELECT * FROM person_data WHERE 1=1
     '''
 
-    persons = repo.fetch_all(query, (per_page, offset))
+    params = []
+
+    # Apply status filter
+    if status:
+        query += ' AND status = %s'
+        params.append(status)
+
+    # Apply score band filter
+    if score_band == 'amber':
+        query += ' AND (weakest_link_score IS NULL OR weakest_link_score < 0.80)'
+    elif score_band == 'red':
+        query += ' AND (weakest_link_score IS NULL OR weakest_link_score < 0.60)'
+
+    # Apply coverage filter
+    if coverage:
+        query += ' AND census_count = %s'
+        params.append(int(coverage))
+
+    # Sort by weakest link score ascending (most uncertain first), then by person_id
+    query += ' ORDER BY COALESCE(weakest_link_score, 1.0) ASC, person_id ASC'
+
+    # Count total after filters
+    count_query = f'SELECT COUNT(*) as count FROM ({query}) as filtered'
+    total_result = repo.fetch_one(count_query, tuple(params))
+    total = total_result['count']
+    total_pages = (total + per_page - 1) // per_page
+
+    # Get paginated results
+    query += ' LIMIT %s OFFSET %s'
+    params.extend([per_page, offset])
+
+    persons = repo.fetch_all(query, tuple(params))
+
+    # Format censuses as list for template
+    for person in persons:
+        if person['censuses']:
+            person['censuses'] = person['censuses'].split(', ')
+        else:
+            person['censuses'] = []
+
     repo.close()
 
     return render_template('index.html',
                          persons=persons,
                          page=page,
                          total_pages=total_pages,
-                         total=total)
+                         total=total,
+                         per_page=per_page,
+                         status=status,
+                         score_band=score_band,
+                         coverage=coverage)
 
 
 @app.route('/person/<int:person_id>')
 def detail(person_id):
-    """Show detail view for a person."""
+    """Show detail view for a person with cross-census table."""
     repo = get_db()
 
     # Get person
@@ -93,41 +147,7 @@ def detail(person_id):
 
     recorded_persons = repo.fetch_all(recorded_query, (person_id,))
 
-    # Get relationships with other person's name
-    relationships_query = '''
-    SELECT
-      rel.relationship_id,
-      rel.type,
-      rel.person_id_1,
-      rel.person_id_2,
-      CASE
-        WHEN rel.person_id_1 = %s THEN rel.person_id_2
-        ELSE rel.person_id_1
-      END as other_person_id,
-      CASE
-        WHEN rel.person_id_1 = %s THEN other_p.label
-        ELSE self_p.label
-      END as other_person_label
-    FROM relationship rel
-    LEFT JOIN (
-      SELECT DISTINCT prp.person_id, MAX(rp.name_as_recorded) as label
-      FROM person_recorded_person prp
-      JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
-      GROUP BY prp.person_id
-    ) other_p ON other_p.person_id = rel.person_id_2
-    LEFT JOIN (
-      SELECT DISTINCT prp.person_id, MAX(rp.name_as_recorded) as label
-      FROM person_recorded_person prp
-      JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
-      GROUP BY prp.person_id
-    ) self_p ON self_p.person_id = rel.person_id_1
-    WHERE rel.person_id_1 = %s OR rel.person_id_2 = %s
-    '''
-
-    relationships = repo.fetch_all(relationships_query, (person_id, person_id, person_id, person_id))
-    repo.close()
-
-    # Group recorded persons by census
+    # Group by census year (source_title is the census year)
     by_census = {}
     for rp in recorded_persons:
         census_year = rp['source_title']
@@ -135,10 +155,110 @@ def detail(person_id):
             by_census[census_year] = []
         by_census[census_year].append(rp)
 
+    census_years = sorted(by_census.keys())
+
+    # Get household members for each recorded person
+    household_members = {}
+    head_of_household = {}
+
+    for census_year, rp_list in by_census.items():
+        household_members[census_year] = []
+        head_of_household[census_year] = None
+
+        for rp in rp_list:
+            # Get all persons in same household (record)
+            household_query = '''
+            SELECT DISTINCT
+              rp2.recorded_person_id,
+              rp2.name_as_recorded,
+              rp2.role,
+              prp2.person_id
+            FROM recorded_person rp2
+            LEFT JOIN person_recorded_person prp2 ON rp2.recorded_person_id = prp2.recorded_person_id
+            WHERE rp2.record_id = %s
+            ORDER BY rp2.recorded_person_id
+            '''
+
+            household = repo.fetch_all(household_query, (rp['record_id'],))
+
+            # Find head of household and other members
+            for hh in household:
+                if hh['role'] == 'Head':
+                    if head_of_household[census_year] is None:
+                        head_of_household[census_year] = hh['name_as_recorded']
+                else:
+                    # Only add other members if they're not this person
+                    if hh['recorded_person_id'] != rp['recorded_person_id']:
+                        household_members[census_year].append({
+                            'name': hh['name_as_recorded'],
+                            'role': hh['role'],
+                            'person_id': hh['person_id']
+                        })
+
+    # Get pairwise similarity scores for this person
+    pairwise_query = '''
+    SELECT DISTINCT
+      rs.recorded_person_id_1,
+      rs.recorded_person_id_2,
+      rs.score
+    FROM recorded_relationship rs
+    WHERE rs.type = 'similarity'
+      AND (rs.recorded_person_id_1 IN (
+        SELECT prp.recorded_person_id
+        FROM person_recorded_person prp
+        WHERE prp.person_id = %s
+      ) OR rs.recorded_person_id_2 IN (
+        SELECT prp.recorded_person_id
+        FROM person_recorded_person prp
+        WHERE prp.person_id = %s
+      ))
+    ORDER BY rs.score DESC
+    '''
+
+    similarity_scores = repo.fetch_all(pairwise_query, (person_id, person_id))
+
+    # Build pairwise comparison labels (1901 vs 1911, etc.)
+    pairwise_scores = []
+    seen_pairs = set()
+
+    for score_row in similarity_scores:
+        rp1_id = score_row['recorded_person_id_1']
+        rp2_id = score_row['recorded_person_id_2']
+
+        # Find which census years these belong to
+        year1 = None
+        year2 = None
+
+        for year, rp_list in by_census.items():
+            for rp in rp_list:
+                if rp['recorded_person_id'] == rp1_id:
+                    year1 = year
+                if rp['recorded_person_id'] == rp2_id:
+                    year2 = year
+
+        if year1 and year2 and year1 != year2:
+            pair_key = tuple(sorted([year1, year2]))
+            if pair_key not in seen_pairs:
+                seen_pairs.add(pair_key)
+                pairwise_scores.append({
+                    'label': f'{pair_key[0]} vs {pair_key[1]}',
+                    'score': score_row['score']
+                })
+
+    repo.close()
+
+    # Add image URL placeholder (to be implemented with NAI pattern)
+    for rp_list in by_census.values():
+        for rp in rp_list:
+            rp['image_url'] = None  # TODO: construct from NAI_IMAGE_URL_PATTERN
+
     return render_template('detail.html',
                          person=person,
                          by_census=by_census,
-                         relationships=relationships)
+                         census_years=census_years,
+                         head_of_household=head_of_household,
+                         household_members=household_members,
+                         pairwise_scores=pairwise_scores)
 
 
 @app.route('/api/search')

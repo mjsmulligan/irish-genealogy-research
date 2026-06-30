@@ -1,99 +1,189 @@
 {% extends "base.html" %}
 
-{% block title %}Person {{ person.person_id }} - GRA Browser{% endblock %}
+{% block title %}{{ person.label or 'Person ' + person.person_id|string }} - grá{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 20px;">
-    <a href="/">&larr; Back to list</a>
-</div>
+<a href="/" class="back-link">← Back to list</a>
 
-<div class="card">
-    <h2>Person {{ person.person_id }}</h2>
-    <div style="margin-top: 20px;">
-        <p><strong>Status:</strong> <span class="status {{ person.status }}">{{ person.status }}</span></p>
-        {% if person.notes %}
-            <p><strong>Notes:</strong> {{ person.notes }}</p>
-        {% endif %}
+<div style="margin-bottom: 30px;">
+    <h1 style="margin-bottom: 8px;">{{ person.label or 'Unknown Person' }}</h1>
+    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #52525e;">Person #{{ person.person_id }}</span>
+        <span class="status {{ person.status }}">{{ person.status }}</span>
     </div>
 </div>
 
 {% if by_census %}
 <div class="card">
-    <h3>Census Records</h3>
-    <p style="color: #666; margin-bottom: 20px;">{{ by_census|length }} census year(s) with records</p>
-
-    {% for census, records in by_census.items() | sort %}
-    <div style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid #eee;">
-        <h4 style="margin-bottom: 15px; color: #0066cc;">{{ census }}</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Age</th>
-                    <th>Townland</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for record in records %}
-                <tr>
-                    <td>{{ record.name_as_recorded }}</td>
-                    <td>{{ record.role or '—' }}</td>
-                    <td>{{ record.age or '—' }}</td>
-                    <td>{{ record.townland or '—' }}</td>
-                    <td>{{ record.date or '—' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endfor %}
-</div>
-{% else %}
-<div class="card" style="background: #f0f0f0; padding: 40px; text-align: center;">
-    <p style="color: #666;">No census records linked to this person</p>
-</div>
-{% endif %}
-
-{% if relationships %}
-<div class="card">
-    <h3>Relationships</h3>
-    <p style="color: #666; margin-bottom: 20px;">{{ relationships|length }} relationship(s)</p>
-    <table>
+    <table class="detail-table">
         <thead>
             <tr>
-                <th>Type</th>
-                <th>With Person</th>
+                <th></th>
+                {% if '1901' in census_years %}
+                    <th>1901</th>
+                {% else %}
+                    <th style="color: #52525e;">1901</th>
+                {% endif %}
+                {% if '1911' in census_years %}
+                    <th>1911</th>
+                {% else %}
+                    <th style="color: #52525e;">1911</th>
+                {% endif %}
+                {% if '1926' in census_years %}
+                    <th>1926</th>
+                {% else %}
+                    <th style="color: #52525e;">1926</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
-            {% for rel in relationships %}
             <tr>
-                <td>
-                    <strong>{{ rel.type }}</strong>
-                    {% if rel.type == 'parent_child' %}
-                        <br><small style="color: #666;">
-                            {% if rel.person_id_1 == person.person_id %}
-                                this person is the child
-                            {% else %}
-                                this person is the parent
-                            {% endif %}
-                        </small>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if rel.other_person_id %}
-                        <a href="/person/{{ rel.other_person_id }}"><strong>{{ rel.other_person_label or 'Unknown' }}</strong></a>
-                        <br><small style="color: #999;">ID: {{ rel.other_person_id }}</small>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600; width: 100px;">Name</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in by_census %}
+                            {{ by_census[year][0].name_as_recorded }}
+                        {% else %}
+                            <span style="color: #52525e;">No record</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Age</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in by_census and by_census[year][0].age %}
+                            {{ by_census[year][0].age }}
+                        {% else %}
+                            <span style="color: #52525e;">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Role</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in by_census and by_census[year][0].role %}
+                            {{ by_census[year][0].role }}
+                        {% else %}
+                            <span style="color: #52525e;">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% if head_of_household %}
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Head of Household</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in head_of_household and head_of_household[year] %}
+                            <span style="color: #e8e8ec;">{{ head_of_household[year] }}</span>
+                        {% else %}
+                            <span style="color: #52525e;">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endif %}
+            {% if household_members %}
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Household Members</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}" style="font-size: 13px;">
+                        {% if year in household_members and household_members[year] %}
+                            <div style="text-align: left;">
+                                {% for member in household_members[year] %}
+                                    <div style="margin-bottom: 4px; color: #e8e8ec;">
+                                        {% if member.person_id %}
+                                            <a href="/person/{{ member.person_id }}" style="color: #4a7c6f;">{{ member.name }} ({{ member.role }})</a>
+                                        {% else %}
+                                            {{ member.name }} ({{ member.role }})
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span style="color: #52525e;">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Townland</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in by_census and by_census[year][0].townland %}
+                            {{ by_census[year][0].townland }}
+                        {% else %}
+                            <span style="color: #52525e;">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Source Image</td>
+                {% for year in ['1901', '1911', '1926'] %}
+                    <td class="{% if year not in census_years %}absent{% endif %}">
+                        {% if year in by_census and by_census[year][0].image_url %}
+                            <a href="{{ by_census[year][0].image_url }}" target="_blank" style="color: #4a7c6f;">View · Link ↗</a>
+                        {% else %}
+                            <span style="color: #52525e;">Image unavailable</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% if pairwise_scores %}
+<div class="scores-panel">
+    <h4>Pairwise Similarity Scores</h4>
+    <table style="width: 100%; font-size: 13px;">
+        <thead>
+            <tr>
+                <th style="text-align: left; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Pair</th>
+                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Score</th>
+                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Band</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pair in pairwise_scores %}
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #35353d;">{{ pair.label }}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #35353d; text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{ "%.2f" | format(pair.score) }}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #35353d; text-align: center;">
+                    {% if pair.score >= 0.80 %}
+                        <span class="score-band green">Green</span>
+                    {% elif pair.score >= 0.60 %}
+                        <span class="score-band amber">Amber</span>
                     {% else %}
-                        (unknown person)
+                        <span class="score-band red">Red</span>
                     {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
+{% else %}
+<div class="scores-panel">
+    <p style="color: #8a8a99;">
+        {% if census_years|length == 1 %}
+            Single appearance — no pairwise comparison available.
+        {% else %}
+            Similarity scores not yet computed for this cluster.
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <p>No census records linked to this person</p>
 </div>
 {% endif %}
 {% endblock %}
