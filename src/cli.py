@@ -33,6 +33,8 @@ Commands:
                         from local (primary) to cloud (backup).
     bulk-ingest         Ingest and add evidence for all CSV files in /data folder.
                         Runs full 5-step evidence pipeline on each CSV.
+    web                 Launch web browser for browsing persons and linkages.
+                        Opens at http://localhost:5000
 
 DATABASE_URL must be set in the environment or .env file before running any command.
 """
@@ -794,6 +796,17 @@ def _cmd_bulk_ingest(args: argparse.Namespace) -> None:
     bulk_ingest_and_add_evidence()
 
 
+def _cmd_web(args: argparse.Namespace) -> None:
+    """Launch web browser for browsing persons and linkages."""
+    from src.web import app
+    print("\n" + "=" * 80)
+    print("  GRA Person Browser")
+    print("=" * 80)
+    print("\n  ✓ Starting Flask server at http://localhost:5000")
+    print("  ✓ Press Ctrl+C to stop\n")
+    app.run(debug=False, port=5000, host='127.0.0.1')
+
+
 # ---------------------------------------------------------------------------
 # Argparse + dispatch
 # ---------------------------------------------------------------------------
@@ -920,6 +933,11 @@ def main() -> None:
         help="Ingest and add evidence for all CSV files in /data folder",
     )
 
+    sub.add_parser(
+        "web",
+        help="Launch web browser for browsing persons and linkages",
+    )
+
     dispatch = {
         "init":              _cmd_init,
         "clear-evidence":    _cmd_clear_evidence,
@@ -937,6 +955,7 @@ def main() -> None:
         "validate-linkages": _cmd_validate_linkages,
         "sync-to-cloud":     _cmd_sync_to_cloud,
         "bulk-ingest":       _cmd_bulk_ingest,
+        "web":               _cmd_web,
     }
 
     args = parser.parse_args()

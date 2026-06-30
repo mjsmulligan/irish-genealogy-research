@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from src.db.repository import Repository
 from src.constants import PERSON_RESOLUTION_THRESHOLD
 from src.genealogy import evaluate_pair, CENSUS_YEAR
+from src.audit import AuditLog
+import uuid
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +349,9 @@ def run_person_resolution(
     # Step 3: Create one Person per cluster
     from src.dal.person_repo import create_person, link_person_to_recorded_person
 
+    # Generate a change group ID for this entire run
+    run_change_group_id = str(uuid.uuid4())
+
     for root, members in clusters.items():
         # Validate cluster: remove any members that share a census source with another member
         # This catches transitive same-census linkages (A→B cross-census, B→C cross-census, but A and C same-census)
@@ -383,6 +388,16 @@ def run_person_resolution(
         person_id = create_person(repo, label=label, gender=gender)
         result.persons_created += 1
 
+        # Log person creation
+        AuditLog.log_create(
+            repo,
+            entity_type="person",
+            entity_id=person_id,
+            values={"label": label, "gender": gender or "unknown", "status": "active"},
+            reason=f"Clustered from {len(valid_members)} recorded_persons via person resolution",
+            change_group_id=run_change_group_id,
+        )
+
         # Link all RecordedPersons to this Person
         for rp_id in valid_members:
             link_person_to_recorded_person(
@@ -394,6 +409,16 @@ def run_person_resolution(
                 verified=False,
             )
             result.linkages_created += 1
+
+            # Log the linkage
+            AuditLog.log_create(
+                repo,
+                entity_type="person_recorded_person",
+                entity_id=person_id,
+                values={"recorded_person_id": rp_id},
+                reason="Linked via person clustering",
+                change_group_id=run_change_group_id,
+            )
 
     # Step 4: Count orphans (RecordedPersons not in any cluster)
     total_rp_row = repo.fetch_one("SELECT COUNT(*) as count FROM recorded_person")
