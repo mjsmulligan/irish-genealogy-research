@@ -16,6 +16,7 @@ from typing import Optional
 
 from src.db.repository import Repository
 from src.constants import SCORE_VERSION_ROLE_PAIR
+from src.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------
@@ -68,6 +69,7 @@ def ensure_relationship(
     person_id_1: int,
     person_id_2: int,
     rel_type: str,
+    change_group_id: str = "",
 ) -> Optional[int]:
     """
     Ensure a Relationship exists between two Persons and populate its evidence
@@ -111,6 +113,16 @@ def ensure_relationship(
         rel_id = result["relationship_id"]
         created = True
 
+        # Log relationship creation
+        AuditLog.log_create(
+            repo,
+            entity_type="relationship",
+            entity_id=rel_id,
+            values={"type": rel_type, "person_id_1": person_id_1, "person_id_2": person_id_2},
+            reason=f"Derived from household structure ({rel_type})",
+            change_group_id=change_group_id,
+        )
+
     # Populate provenance: find RecordedRelationships of this type linking the
     # two Persons' RecordedPersons, then write to relationship_recorded_relationship.
     # ON CONFLICT DO NOTHING in the DAL function makes this idempotent.
@@ -146,6 +158,7 @@ def ensure_relationship(
 def create_relationships_from_household(
     repo: Repository,
     household_members: list[dict],
+    change_group_id: str = "",
 ) -> int:
     """
     Create Relationships based on household roles.
@@ -166,7 +179,7 @@ def create_relationships_from_household(
 
     # Couple
     if head and spouse and head["person_id"] != spouse["person_id"]:
-        rel_id = ensure_relationship(repo, head["person_id"], spouse["person_id"], "couple")
+        rel_id = ensure_relationship(repo, head["person_id"], spouse["person_id"], "couple", change_group_id)
         if rel_id:
             count += 1
 
@@ -174,11 +187,11 @@ def create_relationships_from_household(
     children = [m for m in members_with_persons if m["role"] in ("son", "daughter")]
     for child in children:
         if head and head["person_id"] != child["person_id"]:
-            rel_id = ensure_relationship(repo, head["person_id"], child["person_id"], "parent_child")
+            rel_id = ensure_relationship(repo, head["person_id"], child["person_id"], "parent_child", change_group_id)
             if rel_id:
                 count += 1
         if spouse and spouse["person_id"] != child["person_id"]:
-            rel_id = ensure_relationship(repo, spouse["person_id"], child["person_id"], "parent_child")
+            rel_id = ensure_relationship(repo, spouse["person_id"], child["person_id"], "parent_child", change_group_id)
             if rel_id:
                 count += 1
 
@@ -187,7 +200,7 @@ def create_relationships_from_household(
         for child2 in children[i + 1:]:
             if child1["person_id"] == child2["person_id"]:
                 continue
-            rel_id = ensure_relationship(repo, child1["person_id"], child2["person_id"], "sibling")
+            rel_id = ensure_relationship(repo, child1["person_id"], child2["person_id"], "sibling", change_group_id)
             if rel_id:
                 count += 1
 
