@@ -10,6 +10,7 @@
     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px;">
         <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #52525e;">Person #{{ person.person_id }}</span>
         <span class="status {{ person.status }}">{{ person.status }}</span>
+        <a href="/audit?entity_type=person&entity_id={{ person.person_id }}" style="color: #4a7c6f; font-size: 13px;">Audit Log</a>
     </div>
 </div>
 
