@@ -3,11 +3,57 @@
 from flask import Flask, render_template, request, jsonify
 from src.db.db import open_db
 import os
+import json
+import ast
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 
 # Add built-in functions to Jinja2 context
 app.jinja_env.globals.update(max=max, min=min)
+
+
+def build_image_url(source_id, record_parameters, raw_text=None):
+    """
+    Construct NAI census image URL based on source_id and record data.
+
+    For 1901/1911: extracts document_id from record_parameters JSON
+    For 1926: extracts aform_name from raw_text CSV
+    """
+    if source_id == 3:  # Census 1901
+        try:
+            params = json.loads(record_parameters) if isinstance(record_parameters, str) else record_parameters
+            doc_id = params.get('document_id')
+            if doc_id:
+                return f"https://nationalarchives.ie/collections/search-the-census/view-pdf/?doc={doc_id}"
+        except (json.JSONDecodeError, TypeError):
+            pass
+    elif source_id == 4:  # Census 1911
+        try:
+            params = json.loads(record_parameters) if isinstance(record_parameters, str) else record_parameters
+            doc_id = params.get('document_id')
+            if doc_id:
+                return f"https://nationalarchives.ie/collections/search-the-census/view-pdf/?doc={doc_id}"
+        except (json.JSONDecodeError, TypeError):
+            pass
+    elif source_id == 5:  # Census 1926
+        # Parse CSV to find aform_name
+        if raw_text:
+            try:
+                lines = raw_text.strip().split('\n')
+                if len(lines) > 1:
+                    # First line is header, second line is data
+                    header = lines[0].split(',')
+                    if 'aform_name' in header:
+                        aform_idx = header.index('aform_name')
+                        data_row = lines[1].split(',')
+                        if aform_idx < len(data_row):
+                            aform_name = data_row[aform_idx].strip()
+                            if aform_name and aform_name != 'nan':
+                                return f"https://nationalarchives.ie/collections/search-the-1926-census/view-1926-pdf/?doc={aform_name}"
+            except (IndexError, ValueError):
+                pass
+
+    return None
 
 def get_db():
     """Get database connection."""
@@ -136,6 +182,8 @@ def detail(person_id):
       r.source_id,
       r.date,
       r.place_as_recorded as townland,
+      r.record_parameters,
+      r.raw_text,
       s.title as source_title
     FROM person_recorded_person prp
     JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
@@ -146,6 +194,10 @@ def detail(person_id):
     '''
 
     recorded_persons = repo.fetch_all(recorded_query, (person_id,))
+
+    # Add image URLs to each recorded person
+    for rp in recorded_persons:
+        rp['image_url'] = build_image_url(rp['source_id'], rp['record_parameters'], rp['raw_text'])
 
     # Group by census year (source_title is the census year)
     by_census = {}
@@ -246,11 +298,6 @@ def detail(person_id):
                 })
 
     repo.close()
-
-    # Add image URL placeholder (to be implemented with NAI pattern)
-    for rp_list in by_census.values():
-        for rp in rp_list:
-            rp['image_url'] = None  # TODO: construct from NAI_IMAGE_URL_PATTERN
 
     return render_template('detail.html',
                          person=person,
