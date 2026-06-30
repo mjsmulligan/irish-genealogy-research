@@ -42,8 +42,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 import re
+import uuid
 
 from src.db.repository import Repository
+from src.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +83,7 @@ def _create_event(
     place_id: int | None = None,
     relationship_id: int | None = None,
     is_primary: bool = True,
+    change_group_id: str = "",
 ) -> int:
     """
     Create an Event row and return the generated event_id.
@@ -95,13 +98,26 @@ def _create_event(
         """,
         (event_type, date, date_qualifier, place_id, relationship_id, 1 if is_primary else 0),
     )
-    return result["event_id"]
+    event_id = result["event_id"]
+
+    # Log event creation
+    AuditLog.log_create(
+        repo,
+        entity_type="event",
+        entity_id=event_id,
+        values={"type": event_type, "date": date or "NULL", "date_qualifier": date_qualifier or "NULL", "is_primary": is_primary},
+        reason=f"Created via event resolution ({event_type})",
+        change_group_id=change_group_id,
+    )
+
+    return event_id
 
 
 def _link_event_to_person(
     repo: Repository,
     event_id: int,
     person_id: int,
+    change_group_id: str = "",
 ) -> None:
     """Link an Event to a Person via person_event junction. ON CONFLICT DO NOTHING."""
     repo.execute(
@@ -113,11 +129,22 @@ def _link_event_to_person(
         (person_id, event_id),
     )
 
+    # Log the linkage
+    AuditLog.log_create(
+        repo,
+        entity_type="person_event",
+        entity_id=event_id,
+        values={"person_id": person_id},
+        reason="Linked via event resolution",
+        change_group_id=change_group_id,
+    )
+
 
 def _link_event_to_record(
     repo: Repository,
     event_id: int,
     record_id: int,
+    change_group_id: str = "",
 ) -> None:
     """Link an Event to a Record via event_record junction (evidence provenance)."""
     repo.execute(
@@ -127,6 +154,16 @@ def _link_event_to_record(
         ON CONFLICT DO NOTHING
         """,
         (event_id, record_id),
+    )
+
+    # Log the linkage
+    AuditLog.log_create(
+        repo,
+        entity_type="event_record",
+        entity_id=event_id,
+        values={"record_id": record_id},
+        reason="Evidence provenance for event resolution",
+        change_group_id=change_group_id,
     )
 
 
@@ -367,14 +404,15 @@ def _create_birth_events_for_person(
             place_id=place_id,
             relationship_id=None,
             is_primary=is_primary,
+            change_group_id=change_group_id,
         )
         events_created += 1
 
-        _link_event_to_person(repo, event_id, person_id)
+        _link_event_to_person(repo, event_id, person_id, change_group_id)
         pe_links += 1
 
         for record_id, _ in records:
-            _link_event_to_record(repo, event_id, record_id)
+            _link_event_to_record(repo, event_id, record_id, change_group_id)
             er_links += 1
 
     return events_created, pe_links, er_links
@@ -499,6 +537,7 @@ def run_event_resolution(
     Returns EventResolutionResult with counts.
     """
     result = EventResolutionResult()
+    run_change_group_id = str(uuid.uuid4())
 
     # ------------------------------------------------------------------
     # Pass 1: Census Events
