@@ -72,6 +72,7 @@ def index():
     status = request.args.get('status', '')
     score_band = request.args.get('score_band', '')
     coverage = request.args.get('coverage', '')
+    townland = request.args.get('townland', '').strip()
     page = request.args.get('page', 1, type=int)
     per_page = 50
     offset = (page - 1) * per_page
@@ -86,7 +87,8 @@ def index():
         COUNT(DISTINCT CASE WHEN r.record_id IS NOT NULL THEN r.source_id END) as census_count,
         STRING_AGG(DISTINCT s.title, ', ' ORDER BY s.title) as censuses,
         COALESCE(MAX(rp.name_as_recorded), 'Unknown') as label,
-        MIN(rs.score) as weakest_link_score
+        MIN(rs.score) as weakest_link_score,
+        STRING_AGG(DISTINCT LOWER(r.place_as_recorded), ', ') as places
       FROM person p
       LEFT JOIN person_recorded_person prp ON p.person_id = prp.person_id
       LEFT JOIN recorded_person rp ON prp.recorded_person_id = rp.recorded_person_id
@@ -126,8 +128,13 @@ def index():
         query += ' AND census_count = %s'
         params.append(int(coverage))
 
-    # Sort by weakest link score ascending (most uncertain first), then by person_id
-    query += ' ORDER BY COALESCE(weakest_link_score, 1.0) ASC, person_id ASC'
+    # Apply townland filter
+    if townland:
+        query += ' AND places ILIKE %s'
+        params.append(f'%{townland.lower()}%')
+
+    # Sort by weakest link score descending (strongest first), then by person_id
+    query += ' ORDER BY COALESCE(weakest_link_score, 0.0) DESC, person_id ASC'
 
     # Count total after filters
     count_query = f'SELECT COUNT(*) as count FROM ({query}) as filtered'
@@ -158,7 +165,8 @@ def index():
                          per_page=per_page,
                          status=status,
                          score_band=score_band,
-                         coverage=coverage)
+                         coverage=coverage,
+                         townland=townland)
 
 
 @app.route('/person/<int:person_id>')

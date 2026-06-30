@@ -4,7 +4,12 @@
 
 {% block content %}
 <div class="filters">
-    <form method="GET" style="display: flex; gap: 20px; width: 100%; flex-wrap: wrap;">
+    <form method="GET" style="display: flex; gap: 20px; width: 100%; flex-wrap: wrap; align-items: flex-end;">
+        <div class="filter-group">
+            <label>Townland</label>
+            <input type="text" name="townland" placeholder="Search townland..." value="{{ townland }}" style="padding: 8px; border: 1px solid #35353d; background: #242429; color: #e8e8ec; border-radius: 3px; font-family: 'Inter', sans-serif;">
+        </div>
+
         <div class="filter-group">
             <label>Status</label>
             <div class="filter-buttons">
@@ -99,8 +104,8 @@
 
 <div class="pagination">
     {% if page > 1 %}
-        <a href="/?page=1{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">« First</a>
-        <a href="/?page={{ page - 1 }}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">‹ Prev</a>
+        <a href="/?page=1{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">« First</a>
+        <a href="/?page={{ page - 1 }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">‹ Prev</a>
     {% endif %}
 
     {% set start = max(1, page - 2) %}
@@ -114,7 +119,7 @@
         {% if p == page %}
             <span class="current">{{ p }}</span>
         {% else %}
-            <a href="/?page={{ p }}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">{{ p }}</a>
+            <a href="/?page={{ p }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">{{ p }}</a>
         {% endif %}
     {% endfor %}
 
@@ -123,8 +128,8 @@
     {% endif %}
 
     {% if page < total_pages %}
-        <a href="/?page={{ page + 1 }}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Next ›</a>
-        <a href="/?page={{ total_pages }}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Last »</a>
+        <a href="/?page={{ page + 1 }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Next ›</a>
+        <a href="/?page={{ total_pages }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Last »</a>
     {% endif %}
 </div>
 
