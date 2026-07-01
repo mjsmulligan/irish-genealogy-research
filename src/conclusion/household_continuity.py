@@ -153,22 +153,25 @@ def _age_match(age_a: int | None, age_b: int | None, elapsed: int, tolerance: in
 # Role progression by succession type
 # ---------------------------------------------------------------------------
 
-# Different household head successions create different role dynamics:
+# Different household head successions create different plausible role dynamics.
+# These are not certainties but genealogically defensible transitions that can
+# corroborate weak age matches.
 #
-# SAME_HEAD: Head stays the same (or head→head name variation).
-#   - All members' roles relative to the head stay similar.
-#   - grandchild→son is plausible (enumerator reclassification).
+# SAME_HEAD: Head stays the same (same person across censuses, or same name).
+#   - All members' roles relative to the head remain stable.
+#   - Enumerator may reclassify (e.g., grandchild→son) but relationships unchanged.
 #
-# SPOUSE_BECOMES_HEAD: Patriarch dies, widow becomes head.
+# SPOUSE_BECOMES_HEAD: Widow inherits head role (patriarch dies before next census).
 #   - Spouse→head (widow takes role).
-#   - Son stays son (now son of the widow-head, not just head's son).
-#   - Grandchild stays grandchild (no role shift relative to widow).
-#   - NO grandchild→son (not his children in the new hierarchy).
+#   - Other roles stay the same: son stays son, grandchild stays grandchild, etc.
+#   - Everyone's relationship to the household is unchanged (still the same family).
 #
-# CHILD_BECOMES_HEAD: Adult son/daughter becomes head (patriarch/widow dies).
-#   - Son/daughter→head (child inherits headship).
-#   - Other sons→sibling (now brothers of the new head).
-#   - Grandchild→niece/nephew (now niece/nephew of the new head).
+# CHILD_BECOMES_HEAD: Adult son/daughter inherits head role (parent(s) die).
+#   - Son/daughter→head (child inherits).
+#   - Grandchild→son/daughter is plausible: could be the new head's own child,
+#     or an enumerator reclassification as family structure changes.
+#   - Son/daughter→sibling is plausible: former siblings of the new head.
+#   - Other members' progressions: conservative (stay same role).
 
 _ROLE_PROGRESSIONS_BY_SUCCESSION: dict[str, frozenset[tuple[str, str]]] = {
     "same_head": frozenset({
@@ -185,16 +188,16 @@ _ROLE_PROGRESSIONS_BY_SUCCESSION: dict[str, frozenset[tuple[str, str]]] = {
         ("cousin", "cousin"),
         ("niece_nephew", "niece_nephew"),
         ("aunt_uncle", "aunt_uncle"),
-        ("grandchild", "son"),       # enumerator reclassifies
+        ("grandchild", "son"),          # enumerator reclassification
         ("grandchild", "daughter"),
-        ("sibling", "nephew"),        # informal adoption
+        ("sibling", "nephew"),          # informal adoption
         ("sibling", "niece"),
     }),
     "spouse_becomes_head": frozenset({
-        ("spouse", "head"),           # widow takes head role
-        ("son", "son"),               # son stays son
+        ("spouse", "head"),             # widow inherits head role
+        ("son", "son"),                 # son stays son to widow
         ("daughter", "daughter"),
-        ("grandchild", "grandchild"),
+        ("grandchild", "grandchild"),   # still grandchild to widow
         ("sibling", "sibling"),
         ("in_law", "in_law"),
         ("boarder", "boarder"),
@@ -202,15 +205,16 @@ _ROLE_PROGRESSIONS_BY_SUCCESSION: dict[str, frozenset[tuple[str, str]]] = {
         ("visitor", "visitor"),
     }),
     "child_becomes_head": frozenset({
-        ("son", "head"),              # son inherits headship
-        ("daughter", "head"),
-        ("son", "sibling"),           # brother of new head
-        ("daughter", "sibling"),      # sister of new head
-        ("grandchild", "niece_nephew"),  # becomes niece/nephew of new head
-        ("sibling", "sibling"),
-        ("in_law", "in_law"),
-        ("boarder", "boarder"),
+        ("son", "head"),                # son inherits headship
+        ("daughter", "head"),           # daughter inherits headship
+        ("son", "sibling"),             # brother of new head
+        ("daughter", "sibling"),        # sister of new head
+        ("grandchild", "son"),          # plausible: new head's own child
+        ("grandchild", "daughter"),
+        ("sibling", "sibling"),         # siblings stay siblings
+        ("boarder", "boarder"),         # unrelated members stay same
         ("servant", "servant"),
+        ("visitor", "visitor"),
     }),
 }
 
