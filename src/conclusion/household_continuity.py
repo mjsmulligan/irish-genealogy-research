@@ -680,7 +680,25 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
                         claimed_b.add(best_head_b["recorded_person_id"])
                 else:
                     # Same_head or spouse_becomes_head: normal head linking
-                    if not _already_linked(head_a):
+                    # First check for conflict: both heads already linked to different Persons
+                    head_a_person_id = head_a.get("person_id") if _already_linked(head_a) else None
+                    head_b_person_id = best_head_b.get("person_id") if _already_linked(best_head_b) else None
+
+                    if head_a_person_id and head_b_person_id and head_a_person_id != head_b_person_id:
+                        # Conflict: heads already linked to different Persons
+                        # Merge the two Persons: move all RecordedPersons from head_b_person to head_a_person
+                        from src.dal.person_repo import merge_persons
+                        AuditLog.log_merge(
+                            repo,
+                            keep_person_id=head_a_person_id,
+                            merge_person_id=head_b_person_id,
+                            reason="Household continuity merged split heads from same household pair",
+                            change_group_id=change_group_id,
+                        )
+                        merge_persons(repo, head_a_person_id, head_b_person_id)
+                        person_id = head_a_person_id
+                        result.resolved_rp_ids.add(best_head_b["recorded_person_id"])
+                    elif not _already_linked(head_a):
                         person_id = _get_or_create_person(
                             repo, head_a, SCORE_CONTINUITY_LINK, change_group_id
                         )

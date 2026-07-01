@@ -101,3 +101,110 @@ def link_person_to_recorded_person(
         "ON CONFLICT (person_id, recorded_person_id) DO NOTHING",
         (person_id, recorded_person_id, score, score_version, 1 if verified else 0),
     )
+
+
+def merge_persons(
+    repo: Repository,
+    keep_person_id: int,
+    merge_person_id: int,
+) -> None:
+    """
+    Merge two Persons by moving all RecordedPersons from merge_person_id to
+    keep_person_id, then deleting the now-empty Person.
+
+    Relationships of the merge_person are set to pending_delete for cleanup in a later pass.
+
+    Used when household continuity detects that confirmed household heads were
+    already linked to different Persons — this fixes the split.
+    """
+    # Delete person_events from merge_person that would conflict with keep_person
+    repo.execute(
+        """
+        DELETE FROM person_event
+        WHERE person_id = %s
+          AND event_id IN (
+            SELECT event_id FROM person_event WHERE person_id = %s
+          )
+        """,
+        (merge_person_id, keep_person_id),
+    )
+
+    # Move remaining person_event references
+    repo.execute(
+        "UPDATE person_event SET person_id = %s WHERE person_id = %s",
+        (keep_person_id, merge_person_id),
+    )
+
+    # Delete event references in order: event_record, person_event, then events
+    # Get all event IDs from relationships to be cleaned up
+    repo.execute(
+        """
+        DELETE FROM event_record
+        WHERE event_id IN (
+          SELECT event_id FROM event
+          WHERE relationship_id IN (
+            SELECT relationship_id FROM relationship
+            WHERE person_id_1 = %s OR person_id_2 = %s
+          )
+        )
+        """,
+        (merge_person_id, merge_person_id),
+    )
+
+    repo.execute(
+        """
+        DELETE FROM person_event
+        WHERE event_id IN (
+          SELECT event_id FROM event
+          WHERE relationship_id IN (
+            SELECT relationship_id FROM relationship
+            WHERE person_id_1 = %s OR person_id_2 = %s
+          )
+        )
+        """,
+        (merge_person_id, merge_person_id),
+    )
+
+    repo.execute(
+        """
+        DELETE FROM event
+        WHERE relationship_id IN (
+          SELECT relationship_id FROM relationship
+          WHERE person_id_1 = %s OR person_id_2 = %s
+        )
+        """,
+        (merge_person_id, merge_person_id),
+    )
+
+    repo.execute(
+        """
+        UPDATE relationship
+        SET status = 'pending_delete', pending_delete_at = NOW()
+        WHERE person_id_1 = %s OR person_id_2 = %s
+        """,
+        (merge_person_id, merge_person_id),
+    )
+
+    # Move all RecordedPersons from merge_person to keep_person
+    repo.execute(
+        """
+        UPDATE person_recorded_person
+        SET person_id = %s
+        WHERE person_id = %s
+          AND recorded_person_id NOT IN (
+            SELECT recorded_person_id FROM person_recorded_person
+            WHERE person_id = %s
+          )
+        """,
+        (keep_person_id, merge_person_id, keep_person_id),
+    )
+
+    # Delete duplicate person_recorded_person rows (if any RecordedPerson was linked to both)
+    repo.execute(
+        "DELETE FROM person_recorded_person WHERE person_id = %s",
+        (merge_person_id,),
+    )
+
+    # Note: We cannot delete the Person directly because relationships still reference it
+    # (they have status='pending_delete'). These orphaned Persons will be cleaned up
+    # by a separate maintenance step that handles relationship cleanup first.

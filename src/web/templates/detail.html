@@ -2,6 +2,57 @@
 
 {% block title %}{{ person.label or 'Person ' + person.person_id|string }} - grá{% endblock %}
 
+{% block extra_css %}
+<style>
+    .conclusions-panel {
+        background: #fff;
+        border: 1px solid #ddd9d0;
+        border-left: 4px solid #3a6b5f;
+        padding: 20px;
+        margin-bottom: 28px;
+    }
+    .conclusions-panel h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #3a6b5f;
+        margin: 0 0 16px 0;
+        font-weight: 600;
+    }
+    .conclusion-item {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    .conclusion-item:last-child {
+        margin-bottom: 0;
+    }
+    .conclusion-check {
+        flex-shrink: 0;
+        width: 20px;
+        text-align: center;
+        padding-top: 2px;
+    }
+    .conclusion-item.match .conclusion-check {
+        color: #3a6b5f;
+        font-weight: bold;
+    }
+    .conclusion-item.alert .conclusion-check {
+        color: #b84444;
+        font-weight: bold;
+    }
+    .conclusion-text {
+        color: #3a3a3e;
+    }
+    .conclusion-text strong {
+        font-weight: 600;
+        color: #1c1c1e;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <a href="/" class="back-link">← Back to list</a>
 
@@ -83,7 +134,11 @@
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in head_of_household and head_of_household[census_key] %}
-                            <span style="color: #1c1c1e;">{{ head_of_household[census_key] }}</span>
+                            {% if head_of_household[census_key].person_id %}
+                                <a href="/person/{{ head_of_household[census_key].person_id }}" style="color: #3a6b5f;">{{ head_of_household[census_key].name }}</a>
+                            {% else %}
+                                <span style="color: #1c1c1e;">{{ head_of_household[census_key].name }}</span>
+                            {% endif %}
                         {% else %}
                             <span style="color: #aaa8a0;">—</span>
                         {% endif %}
@@ -158,6 +213,20 @@
         </tbody>
     </table>
 </div>
+
+{% if conclusions %}
+<div class="conclusions-panel">
+    <h3>Evidence for identity</h3>
+    {% for conclusion in conclusions %}
+    <div class="conclusion-item {% if conclusion.type == 'alert' %}alert{% else %}match{% endif %}">
+        <div class="conclusion-check">
+            {% if conclusion.type == 'alert' %}⚠{% else %}✓{% endif %}
+        </div>
+        <div class="conclusion-text">{{ conclusion.text | safe }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 {% if pairwise_scores %}
 <div class="scores-panel">

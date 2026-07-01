@@ -52,6 +52,11 @@ class ReportItem:
     # action is obvious from the finding_type (e.g. merge_error_candidate).
     recommended_action: str | None
 
+    # Optional: positive conclusions justifying the link or decision.
+    # List of conclusion items (dicts with 'type' and 'text' keys).
+    # type: one of 'match', 'plausible', 'alert' (for anomalies that were corroborated)
+    conclusions: list[dict] | None = None
+
     def to_dict(self) -> dict:
         """Serialise to a plain dict for JSON output."""
         return {
@@ -64,6 +69,7 @@ class ReportItem:
             "title":              self.title,
             "detail":             self.detail,
             "recommended_action": self.recommended_action,
+            "conclusions":        self.conclusions,
         }
 
 

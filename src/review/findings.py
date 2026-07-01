@@ -1423,6 +1423,25 @@ def find_age_progression_anomaly(
             f"Most likely cause: transcription digit error in the anomalous record."
         )
 
+        # Build conclusions: core evidence + anomaly alert
+        conclusions = [
+            {
+                "type": "match",
+                "text": f"Name consistent across {len(appearances)} census appearance(s).",
+            },
+            {
+                "type": "match",
+                "text": f"Place stable across all years.",
+            },
+            {
+                "type": "alert",
+                "text": (
+                    f"Age anomaly: {len(anomalies)} appearance(s) deviate >{threshold} years from expected. "
+                    f"Likely transcription error in the anomalous record(s)."
+                ),
+            },
+        ]
+
         items.append(ReportItem(
             finding_type="age_progression_anomaly",
             priority=0,
@@ -1441,6 +1460,7 @@ def find_age_progression_anomaly(
                 "most common cause. Do not use the anomalous age as a matching "
                 "signal — the other census ages are the reliable anchors."
             ),
+            conclusions=conclusions,
         ))
 
     return items

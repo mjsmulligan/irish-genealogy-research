@@ -5,7 +5,8 @@
       "name": "gra-web",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "src.web.app"],
-      "port": 5000
+      "port": 5000,
+      "autoPort": true
     }
   ]
 }

@@ -147,6 +147,56 @@
         font-family: 'JetBrains Mono', monospace;
         margin-bottom: 12px;
     }
+    /* Conclusions panel (between finding title and detail) */
+    .finding-conclusions {
+        display: none;
+        grid-column: 1 / -1;
+        padding: 12px 16px;
+        border-top: 1px solid #ede9e0;
+        background: #fff;
+        border-left: 4px solid #3a6b5f;
+    }
+    .finding-row.expanded .finding-conclusions {
+        display: block;
+    }
+    .conclusions-heading {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #3a6b5f;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    .conclusion-item {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .conclusion-item:last-child {
+        margin-bottom: 0;
+    }
+    .conclusion-check {
+        flex-shrink: 0;
+        width: 16px;
+        text-align: center;
+    }
+    .conclusion-item.match .conclusion-check {
+        color: #3a6b5f;
+        font-weight: bold;
+    }
+    .conclusion-item.alert .conclusion-check {
+        color: #b84444;
+        font-weight: bold;
+    }
+    .conclusion-text {
+        color: #3a3a3e;
+    }
+    .conclusion-text strong {
+        font-weight: 600;
+        color: #1c1c1e;
+    }
 </style>
 {% endblock %}
 
@@ -223,6 +273,22 @@
             {% endif %}
         </div>
         <div class="finding-type-badge {{ colour }}">{{ ftype.replace('_', ' ') }}</div>
+
+        <!-- Positive conclusions panel -->
+        {% if item.conclusions %}
+        <div class="finding-conclusions">
+            <div class="conclusions-heading">Evidence for conclusion</div>
+            {% for conclusion in item.conclusions %}
+            <div class="conclusion-item {% if conclusion.type == 'alert' %}alert{% else %}match{% endif %}">
+                <div class="conclusion-check">
+                    {% if conclusion.type == 'alert' %}⚠{% else %}✓{% endif %}
+                </div>
+                <div class="conclusion-text">{{ conclusion.text }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="finding-detail">
             <p>{{ item.detail | linkify_persons }}</p>
             {% if item.recommended_action %}

@@ -113,6 +113,39 @@ class AuditLog:
         )
 
     @staticmethod
+    def log_merge(
+        repo: Repository,
+        keep_person_id: int,
+        merge_person_id: int,
+        reason: str = "",
+        reviewer_id: int = REVIEWER_SYSTEM,
+        change_group_id: Optional[str] = None,
+    ) -> None:
+        """Log merger of two Persons (move all RecordedPersons from merge to keep)."""
+        if not change_group_id:
+            change_group_id = str(uuid.uuid4())
+
+        # Log as "update" to the keep_person since we're consolidating records into it
+        repo.execute(
+            """
+            INSERT INTO conclusion_log
+            (reviewer_id, action, entity_type, entity_id, field_name, old_value, new_value, reason, change_group_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                reviewer_id,
+                "update",
+                "person",
+                keep_person_id,
+                "merged_from_person_id",
+                str(merge_person_id),
+                str(keep_person_id),
+                reason,
+                change_group_id,
+            ),
+        )
+
+    @staticmethod
     def get_logs(
         repo: Repository,
         entity_type: Optional[str] = None,

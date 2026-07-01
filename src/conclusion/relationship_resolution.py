@@ -646,20 +646,39 @@ def run_relationship_resolution(
         placeholders = ",".join(["%s"] * len(orphaned_person_ids))
         ids = tuple(orphaned_person_ids)
 
-        # Single CTE statement: all six deletes happen atomically.
+        # Single CTE statement: all deletes happen atomically.
         # Order matters — FK children before FK parents.
         repo.execute(
             f"""
             WITH target_persons AS (
                 SELECT unnest(ARRAY[{placeholders}]::int[]) AS person_id
             ),
+            target_rels AS (
+                SELECT relationship_id FROM relationship r
+                JOIN target_persons tp
+                  ON tp.person_id IN (r.person_id_1, r.person_id_2)
+            ),
+            del_er AS (
+                DELETE FROM event_record
+                WHERE event_id IN (
+                    SELECT DISTINCT event_id FROM event
+                    WHERE relationship_id IN (SELECT relationship_id FROM target_rels)
+                )
+            ),
+            del_per AS (
+                DELETE FROM person_event
+                WHERE event_id IN (
+                    SELECT DISTINCT event_id FROM event
+                    WHERE relationship_id IN (SELECT relationship_id FROM target_rels)
+                )
+            ),
+            del_evt AS (
+                DELETE FROM event
+                WHERE relationship_id IN (SELECT relationship_id FROM target_rels)
+            ),
             del_rrr AS (
                 DELETE FROM relationship_recorded_relationship
-                WHERE relationship_id IN (
-                    SELECT relationship_id FROM relationship r
-                    JOIN target_persons tp
-                      ON tp.person_id IN (r.person_id_1, r.person_id_2)
-                )
+                WHERE relationship_id IN (SELECT relationship_id FROM target_rels)
             ),
             del_rel AS (
                 DELETE FROM relationship
