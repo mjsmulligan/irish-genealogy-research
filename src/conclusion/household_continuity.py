@@ -47,8 +47,12 @@ HEAD_NAME_THRESHOLD: float = 0.80
 MEMBER_NAME_THRESHOLD: float = 0.70
 HEAD_AGE_TOLERANCE: int = 4
 MEMBER_AGE_TOLERANCE: int = 5
+# Widened tolerance used when role progression strongly corroborates the match
+# despite an anomalous age.  Applies only when _role_consistent returns True.
+MEMBER_AGE_TOLERANCE_ROLE_CORROBORATED: int = 60
 
 SCORE_CONTINUITY_LINK: float = 0.88   # high-confidence prior; household context anchors it
+SCORE_CONTINUITY_ROLE_CORROBORATED: float = 0.78  # lower confidence — age anomaly present
 
 CENSUS_PAIRS: list[tuple[int, int]] = [
     (SOURCE_ID_1901, SOURCE_ID_1911),
@@ -146,6 +150,58 @@ def _age_match(age_a: int | None, age_b: int | None, elapsed: int, tolerance: in
 
 
 # ---------------------------------------------------------------------------
+# Role progression
+# ---------------------------------------------------------------------------
+
+# Plausible (role_a, role_b) transitions across an adjacent census pair.
+# "Same role" is always plausible (a son stays a son).
+# "Promoted" transitions reflect natural life progression over 10-15 years.
+# Asymmetric: grandchild→son is plausible, son→grandchild is not.
+_PLAUSIBLE_ROLE_PROGRESSIONS: frozenset[tuple[str, str]] = frozenset({
+    # Same role (always plausible)
+    ("head", "head"),
+    ("spouse", "spouse"),
+    ("son", "son"),
+    ("daughter", "daughter"),
+    ("grandchild", "grandchild"),
+    ("sibling", "sibling"),
+    ("in_law", "in_law"),
+    ("boarder", "boarder"),
+    ("servant", "servant"),
+    ("visitor", "visitor"),
+    ("cousin", "cousin"),
+    ("niece_nephew", "niece_nephew"),
+    ("aunt_uncle", "aunt_uncle"),
+    # Natural promotions
+    ("son", "head"),            # father dies; eldest son becomes head
+    ("daughter", "head"),       # rare but recorded
+    ("son", "spouse"),          # son marries out, listed as spouse in new household
+    ("daughter", "spouse"),     # daughter marries, now spouse in same/joined household
+    ("grandchild", "son"),      # enumerator reclassifies as household grows
+    ("grandchild", "daughter"),
+    ("sibling", "head"),        # elder sibling inherits head role
+    ("sibling", "spouse"),
+    ("in_law", "head"),
+    ("niece_nephew", "son"),    # informal adoption / reclassification
+    ("niece_nephew", "daughter"),
+})
+
+
+def _role_consistent(role_a: str | None, role_b: str | None) -> bool | None:
+    """
+    Returns True if the role transition is plausible, False if implausible,
+    None if either role is missing or 'unknown' (no signal either way).
+
+    A False return causes _match_member to skip the candidate regardless of
+    name/age scores.  A True return widens the age tolerance when age is the
+    only failing signal.
+    """
+    if not role_a or not role_b or role_a == "unknown" or role_b == "unknown":
+        return None
+    return (role_a, role_b) in _PLAUSIBLE_ROLE_PROGRESSIONS
+
+
+# ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
 
@@ -191,6 +247,14 @@ def _head_of(members: list[dict]) -> dict | None:
     """Return the head member from a household member list, or None."""
     for m in members:
         if (m.get("role") or "").lower() == "head":
+            return m
+    return None
+
+
+def _spouse_of(members: list[dict]) -> dict | None:
+    """Return the spouse member from a household member list, or None."""
+    for m in members:
+        if (m.get("role") or "").lower() == "spouse":
             return m
     return None
 
@@ -319,30 +383,66 @@ def _match_member(
     name_threshold: float,
     age_tolerance: int,
     exclude_rp_ids: set[int],
-) -> dict | None:
+) -> tuple[dict | None, bool]:
     """
     Find the best match for `candidate` in `pool` by name similarity + age
-    progression. Returns the best-matching pool member or None.
+    progression, with role progression as a corroborating signal.
+
+    Returns (best_match, role_corroborated).
+
+    Role logic:
+    - Implausible role transition → skip candidate unconditionally.
+    - Plausible role transition + age fails normal tolerance → retry with
+      MEMBER_AGE_TOLERANCE_ROLE_CORROBORATED (wide tolerance for digit errors).
+    - Role match is used as a tie-breaker: score += 0.05 bonus for consistent
+      role, so a slightly lower name-sim but role-consistent member wins.
+    - role_corroborated=True is returned when age only passed under the wide
+      tolerance, flagging the link for age_progression_anomaly review.
     """
     best_match: dict | None = None
     best_score: float = -1.0
+    best_role_corroborated: bool = False
 
     for member in pool:
         if member["recorded_person_id"] in exclude_rp_ids:
             continue
+
         sim = _name_similarity(
             candidate.get("name_as_recorded", ""),
             member.get("name_as_recorded", ""),
         )
         if sim < name_threshold:
             continue
-        if not _age_match(candidate.get("age"), member.get("age"), elapsed, age_tolerance):
-            continue
-        if sim > best_score:
-            best_score = sim
-            best_match = member
 
-    return best_match
+        role_consistent = _role_consistent(candidate.get("role"), member.get("role"))
+
+        # Hard reject: implausible role transition
+        if role_consistent is False:
+            continue
+
+        age_ok = _age_match(candidate.get("age"), member.get("age"), elapsed, age_tolerance)
+        role_corroborated = False
+
+        if not age_ok:
+            # Age fails normal tolerance — try wide tolerance if role corroborates
+            if role_consistent is True and _age_match(
+                candidate.get("age"), member.get("age"),
+                elapsed, MEMBER_AGE_TOLERANCE_ROLE_CORROBORATED
+            ):
+                age_ok = True
+                role_corroborated = True
+            else:
+                continue
+
+        # Role-consistent matches get a small score bonus as tie-breaker
+        effective_score = sim + (0.05 if role_consistent is True else 0.0)
+
+        if effective_score > best_score:
+            best_score = effective_score
+            best_match = member
+            best_role_corroborated = role_corroborated
+
+    return best_match, best_role_corroborated
 
 
 # ---------------------------------------------------------------------------
@@ -407,6 +507,32 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
                     best_head_b = head_b
 
             if best_rec_b is None:
+                # Spouse fallback: year-A spouse may have become year-B head
+                # (widowhood succession — patriarch dies, widow takes head role).
+                spouse_a = _spouse_of(members_a)
+                if spouse_a:
+                    for rec_b in records_b:
+                        members_b_try = get_household_members(repo, rec_b["record_id"])
+                        head_b_try = _head_of(members_b_try)
+                        if not head_b_try:
+                            continue
+                        sim = _name_similarity(
+                            spouse_a.get("name_as_recorded", ""),
+                            head_b_try.get("name_as_recorded", ""),
+                        )
+                        if sim < HEAD_NAME_THRESHOLD:
+                            continue
+                        if not _age_match(
+                            spouse_a.get("age"), head_b_try.get("age"), elapsed, HEAD_AGE_TOLERANCE
+                        ):
+                            continue
+                        result.household_pairs_examined += 1
+                        if sim > best_head_sim:
+                            best_head_sim = sim
+                            best_rec_b = rec_b
+                            best_head_b = head_b_try
+
+            if best_rec_b is None:
                 continue
 
             # Confirmed household pair
@@ -442,7 +568,7 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
                 non_head_b = [m for m in members_b if m["recorded_person_id"] != best_head_b["recorded_person_id"]]
 
                 for member_a in non_head_a:
-                    match_b = _match_member(
+                    match_b, role_corroborated = _match_member(
                         member_a,
                         non_head_b,
                         elapsed,
@@ -455,9 +581,15 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
 
                     claimed_b.add(match_b["recorded_person_id"])
 
+                    # Role-corroborated links (age anomaly present) use lower score
+                    link_score = (
+                        SCORE_CONTINUITY_ROLE_CORROBORATED if role_corroborated
+                        else SCORE_CONTINUITY_LINK
+                    )
+
                     if not _already_linked(member_a):
                         pid = _get_or_create_person(
-                            repo, member_a, SCORE_CONTINUITY_LINK, change_group_id
+                            repo, member_a, link_score, change_group_id
                         )
                         result.persons_created += 1
                         result.linkages_created += 1
@@ -467,7 +599,7 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
 
                     if not _already_linked(match_b):
                         _link_to_existing_person(
-                            repo, pid, match_b, SCORE_CONTINUITY_LINK, change_group_id
+                            repo, pid, match_b, link_score, change_group_id
                         )
                         result.linkages_created += 1
                         result.resolved_rp_ids.add(match_b["recorded_person_id"])
