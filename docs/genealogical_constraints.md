@@ -457,4 +457,4 @@ ______________________________________________________________________
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `repositories.md`, `reconstruction_algorithms.md`*
 *`validation_rules.md` is a legacy document pending consolidation into this file (ROADMAP item 42).*
 
-*Schema version: 4.3 — 28 June 2026*
+*Schema version: 4.4 — 1 July 2026*

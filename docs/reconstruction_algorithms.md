@@ -690,4 +690,4 @@ ______________________________________________________________________
 
 *Related documents: `conceptual_model.md`, `data_dictionary.md`, `database_schema.md`, `genealogical_constraints.md`*
 
-*Schema version: 4.3 — 28 June 2026*
+*Schema version: 4.4 — 1 July 2026*
