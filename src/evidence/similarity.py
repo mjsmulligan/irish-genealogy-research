@@ -89,17 +89,21 @@ def _build_settings() -> SettingsCreator:
     a separate DataFrame; Splink generates cross-DataFrame pairs only.
 
     Blocking:
-      Primary:   first 4 chars of household_surname_norm (character-based)
+      Primary:   same resolved place_id (strongest geographic anchor)
+      Secondary: soundex_household_surname (phonetic encoding for Irish surname variants)
+      Fallback:  first 4 chars of household_surname_norm (character-based)
 
-    NOTE: place_id and soundex are NOT blocking rules — they're comparison features instead.
-    This allows cross-townland and cross-variant surname linkage when household structure aligns.
-    Geographic proximity and surname phonetics are evidence (scored), not hard filters (blocked).
+    Soundex pre-computed in features (Python, not SQL) for DuckDB compatibility.
+    Handles Irish surname variants (e.g., O'Brien/Brien/O Brien all → B650).
+    Character-based fallback catches names with common prefixes.
 
     Comparisons follow reconstruction_algorithms.md §5.7.
     """
     return SettingsCreator(
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
+            block_on("place_id"),
+            block_on("soundex_household_surname"),
             block_on("substr(household_surname_norm, 1, 4)"),
         ],
         comparisons=[
@@ -280,6 +284,9 @@ def run_record_similarity(
         linker.training.estimate_parameters_using_expectation_maximisation(
             block_on("substr(household_surname_norm, 1, 4)")
         )
+        linker.training.estimate_parameters_using_expectation_maximisation(
+            block_on("place_id")
+        )
 
         predictions = linker.inference.predict(
             threshold_match_probability=PROPOSE_FLOOR
@@ -376,31 +383,32 @@ def _build_person_settings() -> SettingsCreator:
     a separate DataFrame; Splink generates cross-DataFrame pairs only.
 
     Blocking:
-      Primary:   first 4 chars of surname_norm (character-based)
+      Primary:   same resolved place_id (strongest geographic anchor)
+      Secondary: soundex_surname (phonetic encoding for Irish surname variants)
+      Fallback:  first 4 chars of surname_norm (character-based)
 
-    NOTE: place_id and soundex are NOT blocking rules — they're comparison features instead.
-    This allows cross-townland and cross-variant surname linkage when name + age + role progression align.
-    Geographic proximity and surname phonetics are evidence (scored), not hard filters (blocked).
+    NOTE: Cross-townland linking is deferred to BMD evidence layer. Census alone cannot
+    distinguish same person who moved from unrelated cousins living nearby. Genealogically,
+    a marriage record provides definitive evidence; implementing cross-townland matching
+    requires birth/marriage/death records as the bridging evidence.
 
-    Comparisons (v1.5 improvements):
+    Soundex pre-computed in features (Python, not SQL) for DuckDB compatibility.
+    Handles Irish surname variants (e.g., O'Brien/Brien/O Brien all → B650).
+    Character-based fallback catches names with common prefixes.
+
+    Comparisons (v1.2 tuning):
       - surname_norm (Jaro-Winkler [0.92, 0.80], NO TF for cross-census)
       - forename_norm (Jaro-Winkler [0.92, 0.80], NO TF)
       - birth_year_est (absolute difference bands: 0, ±2, ±5)
       - sex_as_recorded (exact match)
-      - place_id (exact match — scoring feature, NOT blocking)
+      - place_id (exact match)
       - household_match_score (per-source, 0.80 / 0.50 thresholds)
-
-    v1.5 improvements (cross-townland linkage):
-      - Removed place_id and soundex from blocking rules to allow comparison across townlands
-        and surname variants
-      - Kept place_id and soundex as comparison features (contributes to score)
-      - Enables household continuity-style linking when person moves between adjacent
-        townlands (e.g., upon marriage). Strong name + age + role signals can overcome
-        place_id mismatch, reflecting genealogical reality.
     """
     return SettingsCreator(
         link_type="link_only",
         blocking_rules_to_generate_predictions=[
+            block_on("place_id"),
+            block_on("soundex_surname"),
             block_on("substr(surname_norm, 1, 4)"),
         ],
         comparisons=[
@@ -643,6 +651,9 @@ def run_person_similarity(
 
         linker.training.estimate_parameters_using_expectation_maximisation(
             block_on("substr(surname_norm, 1, 4)")
+        )
+        linker.training.estimate_parameters_using_expectation_maximisation(
+            block_on("place_id")
         )
 
         predictions = linker.inference.predict(
