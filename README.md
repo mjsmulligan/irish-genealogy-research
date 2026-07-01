@@ -7,7 +7,7 @@ A probabilistic genealogy research platform combining a PostgreSQL knowledge bas
 Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
 Implementation: Complete — all four layers (foundation, evidence, conclusion, review)  
-**Latest:** Irish forename normalization (Pat ↔ Patrick) now applied at person-level similarity. Audit log integrity fixed. Web UI person browser with dark theme and pairwise scores. ([1 July 2026](changelog/session_changelog_2026-07-01.md))
+**Latest:** Household continuity conflict resolution implemented. Automatic Person merge consolidates split records when confirmed household pairs have heads linked to different Persons. Case: Patrick Boyle (meenacorwick) now single Person across 1901/1911/1926 with proper age progression. Web UI detail panel displays evidence for identity with hyperlinked household members. ([1 July 2026](changelog/session_changelog_2026-07-01_household_continuity.md))
 
 ______________________________________________________________________
 
@@ -22,20 +22,30 @@ ______________________________________________________________________
 ```text
 irish-genealogy-research/
 │
-├── analysis/                          # Research analysis and findings
-│   ├── AGE_REGRESSION_ANALYSIS.md    # Open issues: age conflict resolution
-│   └── *.md                          # Detailed investigations and conclusions
+├── changelog/                         # Session and version history
+│   ├── session_changelog_2026-07-01_household_continuity.md
+│   ├── session_changelog_2026-07-01.md
+│   └── *.md                          # Prior session summaries
 │
 ├── data/                              # Downloaded census CSVs (not in git)
 │
 ├── docs/                              # Schema and system documentation
+│   ├── conceptual_model.md            # Data model overview
+│   ├── data_dictionary.md             # All tables and columns
+│   ├── database_schema.md             # DDL and schema design
+│   ├── genealogical_constraints.md    # Constraint rules and person resolution
+│   ├── reconstruction_algorithms.md   # Linkage and household algorithms
+│   ├── repositories.md                # Repository pattern design
+│   ├── review_layer.md                # Researcher report findings framework
+│   └── RESEARCHER_VALIDATION.md       # Domain validation checklist
 │
 ├── src/
 │   ├── cli.py                         # Sole entry point — argparse + dispatch only
 │   ├── constants.py                   # Centralised constants (thresholds, score versions, source IDs)
 │   │
 │   ├── db/                            # Schema lifecycle and utilities
-│   │   ├── db.py                      # Connection (psycopg2/Supabase), init, schema version check
+│   │   ├── repository.py              # Repository base class (Repository pattern)
+│   │   ├── postgres_repo.py           # PostgreSQL connection wrapper
 │   │   ├── schema.sql                 # Complete DDL (v4.3, PostgreSQL)
 │   │   ├── seed.sql                   # Repository and source seed data
 │   │   ├── fetch_places.py            # logainm API fetcher → DB or CSV
@@ -52,44 +62,60 @@ irish-genealogy-research/
 │   │       ├── census.py              # Splink household feature extractor
 │   │       └── census_person.py       # Splink person feature extractor
 │   │
-│   ├── conclusion/                    # Conclusion layer steps 1–5
-│   │   ├── person_resolution.py       # [1/5] Cluster RecordedPersons → Person conclusions (same-census filtered)
-│   │   ├── relationship_resolution.py # [2/5] Household matching → Relationship conclusions (age regression check)
-│   │   ├── household_resolution.py    # [3/5] Anchor-extension for unlinked household members
-│   │   ├── household_utils.py         # Shared helpers: get_household_members, ensure_relationship, create_relationships
-│   │   ├── event_resolution.py        # [4/5] Census + birth + marriage Event conclusions
-│   │   └── validation_cleanup.py      # [5/5] Genealogical constraint sweep before finalising conclusions
+│   ├── conclusion/                    # Conclusion layer steps [0/6]–[5/6]
+│   │   ├── household_continuity.py    # [0/6] Household continuity linking (before Splink)
+│   │   ├── person_resolution.py       # [1/6] Cluster RecordedPersons → Person conclusions
+│   │   ├── relationship_resolution.py # [2/6] Household matching → Relationship conclusions
+│   │   ├── household_resolution.py    # [3/6] Anchor-extension for unlinked household members
+│   │   ├── household_utils.py         # Shared helpers: get_household_members, create_relationships
+│   │   ├── event_resolution.py        # [4/6] Census + birth + marriage Event conclusions
+│   │   ├── validation_cleanup.py      # [5/6] Genealogical constraint sweep
+│   │   ├── audit.py                   # Audit logging for all conclusion mutations
+│   │   └── merger.py                  # Utilities for Person merging (household_continuity conflicts)
 │   │
-│   ├── genealogy/                     # Genealogical domain knowledge — materialisation of genealogical_constraints.md
-│   │   ├── names.py                   # APPROVED_NAME_VARIANTS, IRISH_MALE/FEMALE_NAMES, classify_forename(), infer_gender()
-│   │   ├── ages.py                    # CENSUS_AGE_TOLERANCE, CENSUS_YEAR, evaluate_age_progression()
-│   │   ├── constraints.py             # evaluate_pair(), apply_constraints_to_linkages(), remove_flagged_linkages()
-│   │   └── __init__.py                # Full public interface
+│   ├── genealogy/                     # Genealogical domain knowledge
+│   │   ├── names.py                   # Name variants, gender classification
+│   │   ├── ages.py                    # Age tolerance, progression validation
+│   │   ├── constraints.py             # Genealogical constraint evaluation
+│   │   └── __init__.py                # Public interface
 │   │
 │   ├── review/                        # Review layer — researcher report module
-│   │   ├── report.py                  # ReportItem + Report dataclasses; JSON + Markdown serialisers
-│   │   ├── findings.py                # Finding functions: merge errors, age issues, unlinked persons
-│   │   ├── priority.py                # Priority scoring: tier base score × scope multiplier → integer rank
-│   │   └── runner.py                  # run_review(), write_report() → reports/ dir
+│   │   ├── report.py                  # ReportItem + Report dataclasses
+│   │   ├── findings.py                # Finding functions: merge errors, age issues, anomalies
+│   │   ├── priority.py                # Priority scoring: tier × multiplier
+│   │   └── runner.py                  # run_review(), write_report() → reports/
 │   │
 │   ├── metrics/                       # Performance tracking
+│   │   └── tracker.py                 # Pipeline timing instrumentation
+│   │
+│   ├── web/                           # Web UI (Flask)
+│   │   ├── app.py                     # Routes: browse, detail, audit, review
+│   │   └── templates/                 # Jinja2 templates
+│   │       ├── base.html
+│   │       ├── browse.html            # Person list view
+│   │       ├── detail.html            # Person detail with conclusions panel
+│   │       ├── audit.html             # Audit log viewer
+│   │       └── review.html            # Review findings with conclusions
+│   │
 │   └── dal/                           # Data access layer
 │       ├── source_repo.py
 │       ├── record_repo.py
 │       ├── recorded_relationship_repo.py
 │       ├── record_similarity_repo.py
 │       ├── place_repo.py
-│       ├── person_repo.py
+│       ├── person_repo.py             # merge_persons() function
 │       ├── relationship_repo.py
 │       ├── event_repo.py
-│       ├── conclusion_log_repo.py
-│       └── training_repo.py
+│       └── conclusion_log_repo.py
 │
 ├── reports/                           # Review report output (gitignored; .gitkeep tracks dir)
 │
+├── ROADMAP.md                         # Project roadmap and version history
+│
 └── tests/
     ├── test_pipeline.py               # Integration test harness (59 tests, 100% pass)
-    ├── tullynaught_1901.csv
+    ├── benchmark_tullynaught.py       # Baseline benchmark script
+    ├── tullynaught_1901.csv           # Test fixture data
     ├── tullynaught_1911.csv
     └── tullynaught_1926.csv
 ```
@@ -122,11 +148,12 @@ python -m src.cli add-evidence --source 4 --file data/tullynaught_1911.csv
 python -m src.cli add-evidence --source 5 --file data/tullynaught_1926.csv
 
 # Build conclusions from evidence
-# [1/5] Person resolution      — cluster RecordedPersons into Person conclusions (threshold 0.45)
-# [2/5] Relationship resolution — create Relationships from household structure
-# [3/5] Household resolution   — anchor-extension for unlinked household members
-# [4/5] Event resolution       — create census, birth, and marriage Events
-# [5/5] Validation cleanup     — remove linkages failing genealogical constraints
+# [0/6] Household continuity   — link RecordedPersons across adjacent census years (1901↔1911, 1911↔1926)
+# [1/6] Person resolution      — cluster RecordedPersons into Person conclusions (threshold 0.45)
+# [2/6] Relationship resolution — create Relationships from household structure
+# [3/6] Household resolution   — anchor-extension for unlinked household members
+# [4/6] Event resolution       — create census, birth, and marriage Events
+# [5/6] Validation cleanup     — remove linkages failing genealogical constraints
 python -m src.cli conclude
 
 # Inspect
@@ -180,6 +207,19 @@ pytest -k "evidence" -v
 ```
 DATABASE_ENVIRONMENT=local    # local PostgreSQL on localhost:5432
 DATABASE_ENVIRONMENT=cloud    # Supabase (requires network access)
+```
+
+**Web UI:** Start Flask app for interactive browsing and audit log inspection:
+
+```bash
+# Launch development server (port 5000)
+python -m src.web.app
+
+# Open browser to http://localhost:5000
+# - /browse: Person list with filters (townland, status, score band, census coverage)
+# - /person/<id>: Detail view with evidence panel, household grid, pairwise scores
+# - /review: Researcher findings report with conclusions
+# - /audit?entity_type=person&entity_id=<id>: Conclusion mutations audit trail
 ```
 
 ______________________________________________________________________

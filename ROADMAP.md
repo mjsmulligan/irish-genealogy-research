@@ -69,12 +69,13 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
 | Layer | Status | Notes |
 |---|---|---|
-| Foundation | ✅ Complete (v4.4) | Schema v4.4: training_labels removed (conceptually retired) |
-| Evidence | ✅ Complete | `add-evidence` CLI: steps [1/5]–[5/5] |
-| Conclusion | ✅ Complete | `conclude` CLI: steps [1/5]–[5/5] |
-| Genealogy | ✅ Complete | `src/genealogy/`: names, ages, constraints — replaces `src/validation/` |
-| Testing | ✅ Complete | 59 tests passing (100%), fixed-fixture exact assertions |
-| Review | ✅ Complete (v2.0) | `report.py`, `findings.py`, `priority.py`, `runner.py`. First run + training session next. |
+| Foundation | ✅ Complete (v4.3) | Schema v4.3: PostgreSQL 15+, audit logging, pipeline_run instrumentation |
+| Evidence | ✅ Complete | `add-evidence` CLI: steps [1/5]–[5/5]. Splink record + person similarity |
+| Conclusion | ✅ Complete (v3.0) | `conclude` CLI: steps [0/6]–[5/6]. New: household_continuity [0/6] before person_resolution |
+| Genealogy | ✅ Complete | `src/genealogy/`: names, ages, constraints. Irish name variants + gender inference |
+| Testing | ✅ Complete | 59 tests passing (100%), integration harness with fixed fixtures |
+| Review | ✅ Complete (v2.0) | `report.py`, `findings.py`, `priority.py`, `runner.py`. Researcher findings reports |
+| Web UI | ✅ Complete | Flask app: browse, detail (with evidence panel), audit, review. Dark theme. |
 
 ---
 
