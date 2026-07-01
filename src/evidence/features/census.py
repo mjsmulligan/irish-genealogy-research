@@ -203,6 +203,10 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
     else:
         modal_surname = None
 
+    # Strip genealogical prefixes for blocking (Mc, Mac, O')
+    from src.evidence.features.census_person import _strip_genealogical_prefix
+    modal_surname_for_blocking = _strip_genealogical_prefix(modal_surname) if modal_surname else None
+
     def pipe_join(names: list[str]) -> str | None:
         if not names:
             return None
@@ -212,8 +216,8 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
         "unique_id": record_id,
         "source_id": source_id,
         "place_id": place_id,
-        "household_surname_norm": modal_surname,
-        "soundex_household_surname": _soundex(modal_surname),
+        "household_surname_norm": modal_surname_for_blocking,
+        "soundex_household_surname": _soundex(modal_surname_for_blocking),
         "adult_forenames_sorted": pipe_join(adult_forenames),
         "child_forenames_young": pipe_join(child_forenames_young),
         "child_forenames_older": pipe_join(child_forenames_older),

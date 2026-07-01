@@ -58,6 +58,35 @@ from src.genealogy import classify_forename, CENSUS_YEAR
 _SOURCE_YEAR: dict[int, int] = CENSUS_YEAR
 
 
+def _strip_genealogical_prefix(surname: str) -> str:
+    """
+    Strip Irish genealogical prefixes (Mc, Mac, O') from surname for blocking.
+
+    This narrows blocking to the core surname so McCadden/McDonovan don't
+    accidentally block together on "Mc*", while McCadden/McCadden still match.
+
+    Returns surname with prefix stripped, lowercased.
+    """
+    if not surname:
+        return ""
+
+    s = surname.strip().lower()
+
+    # O' prefix (with apostrophe)
+    if s.startswith("o'"):
+        return s[2:]
+
+    # Mac prefix (before other vowels)
+    if s.startswith("mac"):
+        return s[3:]
+
+    # Mc prefix (before consonants, common in Irish/Scottish)
+    if s.startswith("mc"):
+        return s[2:]
+
+    return s
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -207,6 +236,7 @@ def build_census_person_features(
             surname = _surname_from(p["name_as_recorded"])
             forename = _forename_from(p["name_as_recorded"])
             forename_normalized = _normalize_forename(forename)
+            surname_for_blocking = _strip_genealogical_prefix(surname)
             name_norm = (
                 f"{forename_normalized} {surname}".strip()
                 if forename_normalized
@@ -218,7 +248,7 @@ def build_census_person_features(
                 "unique_id": p["recorded_person_id"],
                 "source_id": source_id,
                 "place_id": p["place_id"],
-                "surname_norm": surname,
+                "surname_norm": surname_for_blocking,
                 "soundex_surname": _soundex(surname),
                 "forename_norm": forename_normalized,
                 "name_norm": name_norm,
