@@ -645,7 +645,7 @@ def run_relationship_resolution(
         result.persons_orphaned = len(orphaned_person_ids)
         placeholders = ",".join(["%s"] * len(orphaned_person_ids))
 
-        # Delete relationship_recorded_relationship provenance first
+        # Delete in FK-safe order: provenance → relationships → person children → persons
         repo.execute(
             f"""
             DELETE FROM relationship_recorded_relationship
@@ -657,7 +657,6 @@ def run_relationship_resolution(
             tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
         )
 
-        # Delete relationships referencing orphaned persons
         repo.execute(
             f"""
             DELETE FROM relationship
@@ -666,12 +665,23 @@ def run_relationship_resolution(
             tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
         )
 
-        # Then delete the orphaned persons
         repo.execute(
-            f"""
-            DELETE FROM person
-            WHERE person_id IN ({placeholders})
-            """,
+            f"DELETE FROM person_event WHERE person_id IN ({placeholders})",
+            tuple(orphaned_person_ids),
+        )
+
+        repo.execute(
+            f"DELETE FROM person_name WHERE person_id IN ({placeholders})",
+            tuple(orphaned_person_ids),
+        )
+
+        repo.execute(
+            f"DELETE FROM person_recorded_person WHERE person_id IN ({placeholders})",
+            tuple(orphaned_person_ids),
+        )
+
+        repo.execute(
+            f"DELETE FROM person WHERE person_id IN ({placeholders})",
             tuple(orphaned_person_ids),
         )
 

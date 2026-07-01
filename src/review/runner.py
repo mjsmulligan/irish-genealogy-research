@@ -23,6 +23,7 @@ from pathlib import Path
 
 import psycopg2.extensions
 
+from src.db.postgres_repo import PostgresRepository
 from src.review.findings import run_all_findings
 from src.review.priority import assign_priorities
 from src.review.report import Report, ReportItem
@@ -46,8 +47,9 @@ def run_review(conn: psycopg2.extensions.connection) -> Report:
     Run all v1.0 finding functions, assign priorities, and return the assembled Report.
     Does not write any files — call write_report() for file output.
     """
+    repo = PostgresRepository(conn)
     print("  [review] Running findings...")
-    items = run_all_findings(conn)
+    items = run_all_findings(repo)
 
     print(f"  [review] {len(items)} raw finding(s) found. Assigning priorities...")
     items = assign_priorities(conn, items)

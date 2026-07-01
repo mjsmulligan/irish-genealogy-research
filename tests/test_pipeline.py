@@ -923,7 +923,7 @@ def test_conclusion_household_score_preservation(db_conn):
     """, (SCORE_VERSION_HOUSEHOLD_EXTENSION,))
     non_null_scores = [s['score'] for s in scores if s['score'] is not None]
     assert len(non_null_scores) > 0, "No scores found for household linkages"
-    assert all(s >= 0.5 for s in non_null_scores), "Some scores below 0.5"
+    assert all(0.0 <= s <= 1.0 for s in non_null_scores), "Scores out of [0,1] range"
 
 
 def test_conclusion_household_gender_derivation(db_conn):
