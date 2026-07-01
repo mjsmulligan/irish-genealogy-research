@@ -356,21 +356,6 @@ CREATE TABLE person_event (
 --   'rejected'  — researcher confirms they are different individuals
 --   'flagged'   — ambiguous; needs further evidence before a decision
 
-CREATE TABLE training_labels (
-    label_id      INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    person_id_1   INTEGER NOT NULL REFERENCES person (person_id),
-    person_id_2   INTEGER NOT NULL REFERENCES person (person_id),
-    score         REAL    CHECK (score IS NULL OR (score >= 0.0 AND score <= 1.0)),
-    score_version TEXT,
-    decision      TEXT NOT NULL DEFAULT 'proposed'
-                  CHECK (decision IN ('proposed', 'accepted', 'rejected', 'flagged')),
-    note          TEXT,
-    created_at    TEXT NOT NULL DEFAULT (NOW()::TEXT),
-    reviewed_at   TEXT,
-    UNIQUE (person_id_1, person_id_2),
-    CHECK (person_id_1 < person_id_2)
-);
-
 -- ---------------------------------------------------------------------------
 -- REVIEW LAYER
 -- ---------------------------------------------------------------------------
@@ -501,9 +486,6 @@ CREATE INDEX idx_record_similarity_record1 ON record_similarity (record_id_1);
 CREATE INDEX idx_record_similarity_record2 ON record_similarity (record_id_2);
 
 -- training_labels review workflow
-CREATE INDEX idx_training_labels_decision    ON training_labels (decision);
-CREATE INDEX idx_training_labels_person_id_1 ON training_labels (person_id_1);
-CREATE INDEX idx_training_labels_person_id_2 ON training_labels (person_id_2);
 
 -- Reviewer
 CREATE INDEX idx_reviewer_type ON reviewer (type);

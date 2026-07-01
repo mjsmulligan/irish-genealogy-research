@@ -57,7 +57,7 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
 | Layer | Status | Notes |
 |---|---|---|
-| Foundation | ✅ Complete (v3.2) | Schema v4.3: scores allowed for all relationship types |
+| Foundation | ✅ Complete (v4.4) | Schema v4.4: training_labels removed (conceptually retired) |
 | Evidence | ✅ Complete | `add-evidence` CLI: steps [1/5]–[5/5] |
 | Conclusion | ✅ Complete | `conclude` CLI: steps [1/5]–[5/5] |
 | Genealogy | ✅ Complete | `src/genealogy/`: names, ages, constraints — replaces `src/validation/` |
@@ -107,7 +107,7 @@ Active and open items only. Completed items are in §8 (Version History).
 | 26 | **`event_resolution.py` marriage event `date_qualifier`.** De-scoped: `NULL` is intentional — it signals true absence (census doesn't record marriage date), not inference. Module header at line 29 documents this. | Low | ✅ De-scoped |
 | 34 | **Test harness: schema v4.3 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run; (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency. Update `SCHEMA_VERSION` assertion from 32 → 43. | High | ✅ Done 1 July 2026 — Repository pattern, audit logging, orphaned person deletion |
 | 7 | **Stale schema-version footers.** `database_schema.md` footer referenced `PRAGMA user_version` and v3.0; `reconstruction_algorithms.md` footer said "v3.1 target" and referenced non-existent `session_bootstrap.md`. Both corrected. | Low | ✅ Done 29 June 2026 |
-| 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5). `training_repo.py` not imported anywhere in `src/`; `cli.py` only references table name in reset/truncate lists. Requires a schema migration bump to remove. | Low | Pending migration |
+| 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5). `training_repo.py` not imported anywhere in `src/`; `cli.py` only references table name in reset/truncate lists. Requires a schema migration bump to remove. | Low | ✅ Done 1 July 2026 — Migration 004, schema v4.4 |
 | 14 | **`place_resolution.py` stale type hints** — `sqlite3.Connection` at three locations (lines 112, 137 inline comment, 194). Added `import psycopg2.extensions`; all three corrected. | Low | ✅ Done 29 June 2026 |
 | 36 | **Parish ingest pipeline.** Implement `src/evidence/parish.py`: baptism CSV → Record + RecordedPersons (child, father, mother, sponsors) + RecordedRelationships; marriage CSV → Record + RecordedPersons (groom, bride, witnesses) + RecordedRelationships. Blocked on item 37 (data dictionary) and item 39 (transcription repo CSV output). | High (R3) | |
 | 37 | **Data dictionary update for parish records.** Add `sponsor` to RecordedPerson role vocabulary. Add `sponsor` and `witness` to RecordedRelationship type vocabulary. Document three-state transcription field convention: empty (absent), `[?]` (illegible), value (as written). | Medium (R3) | Before item 36 |
