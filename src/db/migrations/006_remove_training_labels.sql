@@ -1,4 +1,4 @@
--- Migration 004: Remove training_labels table (conceptually retired)
+-- Migration 006: Remove training_labels table (conceptually retired)
 --
 -- Context: training_labels was designed for a training/review workflow that was
 -- superseded by the review layer (src/review/) in June 2026. The table has never
