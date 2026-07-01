@@ -217,7 +217,7 @@ def _build_household_row(record_id: int, source_id: int, members: list[dict], pl
         "source_id": source_id,
         "place_id": place_id,
         "household_surname_norm": modal_surname_for_blocking,
-        "soundex_household_surname": _soundex(modal_surname_for_blocking),
+        "soundex_household_surname": _soundex(modal_surname_for_blocking) if modal_surname_for_blocking else "",
         "adult_forenames_sorted": pipe_join(adult_forenames),
         "child_forenames_young": pipe_join(child_forenames_young),
         "child_forenames_older": pipe_join(child_forenames_older),

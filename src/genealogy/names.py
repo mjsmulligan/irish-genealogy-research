@@ -258,3 +258,32 @@ def infer_gender(name: str | None) -> str | None:
     if first in IRISH_FEMALE_NAMES:
         return 'F'
     return None
+
+
+def soundex_irish_surname(surname: str | None) -> str | None:
+    """
+    Compute Soundex on an Irish surname after stripping genealogical prefixes.
+
+    Normalizes the surname (Mc, Mac, O' stripping) then applies Soundex,
+    ensuring both that false-positive prefix grouping is avoided AND that
+    true variants (Brien/O'Brien/Obrien) all map to the same code.
+
+    This is the atomic operation for Irish surname phonetic matching across
+    the pipeline. Do not call Soundex separately on a surname; use this instead.
+
+    Returns:
+        4-character Soundex code (e.g. 'C350'), or None if surname is None/empty.
+
+    Examples:
+        soundex_irish_surname("McCadden") → "C350"
+        soundex_irish_surname("O'Brien") → "B650"
+        soundex_irish_surname("Brien") → "B650"
+        soundex_irish_surname("McDonovan") → "D150"
+    """
+    if not surname:
+        return None
+
+    from src.evidence.features.census import _soundex
+
+    normalized = _strip_genealogical_prefix(surname)
+    return _soundex(normalized) or None

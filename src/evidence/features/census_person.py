@@ -243,13 +243,15 @@ def build_census_person_features(
                 else surname
             ) or None
 
+            from src.genealogy import soundex_irish_surname
+
             # Build base row
             row_dict = {
                 "unique_id": p["recorded_person_id"],
                 "source_id": source_id,
                 "place_id": p["place_id"],
                 "surname_norm": surname_for_blocking,
-                "soundex_surname": _soundex(surname),
+                "soundex_surname": soundex_irish_surname(surname) or "",
                 "forename_norm": forename_normalized,
                 "name_norm": name_norm,
                 "birth_year_est": birth_year_est,
