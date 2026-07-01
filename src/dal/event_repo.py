@@ -9,22 +9,6 @@ from __future__ import annotations
 from src.db.repository import Repository
 
 
-def insert_event(
-    repo: Repository,
-    event_id: int,
-    event_type: str,
-    date: str,
-    date_qualifier: str,
-    place_id: int | None,
-) -> None:
-    """Insert a new Event conclusion row."""
-    repo.execute(
-        "INSERT INTO event (event_id, type, date, date_qualifier, place_id) "
-        "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s, %s)",
-        (event_id, event_type, date, date_qualifier, place_id),
-    )
-
-
 def insert_event_record(
     repo: Repository,
     event_id: int,
