@@ -8,9 +8,9 @@
 <div style="margin-bottom: 30px;">
     <h1 style="margin-bottom: 8px;">{{ person.label or 'Unknown Person' }}</h1>
     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px;">
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #52525e;">Person #{{ person.person_id }}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #6b6b72;">Person #{{ person.person_id }}</span>
         <span class="status {{ person.status }}">{{ person.status }}</span>
-        <a href="/audit?entity_type=person&entity_id={{ person.person_id }}" style="color: #4a7c6f; font-size: 13px;">Audit Log</a>
+        <a href="/audit?entity_type=person&entity_id={{ person.person_id }}" style="font-size: 13px;">Audit Log</a>
     </div>
 </div>
 
@@ -23,122 +23,134 @@
                 {% if 'Census 1901' in by_census %}
                     <th>1901</th>
                 {% else %}
-                    <th style="color: #52525e;">1901</th>
+                    <th style="color: #aaa8a0;">1901</th>
                 {% endif %}
                 {% if 'Census 1911' in by_census %}
                     <th>1911</th>
                 {% else %}
-                    <th style="color: #52525e;">1911</th>
+                    <th style="color: #aaa8a0;">1911</th>
                 {% endif %}
                 {% if 'Census 1926' in by_census %}
                     <th>1926</th>
                 {% else %}
-                    <th style="color: #52525e;">1926</th>
+                    <th style="color: #aaa8a0;">1926</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600; width: 100px;">Name</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600; width: 100px;">Name</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in by_census %}
                             {{ by_census[census_key][0].name_as_recorded }}
                         {% else %}
-                            <span style="color: #52525e;">No record</span>
+                            <span style="color: #aaa8a0;">No record</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Age</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600;">Age</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in by_census and by_census[census_key][0].age %}
                             {{ by_census[census_key][0].age }}
                         {% else %}
-                            <span style="color: #52525e;">—</span>
+                            <span style="color: #aaa8a0;">—</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Role</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600;">Role</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in by_census and by_census[census_key][0].role %}
                             {{ by_census[census_key][0].role }}
                         {% else %}
-                            <span style="color: #52525e;">—</span>
+                            <span style="color: #aaa8a0;">—</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
-            {% if head_of_household %}
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Head of Household</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600;">Head of Household</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in head_of_household and head_of_household[census_key] %}
-                            <span style="color: #e8e8ec;">{{ head_of_household[census_key] }}</span>
+                            <span style="color: #1c1c1e;">{{ head_of_household[census_key] }}</span>
                         {% else %}
-                            <span style="color: #52525e;">—</span>
+                            <span style="color: #aaa8a0;">—</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
-            {% endif %}
-            {% if household_members %}
+            {% if household_grid %}
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Household Members</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600; vertical-align: top; padding-top: 10px;">
+                    Household<br>
+                    <span style="font-size: 11px; font-weight: 400; color: #aaa8a0;">(role rel. to head)</span>
+                </td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
-                    <td class="{% if census_key not in by_census %}absent{% endif %}" style="font-size: 13px;">
-                        {% if census_key in household_members and household_members[census_key] %}
-                            <div style="text-align: left;">
-                                {% for member in household_members[census_key] %}
-                                    <div style="margin-bottom: 4px; color: #e8e8ec;">
+                    <td class="{% if census_key not in by_census %}absent{% endif %}" style="font-size: 13px; vertical-align: top; padding: 0;">
+                        {% set ns = namespace(has_any=false) %}
+                        {% for row in household_grid %}
+                            {% if row.by_year[census_key] %}
+                                {% set ns.has_any = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns.has_any %}
+                            {% for row in household_grid %}
+                                {% set member = row.by_year[census_key] %}
+                                {% set row_bg = '#faf9f6' if loop.index is odd else '#fff' %}
+                                <div style="min-height: 26px; padding: 4px 8px; background: {{ row_bg }}; display: flex; align-items: center;">
+                                    {% if member %}
                                         {% if member.person_id %}
-                                            <a href="/person/{{ member.person_id }}" style="color: #4a7c6f;">{{ member.name }} ({{ member.role }})</a>
+                                            <a href="/person/{{ member.person_id }}" style="color: #3a6b5f;">{{ member.name }}</a>
                                         {% else %}
-                                            {{ member.name }} ({{ member.role }})
+                                            <span style="color: #1c1c1e;">{{ member.name }}</span>
                                         {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
+                                        <span style="color: #aaa8a0; font-size: 12px; margin-left: 6px;">{{ member.role }}{% if member.age %}, {{ member.age }}{% endif %}</span>
+                                    {% else %}
+                                        <span style="color: #ddd9d0;">—</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         {% else %}
-                            <span style="color: #52525e;">—</span>
+                            <span style="color: #aaa8a0; padding: 4px 8px; display: block;">—</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
             {% endif %}
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Townland</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600;">Townland</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in by_census and by_census[census_key][0].townland %}
                             {{ by_census[census_key][0].townland }}
                         {% else %}
-                            <span style="color: #52525e;">—</span>
+                            <span style="color: #aaa8a0;">—</span>
                         {% endif %}
                     </td>
                 {% endfor %}
             </tr>
             <tr>
-                <td style="text-align: left; color: #8a8a99; font-weight: 600;">Source Image</td>
+                <td style="text-align: left; color: #6b6b72; font-weight: 600;">Source Image</td>
                 {% for year in ['1901', '1911', '1926'] %}
                     {% set census_key = 'Census ' + year %}
                     <td class="{% if census_key not in by_census %}absent{% endif %}">
                         {% if census_key in by_census and by_census[census_key][0].image_url %}
-                            <a href="{{ by_census[census_key][0].image_url }}" target="_blank" style="color: #4a7c6f;">View · Link ↗</a>
+                            <a href="{{ by_census[census_key][0].image_url }}" target="_blank" style="color: #3a6b5f;">View · Link ↗</a>
                         {% else %}
-                            <span style="color: #52525e;">Image unavailable</span>
+                            <span style="color: #aaa8a0;">Image unavailable</span>
                         {% endif %}
                     </td>
                 {% endfor %}
@@ -153,17 +165,17 @@
     <table style="width: 100%; font-size: 13px;">
         <thead>
             <tr>
-                <th style="text-align: left; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Pair</th>
-                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Score</th>
-                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #8a8a99;">Band</th>
+                <th style="text-align: left; border-bottom: 1px solid #52525e; padding: 8px 0; color: #6b6b72;">Pair</th>
+                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #6b6b72;">Score</th>
+                <th style="text-align: center; border-bottom: 1px solid #52525e; padding: 8px 0; color: #6b6b72;">Band</th>
             </tr>
         </thead>
         <tbody>
             {% for pair in pairwise_scores %}
             <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #35353d;">{{ pair.label }}</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #35353d; text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{ "%.2f" | format(pair.score) }}</td>
-                <td style="padding: 8px 0; border-bottom: 1px solid #35353d; text-align: center;">
+                <td style="padding: 8px 0; border-bottom: 1px solid #ede9e0;">{{ pair.label }}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #ede9e0; text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{ "%.2f" | format(pair.score) }}</td>
+                <td style="padding: 8px 0; border-bottom: 1px solid #ede9e0; text-align: center;">
                     {% if pair.score >= 0.80 %}
                         <span class="score-band green">Green</span>
                     {% elif pair.score >= 0.60 %}
@@ -179,7 +191,7 @@
 </div>
 {% else %}
 <div class="scores-panel">
-    <p style="color: #8a8a99;">
+    <p style="color: #6b6b72;">
         {% if census_years|length == 1 %}
             Single appearance — no pairwise comparison available.
         {% else %}

@@ -330,6 +330,24 @@ def run_person_resolution(
         result.orphans_count = count_row["count"]
         return result
 
+    # Step 1c: Skip pairs where both RecordedPersons are already linked by
+    # household_continuity — those identities are already resolved.
+    already_linked_rows = repo.fetch_all(
+        "SELECT DISTINCT recorded_person_id FROM person_recorded_person"
+    )
+    already_linked_ids: set[int] = {r["recorded_person_id"] for r in already_linked_rows}
+    if already_linked_ids:
+        similarity_pairs = [
+            p for p in similarity_pairs
+            if p["recorded_person_id_1"] not in already_linked_ids
+            or p["recorded_person_id_2"] not in already_linked_ids
+        ]
+
+    if not similarity_pairs:
+        count_row = repo.fetch_one("SELECT COUNT(*) as count FROM recorded_person")
+        result.orphans_count = count_row["count"] - len(already_linked_ids)
+        return result
+
     # Step 2: Build connected components
     uf = UnionFind()
 

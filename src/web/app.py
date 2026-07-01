@@ -250,6 +250,7 @@ def detail(person_id):
               rp2.recorded_person_id,
               rp2.name_as_recorded,
               rp2.role,
+              rp2.age,
               prp2.person_id
             FROM recorded_person rp2
             LEFT JOIN person_recorded_person prp2 ON rp2.recorded_person_id = prp2.recorded_person_id
@@ -261,7 +262,7 @@ def detail(person_id):
 
             # Find head of household and other members
             for hh in household:
-                if hh['role'] == 'Head':
+                if hh['role'] == 'head':
                     if head_of_household[census_year] is None:
                         head_of_household[census_year] = hh['name_as_recorded']
                 else:
@@ -270,8 +271,41 @@ def detail(person_id):
                         household_members[census_year].append({
                             'name': hh['name_as_recorded'],
                             'role': hh['role'],
+                            'age': hh['age'],
                             'person_id': hh['person_id']
                         })
+
+    # Build name-aligned grid for household members display.
+    # Slot key: person_id-based if linked, else normalised name.
+    _census_order = ['Census 1901', 'Census 1911', 'Census 1926']
+    _slot_keys = []
+    _slot_info = {}  # slot_key -> {label, person_id}
+
+    for _cy in _census_order:
+        for _m in household_members.get(_cy, []):
+            _pid = _m.get('person_id')
+            _skey = f"p:{_pid}" if _pid else f"n:{_m['name'].lower().strip()}"
+            if _skey not in _slot_info:
+                _slot_keys.append(_skey)
+                _slot_info[_skey] = {'label': _m['name'], 'person_id': _pid}
+
+    household_grid = []
+    for _skey in _slot_keys:
+        _by_year = {}
+        for _cy in _census_order:
+            _matched = None
+            for _m in household_members.get(_cy, []):
+                _pid = _m.get('person_id')
+                _mk = f"p:{_pid}" if _pid else f"n:{_m['name'].lower().strip()}"
+                if _mk == _skey:
+                    _matched = _m
+                    break
+            _by_year[_cy] = _matched
+        household_grid.append({
+            'label': _slot_info[_skey]['label'],
+            'person_id': _slot_info[_skey]['person_id'],
+            'by_year': _by_year,
+        })
 
     # Get pairwise similarity scores for this person
     pairwise_query = '''
@@ -331,6 +365,7 @@ def detail(person_id):
                          census_years=census_years,
                          head_of_household=head_of_household,
                          household_members=household_members,
+                         household_grid=household_grid,
                          pairwise_scores=pairwise_scores)
 
 

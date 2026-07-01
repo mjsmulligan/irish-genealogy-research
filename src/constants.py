@@ -73,6 +73,7 @@ SCORE_VERSION_PERSON_SIMILARITY_V1_1: str = "person_similarity_v1.1_with_househo
 SCORE_VERSION_PERSON_SIMILARITY_V1_2: str = "person_similarity_v1.2_with_role_consistency"
 SCORE_VERSION_PERSON_SIMILARITY_V1_4: str = "person_similarity_v1.4_with_validation_integration"
 SCORE_VERSION_HOUSEHOLD_EXTENSION: str = "household_extension_v1.0"
+SCORE_VERSION_HOUSEHOLD_CONTINUITY: str = "household_continuity_v1.0"
 
 # ---------------------------------------------------------------------------
 # Ingest-time assertion scores

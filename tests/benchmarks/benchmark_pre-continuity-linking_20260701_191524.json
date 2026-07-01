@@ -1,0 +1,46 @@
+{
+  "run_at": "2026-07-01T17:15:24.451102+00:00",
+  "label": "pre-continuity-linking",
+  "linkage": {
+    "total_persons": 1477,
+    "total_recorded_persons": 3167,
+    "linked_recorded_persons": 1929,
+    "orphan_recorded_persons": 1238,
+    "linkage_pct": 60.9,
+    "multi_census_persons": 409,
+    "multi_census_pct": 27.7,
+    "census_appearance_distribution": {
+      "1": 1068,
+      "2": 366,
+      "3": 43
+    },
+    "linkages_by_score_version": {
+      "household_extension_v1.0": 1032,
+      "null": 897
+    },
+    "relationships_by_type": {
+      "sibling": 2050,
+      "parent_child": 1813,
+      "couple": 205
+    },
+    "total_relationships": 4068,
+    "splink_pairs_total": 765,
+    "splink_pairs_above_threshold": 437
+  },
+  "data_quality": {
+    "age_progression_anomaly_persons": 0,
+    "parent_child_relationships_total": 1918
+  },
+  "performance_ms": {
+    "ingest_3": 258,
+    "ingest_4": 206,
+    "ingest_5": 137,
+    "place_resolution": 44,
+    "record_similarity": 3163,
+    "person_similarity": 5702,
+    "person_resolution": 334,
+    "relationship_resolution": 606,
+    "household_resolution": 3593,
+    "event_resolution": 557
+  }
+}

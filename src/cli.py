@@ -772,15 +772,17 @@ def _cmd_summary(args: argparse.Namespace) -> None:
 
 def _cmd_conclude(args: argparse.Namespace) -> None:
     """
-    Run the conclusion pipeline (4 steps) against all evidence.
+    Run the conclusion pipeline (6 steps) against all evidence.
 
     Steps:
-      [1/5] Person resolution       — cluster RecordedPersons into Person conclusions
-      [2/5] Relationship resolution — create Relationships from household similarity
-      [3/5] Household resolution    — extend Persons to unlinked household members
-      [4/5] Event resolution        — create census, birth, and marriage Events
-      [5/5] Validation cleanup      — remove linkages failing validation checks
+      [1/6] Household continuity    — link RecordedPersons within households across census years
+      [2/6] Person resolution       — cluster RecordedPersons into Person conclusions
+      [3/6] Relationship resolution — create Relationships from household similarity
+      [4/6] Household resolution    — extend Persons to unlinked household members
+      [5/6] Event resolution        — create census, birth, and marriage Events
+      [6/6] Validation cleanup      — remove linkages failing validation checks
     """
+    from src.conclusion.household_continuity import run_household_continuity
     from src.conclusion.person_resolution import (
         run_person_resolution,
         print_person_resolution_report,
@@ -808,7 +810,23 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
 
     print("\nRunning conclusion pipeline...")
 
-    print("\n[1/5] Person resolution...")
+    print("\n[1/6] Household continuity linking...")
+    with Timer('conclusion', 'run_household_continuity') as timer:
+        continuity_result = run_household_continuity(repo)
+    log_run(repo, PipelineRun(
+        stage='conclusion',
+        step_name='run_household_continuity',
+        records_processed=continuity_result.linkages_created,
+        duration_ms=timer.duration_ms,
+    ))
+    print(
+        f"  Household pairs confirmed: {continuity_result.household_pairs_confirmed}"
+        f" / {continuity_result.household_pairs_examined} examined"
+    )
+    print(f"  Persons created:  {continuity_result.persons_created}")
+    print(f"  Linkages created: {continuity_result.linkages_created}")
+
+    print("\n[2/6] Person resolution...")
     with Timer('conclusion', 'run_person_resolution') as timer:
         person_result = run_person_resolution(repo)
     log_run(repo, PipelineRun(
@@ -819,7 +837,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     ))
     print_person_resolution_report(person_result)
 
-    print("\n[2/5] Relationship resolution...")
+    print("\n[3/6] Relationship resolution...")
     with Timer('conclusion', 'run_relationship_resolution') as timer:
         rel_result = run_relationship_resolution(repo)
     log_run(repo, PipelineRun(
@@ -834,7 +852,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
         print(f"\n  NOTE: {len(rel_result.merge_candidates)} merge candidate(s) detected.")
         print("  Review and resolve manually before re-running.")
 
-    print("\n[3/5] Household resolution...")
+    print("\n[4/6] Household resolution...")
     with Timer('conclusion', 'run_household_resolution') as timer:
         household_result = run_household_resolution(repo)
     log_run(repo, PipelineRun(
@@ -845,7 +863,7 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     ))
     print_household_resolution_report(household_result)
 
-    print("\n[4/5] Event resolution...")
+    print("\n[5/6] Event resolution...")
     with Timer('conclusion', 'run_event_resolution') as timer:
         event_result = run_event_resolution(repo)
     log_run(repo, PipelineRun(
@@ -857,9 +875,9 @@ def _cmd_conclude(args: argparse.Namespace) -> None:
     print_event_resolution_report(event_result)
 
     if args.skip_validation:
-        print("\n[5/5] Validation cleanup... SKIPPED (--skip-validation)")
+        print("\n[6/6] Validation cleanup... SKIPPED (--skip-validation)")
     else:
-        print("\n[5/5] Validation cleanup...")
+        print("\n[6/6] Validation cleanup...")
         with Timer('conclusion', 'run_validation_cleanup') as timer:
             cleanup_result = run_validation_cleanup(repo)
         log_run(repo, PipelineRun(

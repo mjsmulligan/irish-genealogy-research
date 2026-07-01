@@ -13,6 +13,8 @@ birth_singularity_violation   GC04  Multiple is_primary=1 birth Events on one Pe
 death_singularity_violation   GC05  Multiple is_primary=1 death Events on one Person
 life_event_sequence_violation GC02  Chronological order broken across life Events
 parent_age_implausible        GC12  Parent–child birth-year gap outside plausible range
+parent_age_regression         GC12  Child born before parent — role inversion (corroborated by
+                                    earlier HEAD appearance) or likely age recording error
 marriage_age_implausible      GC13  Person under 15 at marriage date
 lifespan_boundary_violated    GC01  Record date outside concluded lifespan
 unlinked_recorded_person       —    RecordedPerson with no Person conclusion
@@ -134,6 +136,31 @@ def _derive_birth_year(repo: Repository, person_id: int) -> int | None:
             return census_year - int(row["age"])
 
     return None
+
+
+def _get_census_appearances(repo: Repository, person_id: int) -> list[dict]:
+    """
+    Return each census appearance for a Person as (census_year, role, age).
+    Only includes records from census sources with a parseable year.
+    """
+    rows = repo.fetch_all(
+        """
+        SELECT r.source_id, r.date, rp.role, rp.age
+        FROM person_recorded_person prp
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        WHERE prp.person_id = %s AND s.type = 'census'
+        ORDER BY r.date
+        """,
+        (person_id,),
+    )
+    result = []
+    for row in rows:
+        y = _year(str(row["date"])) if row["date"] else None
+        if y:
+            result.append({"year": y, "role": row["role"], "age": row["age"]})
+    return result
 
 
 def _derive_death_year(repo: Repository, person_id: int) -> int | None:
@@ -525,34 +552,96 @@ def find_parent_age_implausible(
 
         violations: list[str] = []
 
-        # NEW: Check for age regression (parent younger than child)
+        # Check for age regression (child born before parent)
         if gap < 0:
             parent_label = _person_label(repo, parent_id)
             child_label = _person_label(repo, child_id)
-            items.append(ReportItem(
-                finding_type="parent_age_regression",
-                priority=0,
-                person_id=parent_id,
-                relationship_id=rid,
-                event_id=None,
-                record_ids=[],
-                title=(
-                    f"Relationship {rid}: parent age regression "
-                    f"({parent_id} / {child_id})"
-                ),
-                detail=(
-                    f"Relationship {rid} (parent_child): parent Person {parent_id} "
-                    f"({parent_label}) birth year ~{parent_birth}; child Person {child_id} "
-                    f"({child_label}) birth year ~{child_birth}. "
-                    f"Age regression: parent is {abs(gap)} years YOUNGER than child. "
-                    f"This is biologically impossible and indicates a merge error. "
-                    f"These two records should be split into separate persons."
-                ),
-                recommended_action=(
-                    "Review the underlying RecordedPersons and split this Person "
-                    "into two distinct individuals."
-                ),
-            ))
+
+            # Look for corroborating evidence of role inversion: does the
+            # "child" Person appear as HEAD in any earlier census?
+            child_appearances = _get_census_appearances(repo, child_id)
+            parent_appearances = _get_census_appearances(repo, parent_id)
+
+            # Find the census year that produced the inverted role for the child
+            # (i.e. the census where they are listed as son/daughter)
+            child_head_years = [a["year"] for a in child_appearances if a["role"] == "head"]
+            child_child_years = [a["year"] for a in child_appearances if a["role"] in ("son", "daughter")]
+            inversion_year = min(child_child_years) if child_child_years else None
+
+            role_inversion_confirmed = bool(
+                child_head_years and inversion_year
+                and any(y < inversion_year for y in child_head_years)
+            )
+
+            if role_inversion_confirmed:
+                earlier_head_year = min(y for y in child_head_years if y < inversion_year)
+                items.append(ReportItem(
+                    finding_type="parent_age_regression",
+                    priority=0,
+                    person_id=parent_id,
+                    relationship_id=rid,
+                    event_id=None,
+                    record_ids=[],
+                    title=(
+                        f"Relationship {rid}: likely role inversion — "
+                        f"Person {child_id} is probably the parent"
+                    ),
+                    detail=(
+                        f"Relationship {rid} (parent_child) links Person {parent_id} "
+                        f"({parent_label}, b~{parent_birth}) as parent of Person {child_id} "
+                        f"({child_label}, b~{child_birth}), but Person {child_id} is "
+                        f"{abs(gap)} years older. "
+                        f"Cross-census evidence corroborates this: Person {child_id} "
+                        f"appears as HEAD in {earlier_head_year}, but is recorded as "
+                        f"'son'/'daughter' in {inversion_year}. "
+                        f"In Irish census records, elderly parents living in an adult "
+                        f"child's household are sometimes recorded with a role relative "
+                        f"to the household head. The relationship direction is likely "
+                        f"inverted — Person {child_id} is probably Person {parent_id}'s "
+                        f"parent, not their child."
+                    ),
+                    recommended_action=(
+                        f"Review the relationship direction. Person {child_id} "
+                        f"(recorded as HEAD in {earlier_head_year}) is likely the parent "
+                        f"of Person {parent_id}. Consider correcting the relationship "
+                        f"direction or adding a note to the record."
+                    ),
+                ))
+            else:
+                # No corroborating evidence — age is more likely wrong than the role
+                child_appearances_str = "; ".join(
+                    f"{a['year']}: {a['role']}, age {a['age']}"
+                    for a in child_appearances
+                ) or "no linked census appearances"
+                items.append(ReportItem(
+                    finding_type="parent_age_regression",
+                    priority=0,
+                    person_id=parent_id,
+                    relationship_id=rid,
+                    event_id=None,
+                    record_ids=[],
+                    title=(
+                        f"Relationship {rid}: parent age regression "
+                        f"({parent_id} / {child_id}) — likely age recording error"
+                    ),
+                    detail=(
+                        f"Relationship {rid} (parent_child) links Person {parent_id} "
+                        f"({parent_label}, b~{parent_birth}) as parent of Person {child_id} "
+                        f"({child_label}, b~{child_birth}), but Person {child_id} is "
+                        f"{abs(gap)} years older. "
+                        f"No earlier census appearances for Person {child_id} as HEAD "
+                        f"were found to corroborate a role inversion. "
+                        f"Age is the least reliable field in census records — a recording "
+                        f"or transcription error is more likely than a structural error. "
+                        f"Census appearances for Person {child_id}: {child_appearances_str}."
+                    ),
+                    recommended_action=(
+                        "Check the recorded ages in the underlying census records. "
+                        "If one age is an outlier, it is likely a recording error. "
+                        "Only consider reversing or removing the relationship if other "
+                        "sources corroborate the age inversion."
+                    ),
+                ))
             continue  # Skip to next relationship
 
         if effective_min < _MIN_PARENT_GAP:
@@ -597,12 +686,13 @@ def find_parent_age_implausible(
                 f"gap = {gap} yrs. Violation(s): "
                 + "; ".join(violations)
                 + f". Tolerance applied: ±{_AGE_TOLERANCE} yrs on each estimated year. "
-                f"GC12 — probable merge error if violation is not explained by "
-                f"census age imprecision."
+                f"GC12 — verify against census records before concluding an error; "
+                f"age estimates derived from census data carry ±{_AGE_TOLERANCE} yr uncertainty."
             ),
             recommended_action=(
-                "Verify birth year estimates. If confirmed implausible, review the "
-                "underlying RecordedRelationships for a mis-assigned relationship."
+                "Verify the recorded ages in the underlying census records. "
+                "A single outlier age is more likely a recording error than a "
+                "structural problem with the relationship."
             ),
         ))
 
@@ -1194,6 +1284,161 @@ def find_unlinked_in_populated_households(
     return items
 
 
+# ---------------------------------------------------------------------------
+# age_progression_anomaly
+# ---------------------------------------------------------------------------
+
+_AGE_ANOMALY_THRESHOLD: int = 15   # years; conservative to exclude recording noise
+
+
+def _classify_age_anomaly(expected: int, recorded: int) -> str:
+    """
+    Classify the likely transcription error type for a 2-digit age anomaly.
+
+    digit_misread:      one digit differs (e.g., expected 34 recorded as 94 —
+                        '3' misread as '9' in cursive)
+    digit_transposition: digits are swapped (e.g., expected 34 recorded as 43)
+    unknown:            neither pattern
+    """
+    e = str(expected)
+    r = str(recorded)
+    if len(e) == 2 and len(r) == 2:
+        if e[0] == r[1] and e[1] == r[0]:
+            return "digit_transposition"
+        if (e[0] != r[0]) != (e[1] != r[1]):  # exactly one digit differs
+            return "digit_misread"
+    return "unknown"
+
+
+def find_age_progression_anomaly(
+    repo: Repository,
+    threshold: int = _AGE_ANOMALY_THRESHOLD,
+) -> list[ReportItem]:
+    """
+    Find Persons whose recorded age in a later census deviates significantly
+    from the progression anchored on their earliest appearance.
+
+    Requires at least 2 census appearances with a recorded age. Uses the
+    earliest appearance as the anchor; each subsequent appearance is checked
+    against anchor_age + elapsed_years.
+
+    Threshold: >15 years. Rules out normal census recording imprecision
+    (±2 yrs) while catching digit misreads (e.g., 34 → 94: deviation 60).
+
+    Sub-classifies as digit_misread, digit_transposition, or unknown.
+
+    This finding only fires correctly because household_continuity has
+    assembled the full age sequence on a single Person before Splink runs.
+    """
+    rows = repo.fetch_all(
+        """
+        SELECT
+            prp.person_id,
+            rp.recorded_person_id,
+            r.record_id,
+            r.date AS record_date,
+            rp.age
+        FROM person_recorded_person prp
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        JOIN person p ON p.person_id = prp.person_id
+        WHERE s.type = 'census'
+          AND rp.age IS NOT NULL
+          AND p.status = 'active'
+        ORDER BY prp.person_id, r.date
+        """
+    )
+
+    # Group appearances by person
+    by_person: dict[int, list[dict]] = {}
+    for row in rows:
+        y = _year(str(row["record_date"])) if row["record_date"] else None
+        if y is None:
+            continue
+        pid = row["person_id"]
+        if pid not in by_person:
+            by_person[pid] = []
+        by_person[pid].append({
+            "year": y,
+            "age": int(row["age"]),
+            "record_id": row["record_id"],
+        })
+
+    items = []
+    for person_id, appearances in by_person.items():
+        if len(appearances) < 2:
+            continue
+
+        appearances.sort(key=lambda a: a["year"])
+        anchor = appearances[0]
+
+        anomalies = []
+        for app in appearances[1:]:
+            elapsed = app["year"] - anchor["year"]
+            expected = anchor["age"] + elapsed
+            deviation = abs(app["age"] - expected)
+            if deviation > threshold:
+                anomalies.append({
+                    "year": app["year"],
+                    "recorded": app["age"],
+                    "expected": expected,
+                    "deviation": deviation,
+                    "record_id": app["record_id"],
+                    "anomaly_type": _classify_age_anomaly(expected, app["age"]),
+                })
+
+        if not anomalies:
+            continue
+
+        label = _person_label(repo, person_id)
+        record_ids = [a["record_id"] for a in anomalies]
+
+        _type_note = {
+            "digit_misread": " — likely digit misread (e.g., '3' misread as '9')",
+            "digit_transposition": " — likely digit transposition",
+            "unknown": "",
+        }
+        detail_lines = [
+            f"Person {person_id} ({label}): age progression anomaly.",
+            f"  Anchor: age {anchor['age']} in {anchor['year']} "
+            f"(record {anchor['record_id']})",
+        ]
+        for a in anomalies:
+            detail_lines.append(
+                f"  • {a['year']}: recorded {a['recorded']}, "
+                f"expected ~{a['expected']} "
+                f"(deviation {a['deviation']} yrs)"
+                f"{_type_note.get(a['anomaly_type'], '')}"
+            )
+        detail_lines.append(
+            f"Deviation >{threshold} yrs rules out normal census imprecision (±2 yrs). "
+            f"Most likely cause: transcription digit error in the anomalous record."
+        )
+
+        items.append(ReportItem(
+            finding_type="age_progression_anomaly",
+            priority=0,
+            person_id=person_id,
+            relationship_id=None,
+            event_id=None,
+            record_ids=record_ids,
+            title=(
+                f"Person {person_id} ({label}): age anomaly — "
+                f"{len(anomalies)} anomalous appearance(s)"
+            ),
+            detail="\n".join(detail_lines),
+            recommended_action=(
+                "Review the raw census image for the anomalous year. "
+                "A single-digit misread or transposition in the age column is the "
+                "most common cause. Do not use the anomalous age as a matching "
+                "signal — the other census ages are the reliable anchors."
+            ),
+        ))
+
+    return items
+
+
 def run_all_findings(
     repo: Repository,
 ) -> list[ReportItem]:
@@ -1212,4 +1457,5 @@ def run_all_findings(
     items.extend(find_unlinked_recorded_persons(repo))
     items.extend(find_single_census_appearance(repo))
     items.extend(find_unlinked_in_populated_households(repo))
+    items.extend(find_age_progression_anomaly(repo))
     return items
