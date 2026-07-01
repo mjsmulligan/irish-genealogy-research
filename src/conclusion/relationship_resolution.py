@@ -644,45 +644,44 @@ def run_relationship_resolution(
     if orphaned_person_ids:
         result.persons_orphaned = len(orphaned_person_ids)
         placeholders = ",".join(["%s"] * len(orphaned_person_ids))
+        ids = tuple(orphaned_person_ids)
 
-        # Delete in FK-safe order: provenance → relationships → person children → persons
+        # Single CTE statement: all six deletes happen atomically.
+        # Order matters — FK children before FK parents.
         repo.execute(
             f"""
-            DELETE FROM relationship_recorded_relationship
-            WHERE relationship_id IN (
-                SELECT relationship_id FROM relationship
-                WHERE person_id_1 IN ({placeholders}) OR person_id_2 IN ({placeholders})
+            WITH target_persons AS (
+                SELECT unnest(ARRAY[{placeholders}]::int[]) AS person_id
+            ),
+            del_rrr AS (
+                DELETE FROM relationship_recorded_relationship
+                WHERE relationship_id IN (
+                    SELECT relationship_id FROM relationship r
+                    JOIN target_persons tp
+                      ON tp.person_id IN (r.person_id_1, r.person_id_2)
+                )
+            ),
+            del_rel AS (
+                DELETE FROM relationship
+                WHERE person_id_1 IN (SELECT person_id FROM target_persons)
+                   OR person_id_2 IN (SELECT person_id FROM target_persons)
+            ),
+            del_pe AS (
+                DELETE FROM person_event
+                WHERE person_id IN (SELECT person_id FROM target_persons)
+            ),
+            del_pn AS (
+                DELETE FROM person_name
+                WHERE person_id IN (SELECT person_id FROM target_persons)
+            ),
+            del_prp AS (
+                DELETE FROM person_recorded_person
+                WHERE person_id IN (SELECT person_id FROM target_persons)
             )
+            DELETE FROM person
+            WHERE person_id IN (SELECT person_id FROM target_persons)
             """,
-            tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
-        )
-
-        repo.execute(
-            f"""
-            DELETE FROM relationship
-            WHERE person_id_1 IN ({placeholders}) OR person_id_2 IN ({placeholders})
-            """,
-            tuple(orphaned_person_ids) + tuple(orphaned_person_ids),
-        )
-
-        repo.execute(
-            f"DELETE FROM person_event WHERE person_id IN ({placeholders})",
-            tuple(orphaned_person_ids),
-        )
-
-        repo.execute(
-            f"DELETE FROM person_name WHERE person_id IN ({placeholders})",
-            tuple(orphaned_person_ids),
-        )
-
-        repo.execute(
-            f"DELETE FROM person_recorded_person WHERE person_id IN ({placeholders})",
-            tuple(orphaned_person_ids),
-        )
-
-        repo.execute(
-            f"DELETE FROM person WHERE person_id IN ({placeholders})",
-            tuple(orphaned_person_ids),
+            ids,
         )
 
     return result

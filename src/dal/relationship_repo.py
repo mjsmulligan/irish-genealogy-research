@@ -12,23 +12,6 @@ from __future__ import annotations
 from src.db.repository import Repository
 
 
-def insert_relationship(
-    repo: Repository,
-    relationship_id: int,
-    rel_type: str,
-    person_id_1: int,
-    person_id_2: int,
-    notes: str | None = None,
-) -> None:
-    """Insert a new Relationship conclusion row."""
-    repo.execute(
-        "INSERT INTO relationship "
-        "(relationship_id, type, person_id_1, person_id_2, notes) "
-        "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s, %s)",
-        (relationship_id, rel_type, person_id_1, person_id_2, notes),
-    )
-
-
 def insert_relationship_recorded_relationship(
     repo: Repository,
     relationship_id: int,

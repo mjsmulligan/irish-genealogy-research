@@ -12,35 +12,6 @@ from __future__ import annotations
 from src.db.repository import Repository
 
 
-def insert_person(
-    repo: Repository,
-    person_id: int,
-    label: str,
-    gender: str | None,
-) -> None:
-    """Insert a new Person conclusion row."""
-    repo.execute(
-        "INSERT INTO person (person_id, label, gender) "
-        "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s)",
-        (person_id, label, gender),
-    )
-
-
-def insert_person_name(
-    repo: Repository,
-    person_name_id: int,
-    person_id: int,
-    value: str,
-    name_type: str,
-) -> None:
-    """Insert a PersonName row (e.g. birth_name from census)."""
-    repo.execute(
-        "INSERT INTO person_name (person_name_id, person_id, value, type) "
-        "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s)",
-        (person_name_id, person_id, value, name_type),
-    )
-
-
 def insert_person_recorded_person(
     repo: Repository,
     person_id: int,

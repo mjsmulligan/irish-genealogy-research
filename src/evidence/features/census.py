@@ -26,7 +26,7 @@ Entry point:
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 
 import pandas as pd
 
@@ -240,41 +240,44 @@ def build_census_household_features(
     result: list[pd.DataFrame] = []
 
     for source_id in CENSUS_SOURCE_IDS:
-        # Fetch all Records for this source
-        records = repo.fetch_all(
+        # Single JOIN fetches records and all their members in one query.
+        # Groups are assembled in Python to avoid N+1 round-trips.
+        all_rows = repo.fetch_all(
             """
             SELECT r.record_id, r.source_id,
-                   pr.place_id
+                   pr.place_id,
+                   rp.name_as_recorded, rp.role, rp.age,
+                   rp.recorded_person_id
             FROM record r
             LEFT JOIN place_record pr ON pr.record_id = r.record_id
+            LEFT JOIN recorded_person rp ON rp.record_id = r.record_id
             WHERE r.source_id = %s
-            ORDER BY r.record_id
+            ORDER BY r.record_id, rp.recorded_person_id
             """,
             (source_id,),
         )
 
-        if not records:
+        if not all_rows:
             continue
 
-        rows: list[dict] = []
-        for rec in records:
-            record_id = rec["record_id"]
-            place_id = rec["place_id"]
+        # Group member rows by record_id, preserving record metadata.
+        record_meta: dict[int, dict] = {}
+        members_by_record: dict[int, list[dict]] = defaultdict(list)
+        for row in all_rows:
+            rid = row["record_id"]
+            if rid not in record_meta:
+                record_meta[rid] = {"record_id": rid, "source_id": row["source_id"], "place_id": row["place_id"]}
+            if row["recorded_person_id"] is not None:
+                members_by_record[rid].append({
+                    "name_as_recorded": row["name_as_recorded"],
+                    "role": row["role"],
+                    "age": row["age"],
+                })
 
-            # Fetch all RecordedPersons for this household
-            members = repo.fetch_all(
-                """
-                SELECT name_as_recorded, role, age
-                FROM recorded_person
-                WHERE record_id = %s
-                ORDER BY recorded_person_id
-                """,
-                (record_id,),
-            )
-
-            rows.append(
-                _build_household_row(record_id, source_id, members, place_id)
-            )
+        rows = [
+            _build_household_row(rid, source_id, members_by_record[rid], meta["place_id"])
+            for rid, meta in record_meta.items()
+        ]
 
         df = pd.DataFrame(rows)
         # Ensure Splink-required types
