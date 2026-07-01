@@ -1371,10 +1371,17 @@ def find_age_progression_anomaly(
             continue
 
         appearances.sort(key=lambda a: a["year"])
-        anchor = appearances[0]
+        # Skip anchors with age=0 — these are blank/unrecorded values, not infants
+        anchor = next((a for a in appearances if a["age"] > 0), None)
+        if anchor is None:
+            continue
 
         anomalies = []
-        for app in appearances[1:]:
+        for app in appearances:
+            if app["year"] <= anchor["year"]:
+                continue
+            if app["age"] == 0:
+                continue  # blank/unrecorded age in later census — skip, not an anomaly
             elapsed = app["year"] - anchor["year"]
             expected = anchor["age"] + elapsed
             deviation = abs(app["age"] - expected)

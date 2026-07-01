@@ -150,11 +150,17 @@ def _age_match(age_a: int | None, age_b: int | None, elapsed: int, tolerance: in
 # ---------------------------------------------------------------------------
 
 def _get_records_for_source(repo: Repository, source_id: int) -> list[dict]:
-    """Return all census records for a given source."""
+    """
+    Return all census records that have a resolved place_id.
+    Uses place_record join so downstream grouping is by canonical place authority.
+    Records without a place_record row (unresolved places) are skipped — continuity
+    cannot safely match them.
+    """
     return repo.fetch_all(
         """
-        SELECT r.record_id, r.place_as_recorded
+        SELECT r.record_id, pr.place_id
         FROM record r
+        JOIN place_record pr ON pr.record_id = r.record_id
         WHERE r.source_id = %s
         ORDER BY r.record_id
         """,
@@ -162,21 +168,22 @@ def _get_records_for_source(repo: Repository, source_id: int) -> list[dict]:
     )
 
 
-def _get_records_for_townland(
+def _get_records_for_place_id(
     repo: Repository,
-    townland: str,
+    place_id: int,
     source_id: int,
 ) -> list[dict]:
-    """Return records in a specific townland for a given source."""
+    """Return records sharing the canonical place_id for a given source."""
     return repo.fetch_all(
         """
-        SELECT r.record_id, r.place_as_recorded
+        SELECT r.record_id, pr.place_id
         FROM record r
+        JOIN place_record pr ON pr.record_id = r.record_id
         WHERE r.source_id = %s
-          AND r.place_as_recorded = %s
+          AND pr.place_id = %s
         ORDER BY r.record_id
         """,
-        (source_id, townland),
+        (source_id, place_id),
     )
 
 
@@ -356,12 +363,12 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
         records_a = _get_records_for_source(repo, source_a)
 
         for rec_a in records_a:
-            townland = rec_a.get("place_as_recorded")
-            if not townland:
+            place_id = rec_a.get("place_id")
+            if not place_id:
                 continue
 
-            # Find candidate households in the same townland in year B
-            records_b = _get_records_for_townland(repo, townland, source_b)
+            # Find candidate households in the same canonical place in year B
+            records_b = _get_records_for_place_id(repo, place_id, source_b)
             if not records_b:
                 continue
 
