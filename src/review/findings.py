@@ -239,22 +239,20 @@ def find_birth_singularity_violations(
     Exactly one birth Event should be marked is_primary; rebuild_consensus
     should ensure this, but this check catches any inconsistency.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT pe.person_id, COUNT(*) AS primary_count,
-                   ARRAY_AGG(e.event_id ORDER BY e.event_id) AS event_ids,
-                   ARRAY_AGG(e.date ORDER BY e.event_id) AS event_dates
-            FROM event e
-            JOIN person_event pe ON pe.event_id = e.event_id
-            JOIN person p ON p.person_id = pe.person_id
-            WHERE e.type = 'birth' AND e.is_primary = 1 AND p.status = 'active'
-            GROUP BY pe.person_id
-            HAVING COUNT(*) > 1
-            ORDER BY pe.person_id
-            """
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        """
+        SELECT pe.person_id, COUNT(*) AS primary_count,
+               ARRAY_AGG(e.event_id ORDER BY e.event_id) AS event_ids,
+               ARRAY_AGG(e.date ORDER BY e.event_id) AS event_dates
+        FROM event e
+        JOIN person_event pe ON pe.event_id = e.event_id
+        JOIN person p ON p.person_id = pe.person_id
+        WHERE e.type = 'birth' AND e.is_primary = 1 AND p.status = 'active'
+        GROUP BY pe.person_id
+        HAVING COUNT(*) > 1
+        ORDER BY pe.person_id
+        """
+    )
 
     items = []
     for row in rows:
@@ -302,22 +300,20 @@ def find_death_singularity_violations(
     """
     GC05: A Person with multiple Events of type 'death' marked is_primary=1.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT pe.person_id, COUNT(*) AS primary_count,
-                   ARRAY_AGG(e.event_id ORDER BY e.event_id) AS event_ids,
-                   ARRAY_AGG(e.date ORDER BY e.event_id) AS event_dates
-            FROM event e
-            JOIN person_event pe ON pe.event_id = e.event_id
-            JOIN person p ON p.person_id = pe.person_id
-            WHERE e.type = 'death' AND e.is_primary = 1 AND p.status = 'active'
-            GROUP BY pe.person_id
-            HAVING COUNT(*) > 1
-            ORDER BY pe.person_id
-            """
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        """
+        SELECT pe.person_id, COUNT(*) AS primary_count,
+               ARRAY_AGG(e.event_id ORDER BY e.event_id) AS event_ids,
+               ARRAY_AGG(e.date ORDER BY e.event_id) AS event_dates
+        FROM event e
+        JOIN person_event pe ON pe.event_id = e.event_id
+        JOIN person p ON p.person_id = pe.person_id
+        WHERE e.type = 'death' AND e.is_primary = 1 AND p.status = 'active'
+        GROUP BY pe.person_id
+        HAVING COUNT(*) > 1
+        ORDER BY pe.person_id
+        """
+    )
 
     items = []
     for row in rows:
@@ -373,22 +369,20 @@ def find_life_event_sequence_violations(
     Detail strings include actual values so the researcher can distinguish
     genuine errors from census age-recording imprecision.
     """
-    person_ids = _get_active_person_ids(conn)
+    person_ids = _get_active_person_ids(repo)
     items = []
 
     for pid in person_ids:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT e.event_id, e.type, e.date, e.is_primary
-                FROM event e
-                JOIN person_event pe ON pe.event_id = e.event_id
-                WHERE pe.person_id = %s AND e.date IS NOT NULL
-                ORDER BY e.date, e.event_id
-                """,
-                (pid,),
-            )
-            events = cur.fetchall()
+        events = repo.fetch_all(
+            """
+            SELECT e.event_id, e.type, e.date, e.is_primary
+            FROM event e
+            JOIN person_event pe ON pe.event_id = e.event_id
+            WHERE pe.person_id = %s AND e.date IS NOT NULL
+            ORDER BY e.date, e.event_id
+            """,
+            (pid,),
+        )
 
         if not events:
             continue
@@ -453,7 +447,7 @@ def find_life_event_sequence_violations(
         if not violations:
             continue
 
-        label = _person_label(conn, pid)
+        label = _person_label(repo, pid)
         detail_lines = [
             f"Person {pid} ({label}) has {len(violations)} life-event sequence "
             f"violation(s) (GC02, tolerance = {_SEQ_TOLERANCE} yrs):"
@@ -497,20 +491,18 @@ def find_parent_age_implausible(
     Maximum: 50 years maternal, 70 years paternal.
     Gender-unknown parents skip the maximum check.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT r.relationship_id, r.person_id_1 AS parent_id,
-                   r.person_id_2 AS child_id,
-                   p.gender AS parent_gender
-            FROM relationship r
-            JOIN person p ON p.person_id = r.person_id_1
-            WHERE r.type = 'parent_child'
-              AND r.status = 'active'
-            ORDER BY r.relationship_id
-            """
-        )
-        rels = cur.fetchall()
+    rels = repo.fetch_all(
+        """
+        SELECT r.relationship_id, r.person_id_1 AS parent_id,
+               r.person_id_2 AS child_id,
+               p.gender AS parent_gender
+        FROM relationship r
+        JOIN person p ON p.person_id = r.person_id_1
+        WHERE r.type = 'parent_child'
+          AND r.status = 'active'
+        ORDER BY r.relationship_id
+        """
+    )
 
     items = []
     for rel in rels:
@@ -519,8 +511,8 @@ def find_parent_age_implausible(
         rid = rel["relationship_id"]
         gender = rel["parent_gender"]
 
-        parent_birth = _derive_birth_year(conn, parent_id)
-        child_birth = _derive_birth_year(conn, child_id)
+        parent_birth = _derive_birth_year(repo, parent_id)
+        child_birth = _derive_birth_year(repo, child_id)
 
         if parent_birth is None or child_birth is None:
             continue  # cannot evaluate; skip silently
@@ -535,8 +527,8 @@ def find_parent_age_implausible(
 
         # NEW: Check for age regression (parent younger than child)
         if gap < 0:
-            parent_label = _person_label(conn, parent_id)
-            child_label = _person_label(conn, child_id)
+            parent_label = _person_label(repo, parent_id)
+            child_label = _person_label(repo, child_id)
             items.append(ReportItem(
                 finding_type="parent_age_regression",
                 priority=0,
@@ -583,8 +575,8 @@ def find_parent_age_implausible(
         if not violations:
             continue
 
-        parent_label = _person_label(conn, parent_id)
-        child_label = _person_label(conn, child_id)
+        parent_label = _person_label(repo, parent_id)
+        child_label = _person_label(repo, child_id)
 
         items.append(ReportItem(
             finding_type="parent_age_implausible",
@@ -629,8 +621,8 @@ def find_parent_age_implausible(
         if gender != "female":
             continue  # Only check maternal relationships
 
-        parent_birth = _derive_birth_year(conn, parent_id)
-        child_birth = _derive_birth_year(conn, child_id)
+        parent_birth = _derive_birth_year(repo, parent_id)
+        child_birth = _derive_birth_year(repo, child_id)
 
         if parent_birth is None or child_birth is None:
             continue
@@ -643,7 +635,7 @@ def find_parent_age_implausible(
                 extreme_gap_children[parent_id] = []
             extreme_gap_children[parent_id].append({
                 'child_id': child_id,
-                'child_name': _person_label(conn, child_id),
+                'child_name': _person_label(repo, child_id),
                 'gap': gap,
                 'rel_id': rid,
             })
@@ -651,8 +643,8 @@ def find_parent_age_implausible(
     # Second pass: flag split-person patterns
     for parent_id, children in extreme_gap_children.items():
         if len(children) >= 2:  # Multiple children with extreme gaps
-            parent_label = _person_label(conn, parent_id)
-            parent_birth = _derive_birth_year(conn, parent_id)
+            parent_label = _person_label(repo, parent_id)
+            parent_birth = _derive_birth_year(repo, parent_id)
             gaps_str = ", ".join([f"{c['gap']}yr" for c in children])
             children_names = ", ".join([c['child_name'] for c in children])
 
@@ -696,26 +688,24 @@ def find_marriage_age_implausible(
     Birth year derived from is_primary birth Event (with Record-age fallback).
     Tolerance ±2 yrs applied.
     """
-    person_ids = _get_active_person_ids(conn)
+    person_ids = _get_active_person_ids(repo)
     items = []
 
     for pid in person_ids:
-        birth_year = _derive_birth_year(conn, pid)
+        birth_year = _derive_birth_year(repo, pid)
         if birth_year is None:
             continue
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT e.event_id, e.date
-                FROM event e
-                JOIN person_event pe ON pe.event_id = e.event_id
-                WHERE pe.person_id = %s AND e.type = 'marriage' AND e.date IS NOT NULL
-                ORDER BY e.date
-                """,
-                (pid,),
-            )
-            marriages = cur.fetchall()
+        marriages = repo.fetch_all(
+            """
+            SELECT e.event_id, e.date
+            FROM event e
+            JOIN person_event pe ON pe.event_id = e.event_id
+            WHERE pe.person_id = %s AND e.type = 'marriage' AND e.date IS NOT NULL
+            ORDER BY e.date
+            """,
+            (pid,),
+        )
 
         for ev in marriages:
             marriage_year = _year(str(ev["date"]))
@@ -727,7 +717,7 @@ def find_marriage_age_implausible(
             effective_age = age_at_marriage + _AGE_TOLERANCE
 
             if effective_age < _MIN_MARRIAGE_AGE:
-                label = _person_label(conn, pid)
+                label = _person_label(repo, pid)
                 items.append(ReportItem(
                     finding_type="marriage_age_implausible",
                     priority=0,
@@ -772,29 +762,27 @@ def find_lifespan_boundary_violated(
     Lower bound: is_primary birth year (or baptism year).
     Upper bound: is_primary death year (only checked if death is concluded).
     """
-    person_ids = _get_active_person_ids(conn)
+    person_ids = _get_active_person_ids(repo)
     items = []
 
     for pid in person_ids:
-        birth_year = _derive_birth_year(conn, pid)
-        death_year = _derive_death_year(conn, pid)
+        birth_year = _derive_birth_year(repo, pid)
+        death_year = _derive_death_year(repo, pid)
 
         if birth_year is None and death_year is None:
             continue
 
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT r.record_id, r.date AS record_date
-                FROM person_recorded_person prp
-                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-                JOIN record r ON r.record_id = rp.record_id
-                WHERE prp.person_id = %s AND r.date IS NOT NULL
-                ORDER BY r.date
-                """,
-                (pid,),
-            )
-            linked = cur.fetchall()
+        linked = repo.fetch_all(
+            """
+            SELECT r.record_id, r.date AS record_date
+            FROM person_recorded_person prp
+            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+            JOIN record r ON r.record_id = rp.record_id
+            WHERE prp.person_id = %s AND r.date IS NOT NULL
+            ORDER BY r.date
+            """,
+            (pid,),
+        )
 
         violations: list[tuple[int, str]] = []  # (record_id, description)
 
@@ -828,7 +816,7 @@ def find_lifespan_boundary_violated(
         if not violations:
             continue
 
-        label = _person_label(conn, pid)
+        label = _person_label(repo, pid)
         record_ids = [v[0] for v in violations]
         detail_lines = [
             f"Person {pid} ({label}) lifespan boundary violation(s) (GC01):",
@@ -871,25 +859,23 @@ def find_unlinked_recorded_persons(
     These are individuals from the evidence layer who have not been absorbed
     into any Person by the conclusion pipeline.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT rp.recorded_person_id,
-                   rp.name_as_recorded,
-                   rp.record_id,
-                   r.date AS record_date,
-                   s.title AS source_title
-            FROM recorded_person rp
-            JOIN record r ON r.record_id = rp.record_id
-            JOIN source s ON s.source_id = r.source_id
-            WHERE NOT EXISTS (
-                SELECT 1 FROM person_recorded_person prp
-                WHERE prp.recorded_person_id = rp.recorded_person_id
-            )
-            ORDER BY rp.recorded_person_id
-            """
+    rows = repo.fetch_all(
+        """
+        SELECT rp.recorded_person_id,
+               rp.name_as_recorded,
+               rp.record_id,
+               r.date AS record_date,
+               s.title AS source_title
+        FROM recorded_person rp
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM person_recorded_person prp
+            WHERE prp.recorded_person_id = rp.recorded_person_id
         )
-        rows = cur.fetchall()
+        ORDER BY rp.recorded_person_id
+        """
+    )
 
     items = []
     for row in rows:
@@ -939,33 +925,31 @@ def find_single_census_appearance(
     censuses, or simply not been matched across censuses.  Not a constraint
     violation — priority will be lower than schema-state findings.
     """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-                p.person_id,
-                p.label,
-                COUNT(DISTINCT r.source_id) AS census_source_count,
-                ARRAY_AGG(DISTINCT s.title ORDER BY s.title) AS census_sources,
-                MIN(r.date) AS earliest_date
-            FROM person p
-            JOIN person_recorded_person prp ON prp.person_id = p.person_id
-            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-            JOIN record r ON r.record_id = rp.record_id
-            JOIN source s ON s.source_id = r.source_id
-            WHERE s.type = 'census'
-              AND p.status = 'active'
-              AND NOT EXISTS (
-                  SELECT 1 FROM event e
-                  JOIN person_event pe ON pe.event_id = e.event_id
-                  WHERE pe.person_id = p.person_id AND e.type = 'death'
-              )
-            GROUP BY p.person_id, p.label
-            HAVING COUNT(DISTINCT r.source_id) = 1
-            ORDER BY p.person_id
-            """
-        )
-        rows = cur.fetchall()
+    rows = repo.fetch_all(
+        """
+        SELECT
+            p.person_id,
+            p.label,
+            COUNT(DISTINCT r.source_id) AS census_source_count,
+            ARRAY_AGG(DISTINCT s.title ORDER BY s.title) AS census_sources,
+            MIN(r.date) AS earliest_date
+        FROM person p
+        JOIN person_recorded_person prp ON prp.person_id = p.person_id
+        JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+        JOIN record r ON r.record_id = rp.record_id
+        JOIN source s ON s.source_id = r.source_id
+        WHERE s.type = 'census'
+          AND p.status = 'active'
+          AND NOT EXISTS (
+              SELECT 1 FROM event e
+              JOIN person_event pe ON pe.event_id = e.event_id
+              WHERE pe.person_id = p.person_id AND e.type = 'death'
+          )
+        GROUP BY p.person_id, p.label
+        HAVING COUNT(DISTINCT r.source_id) = 1
+        ORDER BY p.person_id
+        """
+    )
 
     items = []
     for row in rows:
@@ -1057,80 +1041,71 @@ def find_unlinked_in_populated_households(
     """
     items = []
 
-    with conn.cursor() as cur:
-        # Find households with both linked AND unlinked persons
-        cur.execute("""
-            SELECT
-                r.record_id,
-                r.date AS record_date,
-                r.place_as_recorded AS place_name,
-                r.source_id,
-                COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) as linked_count,
-                COUNT(*) FILTER (WHERE prp.person_id IS NULL) as unlinked_count
-            FROM record r
-            JOIN recorded_person rp ON rp.record_id = r.record_id
-            LEFT JOIN person_recorded_person prp ON prp.recorded_person_id = rp.recorded_person_id
-            GROUP BY r.record_id, r.date, r.place_as_recorded, r.source_id
-            HAVING COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) >= 1
-              AND COUNT(*) FILTER (WHERE prp.person_id IS NULL) >= 1
-            ORDER BY r.record_id
-        """)
-        households_with_mixed = cur.fetchall()
+    households_with_mixed = repo.fetch_all("""
+        SELECT
+            r.record_id,
+            r.date AS record_date,
+            r.place_as_recorded AS place_name,
+            r.source_id,
+            COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) as linked_count,
+            COUNT(*) FILTER (WHERE prp.person_id IS NULL) as unlinked_count
+        FROM record r
+        JOIN recorded_person rp ON rp.record_id = r.record_id
+        LEFT JOIN person_recorded_person prp ON prp.recorded_person_id = rp.recorded_person_id
+        GROUP BY r.record_id, r.date, r.place_as_recorded, r.source_id
+        HAVING COUNT(*) FILTER (WHERE prp.person_id IS NOT NULL) >= 1
+          AND COUNT(*) FILTER (WHERE prp.person_id IS NULL) >= 1
+        ORDER BY r.record_id
+    """)
 
     if not households_with_mixed:
         return []
-
-    from src.validation import validate_name_variant
 
     for household in households_with_mixed:
         record_id = household["record_id"]
 
         # Get linked persons in this household
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    prp.person_id,
-                    p.label,
-                    rp.name_as_recorded,
-                    rp.age,
-                    rp.role
-                FROM person_recorded_person prp
-                JOIN person p ON p.person_id = prp.person_id
-                JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
-                JOIN record r ON r.record_id = rp.record_id
-                WHERE r.record_id = %s
-                ORDER BY rp.role DESC, rp.name_as_recorded
-            """, (record_id,))
-            linked_persons = cur.fetchall()
+        linked_persons = repo.fetch_all("""
+            SELECT
+                prp.person_id,
+                p.label,
+                rp.name_as_recorded,
+                rp.age,
+                rp.role
+            FROM person_recorded_person prp
+            JOIN person p ON p.person_id = prp.person_id
+            JOIN recorded_person rp ON rp.recorded_person_id = prp.recorded_person_id
+            JOIN record r ON r.record_id = rp.record_id
+            WHERE r.record_id = %s
+            ORDER BY rp.role DESC, rp.name_as_recorded
+        """, (record_id,))
 
         # Get unlinked persons in this household with their best similarity scores
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    rp.recorded_person_id,
-                    rp.name_as_recorded,
-                    rp.age,
-                    rp.role,
-                    MAX(rr.score) FILTER (WHERE rr.score < 0.50) as best_weak_score,
-                    MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_2 END)
-                        FILTER (WHERE rr.recorded_person_id_1 = rp.recorded_person_id AND rr.score < 0.50)
-                        as weak_match_id_2,
-                    MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_1 END)
-                        FILTER (WHERE rr.recorded_person_id_2 = rp.recorded_person_id AND rr.score < 0.50)
-                        as weak_match_id_1
-                FROM recorded_person rp
-                LEFT JOIN recorded_relationship rr ON
-                    (rr.recorded_person_id_1 = rp.recorded_person_id OR rr.recorded_person_id_2 = rp.recorded_person_id)
-                    AND rr.type = 'similarity' AND rr.score < 0.50
-                WHERE rp.record_id = %s
-                  AND NOT EXISTS (
-                      SELECT 1 FROM person_recorded_person
-                      WHERE recorded_person_id = rp.recorded_person_id
-                  )
-                GROUP BY rp.recorded_person_id, rp.name_as_recorded, rp.age, rp.role
-                ORDER BY best_weak_score DESC NULLS LAST, rp.role DESC, rp.name_as_recorded
-            """, (record_id,))
-            unlinked_with_scores = cur.fetchall()
+        unlinked_with_scores = repo.fetch_all("""
+            SELECT
+                rp.recorded_person_id,
+                rp.name_as_recorded,
+                rp.age,
+                rp.role,
+                MAX(rr.score) FILTER (WHERE rr.score < 0.50) as best_weak_score,
+                MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_2 END)
+                    FILTER (WHERE rr.recorded_person_id_1 = rp.recorded_person_id AND rr.score < 0.50)
+                    as weak_match_id_2,
+                MAX(CASE WHEN rr.score < 0.50 THEN rr.recorded_person_id_1 END)
+                    FILTER (WHERE rr.recorded_person_id_2 = rp.recorded_person_id AND rr.score < 0.50)
+                    as weak_match_id_1
+            FROM recorded_person rp
+            LEFT JOIN recorded_relationship rr ON
+                (rr.recorded_person_id_1 = rp.recorded_person_id OR rr.recorded_person_id_2 = rp.recorded_person_id)
+                AND rr.type = 'similarity' AND rr.score < 0.50
+            WHERE rp.record_id = %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM person_recorded_person
+                  WHERE recorded_person_id = rp.recorded_person_id
+              )
+            GROUP BY rp.recorded_person_id, rp.name_as_recorded, rp.age, rp.role
+            ORDER BY best_weak_score DESC NULLS LAST, rp.role DESC, rp.name_as_recorded
+        """, (record_id,))
 
         if not unlinked_with_scores:
             continue
@@ -1227,14 +1202,14 @@ def run_all_findings(
     Priority scores are not yet assigned — that is done by priority.py.
     """
     items: list[ReportItem] = []
-    items.extend(find_merge_error_candidates(conn))
-    items.extend(find_birth_singularity_violations(conn))
-    items.extend(find_death_singularity_violations(conn))
-    items.extend(find_life_event_sequence_violations(conn))
-    items.extend(find_parent_age_implausible(conn))
-    items.extend(find_marriage_age_implausible(conn))
-    items.extend(find_lifespan_boundary_violated(conn))
-    items.extend(find_unlinked_recorded_persons(conn))
-    items.extend(find_single_census_appearance(conn))
-    items.extend(find_unlinked_in_populated_households(conn))
+    items.extend(find_merge_error_candidates(repo))
+    items.extend(find_birth_singularity_violations(repo))
+    items.extend(find_death_singularity_violations(repo))
+    items.extend(find_life_event_sequence_violations(repo))
+    items.extend(find_parent_age_implausible(repo))
+    items.extend(find_marriage_age_implausible(repo))
+    items.extend(find_lifespan_boundary_violated(repo))
+    items.extend(find_unlinked_recorded_persons(repo))
+    items.extend(find_single_census_appearance(repo))
+    items.extend(find_unlinked_in_populated_households(repo))
     return items

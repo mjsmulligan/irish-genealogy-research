@@ -356,68 +356,6 @@ def _group_birth_evidence(
     return buckets
 
 
-def _create_birth_events_for_person(
-    repo: Repository,
-    person_id: int,
-    evidence: list[tuple[int, int, int | None]],
-) -> tuple[int, int, int]:
-    """
-    Create birth Event(s) for a Person.
-
-    If all evidence groups into one bucket → one birth Event, is_primary=1.
-    If multiple buckets → one Event per bucket; the bucket with the most
-    supporting records gets is_primary=1 (ties: earliest year wins).
-
-    Returns (events_created, person_event_links, event_record_links).
-    """
-    if not evidence:
-        return 0, 0, 0
-
-    buckets = _group_birth_evidence(evidence)
-
-    # Determine which bucket is primary: largest count, tie → earliest year
-    primary_year = max(
-        buckets,
-        key=lambda y: (len(buckets[y]), -y),
-    )
-
-    events_created = 0
-    pe_links = 0
-    er_links = 0
-
-    for canonical_year, records in buckets.items():
-        is_primary = (canonical_year == primary_year)
-
-        # Choose place from most common place_id in this bucket (ignore None)
-        place_candidates = [pid for _, pid in records if pid is not None]
-        place_id: int | None = None
-        if place_candidates:
-            place_id = Counter(place_candidates).most_common(1)[0][0]
-
-        date_str = f"{canonical_year}-01-01"
-
-        event_id = _create_event(
-            repo,
-            event_type="birth",
-            date=date_str,
-            date_qualifier="calculated",
-            place_id=place_id,
-            relationship_id=None,
-            is_primary=is_primary,
-            change_group_id=change_group_id,
-        )
-        events_created += 1
-
-        _link_event_to_person(repo, event_id, person_id, change_group_id)
-        pe_links += 1
-
-        for record_id, _ in records:
-            _link_event_to_record(repo, event_id, record_id, change_group_id)
-            er_links += 1
-
-    return events_created, pe_links, er_links
-
-
 # ---------------------------------------------------------------------------
 # Marriage Event creation
 # ---------------------------------------------------------------------------
@@ -471,6 +409,7 @@ def _create_marriage_event(
     person_id_1: int,
     person_id_2: int,
     supporting_record_ids: list[int],
+    change_group_id: str = "",
 ) -> tuple[int, int, int]:
     """
     Create one marriage Event for a couple Relationship.
@@ -489,15 +428,16 @@ def _create_marriage_event(
         place_id=None,
         relationship_id=relationship_id,
         is_primary=True,
+        change_group_id=change_group_id,
     )
 
-    _link_event_to_person(repo, event_id, person_id_1)
-    _link_event_to_person(repo, event_id, person_id_2)
+    _link_event_to_person(repo, event_id, person_id_1, change_group_id)
+    _link_event_to_person(repo, event_id, person_id_2, change_group_id)
     pe_links = 2
 
     er_links = 0
     for record_id in supporting_record_ids:
-        _link_event_to_record(repo, event_id, record_id)
+        _link_event_to_record(repo, event_id, record_id, change_group_id)
         er_links += 1
 
     return 1, pe_links, er_links
