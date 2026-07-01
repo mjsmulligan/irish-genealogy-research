@@ -220,7 +220,6 @@ def _cmd_clear_evidence(args: argparse.Namespace) -> None:
     check_version(repo)
 
     tables = [
-        "training_labels",
         "relationship_recorded_relationship",
         "person_recorded_person",
         "place_record",
@@ -257,7 +256,6 @@ def _cmd_clear_conclusions(args: argparse.Namespace) -> None:
     check_version(repo)
 
     tables = [
-        "training_labels",
         "relationship_recorded_relationship",
         "person_recorded_person",
         "event_record",
@@ -307,7 +305,6 @@ def _cmd_restart_scoring(args: argparse.Namespace) -> None:
 
     # Clear conclusion layer
     conclusion_tables = [
-        "training_labels",
         "relationship_recorded_relationship",
         "person_recorded_person",
         "event_record",
