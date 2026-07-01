@@ -37,7 +37,7 @@ def bulk_ingest_and_add_evidence() -> None:
     check_version(repo)
 
     # Collect all CSV files
-    data_dir = Path(__file__).parent.parent / "data"
+    data_dir = Path(__file__).parent.parent.parent / "data"
     csv_files = sorted(data_dir.glob("*.csv"))
 
     if not csv_files:
