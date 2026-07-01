@@ -2,8 +2,10 @@
 
 from flask import Flask, render_template, request, jsonify
 from src.db.db import open_db
+from markupsafe import Markup, escape
 from pathlib import Path
 import os
+import re
 import json
 import ast
 
@@ -11,6 +13,20 @@ app = Flask(__name__, template_folder='web/templates', static_folder='web/static
 
 # Add built-in functions to Jinja2 context
 app.jinja_env.globals.update(max=max, min=min)
+
+
+_PERSON_RE = re.compile(r'\bPerson (\d+)\b')
+
+
+@app.template_filter('linkify_persons')
+def linkify_persons(text: str) -> Markup:
+    """Replace 'Person NNNNN' with a hyperlink to /person/NNNNN."""
+    escaped = str(escape(text))
+    linked = _PERSON_RE.sub(
+        lambda m: f'<a href="/person/{m.group(1)}">Person {m.group(1)}</a>',
+        escaped,
+    )
+    return Markup(linked)
 
 
 def build_image_url(source_id, record_parameters, raw_text=None):

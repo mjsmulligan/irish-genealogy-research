@@ -210,7 +210,7 @@
     <div class="finding-row" onclick="toggleDetail(this)">
         <div class="finding-priority">#{{ item.priority }}</div>
         <div>
-            <div class="finding-title">{{ item.title }}</div>
+            <div class="finding-title">{{ item.title | linkify_persons }}</div>
             {% if item.person_id %}
             <div class="finding-person">
                 Person {{ item.person_id }}
@@ -220,11 +220,11 @@
         </div>
         <div class="finding-type-badge {{ colour }}">{{ ftype.replace('_', ' ') }}</div>
         <div class="finding-detail">
-            <p>{{ item.detail }}</p>
+            <p>{{ item.detail | linkify_persons }}</p>
             {% if item.recommended_action %}
             <div class="finding-action">
                 <div class="finding-action-label">Recommended action</div>
-                {{ item.recommended_action }}
+                {{ item.recommended_action | linkify_persons }}
             </div>
             {% endif %}
             {% if item.record_ids %}

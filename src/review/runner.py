@@ -8,7 +8,7 @@ output files (JSON + Markdown) to the reports/ directory.
 Entry point
 -----------
     from src.review.runner import run_review
-    report = run_review(conn)
+    report = run_review(repo)
 
 CLI usage (via src.cli):
     python -m src.cli review
@@ -16,12 +16,9 @@ CLI usage (via src.cli):
 
 from __future__ import annotations
 
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-
-import psycopg2.extensions
 
 from src.db.postgres_repo import PostgresRepository
 from src.review.findings import run_all_findings
@@ -42,17 +39,16 @@ def _build_summary(items: list[ReportItem]) -> dict[str, int]:
     return dict(sorted(c.items()))
 
 
-def run_review(conn: psycopg2.extensions.connection) -> Report:
+def run_review(repo: PostgresRepository) -> Report:
     """
     Run all v1.0 finding functions, assign priorities, and return the assembled Report.
     Does not write any files — call write_report() for file output.
     """
-    repo = PostgresRepository(conn)
     print("  [review] Running findings...")
     items = run_all_findings(repo)
 
     print(f"  [review] {len(items)} raw finding(s) found. Assigning priorities...")
-    items = assign_priorities(conn, items)
+    items = assign_priorities(repo, items)
 
     summary = _build_summary(items)
 
@@ -76,6 +72,11 @@ def write_report(report: Report, reports_dir: Path = _REPORTS_DIR) -> tuple[Path
     """
     reports_dir.mkdir(parents=True, exist_ok=True)
 
+    for old in reports_dir.glob("report_*.json"):
+        old.unlink(missing_ok=True)
+    for old in reports_dir.glob("report_*.md"):
+        old.unlink(missing_ok=True)
+
     ts = report.generated_at.strftime("%Y%m%d_%H%M%S")
     json_path = reports_dir / f"report_{ts}.json"
     md_path   = reports_dir / f"report_{ts}.md"
@@ -90,13 +91,13 @@ def write_report(report: Report, reports_dir: Path = _REPORTS_DIR) -> tuple[Path
 # CLI helper (called by src.cli._cmd_review)
 # ---------------------------------------------------------------------------
 
-def run_and_print(conn: psycopg2.extensions.connection) -> None:
+def run_and_print(repo: PostgresRepository) -> None:
     """
     Run the review, write output files, and print a summary to stdout.
     Intended for use by the 'review' CLI subcommand.
     """
     print("\nRunning research review...")
-    report = run_review(conn)
+    report = run_review(repo)
     json_path, md_path = write_report(report)
 
     print()
