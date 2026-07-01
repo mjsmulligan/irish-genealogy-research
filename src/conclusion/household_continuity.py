@@ -150,55 +150,92 @@ def _age_match(age_a: int | None, age_b: int | None, elapsed: int, tolerance: in
 
 
 # ---------------------------------------------------------------------------
-# Role progression
+# Role progression by succession type
 # ---------------------------------------------------------------------------
 
-# Plausible (role_a, role_b) transitions across an adjacent census pair.
-# "Same role" is always plausible (a son stays a son).
-# "Promoted" transitions reflect natural life progression over 10-15 years.
-# Asymmetric: grandchild→son is plausible, son→grandchild is not.
-_PLAUSIBLE_ROLE_PROGRESSIONS: frozenset[tuple[str, str]] = frozenset({
-    # Same role (always plausible)
-    ("head", "head"),
-    ("spouse", "spouse"),
-    ("son", "son"),
-    ("daughter", "daughter"),
-    ("grandchild", "grandchild"),
-    ("sibling", "sibling"),
-    ("in_law", "in_law"),
-    ("boarder", "boarder"),
-    ("servant", "servant"),
-    ("visitor", "visitor"),
-    ("cousin", "cousin"),
-    ("niece_nephew", "niece_nephew"),
-    ("aunt_uncle", "aunt_uncle"),
-    # Natural promotions
-    ("son", "head"),            # father dies; eldest son becomes head
-    ("daughter", "head"),       # rare but recorded
-    ("son", "spouse"),          # son marries out, listed as spouse in new household
-    ("daughter", "spouse"),     # daughter marries, now spouse in same/joined household
-    ("grandchild", "son"),      # enumerator reclassifies as household grows
-    ("grandchild", "daughter"),
-    ("sibling", "head"),        # elder sibling inherits head role
-    ("sibling", "spouse"),
-    ("in_law", "head"),
-    ("niece_nephew", "son"),    # informal adoption / reclassification
-    ("niece_nephew", "daughter"),
-})
+# Different household head successions create different role dynamics:
+#
+# SAME_HEAD: Head stays the same (or head→head name variation).
+#   - All members' roles relative to the head stay similar.
+#   - grandchild→son is plausible (enumerator reclassification).
+#
+# SPOUSE_BECOMES_HEAD: Patriarch dies, widow becomes head.
+#   - Spouse→head (widow takes role).
+#   - Son stays son (now son of the widow-head, not just head's son).
+#   - Grandchild stays grandchild (no role shift relative to widow).
+#   - NO grandchild→son (not his children in the new hierarchy).
+#
+# CHILD_BECOMES_HEAD: Adult son/daughter becomes head (patriarch/widow dies).
+#   - Son/daughter→head (child inherits headship).
+#   - Other sons→sibling (now brothers of the new head).
+#   - Grandchild→niece/nephew (now niece/nephew of the new head).
+
+_ROLE_PROGRESSIONS_BY_SUCCESSION: dict[str, frozenset[tuple[str, str]]] = {
+    "same_head": frozenset({
+        ("head", "head"),
+        ("spouse", "spouse"),
+        ("son", "son"),
+        ("daughter", "daughter"),
+        ("grandchild", "grandchild"),
+        ("sibling", "sibling"),
+        ("in_law", "in_law"),
+        ("boarder", "boarder"),
+        ("servant", "servant"),
+        ("visitor", "visitor"),
+        ("cousin", "cousin"),
+        ("niece_nephew", "niece_nephew"),
+        ("aunt_uncle", "aunt_uncle"),
+        ("grandchild", "son"),       # enumerator reclassifies
+        ("grandchild", "daughter"),
+        ("sibling", "nephew"),        # informal adoption
+        ("sibling", "niece"),
+    }),
+    "spouse_becomes_head": frozenset({
+        ("spouse", "head"),           # widow takes head role
+        ("son", "son"),               # son stays son
+        ("daughter", "daughter"),
+        ("grandchild", "grandchild"),
+        ("sibling", "sibling"),
+        ("in_law", "in_law"),
+        ("boarder", "boarder"),
+        ("servant", "servant"),
+        ("visitor", "visitor"),
+    }),
+    "child_becomes_head": frozenset({
+        ("son", "head"),              # son inherits headship
+        ("daughter", "head"),
+        ("son", "sibling"),           # brother of new head
+        ("daughter", "sibling"),      # sister of new head
+        ("grandchild", "niece_nephew"),  # becomes niece/nephew of new head
+        ("sibling", "sibling"),
+        ("in_law", "in_law"),
+        ("boarder", "boarder"),
+        ("servant", "servant"),
+    }),
+}
 
 
-def _role_consistent(role_a: str | None, role_b: str | None) -> bool | None:
+def _role_consistent(
+    role_a: str | None,
+    role_b: str | None,
+    succession_type: str = "same_head",
+) -> bool | None:
     """
-    Returns True if the role transition is plausible, False if implausible,
-    None if either role is missing or 'unknown' (no signal either way).
+    Returns True if the role transition is plausible under the given succession
+    type, False if implausible, None if either role is missing or 'unknown'.
 
-    A False return causes _match_member to skip the candidate regardless of
-    name/age scores.  A True return widens the age tolerance when age is the
-    only failing signal.
+    A False return causes _match_member to skip the candidate.
+    A True return widens age tolerance when age is the only failing signal.
+
+    Args:
+        role_a: Role in year A (e.g., 'son', 'grandchild')
+        role_b: Role in year B
+        succession_type: One of "same_head", "spouse_becomes_head", "child_becomes_head"
     """
     if not role_a or not role_b or role_a == "unknown" or role_b == "unknown":
         return None
-    return (role_a, role_b) in _PLAUSIBLE_ROLE_PROGRESSIONS
+    progressions = _ROLE_PROGRESSIONS_BY_SUCCESSION.get(succession_type, frozenset())
+    return (role_a, role_b) in progressions
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +420,7 @@ def _match_member(
     name_threshold: float,
     age_tolerance: int,
     exclude_rp_ids: set[int],
+    succession_type: str = "same_head",
 ) -> tuple[dict | None, bool]:
     """
     Find the best match for `candidate` in `pool` by name similarity + age
@@ -390,7 +428,7 @@ def _match_member(
 
     Returns (best_match, role_corroborated).
 
-    Role logic:
+    Role logic (succession_type-aware):
     - Implausible role transition → skip candidate unconditionally.
     - Plausible role transition + age fails normal tolerance → retry with
       MEMBER_AGE_TOLERANCE_ROLE_CORROBORATED (wide tolerance for digit errors).
@@ -398,6 +436,9 @@ def _match_member(
       role, so a slightly lower name-sim but role-consistent member wins.
     - role_corroborated=True is returned when age only passed under the wide
       tolerance, flagging the link for age_progression_anomaly review.
+
+    Args:
+        succession_type: One of "same_head", "spouse_becomes_head", "child_becomes_head"
     """
     best_match: dict | None = None
     best_score: float = -1.0
@@ -414,7 +455,9 @@ def _match_member(
         if sim < name_threshold:
             continue
 
-        role_consistent = _role_consistent(candidate.get("role"), member.get("role"))
+        role_consistent = _role_consistent(
+            candidate.get("role"), member.get("role"), succession_type=succession_type
+        )
 
         # Hard reject: implausible role transition
         if role_consistent is False:
@@ -533,6 +576,34 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
                             best_head_b = head_b_try
 
             if best_rec_b is None:
+                # Child succession fallback: any year-A son/daughter may have
+                # become year-B head (adult child inherits after parent(s) die).
+                non_head_a = [m for m in members_a if m["recorded_person_id"] != head_a["recorded_person_id"]]
+                for child_a in non_head_a:
+                    if child_a.get("role") not in ("son", "daughter"):
+                        continue
+                    for rec_b in records_b:
+                        members_b_try = get_household_members(repo, rec_b["record_id"])
+                        head_b_try = _head_of(members_b_try)
+                        if not head_b_try:
+                            continue
+                        sim = _name_similarity(
+                            child_a.get("name_as_recorded", ""),
+                            head_b_try.get("name_as_recorded", ""),
+                        )
+                        if sim < HEAD_NAME_THRESHOLD:
+                            continue
+                        if not _age_match(
+                            child_a.get("age"), head_b_try.get("age"), elapsed, HEAD_AGE_TOLERANCE
+                        ):
+                            continue
+                        result.household_pairs_examined += 1
+                        if sim > best_head_sim:
+                            best_head_sim = sim
+                            best_rec_b = rec_b
+                            best_head_b = head_b_try
+
+            if best_rec_b is None:
                 continue
 
             # Confirmed household pair
@@ -540,28 +611,88 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
             members_b = get_household_members(repo, best_rec_b["record_id"])
             change_group_id = str(uuid.uuid4())
 
+            # Determine succession type based on how the household pair was confirmed
+            if head_a["recorded_person_id"] == best_head_b["recorded_person_id"]:
+                # Head-to-head match: same person remains head (both recorded as head)
+                succession_type = "same_head"
+            else:
+                # Check which fallback matched by looking at year-A role that matched year-B head
+                spouse_a = _spouse_of(members_a)
+                if spouse_a and _name_similarity(
+                    spouse_a.get("name_as_recorded", ""),
+                    best_head_b.get("name_as_recorded", ""),
+                ) >= HEAD_NAME_THRESHOLD:
+                    # Spouse→head: name matches indicate widow became head
+                    succession_type = "spouse_becomes_head"
+                else:
+                    # Child→head: adult child inherited headship
+                    succession_type = "child_becomes_head"
+
             # Track which year-B members have been claimed this round
             claimed_b: set[int] = set()
 
             with repo:
-                # --- Link the head ---
-                if not _already_linked(head_a):
-                    person_id = _get_or_create_person(
-                        repo, head_a, SCORE_CONTINUITY_LINK, change_group_id
-                    )
-                    result.persons_created += 1
-                    result.linkages_created += 1
-                    result.resolved_rp_ids.add(head_a["recorded_person_id"])
-                else:
-                    person_id = head_a["person_id"]
+                # --- Link the head(s) ---
+                # In child succession, best_head_b is a child from year-A who became year-B head.
+                # We need to establish a Person that encompasses both head_a and best_head_b.
+                # In spouse succession or same_head, just link year-A head to year-B head.
+                if succession_type == "child_becomes_head":
+                    # Find the year-A member who became year-B head (should be in non_head_a)
+                    child_who_became_head = None
+                    for m in members_a:
+                        sim = _name_similarity(
+                            m.get("name_as_recorded", ""),
+                            best_head_b.get("name_as_recorded", ""),
+                        )
+                        if sim >= HEAD_NAME_THRESHOLD and m["role"] in ("son", "daughter"):
+                            child_who_became_head = m
+                            break
 
-                if not _already_linked(best_head_b):
-                    _link_to_existing_person(
-                        repo, person_id, best_head_b, SCORE_CONTINUITY_LINK, change_group_id
-                    )
-                    result.linkages_created += 1
-                    result.resolved_rp_ids.add(best_head_b["recorded_person_id"])
-                    claimed_b.add(best_head_b["recorded_person_id"])
+                    if child_who_became_head and not _already_linked(child_who_became_head):
+                        person_id = _get_or_create_person(
+                            repo, child_who_became_head, SCORE_CONTINUITY_LINK, change_group_id
+                        )
+                        result.persons_created += 1
+                        result.linkages_created += 1
+                        result.resolved_rp_ids.add(child_who_became_head["recorded_person_id"])
+                    elif child_who_became_head and _already_linked(child_who_became_head):
+                        person_id = child_who_became_head["person_id"]
+                    else:
+                        # Fallback: create person from best_head_b
+                        person_id = _get_or_create_person(
+                            repo, best_head_b, SCORE_CONTINUITY_LINK, change_group_id
+                        )
+                        result.persons_created += 1
+                        result.linkages_created += 1
+                        result.resolved_rp_ids.add(best_head_b["recorded_person_id"])
+
+                    # Link best_head_b to the same person
+                    if not _already_linked(best_head_b):
+                        _link_to_existing_person(
+                            repo, person_id, best_head_b, SCORE_CONTINUITY_LINK, change_group_id
+                        )
+                        result.linkages_created += 1
+                        result.resolved_rp_ids.add(best_head_b["recorded_person_id"])
+                        claimed_b.add(best_head_b["recorded_person_id"])
+                else:
+                    # Same_head or spouse_becomes_head: normal head linking
+                    if not _already_linked(head_a):
+                        person_id = _get_or_create_person(
+                            repo, head_a, SCORE_CONTINUITY_LINK, change_group_id
+                        )
+                        result.persons_created += 1
+                        result.linkages_created += 1
+                        result.resolved_rp_ids.add(head_a["recorded_person_id"])
+                    else:
+                        person_id = head_a["person_id"]
+
+                    if not _already_linked(best_head_b):
+                        _link_to_existing_person(
+                            repo, person_id, best_head_b, SCORE_CONTINUITY_LINK, change_group_id
+                        )
+                        result.linkages_created += 1
+                        result.resolved_rp_ids.add(best_head_b["recorded_person_id"])
+                        claimed_b.add(best_head_b["recorded_person_id"])
 
                 # --- Walk other members ---
                 non_head_a = [m for m in members_a if m["recorded_person_id"] != head_a["recorded_person_id"]]
@@ -575,6 +706,7 @@ def run_household_continuity(repo: Repository) -> HouseholdContinuityResult:
                         name_threshold=MEMBER_NAME_THRESHOLD,
                         age_tolerance=MEMBER_AGE_TOLERANCE,
                         exclude_rp_ids=claimed_b,
+                        succession_type=succession_type,
                     )
                     if match_b is None:
                         continue
