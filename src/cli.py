@@ -32,8 +32,6 @@ Commands:
                         marked with linkage status for researcher validation.
     validate-linkages   Validate all linkages for age progression, name variants,
                         and household coherence errors. Flags problematic linkages.
-    sync-to-cloud       Dump local database and restore to Supabase. One-way sync
-                        from local (primary) to cloud (backup).
     bulk-ingest         Ingest and add evidence for all CSV files in /data folder.
                         Runs full 5-step evidence pipeline on each CSV.
     web                 Launch web browser for browsing persons and linkages.
@@ -51,9 +49,8 @@ from pathlib import Path
 
 from src.db.db import open_db, init_db, check_version
 from src.db.repository import Repository
-from src.db.sync_to_cloud import sync_to_cloud as _sync_to_cloud
 from src.constants import CENSUS_SOURCE_IDS
-from src.export_validation_dataset import export_validation_dataset
+from src.tools.export_validation_dataset import export_validation_dataset
 from src.genealogy import apply_constraints_to_linkages, remove_flagged_linkages, ConstraintReport
 
 
@@ -603,7 +600,7 @@ def _cmd_ingest(args: argparse.Namespace) -> None:
 
 
 def _cmd_seed_places(args: argparse.Namespace) -> None:
-    from src.db.seed_places import seed_places, print_seed_places_report
+    from src.ingest.seed_places import seed_places, print_seed_places_report
     repo = open_db()
     check_version(repo)
     result = seed_places(repo, args.file)
@@ -614,7 +611,7 @@ def _cmd_seed_places(args: argparse.Namespace) -> None:
 
 
 def _cmd_fetch_places(args: argparse.Namespace) -> None:
-    from src.db.fetch_places import fetch_places, write_to_db, write_to_csv, load_from_csv
+    from src.ingest.fetch_places import fetch_places, write_to_db, write_to_csv, load_from_csv
     import os
 
     if not args.from_csv and args.logainm_id is None:
@@ -653,8 +650,8 @@ def _cmd_fetch_places(args: argparse.Namespace) -> None:
 
 
 def _cmd_fetch_census(args: argparse.Namespace) -> None:
-    from src.db.fetch_census import fetch_census, print_fetch_census_report, _logainm_id_exists
-    from src.db.fetch_places import fetch_places, write_to_db as write_places_to_db
+    from src.ingest.fetch_census import fetch_census, print_fetch_census_report, _logainm_id_exists
+    from src.ingest.fetch_places import fetch_places, write_to_db as write_places_to_db
     from src.evidence.census import ingest_census
     from src.evidence.role_relationships import assign_role_relationships
     from src.evidence.place_resolution import run_place_resolution
@@ -901,11 +898,6 @@ def _cmd_export_validation(args: argparse.Namespace) -> None:
     export_validation_dataset(args.output)
 
 
-def _cmd_sync_to_cloud(args: argparse.Namespace) -> None:
-    """Dump local database and restore to Supabase."""
-    _sync_to_cloud()
-
-
 def _cmd_validate_linkages(args: argparse.Namespace) -> None:
     repo = open_db()
     check_version(repo)
@@ -958,13 +950,13 @@ def _cmd_validate_linkages(args: argparse.Namespace) -> None:
 
 def _cmd_bulk_ingest(args: argparse.Namespace) -> None:
     """Ingest and add evidence for all CSV files in /data folder."""
-    from src.bulk_ingest import bulk_ingest_and_add_evidence
+    from src.ingest.bulk_ingest import bulk_ingest_and_add_evidence
     bulk_ingest_and_add_evidence()
 
 
 def _cmd_web(args: argparse.Namespace) -> None:
     """Launch web browser for browsing persons and linkages."""
-    from src.web import app
+    from src.web.app import app
     print("\n" + "=" * 80)
     print("  GRA Person Browser")
     print("=" * 80)
@@ -1100,11 +1092,6 @@ def main() -> None:
     )
 
     sub.add_parser(
-        "sync-to-cloud",
-        help="Dump local database and restore to Supabase (one-way backup)",
-    )
-
-    sub.add_parser(
         "bulk-ingest",
         help="Ingest and add evidence for all CSV files in /data folder",
     )
@@ -1130,7 +1117,6 @@ def main() -> None:
         "timing-report":     _cmd_timing_report,
         "export-validation": _cmd_export_validation,
         "validate-linkages": _cmd_validate_linkages,
-        "sync-to-cloud":     _cmd_sync_to_cloud,
         "bulk-ingest":       _cmd_bulk_ingest,
         "web":               _cmd_web,
     }

@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from src.db.repository import Repository
 from src.constants import PERSON_RESOLUTION_THRESHOLD
 from src.genealogy import evaluate_pair, CENSUS_YEAR
-from src.audit import AuditLog
+from src.conclusion.audit import AuditLog
 import uuid
 
 

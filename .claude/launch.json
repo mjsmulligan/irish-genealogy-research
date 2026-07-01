@@ -4,7 +4,7 @@
     {
       "name": "gra-web",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "src.web"],
+      "runtimeArgs": ["-m", "src.web.app"],
       "port": 5000
     }
   ]

@@ -14,15 +14,9 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None
-
 from src.constants import SCHEMA_VERSION
 from src.db.repository import Repository
 from src.db.postgres_repo import PostgresRepository
-from src.db.supabase_repo import SupabaseRepository
 
 load_dotenv()
 
@@ -39,43 +33,18 @@ SEED_SQL = Path(__file__).parent / "seed.sql"
 # ---------------------------------------------------------------------------
 
 
-def open_db() -> Repository:
-    """
-    Open a database connection and return a Repository.
-
-    Reads DATABASE_ENVIRONMENT to determine local vs. cloud:
-      - local: PostgreSQL via psycopg2
-      - cloud: Supabase via REST API
-
-    Defaults to 'local' if not set.
-    """
-    env = os.environ.get("DATABASE_ENVIRONMENT", "local").lower().strip()
-
-    if env == "cloud":
-        url = os.environ.get("SUPABASE_URL")
-        key = os.environ.get("SUPABASE_SECRET_KEY")
-        if not url or not key:
-            raise EnvironmentError(
-                "DATABASE_ENVIRONMENT=cloud but SUPABASE_URL or SUPABASE_SECRET_KEY not set.\n"
-                "Add to .env:\n"
-                "  SUPABASE_URL=https://[project-id].supabase.co\n"
-                "  SUPABASE_SECRET_KEY=your_service_role_key"
-            )
-        if not create_client:
-            raise ImportError("supabase package not installed")
-        client = create_client(url, key)
-        return SupabaseRepository(client)
-    else:
-        url = os.environ.get("DATABASE_URL_LOCAL")
-        if not url:
-            raise EnvironmentError(
-                "DATABASE_ENVIRONMENT=local but DATABASE_URL_LOCAL not set.\n"
-                "Add to .env:\n"
-                "  DATABASE_URL_LOCAL=postgresql://[user]@[host]:5432/[database]"
-            )
-        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
-        conn.autocommit = False
-        return PostgresRepository(conn)
+def open_db() -> PostgresRepository:
+    """Open a local PostgreSQL connection and return a repository."""
+    url = os.environ.get("DATABASE_URL_LOCAL")
+    if not url:
+        raise EnvironmentError(
+            "DATABASE_URL_LOCAL not set.\n"
+            "Add to .env:\n"
+            "  DATABASE_URL_LOCAL=postgresql://[user]@[host]:5432/[database]"
+        )
+    conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn.autocommit = False
+    return PostgresRepository(conn)
 
 
 def _execute_sql_file(cur, sql: str) -> None:
@@ -83,21 +52,12 @@ def _execute_sql_file(cur, sql: str) -> None:
     cur.execute(sql)
 
 
-def init_db() -> Repository:
-    """
-    Initialise a fresh database: create schema, insert seed data, record version.
-
-    Safe to call on a blank Supabase project. Raises if gra_meta already exists.
-    """
-    env = os.environ.get("DATABASE_ENVIRONMENT", "local").lower().strip()
-
-    if env == "cloud":
-        return _init_db_cloud()
-    else:
-        return _init_db_local()
+def init_db() -> PostgresRepository:
+    """Initialise a fresh database: create schema, insert seed data, record version."""
+    return _init_db_local()
 
 
-def _init_db_local() -> Repository:
+def _init_db_local() -> PostgresRepository:
     """Initialize local PostgreSQL database."""
     repo = open_db()
 
@@ -135,28 +95,6 @@ def _init_db_local() -> Repository:
         raise
 
     print(f"Initialised database (schema v{SCHEMA_VERSION // 10}.{SCHEMA_VERSION % 10}).")
-    return repo
-
-
-def _init_db_cloud() -> Repository:
-    """Verify Supabase cloud database is initialized (schema must exist already)."""
-    repo = open_db()
-
-    try:
-        result = repo.fetch_one("SELECT * FROM gra_meta LIMIT 1")
-        if result:
-            print("Cloud database already initialized.")
-            return repo
-    except Exception as e:
-        raise RuntimeError(
-            "Could not find gra_meta table. Schema not initialized.\n"
-            "Initialize via Supabase SQL Editor:\n"
-            "1. Go to https://app.supabase.com → select project\n"
-            "2. SQL Editor → New query\n"
-            "3. Copy schema.sql and seed.sql, run each\n"
-            f"Error: {e}"
-        )
-
     return repo
 
 

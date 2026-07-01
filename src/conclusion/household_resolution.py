@@ -41,7 +41,7 @@ from src.conclusion.household_utils import (
     get_household_members,
     create_relationships_from_household,
 )
-from src.audit import AuditLog
+from src.conclusion.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------

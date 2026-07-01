@@ -41,7 +41,7 @@ from src.conclusion.household_utils import (
     create_relationships_from_household,
 )
 from src.genealogy import evaluate_age_progression, CENSUS_YEAR
-from src.audit import AuditLog
+from src.conclusion.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------

@@ -23,7 +23,7 @@ from __future__ import annotations
 import psycopg2.extensions
 from pathlib import Path
 
-from src.db.fetch_places import (
+from src.ingest.fetch_places import (
     VALID_PLACE_TYPES, CSV_FIELDNAMES,
     load_from_csv, write_to_db, PlaceRow,
 )

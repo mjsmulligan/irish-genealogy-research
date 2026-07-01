@@ -9,7 +9,8 @@ import re
 import json
 import ast
 
-app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
+_HERE = Path(__file__).parent
+app = Flask(__name__, template_folder=str(_HERE / 'templates'), static_folder=str(_HERE / 'static'))
 
 # Add built-in functions to Jinja2 context
 app.jinja_env.globals.update(max=max, min=min)
@@ -417,7 +418,7 @@ def audit_log():
 @app.route('/review')
 def review():
     """Show the latest review report."""
-    reports_dir = Path(__file__).parent.parent / 'reports'
+    reports_dir = Path(__file__).parent.parent.parent / 'reports'
     report = None
     report_file = None
     available_reports = []

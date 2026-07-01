@@ -16,7 +16,7 @@ from typing import Optional
 
 from src.db.repository import Repository
 from src.constants import SCORE_VERSION_ROLE_PAIR
-from src.audit import AuditLog
+from src.conclusion.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------

@@ -45,7 +45,7 @@ import re
 import uuid
 
 from src.db.repository import Repository
-from src.audit import AuditLog
+from src.conclusion.audit import AuditLog
 
 
 # ---------------------------------------------------------------------------
