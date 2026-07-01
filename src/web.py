@@ -2,6 +2,7 @@
 
 from flask import Flask, render_template, request, jsonify
 from src.db.db import open_db
+from pathlib import Path
 import os
 import json
 import ast
@@ -395,6 +396,52 @@ def audit_log():
                          entity_type=entity_type,
                          entity_id=entity_id,
                          total_logs=len(logs))
+
+
+@app.route('/review')
+def review():
+    """Show the latest review report."""
+    reports_dir = Path(__file__).parent.parent / 'reports'
+    report = None
+    report_file = None
+    available_reports = []
+    error = None
+
+    if reports_dir.exists():
+        json_files = sorted(reports_dir.glob('report_*.json'), reverse=True)
+        available_reports = [f.name for f in json_files]
+        requested = request.args.get('report')
+        if requested and (reports_dir / requested).exists():
+            target = reports_dir / requested
+        elif json_files:
+            target = json_files[0]
+        else:
+            target = None
+
+        if target:
+            report_file = target.name
+            try:
+                report = json.loads(target.read_text(encoding='utf-8'))
+            except Exception as e:
+                error = f"Could not read report: {e}"
+        else:
+            error = "No report files found. Run python -m src.cli review to generate one."
+    else:
+        error = f"Reports directory not found: {reports_dir}"
+
+    type_filter = request.args.get('type', '')
+    items = report.get('items', []) if report else []
+    if type_filter:
+        items = [i for i in items if i.get('finding_type') == type_filter]
+    items = items[:500]
+
+    return render_template('review.html',
+                           report=report,
+                           report_file=report_file,
+                           available_reports=available_reports,
+                           items=items,
+                           type_filter=type_filter,
+                           error=error)
 
 
 if __name__ == '__main__':

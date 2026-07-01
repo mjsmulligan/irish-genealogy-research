@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Review Report - grá{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-meta {
+        color: #8a8a99;
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        align-items: baseline;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+    .summary-card {
+        background: #242429;
+        border: 1px solid #35353d;
+        padding: 16px 20px;
+        text-decoration: none;
+        transition: border-color 0.15s;
+    }
+    .summary-card:hover { border-color: #4a7c6f; }
+    .summary-card.active { border-color: #4a7c6f; background: rgba(74,124,111,0.08); }
+    .summary-card .count {
+        font-size: 28px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        color: #e8e8ec;
+        line-height: 1;
+    }
+    .summary-card .count.red    { color: #b84444; }
+    .summary-card .count.amber  { color: #c97b2e; }
+    .summary-card .type-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #8a8a99;
+        margin-top: 6px;
+    }
+    .type-filter-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+    .finding-list { border: 1px solid #35353d; }
+    .finding-row {
+        border-bottom: 1px solid #35353d;
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: 3rem 1fr auto;
+        gap: 12px;
+        align-items: start;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .finding-row:last-child { border-bottom: none; }
+    .finding-row:hover { background: #242429; }
+    .finding-row.expanded { background: #242429; }
+    .finding-priority {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: #52525e;
+        padding-top: 2px;
+    }
+    .finding-title { font-size: 13px; color: #e8e8ec; line-height: 1.4; }
+    .finding-person { font-size: 11px; color: #52525e; font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
+    .finding-type-badge {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        background: #35353d;
+        color: #8a8a99;
+        white-space: nowrap;
+    }
+    .finding-type-badge.red   { color: #b84444; }
+    .finding-type-badge.amber { color: #c97b2e; }
+    .finding-detail {
+        display: none;
+        grid-column: 1 / -1;
+        padding: 14px 16px 16px;
+        border-top: 1px solid #35353d;
+        background: rgba(52,53,61,0.2);
+    }
+    .finding-detail.open { display: block; }
+    .finding-detail p { color: #8a8a99; font-size: 13px; line-height: 1.6; }
+    .finding-action {
+        margin-top: 10px;
+        padding: 10px 14px;
+        border: 1px solid rgba(74,124,111,0.4);
+        background: rgba(74,124,111,0.06);
+        font-size: 13px;
+        color: #e8e8ec;
+    }
+    .finding-action-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #4a7c6f;
+        margin-bottom: 4px;
+    }
+    .finding-records {
+        margin-top: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: #52525e;
+    }
+    .report-selector {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .report-selector label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #8a8a99;
+    }
+    .report-selector select {
+        background: #242429;
+        border: 1px solid #35353d;
+        color: #e8e8ec;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+    }
+    .shown-count {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #52525e;
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Review Report</h2>
+
+{% if error %}
+<div class="card" style="border-left: 4px solid #b84444; margin-top: 16px;">
+    <p style="color: #b84444;">{{ error }}</p>
+    {% if not error.startswith('No report') %}
+    <p style="color: #8a8a99; margin-top: 8px; font-size: 12px;">
+        Run <code>python -m src.cli review</code> to generate a report.
+    </p>
+    {% endif %}
+</div>
+
+{% else %}
+
+{% if available_reports | length > 1 %}
+<div class="report-selector">
+    <label>Report</label>
+    <select onchange="location.href='/review?report=' + this.value + '{% if type_filter %}&type={{ type_filter }}{% endif %}'">
+        {% for f in available_reports %}
+        <option value="{{ f }}" {% if f == report_file %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+<div class="report-meta">
+    <span>Generated {{ report.generated_at[:19].replace('T', ' ') }} UTC</span>
+    <span>{{ report.total_findings | default(0) }} findings</span>
+    <span>{{ report_file }}</span>
+</div>
+
+<!-- Summary cards -->
+{% set HIGH_SEVERITY = ['merge_error_candidate', 'split_person_candidate'] %}
+{% set MEDIUM_SEVERITY = ['parent_age_implausible', 'parent_age_regression', 'unlinked_in_populated_household'] %}
+
+<div class="summary-grid">
+    <a href="/review?report={{ report_file }}" class="summary-card {% if not type_filter %}active{% endif %}">
+        <div class="count">{{ report.total_findings | default(0) }}</div>
+        <div class="type-label">All findings</div>
+    </a>
+    {% for ftype, count in report.summary.items() | sort(attribute='1', reverse=True) %}
+    {% set colour = 'red' if ftype in HIGH_SEVERITY else ('amber' if ftype in MEDIUM_SEVERITY else '') %}
+    <a href="/review?report={{ report_file }}&type={{ ftype }}"
+       class="summary-card {% if type_filter == ftype %}active{% endif %}">
+        <div class="count {{ colour }}">{{ count }}</div>
+        <div class="type-label">{{ ftype.replace('_', ' ') }}</div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Findings list -->
+<div class="shown-count">
+    Showing {{ items | length }}{% if type_filter %} · {{ type_filter.replace('_', ' ') }}{% endif %}{% if items | length == 500 %} (capped at 500){% endif %}
+</div>
+
+{% if items %}
+<div class="finding-list">
+    {% for item in items %}
+    {% set ftype = item.finding_type %}
+    {% set colour = 'red' if ftype in HIGH_SEVERITY else ('amber' if ftype in MEDIUM_SEVERITY else '') %}
+    <div class="finding-row" onclick="toggleDetail(this)">
+        <div class="finding-priority">#{{ item.priority }}</div>
+        <div>
+            <div class="finding-title">{{ item.title }}</div>
+            {% if item.person_id %}
+            <div class="finding-person">
+                Person {{ item.person_id }}
+                — <a href="/person/{{ item.person_id }}" onclick="event.stopPropagation()">view →</a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="finding-type-badge {{ colour }}">{{ ftype.replace('_', ' ') }}</div>
+        <div class="finding-detail">
+            <p>{{ item.detail }}</p>
+            {% if item.recommended_action %}
+            <div class="finding-action">
+                <div class="finding-action-label">Recommended action</div>
+                {{ item.recommended_action }}
+            </div>
+            {% endif %}
+            {% if item.record_ids %}
+            <div class="finding-records">Records: {{ item.record_ids | join(', ') }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">No findings for this type.</div>
+{% endif %}
+
+{% endif %}
+
+<script>
+function toggleDetail(row) {
+    const detail = row.querySelector('.finding-detail');
+    if (!detail) return;
+    const open = detail.classList.toggle('open');
+    row.classList.toggle('expanded', open);
+}
+</script>
+{% endblock %}
