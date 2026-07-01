@@ -41,8 +41,9 @@ APPROVED_NAME_VARIANTS: dict[str, set[str]] = {
     'lizzie':    {'elizabeth', 'liz', 'liza', 'eliza', 'betty', 'beth'},
     'liz':       {'elizabeth', 'lizzie', 'liza', 'eliza', 'betty', 'beth'},
 
-    'mary':      {'marie', 'molly', 'moll', 'm'},
+    'mary':      {'marie', 'molly', 'moll', 'minnie', 'm'},
     'molly':     {'mary', 'marie', 'moll'},
+    'minnie':    {'mary', 'marie', 'molly'},
 
     'catherine': {'kate', 'kathryn', 'cathy', 'catharine'},
     'kate':      {'catherine', 'kathryn', 'cathy', 'catharine'},

@@ -440,15 +440,37 @@ def detail(person_id):
                     children_names.append(hh['name_as_recorded'])
 
         # Check for spouse consistency
-        if spouse_names and len(set(spouse_names)) == 1:
-            relationships_evidence.append(
-                f"<strong>Spouse relationship maintained.</strong> Married to {spouse_names[0]} across multiple censuses."
-            )
-        elif spouse_names and len(set(spouse_names)) > 1:
-            # Different spouses in different years (widow remarriage, etc.)
-            relationships_evidence.append(
-                f"<strong>Household relationships coherent.</strong> Spouse relationships documented across censuses."
-            )
+        if spouse_names:
+            # Normalize forenames to detect variants (Mary/Minnie, etc.)
+            from src.genealogy.names import classify_forename
+            normalized_spouses = set()
+            for spouse_name in spouse_names:
+                parts = spouse_name.split()
+                if parts:
+                    forename = parts[0].lower()
+                    # Get the canonical form of the forename
+                    if classify_forename(forename) in ('exact', 'approved'):
+                        # Use the forename as-is (it's either exact or approved variant)
+                        normalized_spouses.add(forename)
+                    else:
+                        # Fallback: use full name
+                        normalized_spouses.add(spouse_name.lower())
+
+            if len(normalized_spouses) == 1:
+                relationships_evidence.append(
+                    f"<strong>Spouse relationship maintained.</strong> Married to {spouse_names[0]} across multiple censuses."
+                )
+            else:
+                # Different spouses or name variants detected
+                if len(spouse_names) > 1 and len(normalized_spouses) > 1:
+                    relationships_evidence.append(
+                        f"<strong>⚠ Spouse name variation detected.</strong> Census records show: {', '.join(sorted(set(spouse_names)))}. "
+                        f"Verify if these are name variants or indicate remarriage."
+                    )
+                else:
+                    relationships_evidence.append(
+                        f"<strong>Household relationships coherent.</strong> Spouse relationships documented across censuses."
+                    )
 
         # Check for children
         if children_names:
