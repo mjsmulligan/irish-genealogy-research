@@ -16,7 +16,27 @@ Full detail: [`changelog/session_changelog_2026-07-04.md`](changelog/session_cha
 
 ---
 
-## 1a. Testing & Enhancement (1 July 2026 — Post-Implementation)
+## 1a. Previous Update (3 July 2026 — BMD Exploratory Design)
+
+**BMD (Birth/Marriage/Death) exploratory design completed — cross-townland person linking via civil registration.**
+
+Completed comprehensive design for integrating civil registration records to bridge gaps that census-only data cannot resolve. Test case validates John McCadden + Mary Logue marriage (1909-12-30) can link persons across separate 1901 townlands (Aghlem + Townlough) to joint 1911 appearance (Meenadreen).
+
+**Key findings:**
+- **No schema changes required:** Database already supports BMD sources (marriage_registration, birth_registration, death_registration) and event types (marriage, birth, death)
+- **Linkage strategy:** Confidence-scored person merging (0.95 base for civil registration; reduced by birth-year conflicts; boosted by co-census appearances)
+- **Ingest format:** CSV following census pattern (one Record per event, multiple RecordedPersons with role-based pairing)
+- **Pipeline integration:** New `add-bmd-evidence` CLI command + `link_persons_via_bmd()` stage after relationship_resolution
+
+**Design document:** [`docs/bmd_exploratory_design.md`](docs/bmd_exploratory_design.md) — detailed specification for Phases 1–5 implementation
+
+**Roadmap impact:**
+- **Item 36 (BMD data layer):** Deferred to Phase 2–3 (now has concrete design)
+- **Item 56 (Cross-townland linking):** Now has clear solution path; John + Mary case identified as validation test
+
+---
+
+## 1b. Testing & Enhancement (1 July 2026 — Post-Implementation)
 
 **Name variant discovery via test cases — Mary/Minnie variant added.**
 
@@ -33,7 +53,7 @@ Tested household continuity conflict resolution using real family case (John McC
 
 ---
 
-## 1b. Previous Update (1 July 2026)
+## 1c. Previous Update (1 July 2026)
 
 **Person-level forename normalization completed + audit log integrity fixed.**
 
@@ -50,7 +70,7 @@ Full detail: [`changelog/session_changelog_2026-07-01.md`](changelog/session_cha
 
 ---
 
-## 1b. Previous Update (29 June 2026)
+## 1d. Previous Update (29 June 2026)
 
 Roadmap low-hanging-fruit pass (items 7, 14, 26, 43, 47) plus systematic foundation and evidence layer review.
 
