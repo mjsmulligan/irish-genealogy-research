@@ -1,10 +1,22 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*Last updated: 1 July 2026*
+*Last updated: 4 July 2026*
 
 ---
 
-## 1. Latest Update (1 July 2026)
+## 1. Latest Update (4 July 2026)
+
+**R4: Headstone Inscriptions (Historic Graves) — discovery and design complete.**
+
+New evidence source type designed: Historic Graves community graveyard surveys, starting with St. Agatha's, Donegal (923 memorials). Fills a death/memorial record gap distinct from both census and R3 parish registers. Repository 9 / Source 14 mapping confirmed with no foundational-layer changes. Record models the gravestone categorically (`event_type='burial'`, no date — extends the existing census precedent rather than changing Rule 3). RecordedPerson gains 8 new nullable fields carrying per-person primary/secondary event dates. CSV ingest schema finalised. Doc updates and migration 006 not yet written — see items 48–53.
+
+**Follow-up scoping pass:** item 48 refined to specify the actual `conceptual_model.md` rule-text changes required (Rule 1, §4.5, §4.6 — not just an addendum note). Separately discovered `database_schema.md` is significantly stale — still written against SQLite despite the live stack being PostgreSQL/Supabase for months; unrelated to R4, tracked as new item 54.
+
+Full detail: [`changelog/session_changelog_2026-07-04.md`](changelog/session_changelog_2026-07-04.md)
+
+---
+
+## 1a. Previous Update (1 July 2026)
 
 **Person-level forename normalization completed + audit log integrity fixed.**
 
@@ -44,10 +56,10 @@ Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
 
 | Document | Version | Status |
 |---|---|---|
-| `docs/conceptual_model.md` | v2.8 | ✅ Current |
-| `docs/data_dictionary.md` | v2.7 | ✅ Current |
-| `docs/database_schema.md` | v3.2 | ✅ Current |
-| `docs/repositories.md` | v1.6 | ✅ Current |
+| `docs/conceptual_model.md` | v2.8 | ⚠️ Pending — R4 note on RecordedPerson-level dates (item 48) |
+| `docs/data_dictionary.md` | v2.7 | ⚠️ Pending — RecordedPerson fields + `headstone_inscription` vocab (items 48–49) |
+| `docs/database_schema.md` | v3.2 | ⚠️ Stale — still SQLite, live stack is PostgreSQL (item 54); also pending migration 006 (item 48) |
+| `docs/repositories.md` | v1.6 | ⚠️ Pending — Repository 9 / Source 14 (item 50) |
 | `docs/genealogical_constraints.md` | v1.3 | ✅ Current — sole authority for constraint rules and GC codes |
 | `docs/reconstruction_algorithms.md` | v1.3 | ✅ Current |
 | `docs/review_layer.md` | v1.0 | ✅ Current |
@@ -121,6 +133,13 @@ Active and open items only. Completed items are in §8 (Version History).
 | 45 | **Marriage singularity (GC06) not in findings layer.** Birth (GC04) and death (GC05) have singularity findings; marriage does not. Add `find_marriage_singularity_violation()`. See `genealogical_constraints.md` GC06. | Medium | |
 | 46 | **N+1 birth/death year queries in `findings.py`.** `_derive_birth_year()` / `_derive_death_year()` issue 2–3 queries per person in per-person loops. Pre-fetch all birth/death years for active persons in a single query at `run_all_findings()` start. | High | Before Donegal-scale data |
 | 47 | **`find_link_conflicts_resolved()` permanent placeholder.** Removed from `run_all_findings()`. Function and taxonomy entry retained with deferred-status note for when `conclusion_log` audit trail persistence is implemented. | Low | ✅ Done 29 June 2026 |
+| 48 | **Migration 006 / schema v4.5 — RecordedPerson date fields.** Add 8 new nullable fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier` + `secondary_` variants of each) to `RecordedPerson`, for headstone and future multi-date sources. Update `data_dictionary.md` §3.3. **`conceptual_model.md` requires actual rule-text changes, not an addendum:** Rule 1 (Evidence cohesion) currently states event fields "live directly on the Record" and describes RecordedPerson only as a child row — needs rewriting to acknowledge RecordedPerson can itself carry event-shaped data for some source types. §4.5 (Record event fields) needs a clarifying line that Record's own event fields can serve a purely categorical role (e.g. `burial`) while specific event instances are evidenced at RecordedPerson level. §4.6 (RecordedPerson) needs the new fields described, symmetrically with §4.5. | High (R4) | See `session_changelog_2026-07-04.md` |
+| 49 | **`headstone_inscription` source type vocab.** Add to `data_dictionary.md` §6.1 Source Types. | High (R4) | Before item 50 |
+| 50 | **Repository 9 (Historic Graves) + Source 14 (St. Agatha's) in `repositories.md`.** Follow the per-volume Source pattern established for Catholic Parish Registers (Source 9) — one Source per graveyard. No structural changes needed, data only. | High (R4) | Blocked on item 49 |
+| 51 | **Scrape St. Agatha's headstone data to CSV.** Build scraper against `historicgraves.com/graveyard/st-agatha-s/dg-saga` (36 pages, 923 memorials). Output CSV matching the 14-column schema defined in `session_changelog_2026-07-04.md`. Note: structured "People commemorated" index field is not exhaustive — extraction must parse the freetext epitaph, not just the index. | High (R4) | Next session |
+| 52 | **`src/evidence/headstone.py` ingest pipeline.** CSV → Record + RecordedPerson + RecordedRelationship. | Medium (R4) | Blocked on items 48–51 |
+| 53 | **`event_resolution.py` Pass 4 — Death/Burial Event derivation.** Derive Death/Burial Events from `RecordedPerson` date evidence, mirroring existing Pass 2 (birth-event-from-age) bucket/vote logic. Note: inscribed birth years (`date_qualifier=exact`) should generally outrank existing census-derived birth Events (`date_qualifier=calculated`) once implemented. | Medium (R4) | Blocked on item 48 |
+| 54 | **`database_schema.md` is stale — still SQLite, not PostgreSQL.** Discovered while scoping item 48: the document is written entirely against SQLite (`PRAGMA user_version`, `sqlite3.Connection`, SQLite DDL) despite the live stack having migrated to PostgreSQL/Supabase (`psycopg2`, `DATABASE_URL`) months ago. Listed as "✅ Current" at v3.2 in the doc status table, but does not reflect the live schema at all. Unrelated to R4 — full rewrite against actual `psycopg2`/Postgres DDL and `SCHEMA_VERSION` conventions needed. | High | Discovered 4 July 2026; not a blocker for items 48–53 |
 
 ---
 
@@ -199,6 +218,7 @@ Full session history with links to detailed changelog files: [`changelog/changel
 
 | Date | Milestone |
 |---|---|
+| 4 July 2026 | R4 discovery: Headstone Inscriptions (Historic Graves) designed. Repository 9 / Source 14 (St. Agatha's). RecordedPerson gains 8 new date fields. CSV ingest schema finalised. Items 48–53 added. Item 48 scope refined (specific conceptual_model.md rule-text changes identified). Item 54 added: `database_schema.md` discovered stale (still SQLite, live stack is PostgreSQL). |
 | 28 June 2026 | `src/validation/` retired. `src/genealogy/` created as materialisation of `genealogical_constraints.md`. Seven bugs fixed: age tolerances (±2 flat → ±3/±4 per census pair), deletion of both sides of flagged pairs, `classify_forename()` `'exact'` return, `household_same_census_errors` always zero, five duplicate inline source-year dicts, deferred import in `relationship_resolution.py`, duplicate dict key in `APPROVED_NAME_VARIANTS`. Six callers updated. `genealogical_constraints.md` v1.4: `[→ Validation rule candidate]` pattern retired; §10 implementation table rewritten against actual code. |
 | 28 June 2026 | Household resolution new conclusion step [3/5]. Anchor-extension for unlinked household members via RecordedRelationship paths. `household_utils.py` extracted. Conclusion pipeline 3-step → 5-step. |
 | 26 June 2026 | R3 transcription pipeline discovery. Spawned as independent repo. Hybrid HTR pipeline designed. Bounding box fields added to CSV schemas. Vocabulary file contract drafted. |
