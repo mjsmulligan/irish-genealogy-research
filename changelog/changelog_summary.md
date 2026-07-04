@@ -4,6 +4,20 @@ Complete session history for the Genealogy Research Assistant project. Detailed 
 
 ---
 
+## 4 July 2026 — R4: Headstone Inscriptions (Historic Graves) Discovery
+
+Detailed file: [`session_changelog_2026-07-04.md`](session_changelog_2026-07-04.md)
+
+New evidence source type identified and designed: Historic Graves community graveyard surveys (`historicgraves.com`), starting with St. Agatha's, Donegal (923 memorials, surveyed 2021). A death/memorial record type distinct from both R3 parish registers and census — fills a source-type gap.
+
+**Key finding:** the site's structured "People commemorated" index field is not exhaustive — it captures only one headline person per grave even when the epitaph names several (up to 7 across 3 generations observed). All genealogically useful content lives in the freetext epitaph.
+
+**Design decisions:** Repository 9 (Historic Graves) / Source 14 (St. Agatha's, `type=headstone_inscription`) — direct fit with existing foundational model, no schema change. Record = one gravestone, `event_type='burial'` used categorically rather than instantially (no date on the Record itself) — extends the existing census precedent (Record carries one categorical event; richer conclusions derive from person-level evidence) rather than requiring a change to Rule 3. RecordedPerson gains 8 new nullable fields (primary + secondary event_type/date_as_recorded/date/date_qualifier pairs) to carry per-person birth/death dates — a fixed pair chosen over a general date-array or child table, deferred until a real 3-date case is observed. No RecordedRelationship vocab changes needed. CSV column schema for ingest finalised (14 columns, one row per commemorated person). Grave-level survey metadata (lat/long, survey date, contributors) placed in `Record.notes` rather than new schema fields.
+
+**ROADMAP items added:** 48 (migration 006 / schema v4.5 — RecordedPerson date fields, plus specific `conceptual_model.md` rule-text changes: Rule 1, §4.5, §4.6), 49 (`headstone_inscription` source type vocab), 50 (Repository 9 / Source 14 in `repositories.md`), 51 (scrape St. Agatha's to CSV — next session), 52 (`src/evidence/headstone.py` ingest pipeline), 53 (`event_resolution.py` Pass 4 — death/burial Event derivation), 54 (`database_schema.md` discovered stale — still SQLite despite live PostgreSQL stack; unrelated to R4).
+
+---
+
 ## 28 June 2026 — Genealogy Layer (`src/genealogy/`)
 
 Detailed file: [`session_changelog_2026-06-28b.md`](session_changelog_2026-06-28b.md)
