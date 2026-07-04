@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Repositories and Sources
 
-*Version 1.5 — May 2026*
+*Version 1.6 — 4 July 2026*
 *Audience: All roles. This document is a practical reference for transcription and ingestion sessions. It defines the pre-populated global repository and source set.*
 
 ______________________________________________________________________
@@ -27,6 +27,7 @@ ______________________________________________________________________
 | 6 | Military Archives | militaryarchives.ie |
 | 7 | Duchas.ie | duchas.ie |
 | 8 | Logainm.ie | logainm.ie |
+| 9 | Historic Graves | historicgraves.com |
 
 ______________________________________________________________________
 
@@ -248,6 +249,24 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
+### Source 14 — St. Agatha's (Historic Graves)
+
+| Field | Value |
+|---|---|
+| source_id | 14 |
+| repository_id | 9 (Historic Graves) |
+| type | headstone_inscription |
+| coverage | Survey conducted July 2021 |
+| source_url | https://historicgraves.com/graveyard/st-agatha-s/dg-saga |
+| record_url_template | https://historicgraves.com/st-agatha-s/{grave_code}/grave |
+| source_parameters | null |
+| record_parameter_names | grave_code |
+| column_schema | grave_code, epitaph_text, survey_date, contributors, person_sequence, name_as_recorded, role_as_recorded, sex_as_recorded, event_type, date_as_recorded, secondary_event_type, secondary_date_as_recorded, age_as_recorded, place_as_recorded |
+
+**Notes:** Community graveyard survey — one Record per gravestone (`grave_code`, e.g. `dg-saga-0002`), one CSV row per commemorated person, following the same grave-level-field-repetition convention as census `image_group`. `epitaph_text` maps to `Record.raw_text` verbatim; `survey_date`/`contributors` map to `Record.notes`. Licence CC BY-NC-ND 4.0 — treated as acceptable for internal research use, not cleared for redistribution. A separate Source entry should be created per graveyard surveyed, following the same per-volume pattern established for Catholic Parish Registers (Source 9).
+
+______________________________________________________________________
+
 ## 4. Place Authority Source
 
 ### Repository 8 — Logainm.ie
@@ -300,3 +319,4 @@ ______________________________________________________________________
 | 1.3 | May 2026 | Source 4 (Census 1911) updated to NAI download format; `nai_ingest_mapping` added |
 | 1.4 | May 2026 | Sources 3 (Census 1901) and 5 (Census 1926) corrected against actual NAI schemas; `census_night` added to census sources |
 | 1.5 | May 2026 | Repository 8 (logainm.ie) and Source 13 (place_authority) added. §4 Place Authority Source section added. Two loading mechanisms documented (API fetch and CSV import). Church parish manual entry and idempotency noted. |
+| 1.6 | 4 July 2026 | R4: headstone inscriptions. Added Repository 9 (Historic Graves) to §2. Added Source 14 (St. Agatha's, `type=headstone_inscription`) following the per-volume Source pattern established for Catholic Parish Registers (Source 9). Data only — no structural changes. |

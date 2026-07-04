@@ -1,6 +1,6 @@
 # Irish Genealogy Research — Data Dictionary
 
-*Version 2.8 — 23 June 2026*
+*Version 2.9 — 4 July 2026*
 *Audience: Developers, data engineers, and transcription sessions. This document is the authoritative reference for every field on every object.*
 
 ______________________________________________________________________
@@ -142,7 +142,17 @@ ______________________________________________________________________
 | sex_as_recorded | string | NO | Sex exactly as recorded |
 | occupation_as_recorded | string | NO | Occupation exactly as recorded |
 | place_as_recorded | string | NO | Place of origin or residence exactly as recorded |
+| event_type | string | NO | Primary event this evidence documents — see §6.2. Introduced in schema v4.5 for source types (e.g. headstone inscriptions) where event data is evidenced at the person level rather than the Record level |
+| date_as_recorded | string | NO | Verbatim date string for the primary event; exempt from date format validation |
+| date | date | NO | Normalised ISO 8601 date for the primary event |
+| date_qualifier | string | NO | Date qualifier for the primary event — see §6.3 |
+| secondary_event_type | string | NO | A second event this evidence documents (e.g. `birth` alongside a primary `death`) — see §6.2 |
+| secondary_date_as_recorded | string | NO | Verbatim date string for the secondary event; exempt from date format validation |
+| secondary_date | date | NO | Normalised ISO 8601 date for the secondary event |
+| secondary_date_qualifier | string | NO | Date qualifier for the secondary event — see §6.3 |
 | notes | string | NO | Transcription observations |
+
+**Primary/secondary date pair:** a fixed pair rather than a generalised date array, adopted for sources — headstone inscriptions being the first case — where a single RecordedPerson row commonly carries at most two dates (typically death and birth). Either pair may be null independently. Convention: when both are present, the event the source exists primarily to document (e.g. death on a headstone) is primary. A more general child-table solution was considered and deferred until a real case needs a third date.
 
 ______________________________________________________________________
 
@@ -322,6 +332,7 @@ ______________________________________________________________________
 | `military` | Military history or pension record |
 | `folklore` | Folklore or oral history collection |
 | `place_authority` | Place authority source (logainm.ie) |
+| `headstone_inscription` | Graveyard survey of headstone/memorial inscriptions |
 
 ### 6.2 Event Types
 
@@ -505,3 +516,4 @@ ______________________________________________________________________
 | 2.6 | June 2026 | Merged RecordedEvent into Record (schema v2.8). §3.2 replaced with inline event fields on `record`. Removed `Event.recorded_event_ids` from §4.3 and §5. Updated `Person.relationship_ids` description to reflect removal of `person_relationship` junction table. |
 | 2.7 | 17 June 2026 | Aligned with conceptual_model.md v2.6. Added §3.4 RecordedRelationship and §3.5 RecordSimilarity field tables (renumbered NameVariant to §3.6). Added `event.is_primary` (§4.3, Rule 9). Fixed `recorded_person.role` Required marker from YES to NO (nullable since schema v3.0) and added `unknown` to §6.4. Per the Rule 2 evidence-correspondence resolution: renamed `Person.record_ids` → `Person.recorded_person_ids` (via `person_recorded_person`) and `Relationship.record_ids` → `Relationship.recorded_relationship_ids` (via `relationship_recorded_relationship`); `Event.record_ids` unchanged. Updated §5 linkage summary and scoring-columns junction table list accordingly. Added `similarity` as a RecordedRelationship-only extension to §6.7 Relationship Types. |
 | 2.8 | 23 June 2026 | Schema v4.0 additions. Added §4a Review Layer: §4a.1 Reviewer (first-class entity, three types: pipeline/human/ai, two seeded rows) and §4a.2 ConclusionLog (append-only audit trail, change grouping via `change_group_id`, named actions). Added `status` and `pending_delete_at` fields to §4.1 Person, §4.2 Relationship, §4.3 Event (lifecycle: active → pending_delete → physical deletion). Added §6.11 Conclusion Lifecycle Status, §6.12 Reviewer Types, §6.13 Conclusion Log Actions, §6.14 Conclusion Log Entity Types. |
+| 2.9 | 4 July 2026 | Schema v4.5 additions (R4: headstone inscriptions). Added 8 nullable fields to §3.3 RecordedPerson: `event_type`, `date_as_recorded`, `date`, `date_qualifier`, `secondary_event_type`, `secondary_date_as_recorded`, `secondary_date`, `secondary_date_qualifier`, with a note on the primary/secondary date-pair convention. Added `headstone_inscription` to §6.1 Source Types. |
