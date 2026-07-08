@@ -32,12 +32,18 @@ class PostgresRepository(Repository):
     def execute(self, query: str, params: tuple | None = None) -> None:
         """Execute a query."""
         with self._conn.cursor() as cur:
-            cur.execute(query, params or ())
+            if params is not None:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
 
     def execute_returning(self, query: str, params: tuple | None = None) -> Optional[dict]:
         """Execute and return first row."""
         with self._conn.cursor() as cur:
-            cur.execute(query, params or ())
+            if params is not None:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
             row = cur.fetchone()
             return dict(row) if row else None
 

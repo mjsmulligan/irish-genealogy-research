@@ -47,9 +47,10 @@ def open_db() -> PostgresRepository:
     return PostgresRepository(conn)
 
 
-def _execute_sql_file(cur, sql: str) -> None:
+def _execute_sql_file(repo: PostgresRepository, sql: str) -> None:
     """Execute multi-statement SQL file."""
-    cur.execute(sql)
+    with repo._conn.cursor() as cur:
+        cur.execute(sql)
 
 
 def init_db() -> PostgresRepository:
