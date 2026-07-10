@@ -16,7 +16,24 @@ Full detail: [`changelog/session_changelog_2026-07-04.md`](changelog/session_cha
 
 ---
 
-## 1a. Previous Update (1 July 2026)
+## 1a. Testing & Enhancement (1 July 2026 — Post-Implementation)
+
+**Name variant discovery via test cases — Mary/Minnie variant added.**
+
+Tested household continuity conflict resolution using real family case (John McCadden, Person #321958). Discovered Mary/Minnie is a common rural Irish name variant not in the system's approved variants dictionary. Also identified that spouse name changes weren't being flagged when variants were unrecognized.
+
+**Key improvements:**
+- Added Mary ↔ Minnie to APPROVED_NAME_VARIANTS (`src/genealogy/names.py`)
+- Enhanced spouse consistency detection in detail page (`src/web/app.py`) to normalize forenames before comparing across censuses
+- Now flags spouse name variations with: "⚠ Spouse name variation detected. Verify if these are name variants or indicate remarriage."
+- Researcher can now see the actual spouse names and decide if it's a variant or remarriage
+
+**Roadmap addition:**
+- Item 55: Child age progression coherence validation (low priority — identified via John McCadden case, flagged for future consideration after core rules stabilize)
+
+---
+
+## 1b. Previous Update (1 July 2026)
 
 **Person-level forename normalization completed + audit log integrity fixed.**
 
@@ -141,6 +158,7 @@ Active and open items only. Completed items are in §8 (Version History).
 | 52 | **`src/evidence/headstone.py` ingest pipeline.** CSV → Record + RecordedPerson + RecordedRelationship. | Medium (R4) | Blocked on items 49–51 |
 | 53 | **`event_resolution.py` Pass 4 — Death/Burial Event derivation.** Derive Death/Burial Events from `RecordedPerson` date evidence, mirroring existing Pass 2 (birth-event-from-age) bucket/vote logic. Note: inscribed birth years (`date_qualifier=exact`) should generally outrank existing census-derived birth Events (`date_qualifier=calculated`) once implemented. | Medium (R4) | Ready for implementation |
 | 54 | **`database_schema.md` is stale — still SQLite, not PostgreSQL.** Discovered while scoping item 48: the document is written entirely against SQLite (`PRAGMA user_version`, `sqlite3.Connection`, SQLite DDL) despite the live stack having migrated to PostgreSQL/Supabase (`psycopg2`, `DATABASE_URL`) months ago. Listed as "✅ Current" at v3.2 in the doc status table, but does not reflect the live schema at all. Unrelated to R4 — full rewrite against actual `psycopg2`/Postgres DDL and `SCHEMA_VERSION` conventions needed. | High | Discovered 4 July 2026; not a blocker for items 48–53 |
+| 55 | **Child age progression coherence validation.** Flag implausible child age progressions within households across censuses (e.g., child age 5 in 1911 but age 30 in 1926 = 15 years only elapsed). Check: `expected_age_y2 = age_y1 + (year2 - year1)`, flag if actual age deviates beyond tolerance. **Note:** Low priority — many edge cases (children leaving home, name changes post-marriage, etc.) make this noisy. Consider after core validation rules are stabilized in production. Identified via John McCadden case (1 July 2026). | Low (R3) | Future |
 
 ---
 
