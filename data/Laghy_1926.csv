@@ -1,0 +1,995 @@
+aform_name,county,townland,ded,first_name,surname,relationship_to_head,updated_relationship_to_head,updated_sex,updated_marriage,updated_irish_language,updated_religion,years_married,irish_or_english,birthplace_county,children_born_alive,children_living,updated_age,geocode,institution_name,institution_type,image_group,a_id
+Ballykillowen_0488_0031_0003_0_00004.pdf,Donegal,Ballykillowen,Laghy,Hugh,McGrath,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,50.0,DL05012,nan,nan,56189,2605700
+Ballykillowen_0488_0031_0004_0_00005.pdf,Donegal,Ballykillowen,Laghy,John J,Doherty,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,46.0,DL05012,nan,nan,56190,2605701
+Ballykillowen_0488_0031_0004_0_00005.pdf,Donegal,Ballykillowen,Laghy,Farney,Doherty,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,43.0,DL05012,nan,nan,56190,2605702
+Ballykillowen_0488_0031_0004_0_00005.pdf,Donegal,Ballykillowen,Laghy,Mary,Doherty,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,41.0,DL05012,nan,nan,56190,2605703
+Ballykillowen_0488_0031_0006_0_00007.pdf,Donegal,Ballykillowen,Laghy,Patrick,Cassidy,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,56192,2605704
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,James,Cassidy,Head,Head,M,Widower,English Only,nan,nan,ENGLISH,nan,nan,0 any,76.0,DL05012,nan,nan,56191,2605705
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,John,Cassidy,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,86.0,DL05012,nan,nan,56191,2605706
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,Maggie E,Cassidy,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,34.0,DL05012,nan,nan,56191,2605707
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,Mary Anne,Cassidy,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,32.0,DL05012,nan,nan,56191,2605708
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,James,Cassidy,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,29.0,DL05012,nan,nan,56191,2605709
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,Cassie,Cassidy,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,56191,2605710
+Ballykillowen_0488_0031_0005_0_00006.pdf,Donegal,Ballykillowen,Laghy,Edward,Cassidy,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,56191,2605711
+Ballykillowen_0488_0031_0008_0_00009.pdf,Donegal,Ballykillowen,Laghy,Francis,Doherty,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,42.0,DL05012,nan,nan,56194,2605712
+Ballykillowen_0488_0031_0008_0_00009.pdf,Donegal,Ballykillowen,Laghy,Anthony,Doherty,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,39.0,DL05012,nan,nan,56194,2605713
+Ballykillowen_0488_0031_0008_0_00009.pdf,Donegal,Ballykillowen,Laghy,Anne,Doherty,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,43.0,DL05012,nan,nan,56194,2605714
+Ballykillowen_0488_0031_0009_0_00010.pdf,Donegal,Ballykillowen,Laghy,Thomas,Bartley,Head,Head,M,Married,English Only,Roman Catholic,15,ENGLISH,nan,0,none,43.0,DL05012,nan,nan,56195,2605715
+Ballykillowen_0488_0031_0009_0_00010.pdf,Donegal,Ballykillowen,Laghy,Margaret,Bartley,nan,nan,F,Married,English Only,Roman Catholic,15,ENGLISH,Donegal,nan,nan,70.0,DL05012,nan,nan,56195,2605716
+Ballykillowen_0488_0031_0013_0_00014.pdf,Donegal,Ballykillowen,Laghy,Mary,Gallagher,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,F01 None,60.0,DL05012,nan,nan,56199,2605717
+Ballykillowen_0488_0031_0013_0_00014.pdf,Donegal,Ballykillowen,Laghy,William J,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,27.0,DL05012,nan,nan,56199,2605718
+Ballykillowen_0488_0031_0013_0_00014.pdf,Donegal,Ballykillowen,Laghy,Joseph,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,23.0,DL05012,nan,nan,56199,2605719
+Ballykillowen_0488_0031_0013_0_00014.pdf,Donegal,Ballykillowen,Laghy,Mary A,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,20.0,DL05012,nan,nan,56199,2605720
+Ballykillowen_0488_0031_0013_0_00014.pdf,Donegal,Ballykillowen,Laghy,Gracie,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,6.0,DL05012,nan,nan,56199,2605721
+Ballykillowen_0488_0031_0016_0_00017.pdf,Donegal,Ballykillowen,Laghy,Anthony,Gillespie,Head,Head,M,Married,English Only,Roman Catholic,25 95,ENGLISH,nan,8 8,2,48.0,DL05012,nan,nan,56202,2605722
+Ballykillowen_0488_0031_0016_0_00017.pdf,Donegal,Ballykillowen,Laghy,Elizabeth,Gillespie,nan,nan,F,Married,English Only,Roman Catholic,25,ENGLISH,Donegal,8,nan,50.0,DL05012,nan,nan,56202,2605723
+Ballykillowen_0488_0031_0016_0_00017.pdf,Donegal,Ballykillowen,Laghy,Anthony,Gillespie,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,56202,2605724
+Ballykillowen_0488_0031_0016_0_00017.pdf,Donegal,Ballykillowen,Laghy,May,Gillespie,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,56202,2605725
+Ballykillowen_0488_0031_0018_0_00019.pdf,Donegal,Ballykillowen,Laghy,Charles,Mulhern,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,41.0,DL05012,nan,nan,56204,2605726
+Ballykillowen_0488_0031_0017_0_00018.pdf,Donegal,Ballykillowen,Laghy,William,Scott,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,61.0,DL05012,nan,nan,56203,2605727
+Ballykillowen_0488_0031_0017_0_00018.pdf,Donegal,Ballykillowen,Laghy,Elizabeth,Scott,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,74.0,DL05012,nan,nan,56203,2605728
+Ballykillowen_0488_0031_0017_0_00018.pdf,Donegal,Ballykillowen,Laghy,Mary,Scott,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,64.0,DL05012,nan,nan,56203,2605729
+Ballykillowen_0488_0031_0017_0_00018.pdf,Donegal,Ballykillowen,Laghy,Willie John,Scott,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,29.0,DL05012,nan,nan,56203,2605730
+Carrick East_0488_0032_0002_0_00003.pdf,Donegal,Carrick East,Laghy,Francis,Millar,Head,Head,M,Married,English Only,Church of Ireland,33,ENGLISH,Donegal,6,none,60.0,DL05012,nan,nan,125996,2605731
+Carrick East_0488_0032_0002_0_00003.pdf,Donegal,Carrick East,Laghy,Catherine,Millar,nan,nan,F,Married,English Only,nan,33,ENGLISH,Donegal,6,nan,62.0,DL05012,nan,nan,125996,2605732
+Carrick East_0488_0032_0002_0_00003.pdf,Donegal,Carrick East,Laghy,James,Colgan,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,73.0,DL05012,nan,nan,125996,2605733
+Carrick West_0488_0034_0003_0_00004.pdf,Donegal,Carrick West,Laghy,Annastatia,Cunningham,Head,Head,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,126149,2605734
+Carrick West_0488_0034_0003_0_00004.pdf,Donegal,Carrick West,Laghy,Doloris Mary,Cunningham,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,126149,2605735
+Carrick West_0488_0034_0006_0_00007.pdf,Donegal,Carrick West,Laghy,George,Graham,Head,Head,M,Married,English Only,Church of Ireland,26,ENGLISH,Donegal,4,none,57.0,DL05012,nan,nan,126152,2605736
+Carrick West_0488_0034_0006_0_00007.pdf,Donegal,Carrick West,Laghy,Margret,Graham,nan,nan,F,Married,English Only,Church of Ireland,26,ENGLISH,Donegal,4,nan,59.0,DL05012,nan,nan,126152,2605737
+Carrick West_0488_0034_0006_0_00007.pdf,Donegal,Carrick West,Laghy,Mary J,Graham,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,20.0,DL05012,nan,nan,126152,2605738
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Own,Martin,Head,Head,M,Married,English Only,Roman Catholic,14,ENGLISH,Donegal,3,3,64.0,DL05012,nan,nan,126153,2605739
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Margret,Martin,nan,nan,F,Married,English Only,Roman Catholic,14,ENGLISH,Donegal,3,nan,nan,DL05012,nan,nan,126153,2605740
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Maggie,Martin,nan,nan,F,Single,English and Irish,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,126153,2605741
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Thomas J,Martin,nan,nan,M,Single,English and Irish,nan,nan,ENGLISH,Donegal,nan,nan,11.0,DL05012,nan,nan,126153,2605742
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Michael,Martin,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05012,nan,nan,126153,2605743
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Thomas,Harkin,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,27.0,DL05012,nan,nan,126153,2605744
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,William,Harkin,nan,nan,M,Both Parents Dead,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,23.0,DL05012,nan,nan,126153,2605745
+Carrick West_0488_0034_0007_0_00008.pdf,Donegal,Carrick West,Laghy,Francis J,Harkin,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,126153,2605746
+Carrick West_0488_0034_0009_0_00010.pdf,Donegal,Carrick West,Laghy,Thomas,Barron,Head,Head,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,42.0,DL05012,nan,nan,126155,2605747
+Carrick West_0488_0034_0009_0_00010.pdf,Donegal,Carrick West,Laghy,Michael,Barron,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,126155,2605748
+Carrick West_0488_0034_0009_0_00010.pdf,Donegal,Carrick West,Laghy,Bell,Barron,nan,nan,nan,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,126155,2605749
+Carrick West_0488_0034_0008_0_00009.pdf,Donegal,Carrick West,Laghy,William,Martin,Head,Head,M,Married,English Only,Roman Catholic,23 -,ENGLISH,Donegal,3,none,72.0,DL05012,nan,nan,126154,2605750
+Carrick West_0488_0034_0008_0_00009.pdf,Donegal,Carrick West,Laghy,Elizabeth,Martin,nan,nan,F,Married,English Only,Roman Catholic,23,ENGLISH,nan,3,nan,59.0,DL05012,nan,nan,126154,2605751
+Carrick West_0488_0034_0008_0_00009.pdf,Donegal,Carrick West,Laghy,Hugh,Martin,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,63.0,DL05012,nan,nan,126154,2605752
+Carrick West_0488_0034_0008_0_00009.pdf,Donegal,Carrick West,Laghy,Elizabeth Josephine,Martin,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,20.0,DL05012,nan,nan,126154,2605753
+Carrick West_0488_0034_0008_0_00009.pdf,Donegal,Carrick West,Laghy,John,Martin,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,126154,2605754
+Carrickbar Upper_0488_0033_0002_0_00003.pdf,Donegal,Carrickbar Upper,Laghy,James,Bartley,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,F,61.0,DL05012,nan,nan,127333,2605755
+Carrickbar Upper_0488_0033_0002_0_00003.pdf,Donegal,Carrickbar Upper,Laghy,Francis,Bartley,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,127333,2605756
+Carrickbar Upper_0488_0033_0002_0_00003.pdf,Donegal,Carrickbar Upper,Laghy,Mary Ann,O'Hara,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,One 1,30.0,DL05012,nan,nan,127333,2605757
+Carrickbar Upper_0488_0033_0002_0_00003.pdf,Donegal,Carrickbar Upper,Laghy,Robert,O'Hara,nan,nan,M,Father is Dead,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,127333,2605758
+Carrickbar Upper_0488_0033_0003_0_00004.pdf,Donegal,Carrickbar Upper,Laghy,James,Travers,Head,Head,M,Married,English Only,Roman Catholic,44  41,ENGLISH,Donegal,6,none,68.0,DL05012,nan,nan,127334,2605759
+Carrickbar Upper_0488_0033_0003_0_00004.pdf,Donegal,Carrickbar Upper,Laghy,Bella,Travers,nan,nan,F,Married,English Only,Roman Catholic,41,ENGLISH,Donegal,6,nan,68.0,DL05012,nan,nan,127334,2605760
+Carrickbar Upper_0488_0033_0003_0_00004.pdf,Donegal,Carrickbar Upper,Laghy,John,Travers,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,27.0,DL05012,nan,nan,127334,2605761
+Carrickbar Upper_0488_0033_0009_0_00010.pdf,Donegal,Carrickbar Upper,Laghy,John,Martin,Head,Head,M,Married,English Only,Roman Catholic,X,ENGLISH,Donegal,nan,0,71.0,DL05012,nan,nan,127340,2605762
+Carrickbar Upper_0488_0033_0009_0_00010.pdf,Donegal,Carrickbar Upper,Laghy,Mary,Martin,nan,nan,F,Married,English Only,nan,nan,ENGLISH,Donegal,nan,nan,71.0,DL05012,nan,nan,127340,2605763
+Carrickbar Upper_0488_0033_0009_0_00010.pdf,Donegal,Carrickbar Upper,Laghy,[Danail],Martin,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,31.0,DL05012,nan,nan,127340,2605764
+Cormullen_0488_0035_0006_0_00008.pdf,Donegal,Cormullen,Laghy,John,Cunningham,Head,Head,M,Married,English Only,nan,28,ENGLISH,Donegal,5,none,56.0,DL05012,nan,nan,203127,2605765
+Cormullen_0488_0035_0006_0_00008.pdf,Donegal,Cormullen,Laghy,Ellen,Cunningham,nan,nan,F,Married,English Only,Roman Catholic,28,ENGLISH,Donegal,5,nan,49.0,DL05012,nan,nan,203127,2605766
+Cormullen_0488_0035_0006_0_00008.pdf,Donegal,Cormullen,Laghy,Maggie,Cunningham,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,22.0,DL05012,nan,nan,203127,2605767
+Cormullen_0488_0035_0006_0_00008.pdf,Donegal,Cormullen,Laghy,Cassie,Cunningham,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,203127,2605768
+Cormullen_0488_0035_0006_0_00008.pdf,Donegal,Cormullen,Laghy,John,Cunningham,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,203127,2605769
+Cormullen_0488_0035_0009_0_00011.pdf,Donegal,Cormullen,Laghy,Michael,Gallagher,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,34.0,DL05012,nan,nan,203130,2605770
+Cormullen_0488_0035_0009_0_00011.pdf,Donegal,Cormullen,Laghy,Bridget,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,63.0,DL05012,nan,nan,203130,2605771
+Cormullen_0488_0035_0009_0_00011.pdf,Donegal,Cormullen,Laghy,Mary Josephine,Martin,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,203130,2605772
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Edward,Gallagher,Head,Head,M,Married,English Only,nan,40,ENGLISH,nan,9,none,65.0,DL05012,nan,nan,203133,2605773
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Ellen,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,40,ENGLISH,Donegal,9,nan,66.0,DL05012,nan,nan,203133,2605774
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Edward,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,35.0,DL05012,nan,nan,203133,2605775
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Ellen,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,28.0,DL05012,nan,nan,203133,2605776
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Rose,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,203133,2605777
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Connell,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,203133,2605778
+Cormullen_0488_0035_0012_0_00014.pdf,Donegal,Cormullen,Laghy,Michael,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,203133,2605779
+Gollard_0488_0036_0003_0_00004.pdf,Donegal,Gollard,Laghy,Samuel,Brown,Head,Head,M,Widow,English Only,Church of Ireland,nan,ENGLISH,nan,nan,X,64.0,DL05012,nan,nan,319383,2605780
+Gollard_0488_0036_0003_0_00004.pdf,Donegal,Gollard,Laghy,Reachal,Brown,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,319383,2605781
+Gollard_0488_0036_0003_0_00004.pdf,Donegal,Gollard,Laghy,William,Brown,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,16.0,DL05012,nan,nan,319383,2605782
+Gollard_0488_0036_0003_0_00004.pdf,Donegal,Gollard,Laghy,Richard,Brown,nan,nan,M,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,319383,2605783
+Gollard_0488_0036_0003_0_00004.pdf,Donegal,Gollard,Laghy,David,Brown,nan,nan,M,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,319383,2605784
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,Daniel,Martin,Head,Head,M,Married,English Only,Roman Catholic,14,ENGLISH,Donegal,3,3,60.0,DL05012,nan,nan,319386,2605785
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,Mary E,Martin,nan,nan,F,Married,English Only,Roman Catholic,14,ENGLISH,Donegal,3,nan,5.0,DL05012,nan,nan,319386,2605786
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,Madge,Martin,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,27.0,DL05012,nan,nan,319386,2605787
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,William,Martin,nan,nan,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,319386,2605788
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,Elizabeth,Martin,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,10.0,DL05012,nan,nan,319386,2605789
+Gollard_0488_0036_0006_0_00007.pdf,Donegal,Gollard,Laghy,Christina,Martin,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,319386,2605790
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Grace A,Martin,Head,Head,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,4,68.0,DL05012,nan,nan,319387,2605791
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Maggie Jane,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,09,ENGLISH,Donegal,4,nan,38.0,DL05012,nan,nan,319387,2605792
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Mary,Gallagher,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,8.0,DL05012,nan,nan,319387,2605793
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Edward J,Gallagher,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,5.0,DL05012,nan,nan,319387,2605794
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Cathrine,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,3.0,DL05012,nan,nan,319387,2605795
+Gollard_0488_0036_0008_0_00009.pdf,Donegal,Gollard,Laghy,Teresa,Gallagher,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,319387,2605796
+Gollard_0488_0036_0016_0_00017.pdf,Donegal,Gollard,Laghy,Robert John,Scott,Head,Head,M,Married,English Only,Church of Ireland,08,ENGLISH,nan,3,3,39.0,DL05012,nan,nan,319394,2605797
+Gollard_0488_0036_0016_0_00017.pdf,Donegal,Gollard,Laghy,Mary E,Scott,nan,nan,F,Married,English Only,Church of Ireland,8,ENGLISH,Donegal,3,nan,33.0,DL05012,nan,nan,319394,2605798
+Gollard_0488_0036_0016_0_00017.pdf,Donegal,Gollard,Laghy,Robert J,Scott,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,6.0,DL05012,nan,nan,319394,2605799
+Gollard_0488_0036_0016_0_00017.pdf,Donegal,Gollard,Laghy,Willie D,Scott,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,319394,2605800
+Laghey Town_0488_0056_0014_0_00015.pdf,Donegal,Laghey Town,Laghy,Patrick,McHugh,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,414461,2614937
+Laghey Town_0488_0056_0014_0_00015.pdf,Donegal,Laghey Town,Laghy,James,McHugh,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,414461,2614938
+Laghey Town_0488_0056_0014_0_00015.pdf,Donegal,Laghey Town,Laghy,Joseph,McHugh,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,414461,2615398
+Laghey Town_0488_0056_0017_0_00018.pdf,Donegal,Laghey Town,Laghy,Thomas J,Farrell,Head,Head,M,Married,English Only,Church of Ireland,40,ENGLISH,Donegal,- 6,Jane 0,66.0,DL05012,nan,nan,414464,2615399
+Laghey Town_0488_0056_0017_0_00018.pdf,Donegal,Laghey Town,Laghy,John,Farrell,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,35.0,DL05012,nan,nan,414464,2615400
+Laghey Town_0488_0056_0017_0_00018.pdf,Donegal,Laghey Town,Laghy,Maria,Farrell,nan,nan,F,Married,English Only,Church of Ireland,40,ENGLISH,nan,6,nan,58.0,DL05012,nan,nan,414464,2615401
+Laghey Town_0488_0056_0017_0_00018.pdf,Donegal,Laghey Town,Laghy,Emily,Farrell,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,28.0,DL05012,nan,nan,414464,2615402
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Daniel,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,09.  4,ENGLISH,nan,3,2 Daughter 8 on(3),29.0,DL05012,nan,nan,414466,2615403
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Hannah,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,9,ENGLISH,Donegal,3,nan,28.0,DL05012,nan,nan,414466,2615404
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Rosaleen,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,414466,2615405
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Gerard D,Gallagher,nan,nan,nan,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,4,nan,3.0,DL05012,nan,nan,414466,2615406
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Noel M,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,414466,2615407
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Francis,McFadden,nan,nan,M,Single,English and Irish,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,414466,2615408
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Kathleen,McColgan,nan,nan,F,Single,Irish and English,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,414466,2615409
+Laghey Town_0488_0056_0019_0_00020.pdf,Donegal,Laghey Town,Laghy,Josephine,McColgan,nan,nan,F,Single,Irish and English,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,414466,2615410
+Laghey Town_0488_0056_0024_0_00026.pdf,Donegal,Laghey Town,Laghy,Mathew,McGarvey,Head,Head,M,Married,English Only,Roman Catholic,H/2,ENGLISH,Donegal,nan,none,68.0,DL05012,nan,nan,414471,2615411
+Laghey Town_0488_0056_0024_0_00026.pdf,Donegal,Laghey Town,Laghy,Catherine,McGarvey,nan,nan,F,Married,English and Irish,Roman Catholic,42,ENGLISH,Donegal,8,nan,72.0,DL05012,nan,nan,414471,2615412
+Laghey Town_0488_0056_0024_0_00026.pdf,Donegal,Laghey Town,Laghy,Daniel,McGarvey,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,34.0,DL05012,nan,nan,414471,2615413
+Laghey Town_0488_0056_0024_0_00026.pdf,Donegal,Laghey Town,Laghy,Owen,McGarvey,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,26.0,DL05012,nan,nan,414471,2615414
+Laghy_0488_0038_0002_0_00003.pdf,Donegal,Laghy,Laghy,John,McCadden,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,72.0,DL05012,nan,nan,414646,2615415
+Laghy_0488_0038_0004_0_00005.pdf,Donegal,Laghy,Laghy,William,Curry,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,40.0,DL05012,nan,nan,414648,2615416
+Laghy_0488_0038_0006_0_00007.pdf,Donegal,Laghy,Laghy,Joseph,Stewart,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,69.0,DL05012,nan,nan,414650,2615417
+Mullinasole_0488_0041_0002_0_00003.pdf,Donegal,Mullinasole,Laghy,Daniel,Martin,Head,Head,M,Married,English Only,Roman Catholic,27,ENGLISH,nan,3,none,56.0,DL05012,nan,nan,491920,2615418
+Mullinasole_0488_0041_0002_0_00003.pdf,Donegal,Mullinasole,Laghy,Catherine,Martin,nan,nan,F,Married,English Only,Roman Catholic,27,ENGLISH,nan,3,nan,51.0,DL05012,nan,nan,491920,2615419
+Mullinasole_0488_0041_0002_0_00003.pdf,Donegal,Mullinasole,Laghy,Patrick J,Martin,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,26.0,DL05012,nan,nan,491920,2615420
+Mullinasole_0488_0041_0002_0_00003.pdf,Donegal,Mullinasole,Laghy,Francis,Martin,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,491920,2615421
+Mullinasole_0488_0041_0009_0_00010.pdf,Donegal,Mullinasole,Laghy,Patrick,Martin,Head,Head,M,Married,English Only,Roman Catholic,9 09.,ENGLISH,Donegal,none 0,none,49.0,DL05012,nan,nan,491927,2615422
+Mullinasole_0488_0041_0009_0_00010.pdf,Donegal,Mullinasole,Laghy,Mary C,Martin,nan,nan,F,Married,English Only,Roman Catholic,9,ENGLISH,nan,none,nan,35.0,DL05012,nan,nan,491927,2615423
+Mullinasole_0488_0041_0011_0_00012.pdf,Donegal,Mullinasole,Laghy,Anne,Kelly,Head,Head,F,Married,English Only,Roman Catholic,01,ENGLISH,Donegal,nan,none,65.0,DL05012,nan,nan,491929,2615424
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Bernard,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,16,ENGLISH,Donegal,nan,nan,52.0,DL05012,nan,nan,491930,2615425
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Bridget,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,16,ENGLISH,Donegal,5,nan,50.0,DL05012,nan,nan,491930,2615426
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,William J,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05012,nan,nan,491930,2615427
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Patrick F,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,11.0,DL05012,nan,nan,491930,2615428
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Bridget A,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,491930,2615429
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Josephine,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,8.0,DL05012,nan,nan,491930,2615430
+Mullinasole_0488_0041_0012_0_00013.pdf,Donegal,Mullinasole,Laghy,Mary E,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,5.0,DL05012,nan,nan,491930,2615431
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Hugh,Connolly,Head,Head,M,Married,English Only,Roman Catholic,10,ENGLISH,Donegal,7,nan,34.0,DL05012,nan,nan,491931,2615432
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Alice G,Connolly,nan,nan,F,Married,English and Irish,Roman Catholic,10,ENGLISH,Donegal,7,nan,33.0,DL05012,nan,nan,491931,2615433
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,John,Connolly,nan,nan,M,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,X,74.0,DL05012,nan,nan,491931,2615434
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Mary Elizabeth,Connolly,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05012,nan,nan,491931,2615435
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Nora Catherine,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,491931,2615436
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Margaret,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,491931,2615437
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Alice Isabel,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,491931,2615438
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Helena May,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,491931,2615439
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Monica Patricia,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,491931,2615440
+Mullinasole_0488_0041_0013_0_00014.pdf,Donegal,Mullinasole,Laghy,Mary,Thomas,nan,nan,F,Both Parents Alive,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,23.0,DL05012,nan,nan,491931,2615441
+Oughnadrin_0488_0043_0005_0_00006.pdf,Donegal,Oughnadrin,Laghy,John,Connolly,Head,Head,M,Married,Irish and English,Roman Catholic,26,ENGLISH,Donegal,2,none,66.0,DL05012,nan,nan,513573,2615442
+Oughnadrin_0488_0043_0005_0_00006.pdf,Donegal,Oughnadrin,Laghy,Mary Anne,Connolly,nan,nan,F,Married,English Only,nan,26,ENGLISH,Donegal,2,nan,nan,DL05012,nan,nan,513573,2615443
+Oughnadrin_0488_0043_0005_0_00006.pdf,Donegal,Oughnadrin,Laghy,Bernard,Connolly,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,23.0,DL05012,nan,nan,513573,2615444
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Bernard,Molloy,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,none,49.0,DL05012,nan,nan,513574,2615445
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Patrick,Molloy,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,38.0,DL05012,nan,nan,513574,2615446
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Mary,Molloy,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,0 -,73.0,DL05012,nan,nan,513574,2615447
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Catherine,Molloy,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,42.0,DL05012,nan,nan,513574,2615448
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Ann,Brennan,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,37.0,DL05012,nan,nan,513574,2615449
+Oughnadrin_0488_0043_0006_0_00007.pdf,Donegal,Oughnadrin,Laghy,Patrick,Brennan,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,513574,2615450
+Raneany Bar_0488_0039_0002_0_00003.pdf,Donegal,Raneany Bar,Laghy,Callistus,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,1,ENGLISH,nan,None 0,none,49.0,DL05012,nan,nan,538991,2615451
+Raneany Bar_0488_0039_0002_0_00003.pdf,Donegal,Raneany Bar,Laghy,Mary Bridget,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,/,ENGLISH,Donegal,nan,none,28.0,DL05012,nan,nan,538991,2615452
+Raneany Bar_0488_0039_0003_0_00004.pdf,Donegal,Raneany Bar,Laghy,John,Gallagher,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,nan,nan,5 None,69.0,DL05012,nan,nan,538992,2615453
+Raneany Bar_0488_0039_0003_0_00004.pdf,Donegal,Raneany Bar,Laghy,Mary Bridget,Gallagher,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,33.0,DL05012,nan,nan,538992,2615454
+Raneany Bar_0488_0039_0008_0_00009.pdf,Donegal,Raneany Bar,Laghy,Bernard,McGlinchy,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,47.0,DL05012,nan,nan,538997,2615455
+Raneany East_0488_0044_0006_0_00007.pdf,Donegal,Raneany East,Laghy,James,McHugh,Head,Head,M,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,under one 16,48.0,DL05012,nan,nan,539003,2615456
+Raneany East_0488_0044_0006_0_00007.pdf,Donegal,Raneany East,Laghy,Maud,McHugh,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,21.0,DL05012,nan,nan,539003,2615457
+Raneany East_0488_0044_0006_0_00007.pdf,Donegal,Raneany East,Laghy,Willie,McHugh,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,15.0,DL05012,nan,nan,539003,2615458
+Raneany West_0488_0045_0004_0_00005.pdf,Donegal,Raneany West,Laghy,Kate,Martin,Head,Head,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,84.0,DL05012,nan,nan,539007,2615459
+Raneany West_0488_0045_0005_0_00006.pdf,Donegal,Raneany West,Laghy,Patrick,Monaghan,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,66.0,DL05012,nan,nan,539008,2615460
+Raneany West_0488_0045_0010_0_00011.pdf,Donegal,Raneany West,Laghy,Charles,Martin,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,50.0,DL05012,nan,nan,539013,2615461
+Raneany West_0488_0045_0010_0_00011.pdf,Donegal,Raneany West,Laghy,Susan,Martin,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,55.0,DL05012,nan,nan,539013,2615462
+Raneany West_0488_0045_0010_0_00011.pdf,Donegal,Raneany West,Laghy,Catherine,Martin,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,53.0,DL05012,nan,nan,539013,2615463
+Rossilly_0488_0047_0003_0_00004.pdf,Donegal,Rossilly,Laghy,Francis,Dorrian,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,new,47.0,DL05012,nan,nan,560307,2615464
+Rossilly_0488_0047_0006_0_00007.pdf,Donegal,Rossilly,Laghy,William,Kelly,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,62.0,DL05012,nan,nan,560310,2615465
+Rossilly_0488_0047_0006_0_00007.pdf,Donegal,Rossilly,Laghy,Hannah,Kelly,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,64.0,DL05012,nan,nan,560310,2615466
+Rossilly_0488_0047_0006_0_00007.pdf,Donegal,Rossilly,Laghy,Edward,Kelly,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,560310,2615467
+Rossilly_0488_0047_0006_0_00007.pdf,Donegal,Rossilly,Laghy,Pat,Kelly,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,57.0,DL05012,nan,nan,560310,2615468
+Rossilly_0488_0047_0009_0_00010.pdf,Donegal,Rossilly,Laghy,John,Connolly,Head,Head,M,Married,English Only,Roman Catholic,12,ENGLISH,nan,-3,3,44.0,DL05012,nan,nan,560313,2615469
+Rossilly_0488_0047_0009_0_00010.pdf,Donegal,Rossilly,Laghy,Rose Ellen,Connolly,nan,nan,F,Married,English Only,Roman Catholic,12,ENGLISH,nan,3,nan,45.0,DL05012,nan,nan,560313,2615470
+Rossilly_0488_0047_0009_0_00010.pdf,Donegal,Rossilly,Laghy,Bridget J,Connolly,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,560313,2615471
+Rossilly_0488_0047_0009_0_00010.pdf,Donegal,Rossilly,Laghy,James,Connolly,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,560313,2615472
+Rossilly_0488_0047_0009_0_00010.pdf,Donegal,Rossilly,Laghy,Margret,Connolly,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,560313,2615473
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Patrick,Quinn,Head,Head,M,Married,English Only,Roman Catholic,16  16,ENGLISH,nan,8 8,8,50.0,DL05012,nan,nan,560301,2615474
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Susan,Quinn,nan,nan,F,Married,English Only,Roman Catholic,16,ENGLISH,Donegal,8,nan,38.0,DL05012,nan,nan,560301,2615475
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Edward J,Quinn,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,15.0,DL05012,nan,nan,560301,2615476
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Margaret K,Quinn,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05012,nan,nan,560301,2615477
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Patrick J,Quinn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,560301,2615478
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,William J,Quinn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,560301,2615479
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Danny,Quinn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,7.0,DL05012,nan,nan,560301,2615480
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Mary Alice,Quinn,nan,nan,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,560301,2615481
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Sara Jane,Quinn,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,3.0,DL05012,nan,nan,560301,2615482
+Rossilly Bar_0488_0046_0002_0_00003.pdf,Donegal,Rossilly Bar,Laghy,Anna Josephine,Quinn,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,560301,2615483
+Rossilly Bar_0488_0046_0003_0_00004.pdf,Donegal,Rossilly Bar,Laghy,Bridget,Quinn,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,70.0,DL05012,nan,nan,560302,2615484
+Rossilly Bar_0488_0046_0003_0_00004.pdf,Donegal,Rossilly Bar,Laghy,Edward,Quinn,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,34.0,DL05012,nan,nan,560302,2615485
+Rossilly Bar_0488_0046_0004_0_00005.pdf,Donegal,Rossilly Bar,Laghy,Cassie,Gallagher,Head,Head,nan,Widow,English Only,Roman Catholic,17,ENGLISH,Donegal,4,3 Awnh,39.0,DL05012,nan,nan,560303,2615486
+Rossilly Bar_0488_0046_0004_0_00005.pdf,Donegal,Rossilly Bar,Laghy,John,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,16.0,DL05012,nan,nan,560303,2615487
+Rossilly Bar_0488_0046_0004_0_00005.pdf,Donegal,Rossilly Bar,Laghy,Maggie Jane,Gallagher,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05012,nan,nan,560303,2615488
+Rossilly Bar_0488_0046_0004_0_00005.pdf,Donegal,Rossilly Bar,Laghy,Patrick,Gallagher,nan,nan,M,Father is Dead,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,560303,2615489
+Rossilly Bar_0488_0046_0004_0_00005.pdf,Donegal,Rossilly Bar,Laghy,Mary AJ,Gallagher,nan,nan,F,Father is Dead,English Only,Roman Catholic,nan,ENGLISH,Donegal,- -,nan,8.0,DL05012,nan,nan,560303,2615490
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,James,Timmoney,Head,Head,M,Married,English Only,Roman Catholic,13,ENGLISH,Donegal,6,6,57.0,DL05012,nan,nan,560304,2615491
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,Maggie,Timmoney,nan,nan,F,Married,Irish and English,Roman Catholic,13,ENGLISH,Donegal,6.,nan,41.0,DL05012,nan,nan,560304,2615492
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,Patrick,Timmoney,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,560304,2615493
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,James,Timmoney,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,11.0,DL05012,nan,nan,560304,2615494
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,Michael Joseph,Timmoney,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,9.0,DL05012,nan,nan,560304,2615495
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,John,Timmoney,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,560304,2615496
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,Sarah Ann,Timmoney,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,4.0,DL05012,nan,nan,560304,2615497
+Rossilly Bar_0488_0046_0005_0_00006.pdf,Donegal,Rossilly Bar,Laghy,William,Timmoney,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05012,nan,nan,560304,2615498
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Peter,Ward,Head,Head,M,Married,Irish and English,nan,12,ENGLISH,nan,6,6,40.0,DL05012,nan,nan,560305,2615499
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Many Anne,Ward,nan,nan,F,Married,English Only,Roman Catholic,12,ENGLISH,nan,6,nan,37.0,DL05012,nan,nan,560305,2615500
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Patrick John,Ward,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,560305,2615501
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Gracy,Ward,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,560305,2615502
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,May Bridget,Ward,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,560305,2615503
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Maggie Ann,Ward,nan,nan,F,Married,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,560305,2615504
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,[Catherine],Ward,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,560305,2615505
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Norah,Ward,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,560305,2615506
+Rossilly Bar_0488_0046_0006_0_00007.pdf,Donegal,Rossilly Bar,Laghy,Bridgit,McDaid,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,560305,2615507
+Rossyvollan_0488_0048_0002_0_00003.pdf,Donegal,Rossyvollan,Laghy,John,McIntyre,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,75.0,DL05012,nan,nan,560900,2615508
+Rossyvollan_0488_0048_0002_0_00003.pdf,Donegal,Rossyvollan,Laghy,Margaret,Shannon,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,55.0,DL05012,nan,nan,560900,2615509
+Rossyvollan_0488_0048_0002_0_00003.pdf,Donegal,Rossyvollan,Laghy,Edward,Leslie,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,36.0,DL05012,nan,nan,560900,2615510
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Cormack,Quinn,Head,Head,M,Married,English Only,Roman Catholic,12  12,ENGLISH,Donegal,5 5,2 rons 3,58.0,DL05012,nan,nan,627924,2615511
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Mary,Quinn,nan,nan,F,Married,English Only,Roman Catholic,12,ENGLISH,Donegal,5,nan,42.0,DL05012,nan,nan,627924,2615512
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Bernard,Quinn,nan,nan,M,Both Parents Alive,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,11.0,DL05012,nan,nan,627924,2615513
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Bridget,Quinn,nan,nan,F,Both Parents Alive,Irish and English,Roman Catholic,nan,ENGLISH,Dublin,nan,nan,10.0,DL05012,nan,nan,627924,2615514
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Maggie,Quinn,nan,nan,F,Both Parents Alive,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,7.0,DL05012,nan,nan,627924,2615515
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Joseph,Quinn,nan,nan,M,Both Parents Alive,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,5.0,DL05012,nan,nan,627924,2615516
+Trummon East_0488_0049_0002_0_00003.pdf,Donegal,Trummon East,Laghy,Maryan,Quinn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,56.0,DL05012,nan,nan,627924,2615517
+Trummon East_0488_0049_0003_0_00004.pdf,Donegal,Trummon East,Laghy,James,Graham,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,none,61.0,DL05012,nan,nan,627925,2615518
+Trummon East_0488_0049_0003_0_00004.pdf,Donegal,Trummon East,Laghy,Richard,Graham,nan,nan,M,Married,English Only,Church of Ireland,20 10,ENGLISH,Donegal,0 None,none,47.0,DL05012,nan,nan,627925,2615519
+Trummon East_0488_0049_0003_0_00004.pdf,Donegal,Trummon East,Laghy,Mary J,Graham,nan,nan,F,Married,English Only,Church of Ireland,10,ENGLISH,nan,Anne,none,65.0,DL05012,nan,nan,627925,2615520
+Trummon East_0488_0049_0003_0_00004.pdf,Donegal,Trummon East,Laghy,Catherine,Graham,nan,nan,F,Single,English Only,Church of Ireland,Ø,ENGLISH,nan,nan,nan,49.0,DL05012,nan,nan,627925,2615521
+Trummon East_0488_0049_0004_0_00005.pdf,Donegal,Trummon East,Laghy,Fredrick,McMurray,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,40.0,DL05012,nan,nan,627926,2615522
+Trummon East_0488_0049_0005_0_00006.pdf,Donegal,Trummon East,Laghy,George,Johnston,Head,Head,M,Widower,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,54.0,DL05012,nan,nan,627927,2615523
+Trummon East_0488_0049_0006_0_00007.pdf,Donegal,Trummon East,Laghy,John,Molloy,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,68.0,DL05012,nan,nan,627928,2615524
+Trummon East_0488_0049_0006_0_00007.pdf,Donegal,Trummon East,Laghy,Catherine,Molloy,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,627928,2615525
+Trummon East_0488_0049_0007_0_00008.pdf,Donegal,Trummon East,Laghy,Catherine,Callaghan,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,none,76.0,DL05012,nan,nan,627929,2615526
+Trummon East_0488_0049_0007_0_00008.pdf,Donegal,Trummon East,Laghy,Minnie,Langan,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,29.0,DL05012,nan,nan,627929,2615527
+Trummon East_0488_0049_0007_0_00008.pdf,Donegal,Trummon East,Laghy,Bridget,McCrea,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,76.0,DL05012,nan,nan,627929,2615528
+Trummon East_0488_0049_0008_0_00009.pdf,Donegal,Trummon East,Laghy,Bernard,Timmoney,Head,Head,M,Married,English Only,Roman Catholic,30,ENGLISH,nan,2,none,52.0,DL05012,nan,nan,627930,2615529
+Trummon East_0488_0049_0008_0_00009.pdf,Donegal,Trummon East,Laghy,Mary Anne,Timmoney,nan,nan,F,Married,English Only,Roman Catholic,30,ENGLISH,nan,2,nan,63.0,DL05012,nan,nan,627930,2615530
+Trummon East_0488_0049_0008_0_00009.pdf,Donegal,Trummon East,Laghy,Winafred,Timmoney,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,627930,2615531
+Trummon East_0488_0049_0008_0_00009.pdf,Donegal,Trummon East,Laghy,Bernard,Timmoney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,627930,2615532
+Trummon East_0488_0049_0008_0_00009.pdf,Donegal,Trummon East,Laghy,Charles,Boyle,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,627930,2615533
+Trummon East_0488_0049_0009_0_00010.pdf,Donegal,Trummon East,Laghy,Edward,McHugh,Head,Head,M,Married,English Only,Roman Catholic,20,ENGLISH,Donegal,X,0,39.0,DL05012,nan,nan,627931,2615534
+Trummon East_0488_0049_0009_0_00010.pdf,Donegal,Trummon East,Laghy,Hannah,McHugh,nan,nan,F,Married,English Only,Roman Catholic,20,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,627931,2615535
+Trummon East_0488_0049_0009_0_00010.pdf,Donegal,Trummon East,Laghy,Patrick,McHugh,nan,nan,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,X,81.0,DL05012,nan,nan,627931,2615536
+Trummon East_0488_0049_0009_0_00010.pdf,Donegal,Trummon East,Laghy,John,McHugh,nan,nan,M,Mother is Dead,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,627931,2615537
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,Bridget,Lawn,Head,Head,F,Widow,English Only,nan,nan,ENGLISH,Donegal,nan,none,77.0,DL05012,nan,nan,627932,2615538
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,Bernard,Lawn,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,49.0,DL05012,nan,nan,627932,2615539
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,James,Lawn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,47.0,DL05012,nan,nan,627932,2615540
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,Joseph,Lawn,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,34.0,DL05012,nan,nan,627932,2615541
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,Maggie,Lawn,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,55.0,DL05012,nan,nan,627932,2615542
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,Susan,Lawn,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,627932,2615543
+Trummon East_0488_0049_0010_0_00011.pdf,Donegal,Trummon East,Laghy,James,Devenney,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,20.0,DL05012,nan,nan,627932,2615544
+Trummon East_0488_0049_0011_0_00012.pdf,Donegal,Trummon East,Laghy,Jane,Hammond,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,nan,nan,0 -,76.0,DL05012,nan,nan,627933,2615545
+Trummon East_0488_0049_0011_0_00012.pdf,Donegal,Trummon East,Laghy,Robert,Hammond,nan,nan,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,627933,2615546
+Trummon East_0488_0049_0012_0_00013.pdf,Donegal,Trummon East,Laghy,Patrick,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,30,ENGLISH,nan,8,One 1,64.0,DL05012,nan,nan,627934,2615547
+Trummon East_0488_0049_0012_0_00013.pdf,Donegal,Trummon East,Laghy,Susan,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,30,ENGLISH,Donegal,8,nan,52.0,DL05012,nan,nan,627934,2615548
+Trummon East_0488_0049_0012_0_00013.pdf,Donegal,Trummon East,Laghy,Edward,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,627934,2615549
+Trummon East_0488_0049_0012_0_00013.pdf,Donegal,Trummon East,Laghy,William,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,627934,2615550
+Trummon East_0488_0049_0012_0_00013.pdf,Donegal,Trummon East,Laghy,Susan,Gallagher,nan,nan,F,nan,English and Irish,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05012,nan,nan,627934,2615551
+Trummon East_0488_0049_0013_0_00014.pdf,Donegal,Trummon East,Laghy,Mary,Hilly,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,84.0,DL05012,nan,nan,627935,2615552
+Trummon East_0488_0049_0013_0_00014.pdf,Donegal,Trummon East,Laghy,John,Hilly,nan,nan,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,54.0,DL05012,nan,nan,627935,2615553
+Trummon East_0488_0049_0013_0_00014.pdf,Donegal,Trummon East,Laghy,Ellen,Hilly,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,55.0,DL05012,nan,nan,627935,2615554
+Trummon East_0488_0049_0013_0_00014.pdf,Donegal,Trummon East,Laghy,Thomas,Hilly,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,46.0,DL05012,nan,nan,627935,2615555
+Trummon East_0488_0049_0014_0_00015.pdf,Donegal,Trummon East,Laghy,William,Scott,Head,Head,M,Married,English Only,Church of Ireland,41,ENGLISH,Donegal,Y,none,70.0,DL05012,nan,nan,627936,2615556
+Trummon East_0488_0049_0014_0_00015.pdf,Donegal,Trummon East,Laghy,Fanny,Scott,nan,nan,F,Married,English Only,Church of Ireland,41,ENGLISH,Donegal,7,nan,72.0,DL05012,nan,nan,627936,2615557
+Trummon East_0488_0049_0014_0_00015.pdf,Donegal,Trummon East,Laghy,Robert,Scott,nan,nan,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,40.0,DL05012,nan,nan,627936,2615558
+Trummon East_0488_0049_0014_0_00015.pdf,Donegal,Trummon East,Laghy,Lizzie,Scott,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,46.0,DL05012,nan,nan,627936,2615559
+Trummon East_0488_0049_0015_0_00016.pdf,Donegal,Trummon East,Laghy,Jane,McClay,Head,Head,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,70.0,DL05012,nan,nan,627937,2615560
+Trummon East_0488_0049_0015_0_00016.pdf,Donegal,Trummon East,Laghy,Bella,McClay,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,627937,2615561
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,John,Dorrian,Head,Head,M,Married,English Only,nan,32 -,ENGLISH,nan,6,1,70.0,DL05012,nan,nan,627938,2615562
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,Mary Anne,Dorrian,nan,nan,F,Married,English Only,nan,32,ENGLISH,Donegal,6,nan,59.0,DL05012,nan,nan,627938,2615563
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,Mary,Dorrian,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,29.0,DL05012,nan,nan,627938,2615564
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,Bridget,Dorrian,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,627938,2615565
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,Maggie,Dorrian,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,627938,2615566
+Trummon East_0488_0049_0016_0_00017.pdf,Donegal,Trummon East,Laghy,Joseph,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,627938,2615567
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Cornelius,Curistan,Head,Head,M,Married,English Only,Roman Catholic,23  -,ENGLISH,Donegal,y,6 16*,48.0,DL05012,nan,nan,627939,2615568
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Margaret,Curistan,nan,nan,F,Married,English Only,Roman Catholic,23,ENGLISH,nan,11,nan,42.0,DL05012,nan,nan,627939,2615569
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Cornelius,Curistan,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,627939,2615570
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,James,Curistan,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,627939,2615571
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Margaret,Curistan,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,627939,2615572
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Rose,Curistan,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,627939,2615573
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Veronica,Curistan,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,627939,2615574
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Peter,Curistan,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,3.0,DL05012,nan,nan,627939,2615575
+Trummon East_0488_0049_0017_0_00018.pdf,Donegal,Trummon East,Laghy,Evelyne Magdaline,Curistan,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,627939,2615576
+Trummon East_0488_0049_0018_0_00019.pdf,Donegal,Trummon East,Laghy,Joseph,Gallagher,nan,nan,M,Married,English Only,nan,02,ENGLISH,Donegal,-2,2,40.0,DL05012,nan,nan,627939,2615577
+Trummon East_0488_0049_0018_0_00019.pdf,Donegal,Trummon East,Laghy,Maggie,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,2,ENGLISH,Donegal,2,nan,32.0,DL05012,nan,nan,627939,2615578
+Trummon East_0488_0049_0018_0_00019.pdf,Donegal,Trummon East,Laghy,Joseph,Gallagher,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05012,nan,nan,627939,2615579
+Trummon East_0488_0049_0018_0_00019.pdf,Donegal,Trummon East,Laghy,Patrick James,Gallagher,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,0.0,DL05012,nan,nan,627939,2615580
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,Joseph,Bartley,Head,Head,M,Married,English Only,nan,13,ENGLISH,Donegal,4,4,55.0,DL05012,nan,nan,627941,2615581
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,Sarah,Bartley,nan,nan,F,Married,English Only,Roman Catholic,13,ENGLISH,Donegal,4,nan,38.0,DL05012,nan,nan,627941,2615582
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,May Anne,Bartley,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,627941,2615583
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,Kate,Bartley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,10.0,DL05012,nan,nan,627941,2615584
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,Maggie,Bartley,nan,nan,F,nan,Irish Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05012,nan,nan,627941,2615585
+Trummon East_0488_0049_0019_0_00020.pdf,Donegal,Trummon East,Laghy,Michael,Bartley,nan,nan,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,8.0,DL05012,nan,nan,627941,2615586
+Trummon East_0488_0049_0020_0_00021.pdf,Donegal,Trummon East,Laghy,John,Dorrian,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,27.0,DL05012,nan,nan,627942,2615587
+Trummon East_0488_0049_0020_0_00021.pdf,Donegal,Trummon East,Laghy,Daniel,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,627942,2615588
+Trummon East_0488_0049_0020_0_00021.pdf,Donegal,Trummon East,Laghy,Michael,Dorrian,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,627942,2615589
+Trummon East_0488_0049_0020_0_00021.pdf,Donegal,Trummon East,Laghy,Grace Ann,Dorrian,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,627942,2615590
+Trummon East_0488_0049_0021_0_00022.pdf,Donegal,Trummon East,Laghy,Dennis,Travers,Head,Head,M,Married,English Only,Roman Catholic,29  28,ENGLISH,Donegal,-2- 2,none,62.0,DL05012,nan,nan,627943,2615591
+Trummon East_0488_0049_0021_0_00022.pdf,Donegal,Trummon East,Laghy,Susan,Travers,nan,nan,F,Married,English Only,Roman Catholic,28 -,ENGLISH,Donegal,- 2,nan,60.0,DL05012,nan,nan,627943,2615592
+Trummon East_0488_0049_0021_0_00022.pdf,Donegal,Trummon East,Laghy,Patrick,Travers,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,28.0,DL05012,nan,nan,627943,2615593
+Trummon East_0488_0049_0021_0_00022.pdf,Donegal,Trummon East,Laghy,Suzanna,Travers,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,26.0,DL05012,nan,nan,627943,2615594
+Trummon East_0488_0049_0021_0_00022.pdf,Donegal,Trummon East,Laghy,Nellie,McCafferty,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,627943,2615595
+Trummon East_0488_0049_0022_0_00023.pdf,Donegal,Trummon East,Laghy,James,Boyle,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,627943,2615596
+Trummon East_0488_0049_0023_0_00024.pdf,Donegal,Trummon East,Laghy,James,Johnston,Head,Head,M,Married,English Only,nan,25,ENGLISH,nan,4,none,51.0,DL05012,nan,nan,627945,2615597
+Trummon East_0488_0049_0023_0_00024.pdf,Donegal,Trummon East,Laghy,Anne Jane,Johnston,nan,nan,F,Married,English Only,nan,25,ENGLISH,Donegal,4,nan,50.0,DL05012,nan,nan,627945,2615598
+Trummon East_0488_0049_0023_0_00024.pdf,Donegal,Trummon East,Laghy,Margaret A,Johnston,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,627945,2615599
+Trummon West_0488_0057_0002_0_00003.pdf,Donegal,Trummon West,Laghy,Mary,McGlinchey,Head,Head,F,Widow,English Only,nan,nan,ENGLISH,Donegal,nan,X,nan,DL05012,nan,nan,627948,2615600
+Trummon West_0488_0057_0002_0_00003.pdf,Donegal,Trummon West,Laghy,John,McGlinchey,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,627948,2615601
+Trummon West_0488_0057_0002_0_00003.pdf,Donegal,Trummon West,Laghy,Hugh,McGlinchey,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,627948,2615602
+Trummon West_0488_0057_0003_0_00004.pdf,Donegal,Trummon West,Laghy,William,Elliott,Head,Head,M,Married,English Only,Church of Ireland,19,ENGLISH,Donegal,-3,3,65.0,DL05012,nan,nan,627949,2615603
+Trummon West_0488_0057_0003_0_00004.pdf,Donegal,Trummon West,Laghy,Annie,Elliott,nan,nan,F,Married,English Only,nan,19,ENGLISH,Donegal,3,nan,46.0,DL05012,nan,nan,627949,2615604
+Trummon West_0488_0057_0003_0_00004.pdf,Donegal,Trummon West,Laghy,Willam,Elliott,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05012,nan,nan,627949,2615605
+Trummon West_0488_0057_0003_0_00004.pdf,Donegal,Trummon West,Laghy,Isabella J,Elliott,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,627949,2615606
+Trummon West_0488_0057_0003_0_00004.pdf,Donegal,Trummon West,Laghy,Mary Anne,Elliott,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,Donegal,nan,nan,10.0,DL05012,nan,nan,627949,2615607
+Trummon West_0488_0057_0004_0_00005.pdf,Donegal,Trummon West,Laghy,Robert,Harron,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,39.0,DL05012,nan,nan,627950,2615608
+Trummon West_0488_0057_0004_0_00005.pdf,Donegal,Trummon West,Laghy,Andrew,Harron,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,37.0,DL05012,nan,nan,627950,2615609
+Trummon West_0488_0057_0004_0_00005.pdf,Donegal,Trummon West,Laghy,Eliza,Harron,nan,nan,F,Widow,English Only,nan,nan,ENGLISH,nan,nan,None. 0,72.0,DL05012,nan,nan,627950,2615610
+Trummon West_0488_0057_0005_0_00006.pdf,Donegal,Trummon West,Laghy,James,Dorrian,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,37.0,DL05012,nan,nan,627951,2615611
+Trummon West_0488_0057_0005_0_00006.pdf,Donegal,Trummon West,Laghy,Mary,Dorrian,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,35.0,DL05012,nan,nan,627951,2615612
+Trummon West_0488_0057_0006_0_00007.pdf,Donegal,Trummon West,Laghy,Adam,McClay,Head,Head,M,Widower,English Only,Other,nan,ENGLISH,Donegal,nan,2,41.0,DL05012,nan,nan,627952,2615613
+Trummon West_0488_0057_0006_0_00007.pdf,Donegal,Trummon West,Laghy,Minnie,McClay,nan,nan,F,Single,English Only,Other,nan,ENGLISH,Donegal,nan,nan,43.0,DL05012,nan,nan,627952,2615614
+Trummon West_0488_0057_0006_0_00007.pdf,Donegal,Trummon West,Laghy,Violet,McClay,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,39.0,DL05012,nan,nan,627952,2615615
+Trummon West_0488_0057_0006_0_00007.pdf,Donegal,Trummon West,Laghy,Sarah Jane,McClay,nan,nan,F,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,627952,2615616
+Trummon West_0488_0057_0006_0_00007.pdf,Donegal,Trummon West,Laghy,Ellen Jane,Harron,nan,nan,F,Both Parents Dead,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05012,nan,nan,627952,2615617
+Trummon West_0488_0057_0007_0_00008.pdf,Donegal,Trummon West,Laghy,Robert,Harron,Head,Head,M,Married,English Only,Church of Ireland,17,ENGLISH,nan,X,none,64.0,DL05012,nan,nan,627953,2615618
+Trummon West_0488_0057_0007_0_00008.pdf,Donegal,Trummon West,Laghy,Mary Jane,Harron,nan,nan,F,Married,English Only,Church of Ireland,17,ENGLISH,Donegal,nan,nan,48.0,DL05012,nan,nan,627953,2615619
+Trummon West_0488_0057_0007_0_00008.pdf,Donegal,Trummon West,Laghy,James,Millar,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,627953,2615620
+Trummon West_0488_0057_0008_0_00009.pdf,Donegal,Trummon West,Laghy,Thomas,Kirkpatrick,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,49.0,DL05012,nan,nan,627954,2615621
+Trummon West_0488_0057_0008_0_00009.pdf,Donegal,Trummon West,Laghy,Maggie,Kirkpatrick,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,51.0,DL05012,nan,nan,627954,2615622
+Trummon West_0488_0057_0008_0_00009.pdf,Donegal,Trummon West,Laghy,Lizzie,Murray,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,21.0,DL05012,nan,nan,627954,2615623
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,William P,Griffith,Head,Head,M,nan,English Only,Roman Catholic,05,ENGLISH,Donegal,3,3,nan,DL05012,nan,nan,627955,2615624
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Bridget,Griffith,nan,nan,F,Married,English Only,Roman Catholic,5,ENGLISH,nan,3,nan,39.0,DL05012,nan,nan,627955,2615625
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Mary Isobel Aga,Griffith,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,627955,2615626
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,James Anthony Philip,Griffith,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05012,nan,nan,627955,2615627
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Sarah Bernadette,Griffith,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,1.0,DL05012,nan,nan,627955,2615628
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Sarah Ellen,Griffith,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,33.0,DL05012,nan,nan,627955,2615629
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Philip,Meehan,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,65.0,DL05012,nan,nan,627955,2615630
+Trummon West_0488_0057_0009_0_00010.pdf,Donegal,Trummon West,Laghy,Annie,McGoldrick,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,627955,2615631
+Trummon West_0488_0057_0010_0_00011.pdf,Donegal,Trummon West,Laghy,Patrick,McGroary,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,none,43.0,DL05012,nan,nan,627956,2615632
+Trummon West_0488_0057_0010_0_00011.pdf,Donegal,Trummon West,Laghy,Mary Ann,McGroary,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,0 -,73.0,DL05012,nan,nan,627956,2615633
+Trummon West_0488_0057_0010_0_00011.pdf,Donegal,Trummon West,Laghy,Lizzie,McGroary,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,42.0,DL05012,nan,nan,627956,2615634
+Trummon West_0488_0057_0010_0_00011.pdf,Donegal,Trummon West,Laghy,James,McGroary,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,28.0,DL05012,nan,nan,627956,2615635
+Trummon West_0488_0057_0010_0_00011.pdf,Donegal,Trummon West,Laghy,Thomas,McGroary,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,33.0,DL05012,nan,nan,627956,2615636
+Trummon West_0488_0057_0011_0_00012.pdf,Donegal,Trummon West,Laghy,Robert,Colvin,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,73.0,DL05012,nan,nan,627957,2615637
+Trummon West_0488_0057_0011_0_00012.pdf,Donegal,Trummon West,Laghy,William,Colvin,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,71.0,DL05012,nan,nan,627957,2615638
+Trummon West_0488_0057_0011_0_00012.pdf,Donegal,Trummon West,Laghy,Mary,Colvin,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,67.0,DL05012,nan,nan,627957,2615639
+Trummon West_0488_0057_0012_0_00013.pdf,Donegal,Trummon West,Laghy,James,Johnston,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,5.0,DL05012,nan,nan,627958,2615640
+Trummon West_0488_0057_0013_0_00014.pdf,Donegal,Trummon West,Laghy,Elizabeth,Johnston,Head,Head,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,69.0,DL05012,nan,nan,627959,2615641
+Trummon West_0488_0057_0013_0_00014.pdf,Donegal,Trummon West,Laghy,Jane,Johnston,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,627959,2615642
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Joseph,O'Gorman,Head,Head,M,nan,English Only,Roman Catholic,14  19,ENGLISH,Donegal,41 4,3 three,64.0,DL05012,nan,nan,627960,2615643
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Maggie Jane,O'Gorman,nan,nan,nan,Married,English Only,Roman Catholic,19,ENGLISH,nan,4,nan,42.0,DL05012,nan,nan,627960,2615644
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Rose Ena,O'Gorman,nan,nan,F,nan,English and Irish,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,627960,2615645
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Eileen,O'Gorman,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,627960,2615646
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Thomas John,O'Gorman,nan,nan,M,nan,English and Irish,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05012,nan,nan,627960,2615647
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Patrick,O'Gorman,nan,nan,M,nan,English and Irish,nan,nan,ENGLISH,Donegal,nan,nan,12.0,DL05012,nan,nan,627960,2615648
+Trummon West_0488_0057_0014_0_00015.pdf,Donegal,Trummon West,Laghy,Bridget,McMenamin,nan,nan,F,nan,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,627960,2615649
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,William,Harron,Head,Head,M,nan,English Only,Church of Ireland,E 8,ENGLISH,Donegal,2,A3,42.0,DL05012,nan,nan,627961,2615650
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,Margaret Jane,Harron,nan,nan,F,Married,English Only,Church of Ireland,8,ENGLISH,nan,2,nan,44.0,DL05012,nan,nan,627961,2615651
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,Elizabeth Margaret,Harron,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,627961,2615652
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,Kathleen,Harron,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,627961,2615653
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,Mary,Harron,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,51.0,DL05012,nan,nan,627961,2615654
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,Margaret,Harron,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,39.0,DL05012,nan,nan,627961,2615655
+Trummon West_0488_0057_0015_0_00016.pdf,Donegal,Trummon West,Laghy,William John,Harron,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,Cavan,nan,nan,11.0,DL05012,nan,nan,627961,2615656
+Trummon West_0488_0057_0016_0_00017.pdf,Donegal,Trummon West,Laghy,Jacob,Gorman,Head,Head,M,Single,Irish and English,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,59.0,DL05012,nan,nan,627962,2615657
+Trummon West_0488_0057_0016_0_00017.pdf,Donegal,Trummon West,Laghy,Margret,Gorman,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,50.0,DL05012,nan,nan,627962,2615658
+Trummon West_0488_0057_0016_0_00017.pdf,Donegal,Trummon West,Laghy,John,Burns,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,627962,2615659
+Trummon West_0488_0057_0016_0_00017.pdf,Donegal,Trummon West,Laghy,Sarah,Doherty,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,16.0,DL05012,nan,nan,627962,2615660
+Trummon West_0488_0057_0017_0_00018.pdf,Donegal,Trummon West,Laghy,Bridget,McGinley,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,77.0,DL05012,nan,nan,627963,2615661
+Trummon West_0488_0057_0017_0_00018.pdf,Donegal,Trummon West,Laghy,Hugh,McGinley,nan,nan,nan,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,627963,2615662
+Trummon West_0488_0057_0017_0_00018.pdf,Donegal,Trummon West,Laghy,Joseph,McGinley,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,30.0,DL05012,nan,nan,627963,2615663
+Trummon West_0488_0057_0017_0_00018.pdf,Donegal,Trummon West,Laghy,Lizzie Josephine,[Donagher],nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,627963,2615664
+Trummon West_0488_0057_0018_0_00019.pdf,Donegal,Trummon West,Laghy,Thomas,Kirkpatrick,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,51.0,DL05012,nan,nan,627964,2615665
+Trummon West_0488_0057_0019_0_00020.pdf,Donegal,Trummon West,Laghy,Robert,Lee,Head,Head,M,Married,English Only,Church of Ireland,17,ENGLISH,Donegal,1,1,46.0,DL05012,nan,nan,627965,2615666
+Trummon West_0488_0057_0019_0_00020.pdf,Donegal,Trummon West,Laghy,Sarah,Lee,nan,nan,F,nan,English Only,Church of Ireland,14,ENGLISH,nan,1,nan,45.0,DL05012,nan,nan,627965,2615667
+Trummon West_0488_0057_0019_0_00020.pdf,Donegal,Trummon West,Laghy,Robert Joseph,Lee,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,627965,2615668
+Trummon West_0488_0057_0019_0_00020.pdf,Donegal,Trummon West,Laghy,William,Gardiner,nan,nan,M,Married,English Only,nan,nan,ENGLISH,nan,nan,3,33.0,DL05012,nan,nan,627965,2615669
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,William James,Strong,Head,Head,M,Married,English Only,Methodist,10,ENGLISH,nan,5 5,5,37.0,DL05012,nan,nan,627966,2615670
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,Mary,Strong,nan,nan,F,Married,English Only,Methodist,10,ENGLISH,Donegal,5,nan,36.0,DL05012,nan,nan,627966,2615671
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,Adam George,Strong,nan,nan,M,nan,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,9.0,DL05012,nan,nan,627966,2615672
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,Hester Isobel,Strong,nan,nan,F,Both Parents Alive,English Only,Methodist,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,627966,2615673
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,William James,Strong,nan,nan,M,Both Parents Alive,English Only,Methodist,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,627966,2615674
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,Benjamin Crawford,Strong,nan,nan,M,Both Parents Alive,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,2.0,DL05012,nan,nan,627966,2615675
+Trummon West_0488_0057_0020_0_00021.pdf,Donegal,Trummon West,Laghy,Vera Mary,Strong,nan,nan,F,Both Parents Alive,English Only,Methodist,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,627966,2615676
+Trummon West_0488_0057_0021_0_00022.pdf,Donegal,Trummon West,Laghy,John,Hannah,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,60.0,DL05012,nan,nan,627967,2615677
+Trummon West_0488_0057_0021_0_00022.pdf,Donegal,Trummon West,Laghy,Mary,Hannah,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,627967,2615678
+Trummon West_0488_0057_0021_0_00022.pdf,Donegal,Trummon West,Laghy,Hugh,McCormack,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,50.0,DL05012,nan,nan,627967,2615679
+Trummon West_0488_0057_0021_0_00022.pdf,Donegal,Trummon West,Laghy,David,Hannah,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,627967,2615680
+Trummon West Bar_0488_0050_0002_0_00003.pdf,Donegal,Trummon West Bar,Laghy,Dennis,McDaid,Head,Head,M,Single,English Only,Roman Catholic,1,ENGLISH,Donegal,X,=,35.0,DL05012,nan,nan,627946,2615681
+Trummon West Bar_0488_0050_0002_0_00003.pdf,Donegal,Trummon West Bar,Laghy,Cassie,McDaid,nan,nan,M,nan,English Only,Roman Catholic,=,ENGLISH,nan,is,nan,40.0,DL05012,nan,nan,627946,2615682
+Trummon West Bar_0488_0050_0002_0_00003.pdf,Donegal,Trummon West Bar,Laghy,Mary,McDaid,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,X,nan,11.0,DL05012,nan,nan,627946,2615683
+Trummon West Bar_0488_0050_0003_0_00004.pdf,Donegal,Trummon West Bar,Laghy,Danial,Gallagher,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,43.0,DL05012,nan,nan,627947,2615684
+Tullywee_0488_0053_0002_0_00003.pdf,Donegal,Tullywee,Laghy,Polly,Graham,Head,Head,F,Married,English Only,nan,09,ENGLISH,Donegal,1,2,40.0,DL05012,nan,nan,633405,2615685
+Tullywee_0488_0053_0002_0_00003.pdf,Donegal,Tullywee,Laghy,Patricia,Graham,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,633405,2615686
+Tullywee_0488_0053_0002_0_00003.pdf,Donegal,Tullywee,Laghy,Lisa,Graham,nan,nan,F,Single,English and Irish,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,633405,2615687
+Tullywee_0488_0053_0003_0_00004.pdf,Donegal,Tullywee,Laghy,William,Kirkpatrick,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,81.0,DL05012,nan,nan,633406,2615688
+Tullywee_0488_0053_0003_0_00004.pdf,Donegal,Tullywee,Laghy,John,Kirkpatrick,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,80.0,DL05012,nan,nan,633406,2615689
+Tullywee_0488_0053_0003_0_00004.pdf,Donegal,Tullywee,Laghy,Maggie,Kirkpatrick,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,70.0,DL05012,nan,nan,633406,2615690
+Tullywee_0488_0053_0003_0_00004.pdf,Donegal,Tullywee,Laghy,Maggie,Kirkpatrick,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05012,nan,nan,633406,2615691
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0002_0_00003.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,John,McGrath,Head,Head,M,Married,English Only,Roman Catholic,34,ENGLISH,Donegal,y,1,66.0,DL05012,nan,nan,633400,2615692
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0002_0_00003.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Sarah,McGrath,nan,nan,F,Married,English Only,nan,34,ENGLISH,Donegal,15,nan,6.0,DL05012,nan,nan,633400,2615693
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0002_0_00003.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Bridget,McGrath,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,19.0,DL05012,nan,nan,633400,2615694
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0002_0_00003.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Sarah Teresa,McGrath,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05012,nan,nan,633400,2615695
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0002_0_00003.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Patrick,McGrath,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,14.0,DL05012,nan,nan,633400,2615696
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0003_0_00004.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Denis,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,5,ENGLISH,nan,nan,none,45.0,DL05012,nan,nan,633401,2615697
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0003_0_00004.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Margaret,Gallagher,nan,nan,F,Married,English Only,nan,5,ENGLISH,nan,nan,nan,57.0,DL05012,nan,nan,633401,2615698
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0003_0_00004.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,John,Gallagher,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,633401,2615699
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Denis,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,X,ENGLISH,Donegal,nan,X,44.0,DL05012,nan,nan,633402,2615700
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Margaret J,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,29.0,DL05012,nan,nan,633402,2615701
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Margaret M,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,8.0,DL05012,nan,nan,633402,2615702
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Antony,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,7.0,DL05012,nan,nan,633402,2615703
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Danial Hugh,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,6.0,DL05012,nan,nan,633402,2615704
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,John Joseph,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05012,nan,nan,633402,2615705
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Mary,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05012,nan,nan,633402,2615706
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0004_0_00005.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Patrick Gerard,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,1.0,DL05012,nan,nan,633402,2615707
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0005_0_00006.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,James,McGoldrick,Head,Head,M,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,0,79.0,DL05012,nan,nan,633403,2615708
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0005_0_00006.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Michael,McGoldrick,nan,nan,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,633403,2615709
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0005_0_00006.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,James Joseph,McGoldrick,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,633403,2615710
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Henry,McGroary,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,80.0,DL05012,nan,nan,633404,2615711
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Patrick,McGroary,nan,nan,M,Married,English Only,nan,12,ENGLISH,Donegal,5,5,41.0,DL05012,nan,nan,633404,2615712
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Ellen,McGroary,nan,nan,F,Married,English Only,nan,nan,ENGLISH,Donegal,nan,nan,32.0,DL05012,nan,nan,633404,2615713
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Kathleen,McGroary,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,10.0,DL05012,nan,nan,633404,2615714
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Henry,McGroary,nan,nan,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,8.0,DL05012,nan,nan,633404,2615715
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Patrick,McGroary,nan,nan,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,7.0,DL05012,nan,nan,633404,2615716
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Denis,McGroary,nan,nan,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,3.0,DL05012,nan,nan,633404,2615717
+Tullywee Tullygallen and Aughnadreen Bar_0488_0052_0006_0_00007.pdf,Donegal,Tullywee Tullygallen and Aughnadreen Bar,Laghy,Francis,McGroary,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,633404,2615718
+Ardbane or Laghy Bar_0488_0029_0002_0_00003.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Bernard,McCafferty,Head,Head,M,Married,English Only,Roman Catholic,Farming 68 St. Asses,ENGLISH,nan,8,nan,33.0,DL05012,nan,nan,13634,2615719
+Ardbane or Laghy Bar_0488_0029_0002_0_00003.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Maggie,McCafferty,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,8,3,30.0,DL05012,nan,nan,13634,2615720
+Ardbane or Laghy Bar_0488_0029_0002_0_00003.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Bernard F,McCafferty,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,13634,2615721
+Ardbane or Laghy Bar_0488_0029_0002_0_00003.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Maria,McCafferty,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,13634,2615722
+Ardbane or Laghy Bar_0488_0029_0002_0_00003.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Leonard,McVeigh,nan,nan,M,Single,English Only,Roman Catholic,Bernard & Gallery Farmer0/00 St acres,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,13634,2615723
+Ardbane or Laghy Bar_0488_0029_0003_0_00004.pdf,Donegal,Ardbane or Laghy Bar,Laghy,James,McGrory,Head,Head,M,Single,English Only,Roman Catholic,own account 907.,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,13635,2615724
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,John,Travers,Head,Head,M,Married,English Only,Roman Catholic,Employer. 908,ENGLISH,nan,nan,9,62.0,DL05012,nan,nan,13636,2615725
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Mary,Travers,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,1,9,62.0,DL05012,nan,nan,13636,2615726
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Edward,Travers,nan,nan,M,Single,English Only,Roman Catholic,John-Fravers. Farmer acres,ENGLISH,nan,nan,nan,30.0,DL05012,nan,nan,13636,2615727
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Ellen,Travers,nan,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,13636,2615728
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Josephine,Travers,nan,nan,F,Single,English Only,Roman Catholic,908,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,13636,2615729
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Josephine,Moss,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,13636,2615730
+Ardbane or Laghy Bar_0488_0029_0004_0_00005.pdf,Donegal,Ardbane or Laghy Bar,Laghy,James,Travers,nan,nan,M,Single,English Only,Roman Catholic,John. 908 Travis. 120 St acres Farmer,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,13636,2615731
+Ardbane or Laghy Bar_0488_0029_0005_0_00006.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Hugh,McCormack,Head,Head,M,nan,English Only,Roman Catholic,James Francis 5.0th place,ENGLISH,nan,5,+,41.0,DL05012,nan,nan,13637,2615732
+Ardbane or Laghy Bar_0488_0029_0005_0_00006.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Cassie,McCormack,nan,nan,F,Married,English Only,nan,nan,ENGLISH,nan,5,1,48.0,DL05012,nan,nan,13637,2615733
+Ardbane or Laghy Bar_0488_0029_0005_0_00006.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Maggie Mary,McCormack,nan,nan,F,Both Parents Alive,English Only,nan,),ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,13637,2615734
+Ardbane or Laghy Bar_0488_0029_0005_0_00006.pdf,Donegal,Ardbane or Laghy Bar,Laghy,James,Travers,nan,nan,M,Single,English Only,nan,John Traphers 106 st acres,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,13637,2615735
+Ardbane or Laghy Bar_0488_0029_0006_0_00007.pdf,Donegal,Ardbane or Laghy Bar,Laghy,John,Travers,Head,Head,M,Married,English Only,Roman Catholic,Own Account Employer. 907,ENGLISH,nan,nan,3,46.0,DL05012,nan,nan,13638,2615736
+Ardbane or Laghy Bar_0488_0029_0006_0_00007.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Agnes,Travers,nan,nan,F,Married,English Only,Roman Catholic,y.,ENGLISH,nan,nan,3,50.0,DL05012,nan,nan,13638,2615737
+Ardbane or Laghy Bar_0488_0029_0006_0_00007.pdf,Donegal,Ardbane or Laghy Bar,Laghy,John Patrick,Travers,nan,nan,M,nan,English Only,Roman Catholic,Fraser Fammel 50 st acres,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,13638,2615738
+Ardbane or Laghy Bar_0488_0029_0006_0_00007.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Henry Joseph,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,13638,2615739
+Ardbane or Laghy Bar_0488_0029_0006_0_00007.pdf,Donegal,Ardbane or Laghy Bar,Laghy,Mary Ann,Travers,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,13638,2615740
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,Charles,Quinn,Head,Head,M,nan,English Only,nan,Employed 907,ENGLISH,nan,nan,nan,63.0,DL05012,nan,nan,56188,2615741
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,Connell,Quinn,nan,nan,M,nan,English Only,nan,Charles Duine Farmer 321 acres.,ENGLISH,nan,nan,nan,40.0,DL05012,nan,nan,56188,2615742
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,Andrew,Quinn,nan,nan,M,Single,English Only,Roman Catholic,Charles Duine Farmer 321 acres.,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,56188,2615743
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,Thomas,Quinn,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,56188,2615744
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,Mary Ann,Quinn,nan,nan,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,56188,2615745
+Ballykillowen_0488_0031_0002_0_00003.pdf,Donegal,Ballykillowen,Laghy,William,Quinn,nan,nan,M,Single,English Only,Roman Catholic,PV. 907.,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,56188,2615746
+Ballykillowen_0488_0031_0007_0_00008.pdf,Donegal,Ballykillowen,Laghy,James,McGlinchey,Head,Head,M,Single,English Only,Roman Catholic,own accruy. 907,ENGLISH,nan,nan,nan,50.0,DL05012,nan,nan,56193,2615747
+Ballykillowen_0488_0031_0007_0_00008.pdf,Donegal,Ballykillowen,Laghy,Lizzie,McGlinchey,nan,nan,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,52.0,DL05012,nan,nan,56193,2615748
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,William,McGirr,Head,Head,M,nan,English Only,nan,Own Account Employer,ENGLISH,nan,nan,nan,81.0,DL05012,nan,nan,56196,2615749
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,Hugh,McGirr,nan,nan,M,Single,English Only,Roman Catholic,William McGire Farmer 12th acres 904,ENGLISH,nan,nan,nan,48.0,DL05012,nan,nan,56196,2615750
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,William J,McGirr,nan,nan,M,Married,English Only,Roman Catholic,William Mc. Liver Farmer 12St. accre,ENGLISH,nan,7,11,38.0,DL05012,nan,nan,56196,2615751
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,Ellie J,McGirr,nan,nan,F,Married,English and Irish,nan,National Board 701,ENGLISH,nan,7,nan,37.0,DL05012,nan,nan,56196,2615752
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,Kathleen B,McGirr,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,56196,2615753
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,Francis,Gillespie,nan,nan,M,Single,English Only,Roman Catholic,William Mclivr Farmer 12.4. area 904,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,56196,2615754
+Ballykillowen_0488_0031_0010_0_00011.pdf,Donegal,Ballykillowen,Laghy,Katie,Gillespie,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,56196,2615755
+Ballykillowen_0488_0031_0011_0_00012.pdf,Donegal,Ballykillowen,Laghy,James,Abraham,Head,Head,M,Married,English Only,Church of Ireland,Own Account 925,ENGLISH,nan,3,2 2,48.0,DL05012,nan,nan,56197,2615756
+Ballykillowen_0488_0031_0011_0_00012.pdf,Donegal,Ballykillowen,Laghy,Isabella,Abraham,nan,nan,F,Married,English Only,Church of Ireland,Yu,ENGLISH,nan,3,2,46.0,DL05012,nan,nan,56197,2615757
+Ballykillowen_0488_0031_0011_0_00012.pdf,Donegal,Ballykillowen,Laghy,William J,Abraham,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,56197,2615758
+Ballykillowen_0488_0031_0011_0_00012.pdf,Donegal,Ballykillowen,Laghy,Maggie E,Abraham,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,56197,2615759
+Ballykillowen_0488_0031_0012_0_00013.pdf,Donegal,Ballykillowen,Laghy,Bridget,McGirr,Head,Head,F,nan,English Only,Roman Catholic,Employer 905,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,56198,2615760
+Ballykillowen_0488_0031_0012_0_00013.pdf,Donegal,Ballykillowen,Laghy,Mary A,McGirr,nan,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,30.0,DL05012,nan,nan,56198,2615761
+Ballykillowen_0488_0031_0012_0_00013.pdf,Donegal,Ballykillowen,Laghy,Rose E,McGirr,nan,nan,F,Single,English Only,nan,Bridget McGuir Farmer 24 st acres,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,56198,2615762
+Ballykillowen_0488_0031_0012_0_00013.pdf,Donegal,Ballykillowen,Laghy,Bridget,McGirr,nan,nan,F,Single,English Only,nan,905 kg,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,56198,2615763
+Ballykillowen_0488_0031_0012_0_00013.pdf,Donegal,Ballykillowen,Laghy,Susan,McGirr,nan,nan,F,nan,English Only,nan,905 kg,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,56198,2615764
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,James,Travers,Head,Head,M,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,2,31.0,DL05012,nan,nan,56200,2615765
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,Elizabeth J,Travers,nan,nan,F,nan,English Only,Roman Catholic,y -,ENGLISH,nan,nan,2,30.0,DL05012,nan,nan,56200,2615766
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,Mary B,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,56200,2615767
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,Bernard,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,56200,2615768
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,Mary,Fraven,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,56200,2615769
+Ballykillowen_0488_0031_0014_0_00015.pdf,Donegal,Ballykillowen,Laghy,Brigid,Travers,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,72.0,DL05012,nan,nan,56200,2615770
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,John,Curristin,Head,Head,M,Married,English Only,Roman Catholic,Employer 909,ENGLISH,nan,nan,21,33.0,DL05012,nan,nan,56201,2615771
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,Mary Bella,Curristin,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,5,2,34.0,DL05012,nan,nan,56201,2615772
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,Thomas Anthony,Curristin,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,56201,2615773
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,Hugh Mathew,Curristin,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,56201,2615774
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,Catherine,Curristin,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,70.0,DL05012,nan,nan,56201,2615775
+Ballykillowen_0488_0031_0015_0_00016.pdf,Donegal,Ballykillowen,Laghy,John,Gallagher,nan,nan,M,Single,English Only,nan,1959.256 John Carneston St acres,ENGLISH,nan,nan,nan,54.0,DL05012,nan,nan,56201,2615776
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,Charles,Scott,Head,Head,M,Married,English Only,Church of Ireland,Own a@comp 905,ENGLISH,nan,nan,4,47.0,DL05012,nan,nan,56205,2615777
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,Mary A,Scott,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,nan,4,43.0,DL05012,nan,nan,56205,2615778
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,John,Scott,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,56205,2615779
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,Rebecca J,Scott,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,56205,2615780
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,Mary,Scott,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,56205,2615781
+Ballykillowen_0488_0031_0019_0_00020.pdf,Donegal,Ballykillowen,Laghy,Maggie Ellen,Scott,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,56205,2615782
+Ballykillowen_0488_0031_0020_0_00021.pdf,Donegal,Ballykillowen,Laghy,John,White,nan,nan,M,nan,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,56205,2615783
+Ballykillowen_0488_0031_0020_0_00021.pdf,Donegal,Ballykillowen,Laghy,Margaret,White,nan,nan,F,nan,English Only,nan,y -,ENGLISH,nan,nan,nan,62.0,DL05012,nan,nan,56205,2615784
+Ballykillowen_0488_0031_0020_0_00021.pdf,Donegal,Ballykillowen,Laghy,[Ruth],White,nan,nan,F,Single,English Only,nan,906,ENGLISH,nan,nan,nan,46.0,DL05012,nan,nan,56205,2615785
+Carrick East_0488_0032_0003_0_00004.pdf,Donegal,Carrick East,Laghy,Andrew,McClay,Head,Head,M,Married,English Only,nan,Own Account,ENGLISH,nan,nan,x,74.0,DL05012,nan,nan,125997,2615786
+Carrick East_0488_0032_0003_0_00004.pdf,Donegal,Carrick East,Laghy,Maggie,McClay,nan,nan,F,Married,English Only,nan,Y. Home Duties,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,125997,2615787
+Carrick East_0488_0032_0004_0_00005.pdf,Donegal,Carrick East,Laghy,Andrew,McHugh,Head,Head,M,Married,English Only,nan,James. Timmy Farmer 908 20St acres,ENGLISH,nan,nan,nan,48.0,DL05012,nan,nan,125998,2615788
+Carrick East_0488_0032_0004_0_00005.pdf,Donegal,Carrick East,Laghy,Ellen,McHugh,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,125998,2615789
+Carrick East_0488_0032_0004_0_00005.pdf,Donegal,Carrick East,Laghy,Bridget,Campbell,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,125998,2615790
+Carrick East_0488_0032_0005_0_00006.pdf,Donegal,Carrick East,Laghy,James,Gorman,Head,Head,M,nan,English Only,nan,Employer,ENGLISH,nan,nan,nan,54.0,DL05012,nan,nan,125999,2615791
+Carrick East_0488_0032_0005_0_00006.pdf,Donegal,Carrick East,Laghy,John,Gorman,nan,nan,M,Single,English Only,nan,James Gorman Farmer,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,125999,2615792
+Carrick East_0488_0032_0005_0_00006.pdf,Donegal,Carrick East,Laghy,Michael,Gorman,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,125999,2615793
+Carrick East_0488_0032_0005_0_00006.pdf,Donegal,Carrick East,Laghy,Joseph,Gorman,nan,nan,M,Single,English Only,Roman Catholic,Jacob. Gorman. Prit Gwerl. 775,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,125999,2615794
+Carrick East_0488_0032_0005_0_00006.pdf,Donegal,Carrick East,Laghy,James,Gorman,nan,nan,M,Single,English Only,nan,Drumholm Coperalive & Sairy Dacily (Ltd),ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,125999,2615795
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,James,McClay,Head,Head,M,Married,English Only,Church of Ireland,Own Account 905 20 St acres,ENGLISH,nan,nan,4,49.0,DL05012,nan,nan,126000,2615796
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,Annie,McClay,nan,nan,F,Married,English Only,Church of Ireland,y -,ENGLISH,nan,nan,4,46.0,DL05012,nan,nan,126000,2615797
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,Margaret J,McClay,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,126000,2615798
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,Etta HE,McClay,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,126000,2615799
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,Mary R,McClay,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,126000,2615800
+Carrick East_0488_0032_0006_0_00007.pdf,Donegal,Carrick East,Laghy,William J,McClay,nan,nan,M,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,126000,2615801
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,James,Cunningham,Head,Head,M,Married,English Only,Roman Catholic,Midland Railway Co Bodonegal. Co. 1st,ENGLISH,nan,nan,nan,45.0,DL05012,nan,nan,126148,2615802
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Bridget,Cunningham,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,48.0,DL05012,nan,nan,126148,2615803
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Margaret Jane,Cunningham,nan,nan,F,nan,English Only,Roman Catholic,Jacob German's League Spinfjsk Grocery,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,126148,2615804
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,John Patrick,Cunningham,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,126148,2615805
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Bridget Agnes,Cunningham,nan,nan,M,nan,English Only,Roman Catholic,Monaghan Embroider BO.,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,126148,2615806
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Mary Josephine,Cunningham,nan,nan,F,nan,English Only,Roman Catholic,Monaghan Embroider BO.,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,126148,2615807
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Michael Christopher,Cunningham,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,126148,2615808
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Dennis Ambrose,Cunningham,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,126148,2615809
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Kathleen,Cunningham,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,126148,2615810
+Carrick West_0488_0034_0002_0_00003.pdf,Donegal,Carrick West,Laghy,Veronica Elizabeth,Cunningham,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,126148,2615811
+Carrick West_0488_0034_0004_0_00005.pdf,Donegal,Carrick West,Laghy,Ellen,Harron,Head,Head,F,nan,English Only,Church of Ireland,Employer 904,ENGLISH,nan,nan,nan,71.0,DL05012,nan,nan,126150,2615812
+Carrick West_0488_0034_0004_0_00005.pdf,Donegal,Carrick West,Laghy,Robert,Harron,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,32.0,DL05012,nan,nan,126150,2615813
+Carrick West_0488_0034_0004_0_00005.pdf,Donegal,Carrick West,Laghy,Annabella,Harron,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,126150,2615814
+Carrick West_0488_0034_0004_0_00005.pdf,Donegal,Carrick West,Laghy,Ellen,Harron,nan,nan,F,nan,English Only,Church of Ireland,Own Account 9.342.,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,126150,2615815
+Carrick West_0488_0034_0005_0_00006.pdf,Donegal,Carrick West,Laghy,Henry,Harron,Head,Head,M,nan,English Only,Church of Ireland,own account Employer,ENGLISH,nan,nan,nan,87.0,DL05012,nan,nan,126151,2615816
+Carrick West_0488_0034_0005_0_00006.pdf,Donegal,Carrick West,Laghy,Alexander,Harron,nan,nan,M,Married,English Only,nan,Aeneof Harrow Farmer,ENGLISH,nan,nan,2,38.0,DL05012,nan,nan,126151,2615817
+Carrick West_0488_0034_0005_0_00006.pdf,Donegal,Carrick West,Laghy,May Ellen,Harron,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,2,38.0,DL05012,nan,nan,126151,2615818
+Carrick West_0488_0034_0005_0_00006.pdf,Donegal,Carrick West,Laghy,James Henry,Harron,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,126151,2615819
+Carrick West_0488_0034_0005_0_00006.pdf,Donegal,Carrick West,Laghy,William John,Harron,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,126151,2615820
+Carrick West_0488_0034_0010_0_00011.pdf,Donegal,Carrick West,Laghy,James,Harron,Head,Head,M,Single,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,55.0,DL05012,nan,nan,126156,2615821
+Carrick West_0488_0034_0010_0_00011.pdf,Donegal,Carrick West,Laghy,Jane,Harron,nan,nan,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,126156,2615822
+Carrick West_0488_0034_0010_0_00011.pdf,Donegal,Carrick West,Laghy,Maggie J,Graham,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,126156,2615823
+Carrickbar Upper_0488_0033_0004_0_00005.pdf,Donegal,Carrickbar Upper,Laghy,Patrick,McGroary,Head,Head,M,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,TTS -,nan,61.0,DL05012,nan,nan,127335,2615824
+Carrickbar Upper_0488_0033_0005_0_00006.pdf,Donegal,Carrickbar Upper,Laghy,Edward,Gettings,Head,Head,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,0,61.0,DL05012,nan,nan,127336,2615825
+Carrickbar Upper_0488_0033_0005_0_00006.pdf,Donegal,Carrickbar Upper,Laghy,Rose,Gettings,nan,nan,F,nan,English Only,Roman Catholic,y -,ENGLISH,nan,nan,nan,56.0,DL05012,nan,nan,127336,2615826
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Bernard,McGrory,Head,Head,M,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,-9,54.0,DL05012,nan,nan,127337,2615827
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Cassie,McGrory,nan,nan,F,Married,English Only,Roman Catholic,y.,ENGLISH,nan,2,9,35.0,DL05012,nan,nan,127337,2615828
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Maggie,McGrory,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,127337,2615829
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Winifred,McGrory,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,127337,2615830
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Patrick,McGrory,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,127337,2615831
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Sarah,McGrory,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,127337,2615832
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Daniel,McGrory,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,127337,2615833
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Edward,McGrory,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,127337,2615834
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Kate,McGrory,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,127337,2615835
+Carrickbar Upper_0488_0033_0006_0_00007.pdf,Donegal,Carrickbar Upper,Laghy,Jane,McGrory,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,61.0,DL05012,nan,nan,127337,2615836
+Carrickbar Upper_0488_0033_0007_0_00008.pdf,Donegal,Carrickbar Upper,Laghy,Ellen,McGrory,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,127337,2615837
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,William,Melley,Head,Head,M,nan,English Only,Roman Catholic,sun account 909,ENGLISH,nan,MOUTTS,y,56.0,DL05012,nan,nan,127339,2615838
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,Bridget,Melley,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,2,Seven 7,50.0,DL05012,nan,nan,127339,2615839
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,Edward,Melley,nan,nan,M,Single,English Only,Roman Catholic,William Mefle Farmer 365 St acres.,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,127339,2615840
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,James,Melley,nan,nan,M,Single,English Only,Roman Catholic,William Melly Farmer 365 St acres,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,127339,2615841
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,Bernard J,Melley,nan,nan,nan,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,127339,2615842
+Carrickbar Upper_0488_0033_0008_0_00009.pdf,Donegal,Carrickbar Upper,Laghy,Lizzie,Melley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,127339,2615843
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,James,McCafferty,Head,Head,M,nan,English Only,Roman Catholic,Own Account,ENGLISH,nan,2,4 4,40.0,DL05012,nan,nan,127341,2615844
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,Ellen,McCafferty,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,2,4,38.0,DL05012,nan,nan,127341,2615845
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,Thomas James,McCafferty,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,127341,2615846
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,Joseph,McCafferty,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,127341,2615847
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,Maggie Ellen,McCafferty,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,127341,2615848
+Carrickbar Upper_0488_0033_0010_0_00011.pdf,Donegal,Carrickbar Upper,Laghy,Nora,McCafferty,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,127341,2615849
+Carrickbar Upper_0488_0033_0011_0_00012.pdf,Donegal,Carrickbar Upper,Laghy,Patrick,McCafferty,Head,Head,M,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,- -,of,46.0,DL05012,nan,nan,127342,2615850
+Carrickbar Upper_0488_0033_0011_0_00012.pdf,Donegal,Carrickbar Upper,Laghy,Bridget,McCafferty,nan,nan,F,Mother is Dead,English Only,Roman Catholic,Patrick Mc. Coffery,ENGLISH,nan,nan,8,81.0,DL05012,nan,nan,127342,2615851
+Carrickbar Upper_0488_0033_0011_0_00012.pdf,Donegal,Carrickbar Upper,Laghy,Mary Ann,Bartley,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,127342,2615852
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,James,Curristin,Head,Head,M,Widower,English Only,Roman Catholic,Own account Employed.,ENGLISH,nan,nan,nan,57.0,DL05012,nan,nan,203123,2615853
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,Mary,Curristin,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,203123,2615854
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,Annie,Curristin,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,203123,2615855
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,James,Curristin,nan,nan,M,Single,English Only,nan,James. Coristin Farmer 321 91 acres,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,203123,2615856
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,Patrick,Curristin,nan,nan,M,Single,English Only,Roman Catholic,James. Corsian Farm 10/3/21/aan).,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,203123,2615857
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,Francis Joseph,Curristin,nan,nan,M,Single,English Only,Roman Catholic,James. Curridin Farmet,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,203123,2615858
+Cormullen_0488_0035_0002_0_00003.pdf,Donegal,Cormullen,Laghy,Michael James,Curristin,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,203123,2615859
+Cormullen_0488_0035_0003_0_00004.pdf,Donegal,Cormullen,Laghy,Patrick,Curristin,Head,Head,M,Married,English Only,Roman Catholic,then account. Employer.,ENGLISH,nan,0,03,50.0,DL05012,nan,nan,203124,2615860
+Cormullen_0488_0035_0003_0_00004.pdf,Donegal,Cormullen,Laghy,Ellen,Curristin,nan,nan,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,0,3,50.0,DL05012,nan,nan,203124,2615861
+Cormullen_0488_0035_0003_0_00004.pdf,Donegal,Cormullen,Laghy,John,Curristin,nan,nan,M,Single,English Only,Roman Catholic,Patrick Curristin 40 St acres,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,203124,2615862
+Cormullen_0488_0035_0003_0_00004.pdf,Donegal,Cormullen,Laghy,Joseph,Curristin,nan,nan,M,nan,English Only,Roman Catholic,"Patrick Curristin 40 St acres,",ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,203124,2615863
+Cormullen_0488_0035_0003_0_00004.pdf,Donegal,Cormullen,Laghy,Mary Bridget,Curristin,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,203124,2615864
+Cormullen_0488_0035_0004_0_00006.pdf,Donegal,Cormullen,Laghy,Kate,Curristin,Head,Head,F,nan,English Only,Roman Catholic,"own account, 903",ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,203125,2615865
+Cormullen_0488_0035_0004_0_00006.pdf,Donegal,Cormullen,Laghy,Catherin,Curristin,nan,nan,F,Single,English Only,nan,y Amali,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,203125,2615866
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,William,Brodbin,Head,Head,M,Married,English Only,nan,Employer 905,ENGLISH,nan,nan,5,52.0,DL05012,nan,nan,203126,2615867
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Bridget,Brodbin,nan,nan,F,Married,English Only,nan,nan,ENGLISH,nan,2,5,nan,DL05012,nan,nan,203126,2615868
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Bridget,Brodbin,nan,nan,F,Single,English Only,nan,Monaghan Embroidery,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,203126,2615869
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Maggie,Brodbin,nan,nan,F,Single,English Only,Roman Catholic,30/. Do,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,203126,2615870
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,William,Brodbin,nan,nan,M,nan,English Only,Roman Catholic,William Brodlin Farmer 25 St acres,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,203126,2615871
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Michael,Brodbin,nan,nan,M,Single,English Only,Roman Catholic,William Brodlin Farmer 905 25 St acres,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,203126,2615872
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Patrick,Brodbin,nan,nan,M,nan,English Only,nan,Mlliam Brodlin Farmer 25 st acres,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,203126,2615873
+Cormullen_0488_0035_0005_0_00007.pdf,Donegal,Cormullen,Laghy,Cassie,Murphy,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,49.0,DL05012,nan,nan,203126,2615874
+Cormullen_0488_0035_0007_0_00009.pdf,Donegal,Cormullen,Laghy,John,Mullhern,Head,Head,M,Married,English Only,Roman Catholic,own account. 905,ENGLISH,nan,nan,2,61.0,DL05012,nan,nan,203128,2615875
+Cormullen_0488_0035_0007_0_00009.pdf,Donegal,Cormullen,Laghy,Maggie,Mullhern,nan,nan,F,Married,English Only,nan,y,ENGLISH,nan,nan,2,66.0,DL05012,nan,nan,203128,2615876
+Cormullen_0488_0035_0007_0_00009.pdf,Donegal,Cormullen,Laghy,Maggie,Mullhern,nan,nan,F,Single,English Only,nan,Monaghan 20% 60 Embroidery,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,203128,2615877
+Cormullen_0488_0035_0008_0_00010.pdf,Donegal,Cormullen,Laghy,William,Travers,Head,Head,M,Widower,English Only,Roman Catholic,Employer 905,ENGLISH,nan,nan,nan,73.0,DL05012,nan,nan,203129,2615878
+Cormullen_0488_0035_0008_0_00010.pdf,Donegal,Cormullen,Laghy,Mary,Travers,nan,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,34.0,DL05012,nan,nan,203129,2615879
+Cormullen_0488_0035_0008_0_00010.pdf,Donegal,Cormullen,Laghy,Patrick,Travers,nan,nan,M,Single,English Only,Roman Catholic,William Graves. Farmer acres,ENGLISH,nan,nan,nan,31.0,DL05012,nan,nan,203129,2615880
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,John,Devenny,Head,Head,M,nan,English Only,Roman Catholic,Employer 956,ENGLISH,nan,nan,5,45.0,DL05012,nan,nan,203131,2615881
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,Sarah,Devenny,nan,nan,F,Married,English Only,Roman Catholic,y.,ENGLISH,nan,nan,5,45.0,DL05012,nan,nan,203131,2615882
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,Joseph,Devenny,nan,nan,M,Single,English Only,Roman Catholic,John. Devery Farmer 906 36 St acres,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,203131,2615883
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,Bridget,Devenny,nan,nan,F,nan,English Only,Roman Catholic,Monaghan Embroidery 20/6,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,203131,2615884
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,Thomas,Devenny,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,- -,12.0,DL05012,nan,nan,203131,2615885
+Cormullen_0488_0035_0010_0_00012.pdf,Donegal,Cormullen,Laghy,Bernard,Devenny,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,203131,2615886
+Cormullen_0488_0035_0011_0_00013.pdf,Donegal,Cormullen,Laghy,John,Devenny,Head,Head,M,nan,English Only,Roman Catholic,Employed 905,ENGLISH,nan,nan,Y,70.0,DL05012,nan,nan,203132,2615887
+Cormullen_0488_0035_0011_0_00013.pdf,Donegal,Cormullen,Laghy,Bridget,Devenny,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,13,66.0,DL05012,nan,nan,203132,2615888
+Cormullen_0488_0035_0011_0_00013.pdf,Donegal,Cormullen,Laghy,Lillie,Devenny,nan,nan,F,Single,English Only,Roman Catholic,Monaghan Embroider Go.,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,203132,2615889
+Cormullen_0488_0035_0011_0_00013.pdf,Donegal,Cormullen,Laghy,Minnie,Devenny,nan,nan,F,Single,English Only,Roman Catholic,3600,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,203132,2615890
+Cormullen_0488_0035_0011_0_00013.pdf,Donegal,Cormullen,Laghy,John,Devenny,nan,nan,M,Single,English Only,Roman Catholic,John 905.18 Deveny st acres Farmer,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,203132,2615891
+Cormullen_0488_0035_0013_0_00015.pdf,Donegal,Cormullen,Laghy,Catherine,[Brodbin],Head,Head,F,Widow,English Only,Roman Catholic,905 sun account,ENGLISH,nan,2,12,70.0,DL05012,nan,nan,203134,2615892
+Cormullen_0488_0035_0013_0_00015.pdf,Donegal,Cormullen,Laghy,Mary,[Brodbin],nan,nan,F,nan,English Only,Roman Catholic,y.,ENGLISH,nan,nan,nan,30.0,DL05012,nan,nan,203134,2615893
+Cormullen_0488_0035_0013_0_00015.pdf,Donegal,Cormullen,Laghy,Maggie,[Brodbin],nan,nan,F,nan,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,203134,2615894
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,James,Tunney,Head,Head,M,Married,English Only,Roman Catholic,Employer. 9040,ENGLISH,nan,nan,9,58.0,DL05012,nan,nan,203135,2615895
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Lizzie,Tunney,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,9,49.0,DL05012,nan,nan,203135,2615896
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,James,Tunney,nan,nan,M,Single,English Only,Roman Catholic,James. Lanny Farmer 1481 acres,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,203135,2615897
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Cassie,Tunney,nan,nan,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,203135,2615898
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,John,Tunney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,203135,2615899
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Patrick,Tunney,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,203135,2615900
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Lizzie,Tunney,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,203135,2615901
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Sarah Jane,Tunney,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,203135,2615902
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Francis,Tunney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,203135,2615903
+Cormullen_0488_0035_0014_0_00016.pdf,Donegal,Cormullen,Laghy,Gerald,Tunney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,203135,2615904
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,John,Barron,Head,Head,M,nan,English Only,nan,John. Trevor. Farmer. 908 120 St acres,ENGLISH,nan,nan,5,45.0,DL05012,nan,nan,203136,2615905
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,Mary A,Barron,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,5,5,39.0,DL05012,nan,nan,203136,2615906
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,James,Barron,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,203136,2615907
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,Mary,Barron,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,203136,2615908
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,Maggie,Barron,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,203136,2615909
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,Cassie,Barron,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,203136,2615910
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,John,Barron,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,203136,2615911
+Cormullen_0488_0035_0015_0_00017.pdf,Donegal,Cormullen,Laghy,Edward,Melly,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,203136,2615912
+Gollard_0488_0036_0002_0_00003.pdf,Donegal,Gollard,Laghy,Thomas,Brodbin,Head,Head,M,Married,English Only,nan,Own Account,ENGLISH,nan,11,none 0,43.0,DL05012,nan,nan,319382,2615913
+Gollard_0488_0036_0002_0_00003.pdf,Donegal,Gollard,Laghy,Isabella Josaphine,Brodbin,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,11,none,41.0,DL05012,nan,nan,319382,2615914
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,Anne,Tunney,nan,nan,F,Widow,English Only,Roman Catholic,Employer 904,ENGLISH,nan,nan,nan,85.0,DL05012,nan,nan,319384,2615915
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,Mick,Tunney,nan,nan,M,Married,English Only,Roman Catholic,Ann. Jenney Farm 14 stlacrs.,ENGLISH,nan,nan,2,46.0,DL05012,nan,nan,319384,2615916
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,Mary,Tunney,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,30.0,DL05012,nan,nan,319384,2615917
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,John James,Tunney,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,319384,2615918
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,Sarah Anne,Tunney,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,319384,2615919
+Gollard_0488_0036_0004_0_00005.pdf,Donegal,Gollard,Laghy,Patrick,Gorman,nan,nan,M,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,79.0,DL05012,nan,nan,319384,2615920
+Gollard_0488_0036_0005_0_00006.pdf,Donegal,Gollard,Laghy,Bernard,Tunney,Head,Head,M,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,74.0,DL05012,nan,nan,319385,2615921
+Gollard_0488_0036_0009_0_00010.pdf,Donegal,Gollard,Laghy,Thomas,Abraham,Head,Head,M,Single,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,72.0,DL05012,nan,nan,319388,2615922
+Gollard_0488_0036_0009_0_00010.pdf,Donegal,Gollard,Laghy,Ellen,[Shaldo],nan,nan,F,nan,English Only,Roman Catholic,760 asrs,ENGLISH,nan,nan,nan,84.0,DL05012,nan,nan,319388,2615923
+Gollard_0488_0036_0010_0_00011.pdf,Donegal,Gollard,Laghy,Patrick,McGirr,Head,Head,M,Married,English Only,Roman Catholic,Employed 906,ENGLISH,nan,nan,14,nan,DL05012,nan,nan,319389,2615924
+Gollard_0488_0036_0010_0_00011.pdf,Donegal,Gollard,Laghy,Maggie,McGirr,nan,nan,F,Married,English Only,Roman Catholic,y.,ENGLISH,nan,7,4,65.0,DL05012,nan,nan,319389,2615925
+Gollard_0488_0036_0010_0_00011.pdf,Donegal,Gollard,Laghy,James,McGirr,nan,nan,M,Single,English Only,Roman Catholic,Patrick 30 M. Spaens. Yuri James,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,319389,2615926
+Gollard_0488_0036_0010_0_00011.pdf,Donegal,Gollard,Laghy,Sarah A,McGirr,nan,nan,F,Single,English Only,Roman Catholic,Patrick 30 M. Spaens. Yuri James,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,319389,2615927
+Gollard_0488_0036_0010_0_00011.pdf,Donegal,Gollard,Laghy,Patrick,McGirr,nan,nan,M,Single,English Only,Roman Catholic,Patrick 30 M. Spaens. Yuri James,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,319389,2615928
+Gollard_0488_0036_0011_0_00012.pdf,Donegal,Gollard,Laghy,Richard,Browne,Head,Head,M,Single,English Only,nan,Own Account,ENGLISH,nan,nan,nan,43.0,DL05012,nan,nan,319390,2615929
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,Francis,Bustard,Head,Head,M,Married,English Only,Church of Ireland,gun account 903,ENGLISH,nan,nan,6,nan,DL05012,nan,nan,319391,2615930
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,Maggie,Bustard,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,11,6,39.0,DL05012,nan,nan,319391,2615931
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,John,Bustard,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,319391,2615932
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,Robert,Bustard,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,319391,2615933
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,Francis,Bustard,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,319391,2615934
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,David,Bustard,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,319391,2615935
+Gollard_0488_0036_0012_0_00013.pdf,Donegal,Gollard,Laghy,Maggie,Bustard,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,LDesgp -,0.0,DL05012,nan,nan,319391,2615936
+Gollard_0488_0036_0013_0_00014.pdf,Donegal,Gollard,Laghy,William,Bustard,Head,Head,M,nan,English Only,Church of Ireland,Employer,ENGLISH,nan,nan,nan,59.0,DL05012,nan,nan,319392,2615937
+Gollard_0488_0036_0013_0_00014.pdf,Donegal,Gollard,Laghy,Andrew,Bustard,nan,nan,M,Mother is Dead,English Only,Church of Ireland,William Bushard James 16 St acres,ENGLISH,nan,nan,nan,67.0,DL05012,nan,nan,319392,2615938
+Gollard_0488_0036_0013_0_00014.pdf,Donegal,Gollard,Laghy,Maggie,Bustard,nan,nan,F,nan,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,51.0,DL05012,nan,nan,319392,2615939
+Gollard_0488_0036_0015_0_00016.pdf,Donegal,Gollard,Laghy,John,Scott,Head,Head,M,Married,English Only,nan,own account. 905,ENGLISH,nan,6,0 None,67.0,DL05012,nan,nan,319393,2615940
+Gollard_0488_0036_0015_0_00016.pdf,Donegal,Gollard,Laghy,Elizabeth,Scott,nan,nan,F,Married,English Only,nan,y,ENGLISH,nan,6,none,70.0,DL05012,nan,nan,319393,2615941
+Gollard_0488_0036_0017_0_00018.pdf,Donegal,Gollard,Laghy,Anne Jane,Freeborn,Head,Head,F,Widow,English Only,Church of Ireland,Employed.,ENGLISH,nan,nan,nan,77.0,DL05012,nan,nan,319395,2615942
+Gollard_0488_0036_0017_0_00018.pdf,Donegal,Gollard,Laghy,Mary Jane,Freeborn,nan,nan,F,Single,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,41.0,DL05012,nan,nan,319395,2615943
+Gollard_0488_0036_0017_0_00018.pdf,Donegal,Gollard,Laghy,Samuel,Gorril,nan,nan,M,Single,English Only,nan,ann Jane. Frahorn Farm V 905. 20 st acres,ENGLISH,nan,nan,nan,40.0,DL05012,nan,nan,319395,2615944
+Gollard_0488_0036_0019_0_00020.pdf,Donegal,Gollard,Laghy,Cathal,Mac Cionntaigh,head,Head,M,nan,English Only,Roman Catholic,Osenicay D'apinnza,IRISH,nan,nan,2,nan,DL05012,nan,nan,319397,2615945
+Gollard_0488_0036_0019_0_00020.pdf,Donegal,Gollard,Laghy,Aílís,Mhic Cionntaigh,wife,Wife,nan,nan,English Only,Roman Catholic,Ospidea v Darvinica,IRISH,nan,7,2,32.0,DL05012,nan,nan,319397,2615946
+Gollard_0488_0036_0019_0_00020.pdf,Donegal,Gollard,Laghy,Adhamhnan,Mac Cionntaigh,son,Son,nan,nan,English Only,nan,nan,IRISH,nan,nan,nan,1.0,DL05012,nan,nan,319397,2615947
+Gollard_0488_0036_0019_0_00020.pdf,Donegal,Gollard,Laghy,Caitlín,Ní Mhuireasa,relation by marriage (visitor),nan,M,nan,English Only,Roman Catholic,732.,IRISH,nan,nan,nan,26.0,DL05012,nan,nan,319397,2615948
+Gollard_0488_0036_0019_0_00020.pdf,Donegal,Gollard,Laghy,Eibhlín,Ní Dhomhnaill,servant,Servant,M,nan,English Only,Roman Catholic,Prubbaiseae 760.,IRISH,nan,nan,nan,17.0,DL05012,nan,nan,319397,2615949
+Greaghs_0488_0037_0002_0_00003.pdf,Donegal,Greaghs,Laghy,Patrick,Hilley,Head,Head,M,Widower,English Only,Roman Catholic,Employ Account Employer.,ENGLISH,nan,nan,nan,78.0,DL05012,nan,nan,332586,2615950
+Greaghs_0488_0037_0002_0_00003.pdf,Donegal,Greaghs,Laghy,Francis,Hilley,nan,nan,M,Single,English Only,Roman Catholic,Private 905. Billy Farmer. '15 st acres,ENGLISH,nan,nan,nan,50.0,DL05012,nan,nan,332586,2615951
+Greaghs_0488_0037_0004_0_00005.pdf,Donegal,Greaghs,Laghy,Patrick,Furey,Head,Head,M,Married,Irish and English,nan,own accounts Employer. 907,ENGLISH,nan,nan,y,66.0,DL05012,nan,nan,332588,2615952
+Greaghs_0488_0037_0004_0_00005.pdf,Donegal,Greaghs,Laghy,Hannah,Furey,nan,nan,F,Married,English Only,nan,Private y.,ENGLISH,nan,nan,10,64.0,DL05012,nan,nan,332588,2615953
+Greaghs_0488_0037_0004_0_00005.pdf,Donegal,Greaghs,Laghy,Francis,Furey,nan,nan,M,Single,English and Irish,nan,Patrick Furey farmer 16 St. acres.,ENGLISH,nan,nan,nan,32.0,DL05012,nan,nan,332588,2615954
+Greaghs_0488_0037_0004_0_00005.pdf,Donegal,Greaghs,Laghy,Annie,Furey,nan,nan,F,Single,English and Irish,nan,Private,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,332588,2615955
+Greaghs_0488_0037_0010_0_00011.pdf,Donegal,Greaghs,Laghy,Daniel,Travers,Head,Head,M,Widower,English Only,Roman Catholic,Employer.,ENGLISH,nan,nan,nan,70.0,DL05012,nan,nan,332594,2615956
+Greaghs_0488_0037_0010_0_00011.pdf,Donegal,Greaghs,Laghy,Patrick,Travers,nan,nan,M,Single,English Only,nan,Dangal Graves Farmer. 3rd St acres,ENGLISH,nan,nan,nan,40.0,DL05012,nan,nan,332594,2615957
+Greaghs_0488_0037_0010_0_00011.pdf,Donegal,Greaghs,Laghy,John,Travers,nan,nan,M,Single,English Only,Roman Catholic,Dangal Graves Farmer. 3rd St acres,ENGLISH,nan,nan,nan,35.0,DL05012,nan,nan,332594,2615958
+Greaghs_0488_0037_0013_0_00014.pdf,Donegal,Greaghs,Laghy,Mervyn,Harron,Head,Head,M,Married,English Only,Church of Ireland,Employer 904,ENGLISH,nan,nan,nan,58.0,DL05012,nan,nan,332597,2615959
+Greaghs_0488_0037_0013_0_00014.pdf,Donegal,Greaghs,Laghy,Ellen Jane,Harron,nan,nan,F,Married,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,55.0,DL05012,nan,nan,332597,2615960
+Greaghs_0488_0037_0013_0_00014.pdf,Donegal,Greaghs,Laghy,William John,Harron,nan,nan,M,Single,English Only,Church of Ireland,Merryn Harren Farmer York st acres,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,332597,2615961
+Greaghs_0488_0037_0014_0_00015.pdf,Donegal,Greaghs,Laghy,Daniel,Gorman,Head,Head,M,nan,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,52.0,DL05012,nan,nan,332598,2615962
+Greaghs_0488_0037_0014_0_00015.pdf,Donegal,Greaghs,Laghy,Bridget,Gorman,nan,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,332598,2615963
+Greaghs_0488_0037_0014_0_00015.pdf,Donegal,Greaghs,Laghy,Charles,Gorman,nan,nan,M,Single,English Only,Roman Catholic,John Gallagher Farm 900 St acres.,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,332598,2615964
+Greaghs Bar_0488_0040_0003_0_00004.pdf,Donegal,Greaghs Bar,Laghy,Lizzie,Travers,Head,Head,F,Widow,English Only,Roman Catholic,908,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,332584,2615965
+Greaghs Bar_0488_0040_0003_0_00004.pdf,Donegal,Greaghs Bar,Laghy,James,Travers,nan,nan,M,Single,English Only,Roman Catholic,Lyrics 151 travers acres,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,332584,2615966
+Greaghs Bar_0488_0040_0003_0_00004.pdf,Donegal,Greaghs Bar,Laghy,Dennis,Travers,nan,nan,M,Single,English Only,Roman Catholic,Lizzes Graves 16% St acres,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,332584,2615967
+Greaghs Bar_0488_0040_0003_0_00004.pdf,Donegal,Greaghs Bar,Laghy,Mary Alice,Travers,nan,nan,F,nan,English Only,Roman Catholic,y.,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,332584,2615968
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,Bridget,Travers,Head,Head,F,Widow,English Only,Roman Catholic,Own Accounts Employer. 908,ENGLISH,nan,0,nan,73.0,DL05012,nan,nan,332585,2615969
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,James,Travers,nan,nan,M,Married,English Only,Roman Catholic,Bridget F Irwin 100 st acres Own account,ENGLISH,nan,nan,nan,45.0,DL05012,nan,nan,332585,2615970
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,John,Travers,nan,nan,M,Married,English Only,Roman Catholic,Bridget Travis,ENGLISH,nan,nan,3,43.0,DL05012,nan,nan,332585,2615971
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,Catherine,Travers,nan,nan,F,Married,English Only,Roman Catholic,- y.,ENGLISH,nan,nan,3,25.0,DL05012,nan,nan,332585,2615972
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,Patrick,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,332585,2615973
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,Mary,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,332585,2615974
+Greaghs Bar_0488_0040_0004_0_00005.pdf,Donegal,Greaghs Bar,Laghy,John Gerard,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,332585,2615975
+Laghey Town_0488_0056_0002_0_00003.pdf,Donegal,Laghey Town,Laghy,Euphemia,McClay,Head,Head,F,Widow,English Only,nan,Own Account,ENGLISH,nan,10,2,57.0,DL05012,nan,nan,414449,2615976
+Laghey Town_0488_0056_0002_0_00003.pdf,Donegal,Laghey Town,Laghy,Edith,McClay,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,414449,2615977
+Laghey Town_0488_0056_0002_0_00003.pdf,Donegal,Laghey Town,Laghy,Elizabeth,McClay,nan,nan,F,Single,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,414449,2615978
+Laghey Town_0488_0056_0002_0_00003.pdf,Donegal,Laghey Town,Laghy,Alexander,McCrea,nan,nan,M,Widower,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,69.0,DL05012,nan,nan,414449,2615979
+Laghey Town_0488_0056_0003_0_00004.pdf,Donegal,Laghey Town,Laghy,Robert,Hannan,Head,Head,M,Married,English Only,Church of Ireland,Own Account 611,ENGLISH,nan,J.,3 3,51.0,DL05012,nan,nan,414450,2615980
+Laghey Town_0488_0056_0003_0_00004.pdf,Donegal,Laghey Town,Laghy,Margret J,Hannan,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,5,nan,48.0,DL05012,nan,nan,414450,2615981
+Laghey Town_0488_0056_0003_0_00004.pdf,Donegal,Laghey Town,Laghy,Gertrude E,Hannan,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,414450,2615982
+Laghey Town_0488_0056_0003_0_00004.pdf,Donegal,Laghey Town,Laghy,Kathleen,Hannan,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,414450,2615983
+Laghey Town_0488_0056_0003_0_00004.pdf,Donegal,Laghey Town,Laghy,John,Barrow,nan,nan,M,nan,English Only,Roman Catholic,P. Harrow Chocu. 611,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,414450,2615984
+Laghey Town_0488_0056_0005_0_00006.pdf,Donegal,Laghey Town,Laghy,John,Elliott,Head,Head,M,Married,English Only,nan,Own Account,ENGLISH,nan,nan,1,50.0,DL05012,nan,nan,414452,2615985
+Laghey Town_0488_0056_0005_0_00006.pdf,Donegal,Laghey Town,Laghy,Essie,Elliott,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,nan,1,40.0,DL05012,nan,nan,414452,2615986
+Laghey Town_0488_0056_0005_0_00006.pdf,Donegal,Laghey Town,Laghy,Thomas,Elliott,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,414452,2615987
+Laghey Town_0488_0056_0006_0_00007.pdf,Donegal,Laghey Town,Laghy,Thomas,Lawn,Head,Head,M,Married,English Only,Roman Catholic,Bernard. Lawn Farmer 916 30 St acres.,ENGLISH,nan,nan,-2,38.0,DL05012,nan,nan,414453,2615988
+Laghey Town_0488_0056_0006_0_00007.pdf,Donegal,Laghey Town,Laghy,Catherine,Lawn,nan,nan,F,Married,English Only,Roman Catholic,y.,ENGLISH,nan,nan,2,33.0,DL05012,nan,nan,414453,2615989
+Laghey Town_0488_0056_0006_0_00007.pdf,Donegal,Laghey Town,Laghy,Mary B,Lawn,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,414453,2615990
+Laghey Town_0488_0056_0006_0_00007.pdf,Donegal,Laghey Town,Laghy,Edward V,Lawn,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,414453,2615991
+Laghey Town_0488_0056_0008_0_00009.pdf,Donegal,Laghey Town,Laghy,Elizabeth,McClay,Head,Head,F,Widow,English Only,Church of Ireland,9,ENGLISH,nan,nan,5,74.0,DL05012,nan,nan,414455,2615992
+Laghey Town_0488_0056_0008_0_00009.pdf,Donegal,Laghey Town,Laghy,Fanny,McClay,nan,nan,F,nan,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,39.0,DL05012,nan,nan,414455,2615993
+Laghey Town_0488_0056_0008_0_00009.pdf,Donegal,Laghey Town,Laghy,Adam J,McClay,nan,nan,M,nan,English Only,nan,Own Account,ENGLISH,nan,nan,nan,39.0,DL05012,nan,nan,414455,2615994
+Laghey Town_0488_0056_0008_0_00009.pdf,Donegal,Laghey Town,Laghy,Bell,McClay,nan,nan,F,Widow,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,75.0,DL05012,nan,nan,414455,2615995
+Laghey Town_0488_0056_0009_0_00010.pdf,Donegal,Laghey Town,Laghy,Hannah,Gallagher,Head,Head,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,4,34.0,DL05012,nan,nan,414456,2615996
+Laghey Town_0488_0056_0009_0_00010.pdf,Donegal,Laghey Town,Laghy,Annie T,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,414456,2615997
+Laghey Town_0488_0056_0009_0_00010.pdf,Donegal,Laghey Town,Laghy,Vincent,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,414456,2615998
+Laghey Town_0488_0056_0009_0_00010.pdf,Donegal,Laghey Town,Laghy,Eileen,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,414456,2615999
+Laghey Town_0488_0056_0009_0_00010.pdf,Donegal,Laghey Town,Laghy,Dermot,Gallagher,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,414456,2616000
+Laghey Town_0488_0056_0011_0_00012.pdf,Donegal,Laghey Town,Laghy,Robert,McClay,Head,Head,M,Married,English Only,Church of Ireland,401 own account,ENGLISH,nan,9,3 3,29.0,DL05012,nan,nan,414458,2616001
+Laghey Town_0488_0056_0011_0_00012.pdf,Donegal,Laghey Town,Laghy,Mary,McClay,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,9,3,35.0,DL05012,nan,nan,414458,2616002
+Laghey Town_0488_0056_0011_0_00012.pdf,Donegal,Laghey Town,Laghy,David,McClay,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,414458,2616003
+Laghey Town_0488_0056_0011_0_00012.pdf,Donegal,Laghey Town,Laghy,Hansen,McClay,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,414458,2616004
+Laghey Town_0488_0056_0011_0_00012.pdf,Donegal,Laghey Town,Laghy,Blanche,McClay,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,414458,2616005
+Laghey Town_0488_0056_0012_0_00013.pdf,Donegal,Laghey Town,Laghy,May Ann,Kee,Head,Head,F,Single,English Only,Church of Ireland,905,ENGLISH,nan,nan,nan,65.0,DL05012,nan,nan,414459,2616006
+Laghey Town_0488_0056_0012_0_00013.pdf,Donegal,Laghey Town,Laghy,Margaret,Kee,nan,nan,F,Single,English Only,Church of Ireland,Fery Lapher.y 30,ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,414459,2616007
+Laghey Town_0488_0056_0012_0_00013.pdf,Donegal,Laghey Town,Laghy,Margaret,McClay,nan,nan,F,nan,English Only,nan,Jerry. Layley. McClay. 701.,ENGLISH,nan,nan,nan,67.0,DL05012,nan,nan,414459,2616008
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Robert,Wray,Head,Head,M,Married,English Only,Church of Ireland,Drumholm G. D.J. 3/3 Bridgetown Co.Dwigs,ENGLISH,nan,nan,7 Y,32.0,DL05012,nan,nan,414460,2616009
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Sarah A,Wray,nan,nan,nan,Married,English Only,Church of Ireland,y,ENGLISH,nan,nan,7,34.0,DL05012,nan,nan,414460,2616010
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Robert W,Wray,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,414460,2616011
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Cissie,Wray,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,414460,2616012
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Cecil,Wray,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,414460,2616013
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Iris,Wray,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,414460,2616014
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Bertie,Wray,nan,nan,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,414460,2616015
+Laghey Town_0488_0056_0013_0_00014.pdf,Donegal,Laghey Town,Laghy,Muriel,Wray,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,414460,2616016
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Andrew,McClay,Head,Head,M,Married,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,3 -,67.0,DL05012,nan,nan,414462,2616017
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Fannie,McClay,nan,nan,F,Married,English Only,nan,y -,ENGLISH,nan,3,3,66.0,DL05012,nan,nan,414462,2616018
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Jeanie,McClay,nan,nan,F,nan,English Only,Church of Ireland,707 -,ENGLISH,nan,nan,nan,33.0,DL05012,nan,nan,414462,2616019
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Doreen,Thompson,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,414462,2616020
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Stanley,Thompson,nan,nan,M,Mother is Dead,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,414462,2616021
+Laghey Town_0488_0056_0015_0_00016.pdf,Donegal,Laghey Town,Laghy,Jamie,McIntyre,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,414462,2616022
+Laghey Town_0488_0056_0016_0_00017.pdf,Donegal,Laghey Town,Laghy,Jacob,Gorman,Head,Head,M,nan,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,Home,68.0,DL05012,nan,nan,414463,2616023
+Laghey Town_0488_0056_0016_0_00017.pdf,Donegal,Laghey Town,Laghy,Mariane,Gorman,nan,nan,nan,Single,English Only,Roman Catholic,0,ENGLISH,nan,nan,nan,70.0,DL05012,nan,nan,414463,2616024
+Laghey Town_0488_0056_0016_0_00017.pdf,Donegal,Laghey Town,Laghy,Rose C,Gorman,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,60.0,DL05012,nan,nan,414463,2616025
+Laghey Town_0488_0056_0016_0_00017.pdf,Donegal,Laghey Town,Laghy,Tom,Timoney,nan,nan,M,Single,English Only,Roman Catholic,"R B Farmer, 40",ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,414463,2616026
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,James,McGrane,Head,Head,M,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,9,38.0,DL05012,nan,nan,414465,2616027
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,Alicia,McGrane,nan,nan,F,Married,English Only,Roman Catholic,Post Master General. 102,ENGLISH,nan,nan,9,38.0,DL05012,nan,nan,414465,2616028
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,MJ,McGrane,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,414465,2616029
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,Nora,McGrane,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,414465,2616030
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,EM,McGrane,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,414465,2616031
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,Patrick J,McGrane,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,414465,2616032
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,TA,McGrane,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,414465,2616033
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,TJ,McGrane,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,414465,2616034
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,FL,McGrane,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,414465,2616035
+Laghey Town_0488_0056_0018_0_00019.pdf,Donegal,Laghey Town,Laghy,AP,McGrane,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,414465,2616036
+Laghey Town_0488_0056_0020_0_00022.pdf,Donegal,Laghey Town,Laghy,James,McGroarty,Head,Head,M,Married,English and Irish,Roman Catholic,James. McClay. 906 40 51 acres,ENGLISH,nan,nan,3,66.0,DL05012,nan,nan,414467,2616037
+Laghey Town_0488_0056_0020_0_00022.pdf,Donegal,Laghey Town,Laghy,Margaret,McGroarty,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,3,73.0,DL05012,nan,nan,414467,2616038
+Laghey Town_0488_0056_0020_0_00022.pdf,Donegal,Laghey Town,Laghy,Rose Anne,McGroarty,nan,nan,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,414467,2616039
+Laghey Town_0488_0056_0020_0_00022.pdf,Donegal,Laghey Town,Laghy,Michael John,McGroarty,nan,nan,M,Single,English Only,nan,Road. Contraction 461 Donegal. Co. Cousil,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,414467,2616040
+Laghey Town_0488_0056_0021_0_00023.pdf,Donegal,Laghey Town,Laghy,James,McClay,Head,Head,M,Married,English Only,Church of Ireland,own account 905.,ENGLISH,nan,nan,X,60.0,DL05012,nan,nan,414468,2616041
+Laghey Town_0488_0056_0021_0_00023.pdf,Donegal,Laghey Town,Laghy,Elizabeth,McClay,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,414468,2616042
+Laghey Town_0488_0056_0022_0_00024.pdf,Donegal,Laghey Town,Laghy,Patrick,Hilley,Head,Head,M,Widower,English Only,Roman Catholic,Unemployed,ENGLISH,nan,nan,nan,78.0,DL05012,nan,nan,414469,2616043
+Laghey Town_0488_0056_0023_0_00025.pdf,Donegal,Laghey Town,Laghy,Joseph,Edward,Head,Head,M,Widower,English Only,Roman Catholic,Andrew McClay. Farney1/5.8 St acres,ENGLISH,nan,nan,nan,57.0,DL05012,nan,nan,414470,2616044
+Laghey Town_0488_0056_0023_0_00025.pdf,Donegal,Laghey Town,Laghy,Mary Anne,Edward,nan,nan,F,nan,English Only,Roman Catholic,Monaghan Embroidery Co.,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,414470,2616045
+Laghey Town_0488_0056_0023_0_00025.pdf,Donegal,Laghey Town,Laghy,May Anne,Edward,nan,nan,F,Single,English Only,Roman Catholic,y.,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,414470,2616046
+Laghey Town_0488_0056_0023_0_00025.pdf,Donegal,Laghey Town,Laghy,Patrick,Edward,nan,nan,M,Single,English Only,Roman Catholic,Andrew McClay. Farms. 5.8 st acres,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,414470,2616047
+Laghey Town_0488_0056_0023_0_00025.pdf,Donegal,Laghey Town,Laghy,Norah,Edward,nan,nan,F,Single,English Only,Roman Catholic,Monaghan. Embrydey Co.,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,414470,2616048
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Lizzie,McClay,Head,Head,F,Widower,English Only,Church of Ireland,Employer 905,ENGLISH,nan,nan,nan,76.0,DL05012,nan,nan,414647,2616049
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Elizabeth,McClay,nan,nan,F,Widow,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,48.0,DL05012,nan,nan,414647,2616050
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Elizabeth,McClay,nan,nan,F,Single,English Only,nan,Own Account,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,414647,2616051
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Rebecca Catherine,McClay,nan,nan,nan,Single,English Only,nan,y,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,414647,2616052
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Margaret,McClay,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,414647,2616053
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,James,McClay,nan,nan,M,Father is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,414647,2616054
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Adam,McClay,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,414647,2616055
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Mary Ethel,McClay,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,414647,2616056
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Eva L,McClay,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,414647,2616057
+Laghy_0488_0038_0003_0_00004.pdf,Donegal,Laghy,Laghy,Andrew,McClay,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,414647,2616058
+Laghy_0488_0038_0005_0_00006.pdf,Donegal,Laghy,Laghy,James,McClay,Head,Head,M,Single,English Only,Church of Ireland,903 own account,ENGLISH,nan,nan,nan,42.0,DL05012,nan,nan,414649,2616059
+Mullinasole_0488_0041_0003_0_00004.pdf,Donegal,Mullinasole,Laghy,Mary,McGlanaghey,Head,Head,F,Widow,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,491921,2616060
+Mullinasole_0488_0041_0003_0_00004.pdf,Donegal,Mullinasole,Laghy,Maggie,McGlanaghey,nan,nan,F,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,491921,2616061
+Mullinasole_0488_0041_0004_0_00005.pdf,Donegal,Mullinasole,Laghy,Joseph,McGoldrick,Head,Head,M,Married,English Only,nan,William Griffith Farmel,ENGLISH,nan,nan,X,5.0,DL05012,nan,nan,491922,2616062
+Mullinasole_0488_0041_0004_0_00005.pdf,Donegal,Mullinasole,Laghy,Hannah,McGoldrick,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,43.0,DL05012,nan,nan,491922,2616063
+Mullinasole_0488_0041_0004_0_00005.pdf,Donegal,Mullinasole,Laghy,Mary B,McGoldrick,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,491922,2616064
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,Ellen,Sweeney,Head,Head,F,Widow,English Only,Roman Catholic,903,ENGLISH,nan,nan,nan,65.0,DL05012,nan,nan,491923,2616065
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,James,Sweeney,nan,nan,M,Single,English Only,Roman Catholic,Ellen Sweny 6 st acres,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,491923,2616066
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,Francis,Sweeney,nan,nan,M,Single,English Only,Roman Catholic,Ellen Sweny 6 st acres,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,491923,2616067
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,Bernard,Sweeney,nan,nan,M,Single,English Only,Roman Catholic,elseander. Aaron Farmer 902+13 8/0cres,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,491923,2616068
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,William,Sweeney,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,491923,2616069
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,Annie,McIntyre,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,1,27.0,DL05012,nan,nan,491923,2616070
+Mullinasole_0488_0041_0005_0_00006.pdf,Donegal,Mullinasole,Laghy,Tiddy,McIntyre,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,491923,2616071
+Mullinasole_0488_0041_0006_0_00007.pdf,Donegal,Mullinasole,Laghy,Mary Anne,Likely,Head,Head,F,Single,English Only,nan,Employer 903,ENGLISH,nan,nan,nan,75.0,DL05012,nan,nan,491924,2616072
+Mullinasole_0488_0041_0006_0_00007.pdf,Donegal,Mullinasole,Laghy,James,Likely,nan,nan,M,Widower,English Only,Roman Catholic,Mary Anne 8 Lilly acres,ENGLISH,nan,nan,nan,73.0,DL05012,nan,nan,491924,2616073
+Mullinasole_0488_0041_0006_0_00007.pdf,Donegal,Mullinasole,Laghy,Lizzie,Likely,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,70.0,DL05012,nan,nan,491924,2616074
+Mullinasole_0488_0041_0006_0_00007.pdf,Donegal,Mullinasole,Laghy,Bella,Likely,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,491924,2616075
+Mullinasole_0488_0041_0006_0_00007.pdf,Donegal,Mullinasole,Laghy,Mary,Likely,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,491924,2616076
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,James,Likely,Head,Head,M,Married,English Only,Roman Catholic,With account Employer 904,ENGLISH,nan,3,Y.,68.0,DL05012,nan,nan,491925,2616077
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,Ellen,Likely,nan,nan,F,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,3,7,58.0,DL05012,nan,nan,491925,2616078
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,William,Likely,nan,nan,M,Single,English Only,Roman Catholic,James likely # Cork. 12 st acres.,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,491925,2616079
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,Mary,Likely,nan,nan,F,Single,English Only,Roman Catholic,Owns account assumed.,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,491925,2616080
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,James,Likely,nan,nan,M,Single,English Only,Roman Catholic,Own account James Lilly Furtletie stäme,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,491925,2616081
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,Isabel,Likely,nan,nan,F,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,491925,2616082
+Mullinasole_0488_0041_0007_0_00008.pdf,Donegal,Mullinasole,Laghy,Joseph,Likely,nan,nan,M,Single,Irish and English,Roman Catholic,from,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,491925,2616083
+Mullinasole_0488_0041_0008_0_00009.pdf,Donegal,Mullinasole,Laghy,Mary,McGlanaghy,Head,Head,F,Widow,English Only,Roman Catholic,904,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,491926,2616084
+Mullinasole_0488_0041_0008_0_00009.pdf,Donegal,Mullinasole,Laghy,Mary,McGlanaghy,nan,nan,M,Single,English Only,Roman Catholic,y.,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,491926,2616085
+Mullinasole_0488_0041_0008_0_00009.pdf,Donegal,Mullinasole,Laghy,Patrick J,McGlanaghy,nan,nan,M,Single,English Only,Roman Catholic,Mary McGlenagh,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,491926,2616086
+Mullinasole_0488_0041_0008_0_00009.pdf,Donegal,Mullinasole,Laghy,Hugh,McGlanaghy,nan,nan,M,Single,English Only,Roman Catholic,9.04.00.,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,491926,2616087
+Mullinasole_0488_0041_0010_0_00011.pdf,Donegal,Mullinasole,Laghy,Phoebe,Hammond,Head,Head,F,Married,English Only,nan,y,ENGLISH,nan,9,2,31.0,DL05012,nan,nan,491928,2616088
+Mullinasole_0488_0041_0010_0_00011.pdf,Donegal,Mullinasole,Laghy,Annie Bella,Hammond,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,491928,2616089
+Mullinasole_0488_0041_0010_0_00011.pdf,Donegal,Mullinasole,Laghy,James Frances,Hammond,nan,nan,M,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,491928,2616090
+Mullinasole Bar_0488_0042_0002_0_00003.pdf,Donegal,Mullinasole Bar,Laghy,Margret,Barron,Head,Head,F,Widow,English Only,Roman Catholic,Own account Employed.,ENGLISH,nan,nan,nan,74.0,DL05012,nan,nan,491917,2616091
+Mullinasole Bar_0488_0042_0002_0_00003.pdf,Donegal,Mullinasole Bar,Laghy,Daniel,Barron,nan,nan,M,Married,English Only,Roman Catholic,Margaret Barron Farms 5. acres.,ENGLISH,nan,nan,nan,35.0,DL05012,nan,nan,491917,2616092
+Mullinasole Bar_0488_0042_0002_0_00003.pdf,Donegal,Mullinasole Bar,Laghy,Rose,Barron,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,11,1,29.0,DL05012,nan,nan,491917,2616093
+Mullinasole Bar_0488_0042_0002_0_00003.pdf,Donegal,Mullinasole Bar,Laghy,Peril Bridget,Barron,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,491917,2616094
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,John,Barron,Head,Head,M,Married,English Only,Roman Catholic,903 Employer account,ENGLISH,nan,nan,9,46.0,DL05012,nan,nan,491918,2616095
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Mary,Barron,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,9,9,38.0,DL05012,nan,nan,491918,2616096
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Patrick,Barron,nan,nan,M,Single,English Only,Roman Catholic,J Barron 711 Farmer acres,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,491918,2616097
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,William John,Barron,nan,nan,M,Single,English Only,Roman Catholic,J. Barron st Farmer,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,491918,2616098
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Bridget Agnes,Barron,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,491918,2616099
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Thomas,Barron,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,491918,2616100
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Edward,Barron,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,491918,2616101
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Francis Joseph,Barron,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,491918,2616102
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Catherine,Barron,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,491918,2616103
+Mullinasole Bar_0488_0042_0003_0_00004.pdf,Donegal,Mullinasole Bar,Laghy,Joanna Cicelia,Barron,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,491918,2616104
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Thomas,McGrory,Head,Head,M,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,3,40.0,DL05012,nan,nan,491919,2616105
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Mary Ann,McGrory,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,Y,3,30.0,DL05012,nan,nan,491919,2616106
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Mary Bridget,McGrory,nan,nan,nan,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,491919,2616107
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Maggie Ellen,McGrory,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,491919,2616108
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Patrick,McGrory,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,491919,2616109
+Mullinasole Bar_0488_0042_0004_0_00005.pdf,Donegal,Mullinasole Bar,Laghy,Bridget,McGrory,nan,nan,F,Widow,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,69.0,DL05012,nan,nan,491919,2616110
+Oughnadrin_0488_0043_0002_0_00003.pdf,Donegal,Oughnadrin,Laghy,Maggie,Kelly,Head,Head,F,nan,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,54.0,DL05012,nan,nan,513570,2616111
+Oughnadrin_0488_0043_0002_0_00003.pdf,Donegal,Oughnadrin,Laghy,Bridget,Dorrian,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,90.0,DL05012,nan,nan,513570,2616112
+Oughnadrin_0488_0043_0003_0_00004.pdf,Donegal,Oughnadrin,Laghy,Daniel,Dorrian,Head,Head,M,Married,English Only,Roman Catholic,Employer Town account,ENGLISH,nan,nan,0,62.0,DL05012,nan,nan,513571,2616113
+Oughnadrin_0488_0043_0003_0_00004.pdf,Donegal,Oughnadrin,Laghy,Elizabeth,Dorrian,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,4,nan,50.0,DL05012,nan,nan,513571,2616114
+Oughnadrin_0488_0043_0003_0_00004.pdf,Donegal,Oughnadrin,Laghy,Hugh,Dorrian,nan,nan,M,Single,English Only,nan,Marget 905120 Kelly stdéres Farmer,ENGLISH,nan,nan,nan,52.0,DL05012,nan,nan,513571,2616115
+Oughnadrin_0488_0043_0003_0_00004.pdf,Donegal,Oughnadrin,Laghy,Francis,Dorrian,nan,nan,M,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,50.0,DL05012,nan,nan,513571,2616116
+Oughnadrin_0488_0043_0004_0_00005.pdf,Donegal,Oughnadrin,Laghy,Edward,Timoney,Head,Head,M,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,45.0,DL05012,nan,nan,513572,2616117
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Hugh,Gallagher,Head,Head,M,Married,English Only,nan,Own Account,ENGLISH,nan,nan,6,53.0,DL05012,nan,nan,538993,2616118
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Lizzie,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,3,6,39.0,DL05012,nan,nan,538993,2616119
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,James,Gallagher,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,538993,2616120
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Mary Bridget,Gallagher,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,538993,2616121
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Patrick,Gallagher,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,538993,2616122
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Lizzie,Gallagher,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,538993,2616123
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,Hugh Frances,Gallagher,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05012,nan,nan,538993,2616124
+Raneany Bar_0488_0039_0004_0_00005.pdf,Donegal,Raneany Bar,Laghy,William James,Gallagher,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,538993,2616125
+Raneany Bar_0488_0039_0005_0_00006.pdf,Donegal,Raneany Bar,Laghy,Mary,McGroary,Head,Head,F,Married,English Only,Roman Catholic,9051,ENGLISH,nan,nan,5,36.0,DL05012,nan,nan,538994,2616126
+Raneany Bar_0488_0039_0005_0_00006.pdf,Donegal,Raneany Bar,Laghy,Patrick,McGroary,nan,nan,M,nan,English Only,Roman Catholic,Mary McGrroy 25.81 acres,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,538994,2616127
+Raneany Bar_0488_0039_0005_0_00006.pdf,Donegal,Raneany Bar,Laghy,Maggie,McGroary,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,538994,2616128
+Raneany Bar_0488_0039_0005_0_00006.pdf,Donegal,Raneany Bar,Laghy,John,McGroary,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,538994,2616129
+Raneany Bar_0488_0039_0006_0_00007.pdf,Donegal,Raneany Bar,Laghy,Joseph,Devenny,Head,Head,M,Married,English Only,Roman Catholic,Mr. account Employer. 967.,ENGLISH,nan,5,13,60.0,DL05012,nan,nan,538995,2616130
+Raneany Bar_0488_0039_0006_0_00007.pdf,Donegal,Raneany Bar,Laghy,MA,Devenny,nan,nan,F,Married,English Only,Roman Catholic,Own Account,ENGLISH,nan,5,13,39.0,DL05012,nan,nan,538995,2616131
+Raneany Bar_0488_0039_0006_0_00007.pdf,Donegal,Raneany Bar,Laghy,Susan,Devenny,nan,nan,F,Single,English Only,Roman Catholic,907,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,538995,2616132
+Raneany Bar_0488_0039_0006_0_00007.pdf,Donegal,Raneany Bar,Laghy,Anthony,Devenny,nan,nan,M,Single,English Only,Roman Catholic,Private Joseph Devenry. Farmer. 40 st acres,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,538995,2616133
+Raneany Bar_0488_0039_0006_0_00007.pdf,Donegal,Raneany Bar,Laghy,Thomas V,Devenny,nan,nan,M,nan,Irish and English,nan,Joseph Deveny Farmer. 704000,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,538995,2616134
+Raneany Bar_0488_0039_0007_0_00008.pdf,Donegal,Raneany Bar,Laghy,Condy,McGlinchy,Head,Head,M,Single,English Only,nan,Employer 905,ENGLISH,nan,nan,nan,65.0,DL05012,nan,nan,538996,2616135
+Raneany Bar_0488_0039_0007_0_00008.pdf,Donegal,Raneany Bar,Laghy,Patrick,McGlinchy,nan,nan,M,Single,English Only,Roman Catholic,Cindy 7drimes. McGlisch 20 St. deres,ENGLISH,nan,nan,nan,69.0,DL05012,nan,nan,538996,2616136
+Raneany Bar_0488_0039_0007_0_00008.pdf,Donegal,Raneany Bar,Laghy,Thomas,McGlinchy,nan,nan,M,Single,English Only,Roman Catholic,Cindy 7drimes. McGlisch 20 St. deres,ENGLISH,nan,nan,nan,67.0,DL05012,nan,nan,538996,2616137
+Raneany Bar_0488_0039_0009_0_00011.pdf,Donegal,Raneany Bar,Laghy,Peter,McGlinchey,Head,Head,M,Single,English Only,Roman Catholic,Employer.,ENGLISH,nan,MOUTNS -,nan,6.0,DL05012,nan,nan,538998,2616138
+Raneany Bar_0488_0039_0009_0_00011.pdf,Donegal,Raneany Bar,Laghy,Patrick,McGlinchey,nan,nan,M,Single,English Only,Roman Catholic,Peter M. Eplischey 40 st acres,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,538998,2616139
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,James,Travers,Head,Head,M,Married,English and Irish,Roman Catholic,Andrew Fravers Farmer 4052 statue acres,ENGLISH,nan,11,3,31.0,DL05012,nan,nan,538999,2616140
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,Annie Maria,Travers,nan,nan,F,Married,English and Irish,Roman Catholic,y -,ENGLISH,nan,11,5,32.0,DL05012,nan,nan,538999,2616141
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,Maria Bernadette,Travers,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,538999,2616142
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,Margaret,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,538999,2616143
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,Andrew,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,538999,2616144
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,John,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,538999,2616145
+Raneany East_0488_0044_0002_0_00003.pdf,Donegal,Raneany East,Laghy,Kathleen Josephine,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05012,nan,nan,538999,2616146
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Jacob,Molloy,Head,Head,M,Married,English Only,nan,Employer. 905,ENGLISH,nan,nan,y,64.0,DL05012,nan,nan,539000,2616147
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Cassie,Molloy,nan,nan,F,Married,English Only,nan,7,ENGLISH,nan,nan,#,50.0,DL05012,nan,nan,539000,2616148
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Ellen,Molloy,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,539000,2616149
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Jacob,Molloy,nan,nan,M,Single,English Only,nan,Jacob. Molloy Farmer 905 25.51 lacres,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,539000,2616150
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Catherine,Molloy,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,539000,2616151
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Michael,Molloy,nan,nan,M,Single,English Only,nan,Jacob 25.81. M. Alloy acres Farm,ENGLISH,nan,nan,nan,15.0,DL05012,nan,nan,539000,2616152
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,James,Molloy,nan,nan,M,Single,English Only,nan,National Army,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,539000,2616153
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Joseph,Molloy,nan,nan,M,Single,English Only,nan,Jacob Molloy. Farrm 9th 25 st. dav,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,539000,2616154
+Raneany East_0488_0044_0003_0_00004.pdf,Donegal,Raneany East,Laghy,Maggie Jane,Molloy,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,539000,2616155
+Raneany East_0488_0044_0004_0_00005.pdf,Donegal,Raneany East,Laghy,Mary,McClay,Head,Head,F,Widow,English Only,nan,Employer.,ENGLISH,nan,9,14,64.0,DL05012,nan,nan,539001,2616156
+Raneany East_0488_0044_0004_0_00005.pdf,Donegal,Raneany East,Laghy,James Henry,McClay,nan,nan,M,nan,English Only,nan,Madto lower McCo accountiestor. Cy. Zamel.,ENGLISH,nan,nan,nan,28.0,DL05012,nan,nan,539001,2616157
+Raneany East_0488_0044_0004_0_00005.pdf,Donegal,Raneany East,Laghy,[Carrie],McClay,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,539001,2616158
+Raneany East_0488_0044_0004_0_00005.pdf,Donegal,Raneany East,Laghy,Edith,McClay,nan,nan,F,nan,English Only,nan,906,ENGLISH,nan,nan,nan,20.0,DL05012,nan,nan,539001,2616159
+Raneany East_0488_0044_0004_0_00005.pdf,Donegal,Raneany East,Laghy,Andrew,McClay,nan,nan,M,nan,English Only,nan,May McCly. Farm.,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,539001,2616160
+Raneany East_0488_0044_0005_0_00006.pdf,Donegal,Raneany East,Laghy,Ellen,Farrell,Head,Head,F,Single,English Only,nan,905,ENGLISH,nan,nan,nan,43.0,DL05012,nan,nan,539002,2616161
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Audley,Browne,Head,Head,M,Married,English Only,nan,Own Account Employer.,ENGLISH,nan,nan,nan,75.0,DL05012,nan,nan,539004,2616162
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Maggie,Browne,nan,nan,F,Married,English Only,nan,9g.,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,539004,2616163
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Robert A,Browne,nan,nan,M,nan,English Only,nan,"Audley Browne, Farmer, 60 statute acres.",ENGLISH,nan,nan,3,33.0,DL05012,nan,nan,539004,2616164
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,George A,Browne,nan,nan,M,Single,English Only,nan,"Audley Browne, Farmer, 60 Statute acres.",ENGLISH,nan,nan,nan,29.0,DL05012,nan,nan,539004,2616165
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Maggie LJ,Browne,nan,nan,F,Single,English Only,nan,y.,ENGLISH,nan,nan,nan,26.0,DL05012,nan,nan,539004,2616166
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Maggie J,Browne,nan,nan,F,Married,English Only,nan,Department of Education 10%,ENGLISH,nan,11,3,30.0,DL05012,nan,nan,539004,2616167
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Mae,Browne,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,539004,2616168
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Audley,Browne,nan,nan,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05012,nan,nan,539004,2616169
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Laura,Browne,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,539004,2616170
+Raneany East_0488_0044_0007_0_00008.pdf,Donegal,Raneany East,Laghy,Bella,Robinson,nan,nan,F,Single,English Only,nan,760 Private,ENGLISH,nan,nan,nan,21.0,DL05012,nan,nan,539004,2616171
+Raneany West_0488_0045_0002_0_00003.pdf,Donegal,Raneany West,Laghy,John,McMurray,Head,Head,M,Married,English Only,Church of Ireland,Own Account 905 15 st acres,ENGLISH,nan,nan,nan,52.0,DL05012,nan,nan,539005,2616172
+Raneany West_0488_0045_0002_0_00003.pdf,Donegal,Raneany West,Laghy,Jane,McMurray,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,10,3,52.0,DL05012,nan,nan,539005,2616173
+Raneany West_0488_0045_0002_0_00003.pdf,Donegal,Raneany West,Laghy,Hannah,McMurray,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,539005,2616174
+Raneany West_0488_0045_0002_0_00003.pdf,Donegal,Raneany West,Laghy,Kathleen,McMurray,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,539005,2616175
+Raneany West_0488_0045_0002_0_00003.pdf,Donegal,Raneany West,Laghy,Mabel,McMurray,nan,nan,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,539005,2616176
+Raneany West_0488_0045_0003_0_00004.pdf,Donegal,Raneany West,Laghy,Kate,Connolly,Head,Head,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,66.0,DL05012,nan,nan,539006,2616177
+Raneany West_0488_0045_0003_0_00004.pdf,Donegal,Raneany West,Laghy,Patrick,Connolly,nan,nan,M,Single,English Only,Roman Catholic,Past 102. master Donegal,ENGLISH,nan,nan,nan,36.0,DL05012,nan,nan,539006,2616178
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,John,McGinley,Head,Head,M,Married,English Only,nan,DRC 530 Donepal. Railway Co,ENGLISH,nan,nan,74,48.0,DL05012,nan,nan,539009,2616179
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,Gracie,McGinley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,2,4,40.0,DL05012,nan,nan,539009,2616180
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,Mary Bridget,McGinley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,539009,2616181
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,Maggie Josephine,McGinley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,539009,2616182
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,Daniel,McGinley,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,539009,2616183
+Raneany West_0488_0045_0006_0_00007.pdf,Donegal,Raneany West,Laghy,Agnes Teresa,McGinley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,539009,2616184
+Raneany West_0488_0045_0007_0_00008.pdf,Donegal,Raneany West,Laghy,George,Hammond,Head,Head,M,Married,English Only,Church of Ireland,on own Account 90 Employer,ENGLISH,nan,nan,5,65.0,DL05012,nan,nan,539010,2616185
+Raneany West_0488_0045_0007_0_00008.pdf,Donegal,Raneany West,Laghy,Ellen,Hammond,nan,nan,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,2,5,62.0,DL05012,nan,nan,539010,2616186
+Raneany West_0488_0045_0007_0_00008.pdf,Donegal,Raneany West,Laghy,Wilfred,Hammond,nan,nan,M,Single,English Only,Church of Ireland,Geo. Hammond Farmer 30 St. acres,ENGLISH,nan,nan,nan,27.0,DL05012,nan,nan,539010,2616187
+Raneany West_0488_0045_0007_0_00008.pdf,Donegal,Raneany West,Laghy,Albert,Hammond,nan,nan,M,Single,English Only,Church of Ireland,Geo Hammond Farmer 3a St. Acres,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,539010,2616188
+Raneany West_0488_0045_0007_0_00008.pdf,Donegal,Raneany West,Laghy,Bella,Hammond,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,539010,2616189
+Raneany West_0488_0045_0008_0_00009.pdf,Donegal,Raneany West,Laghy,William,Torrens,Head,Head,M,Married,English Only,Church of Ireland,J. Irwin O'Co Hardware Merchant Mo megal,ENGLISH,nan,nan,2,30.0,DL05012,nan,nan,539011,2616190
+Raneany West_0488_0045_0008_0_00009.pdf,Donegal,Raneany West,Laghy,Mary,Torrens,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,2,27.0,DL05012,nan,nan,539011,2616191
+Raneany West_0488_0045_0008_0_00009.pdf,Donegal,Raneany West,Laghy,William,Torrens,nan,nan,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05012,nan,nan,539011,2616192
+Raneany West_0488_0045_0008_0_00009.pdf,Donegal,Raneany West,Laghy,Retta,Torrens,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05012,nan,nan,539011,2616193
+Raneany West_0488_0045_0009_0_00010.pdf,Donegal,Raneany West,Laghy,George,Millar,Head,Head,M,nan,English Only,Church of Ireland,Francis Millar Farmer 906 30 st acres.,ENGLISH,nan,9.,2 2,32.0,DL05012,nan,nan,539012,2616194
+Raneany West_0488_0045_0009_0_00010.pdf,Donegal,Raneany West,Laghy,Frances Emily,Millar,nan,nan,F,Married,English Only,nan,nan,ENGLISH,nan,9,2,35.0,DL05012,nan,nan,539012,2616195
+Raneany West_0488_0045_0009_0_00010.pdf,Donegal,Raneany West,Laghy,Harry,Millar,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05012,nan,nan,539012,2616196
+Raneany West_0488_0045_0009_0_00010.pdf,Donegal,Raneany West,Laghy,Freddie,Millar,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,539012,2616197
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,William,Robinson,Head,Head,F,nan,English Only,Church of Ireland,own account. 352,ENGLISH,nan,nan,nan,65.0,DL05012,nan,nan,539014,2616198
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,Martha J,Robinson,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,29.0,DL05012,nan,nan,539014,2616199
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,Fanny,Robinson,nan,nan,F,Single,English Only,nan,Robert Wray. Laghy. /60,ENGLISH,nan,nan,nan,24.0,DL05012,nan,nan,539014,2616200
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,Edith,Robinson,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,539014,2616201
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,George,Robinson,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,539014,2616202
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,Fanny,Shaw,nan,nan,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05012,nan,nan,539014,2616203
+Raneany West_0488_0045_0011_0_00012.pdf,Donegal,Raneany West,Laghy,Tommy,Robinson,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,539014,2616204
+Raneany West_0488_0045_0012_0_00013.pdf,Donegal,Raneany West,Laghy,Mary,McClay,Head,Head,F,Single,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,64.0,DL05012,nan,nan,539015,2616205
+Raneany West_0488_0045_0012_0_00013.pdf,Donegal,Raneany West,Laghy,Susan,Galbraith,nan,nan,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,90.0,DL05012,nan,nan,539015,2616206
+Raneany West_0488_0045_0013_0_00014.pdf,Donegal,Raneany West,Laghy,Rev Joseph G,Sheldon,Head,Head,M,Single,English Only,Church of Ireland,Glenfyman 730.,ENGLISH,nan,nan,nan,48.0,DL05012,nan,nan,539016,2616207
+Raneany West_0488_0045_0013_0_00014.pdf,Donegal,Raneany West,Laghy,Minnie,Sheldon,nan,nan,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,54.0,DL05012,nan,nan,539016,2616208
+Raneany West_0488_0045_0013_0_00014.pdf,Donegal,Raneany West,Laghy,Elizabeth,Hume,nan,nan,F,nan,English Only,Church of Ireland,/60 Private,ENGLISH,nan,nan,nan,45.0,DL05012,nan,nan,539016,2616209
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Mary,Boyle,Head,Head,F,Widow,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,73.0,DL05012,nan,nan,539017,2616210
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Bridget,Millar,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,33.0,DL05012,nan,nan,539017,2616211
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Mary,Curren,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,X,24.0,DL05012,nan,nan,539017,2616212
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,John,Boyle,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,539017,2616213
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Hanna,McConnall,nan,nan,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,67.0,DL05012,nan,nan,539017,2616214
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Maggie,McConnall,nan,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,17.0,DL05012,nan,nan,539017,2616215
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,John,McConnall,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05012,nan,nan,539017,2616216
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,James,Millar,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,539017,2616217
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Susan,Millar,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,539017,2616218
+Raneany West_0488_0045_0014_0_00015.pdf,Donegal,Raneany West,Laghy,Charles,Millar,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05012,nan,nan,539017,2616219
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Catherine,Dorrian,nan,nan,F,Widow,English Only,Roman Catholic,Employer 900,ENGLISH,nan,nan,nan,56.0,DL05012,nan,nan,560306,2616220
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Joseph,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,Catherine Dorrian St acres,ENGLISH,nan,nan,nan,25.0,DL05012,nan,nan,560306,2616221
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,James Francis,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,Catherine Dorrian St acres,ENGLISH,nan,nan,nan,23.0,DL05012,nan,nan,560306,2616222
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Bernard Vincent,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,Catherine Dorrian St acres,ENGLISH,nan,nan,nan,22.0,DL05012,nan,nan,560306,2616223
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Margret Bridget,Dorrian,nan,nan,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,560306,2616224
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Hugh Gerard,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,960,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,560306,2616225
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Daniel,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,960,ENGLISH,nan,nan,nan,16.0,DL05012,nan,nan,560306,2616226
+Rossilly_0488_0047_0002_0_00003.pdf,Donegal,Rossilly,Laghy,Antony,Dorrian,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,560306,2616227
+Rossilly_0488_0047_0004_0_00005.pdf,Donegal,Rossilly,Laghy,Hugh,Walsh,Head,Head,M,Single,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,47.0,DL05012,nan,nan,560308,2616228
+Rossilly_0488_0047_0004_0_00005.pdf,Donegal,Rossilly,Laghy,Patrick,Walsh,nan,nan,M,Single,English Only,nan,Hugh Walsh Farmer 16 St acres.,ENGLISH,nan,nan,nan,45.0,DL05012,nan,nan,560308,2616229
+Rossilly_0488_0047_0005_0_00006.pdf,Donegal,Rossilly,Laghy,Maggie,Doherty,Head,Head,F,Single,English Only,Roman Catholic,/ 903.,ENGLISH,nan,nan,nan,63.0,DL05012,nan,nan,560309,2616230
+Rossilly_0488_0047_0005_0_00006.pdf,Donegal,Rossilly,Laghy,Maggie E,Likely,nan,nan,F,Single,English Only,Roman Catholic,0,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,560309,2616231
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,James,Timoney,Head,Head,M,nan,English Only,Roman Catholic,Employer 904,ENGLISH,nan,0,7 Y,47.0,DL05012,nan,nan,560311,2616232
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Sarah,Timoney,nan,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,0,7,50.0,DL05012,nan,nan,560311,2616233
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Mary,Timoney,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,19.0,DL05012,nan,nan,560311,2616234
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Maggie,Timoney,nan,nan,F,Single,English Only,Roman Catholic,Private,ENGLISH,nan,nan,nan,18.0,DL05012,nan,nan,560311,2616235
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Willie John,Timoney,nan,nan,nan,nan,English and Irish,Roman Catholic,James Timney Farmer 904 1151 acres,ENGLISH,nan,nan,nan,14.0,DL05012,nan,nan,560311,2616236
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Patrick,Timoney,nan,nan,M,nan,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05012,nan,nan,560311,2616237
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Sarah,Timoney,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05012,nan,nan,560311,2616238
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,James F,Timoney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05012,nan,nan,560311,2616239
+Rossilly_0488_0047_0007_0_00008.pdf,Donegal,Rossilly,Laghy,Bernard,Timoney,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05012,nan,nan,560311,2616240
+Rossilly_0488_0047_0008_0_00009.pdf,Donegal,Rossilly,Laghy,Hannah,Timoney,Head,Head,F,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,68.0,DL05012,nan,nan,560312,2616241
+Rossilly_0488_0047_0008_0_00009.pdf,Donegal,Rossilly,Laghy,Patrick,Timoney,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,66.0,DL05012,nan,nan,560312,2616242
+Rossilly_0488_0047_0008_0_00009.pdf,Donegal,Rossilly,Laghy,Mary,Timoney,nan,nan,F,Single,English Only,Roman Catholic,16 Private,ENGLISH,nan,nan,nan,50.0,DL05012,nan,nan,560312,2616243
+Gollard_0488_0036_0016_0_00017.pdf,Donegal,Gollard,Laghy,Ellen F,Scott,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05012,nan,nan,319394,2613197
+Gollard_0488_0036_0018_0_00019.pdf,Donegal,Gollard,Laghy,John,Thomas,Head,Head,M,Married,English Only,Roman Catholic,X,ENGLISH,Donegal,nan,nan,73.0,DL05012,nan,nan,319396,2613198
+Gollard_0488_0036_0018_0_00019.pdf,Donegal,Gollard,Laghy,Mary,Thomas,nan,nan,F,Married,Irish and English,Roman Catholic,nan,ENGLISH,nan,nan,nan,62.0,DL05012,nan,nan,319396,2613199
+Greaghs_0488_0037_0003_0_00004.pdf,Donegal,Greaghs,Laghy,Peter,Travers,Head,Head,M,Married,English Only,nan,M.,ENGLISH,nan,X,none,66.0,DL05012,nan,nan,332587,2613200
+Greaghs_0488_0037_0003_0_00004.pdf,Donegal,Greaghs,Laghy,Fanny,Travers,nan,nan,F,Married,English Only,Roman Catholic,17,ENGLISH,Donegal,nan,nan,62.0,DL05012,nan,nan,332587,2613201
+Greaghs_0488_0037_0003_0_00004.pdf,Donegal,Greaghs,Laghy,Kate,Bartley,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,11.0,DL05012,nan,nan,332587,2613202
+Greaghs_0488_0037_0005_0_00006.pdf,Donegal,Greaghs,Laghy,John,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,03,ENGLISH,Donegal,+,none,55.0,DL05012,nan,nan,332589,2613203
+Greaghs_0488_0037_0005_0_00006.pdf,Donegal,Greaghs,Laghy,Bridget,Gallagher,nan,nan,F,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,36.0,DL05012,nan,nan,332589,2613204
+Greaghs_0488_0037_0006_0_00007.pdf,Donegal,Greaghs,Laghy,Francis,Gallagher,Head,Head,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,none,28.0,DL05012,nan,nan,332590,2613205
+Greaghs_0488_0037_0006_0_00007.pdf,Donegal,Greaghs,Laghy,Mary,Gallagher,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,33.0,DL05012,nan,nan,332590,2613206
+Greaghs_0488_0037_0006_0_00007.pdf,Donegal,Greaghs,Laghy,Ellen,Gallagher,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,32.0,DL05012,nan,nan,332590,2613207
+Greaghs_0488_0037_0006_0_00007.pdf,Donegal,Greaghs,Laghy,Neil,Gallagher,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,29.0,DL05012,nan,nan,332590,2613208
+Greaghs_0488_0037_0007_0_00008.pdf,Donegal,Greaghs,Laghy,John,Gorman,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,73.0,DL05012,nan,nan,332591,2613209
+Greaghs_0488_0037_0009_0_00010.pdf,Donegal,Greaghs,Laghy,Mary,Gorman,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,71.0,DL05012,nan,nan,332593,2613210
+Greaghs_0488_0037_0009_0_00010.pdf,Donegal,Greaghs,Laghy,Mary,Gorman,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,36.0,DL05012,nan,nan,332593,2613211
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Edward,Gorman,Head,Head,M,nan,English Only,Roman Catholic,10,ENGLISH,nan,6,6,44.0,DL05012,nan,nan,332592,2613212
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Agness,Gorman,nan,nan,F,Married,English Only,Roman Catholic,10,ENGLISH,Donegal,6,nan,33.0,DL05012,nan,nan,332592,2613213
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Mary Josephine,Gorman,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05012,nan,nan,332592,2613214
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,[Catherine],Gorman,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,7.0,DL05012,nan,nan,332592,2613215
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Joseph,Gorman,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,5.0,DL05012,nan,nan,332592,2613216
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Michael,Gorman,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05012,nan,nan,332592,2613217
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,Edward,Gorman,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05012,nan,nan,332592,2613218
+Greaghs_0488_0037_0008_0_00009.pdf,Donegal,Greaghs,Laghy,William James,Gorman,nan,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05012,nan,nan,332592,2613219
+Greaghs_0488_0037_0011_0_00012.pdf,Donegal,Greaghs,Laghy,Thomas John,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,01,ENGLISH,Donegal,-1,1,5.0,DL05012,nan,nan,332595,2613220
+Greaghs_0488_0037_0011_0_00012.pdf,Donegal,Greaghs,Laghy,Mary Ellen,Gallagher,nan,nan,F,Married,English Only,nan,1,ENGLISH,nan,1,nan,29.0,DL05012,nan,nan,332595,2613221
+Greaghs_0488_0037_0011_0_00012.pdf,Donegal,Greaghs,Laghy,Annie C,Gallagher,nan,nan,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,0.0,DL05012,nan,nan,332595,2613222
+Greaghs_0488_0037_0012_0_00013.pdf,Donegal,Greaghs,Laghy,James,Lappin,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,62.0,DL05012,nan,nan,332596,2613223
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,James,Travers,nan,nan,M,Married,English Only,Roman Catholic,27,ENGLISH,Donegal,8,2,61.0,DL05012,nan,nan,332583,2613224
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,Bridget,Travers,nan,nan,F,Married,English Only,Roman Catholic,27,ENGLISH,Donegal,8,nan,52.0,DL05012,nan,nan,332583,2613225
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,Patrick,Travers,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,26.0,DL05012,nan,nan,332583,2613226
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,James,Travers,nan,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,25.0,DL05012,nan,nan,332583,2613227
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,Isabel,Travers,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,24.0,DL05012,nan,nan,332583,2613228
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,Alice,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,22.0,DL05012,nan,nan,332583,2613229
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,Mary B,Travers,nan,nan,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05012,nan,nan,332583,2613230
+Greaghs Bar_0488_0040_0002_0_00003.pdf,Donegal,Greaghs Bar,Laghy,John G,Travers,nan,nan,nan,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,10.0,DL05012,nan,nan,332583,2613231
+Inishpat_0488_0055_0002_0_00003.pdf,Donegal,Inishpat,Laghy,Arthur,Gallagher,Head,Head,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,none,68.0,DL05012,nan,nan,354429,2613232
+Inishpat_0488_0055_0002_0_00003.pdf,Donegal,Inishpat,Laghy,Anne,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,66.0,DL05012,nan,nan,354429,2613233
+Inishpat_0488_0055_0002_0_00003.pdf,Donegal,Inishpat,Laghy,Bridget,Gallagher,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,58.0,DL05012,nan,nan,354429,2613234
+Laghey Town_0488_0056_0004_0_00005.pdf,Donegal,Laghey Town,Laghy,William,Elliott,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,49.0,DL05012,nan,nan,414451,2613235
+Laghey Town_0488_0056_0007_0_00008.pdf,Donegal,Laghey Town,Laghy,Mary Anne,Scanlon,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,None. 0,74.0,DL05012,nan,nan,414454,2613236
+Laghey Town_0488_0056_0010_0_00011.pdf,Donegal,Laghey Town,Laghy,William,Bartley,Head,Head,M,Married,English Only,Roman Catholic,29,ENGLISH,Donegal,1,none,56.0,DL05012,nan,nan,414457,2613237
+Laghey Town_0488_0056_0010_0_00011.pdf,Donegal,Laghey Town,Laghy,Bridget,Bartley,nan,nan,F,Married,English Only,Roman Catholic,29,ENGLISH,nan,1,nan,50.0,DL05012,nan,nan,414457,2613238
+Laghey Town_0488_0056_0010_0_00011.pdf,Donegal,Laghey Town,Laghy,Patrick John,Bartley,nan,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,28.0,DL05012,nan,nan,414457,2613239
+Laghey Town_0488_0056_0014_0_00015.pdf,Donegal,Laghey Town,Laghy,Annie,McHugh,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,1,47.0,DL05012,nan,nan,414461,2613240
+Laghey Town_0488_0056_0014_0_00015.pdf,Donegal,Laghey Town,Laghy,Margaret,McHugh,nan,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05012,nan,nan,414461,2613241

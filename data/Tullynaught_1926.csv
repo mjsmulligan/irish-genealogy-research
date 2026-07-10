@@ -1,0 +1,895 @@
+aform_name,county,townland,ded,first_name,surname,relationship_to_head,updated_relationship_to_head,updated_sex,updated_marriage,updated_irish_language,updated_religion,years_married,irish_or_english,birthplace_county,children_born_alive,children_living,updated_age,geocode,institution_name,institution_type,image_group,a_id
+Aghlem_0508_0001_0004_0_00006.pdf,Donegal,Aghlem,Tullynaught,William,Gillespie,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,67.0,DL05018,nan,nan,5500,2772510
+Aghlem_0508_0001_0004_0_00006.pdf,Donegal,Aghlem,Tullynaught,John,Gillespie,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,65.0,DL05018,nan,nan,5500,2772511
+Aghlem_0508_0001_0004_0_00006.pdf,Donegal,Aghlem,Tullynaught,Catherine,Gillespie,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,52.0,DL05018,nan,nan,5500,2772512
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Edward,Gillespie,Head,Head,M,Married,English Only,Roman Catholic,37 J -,ENGLISH,Donegal,y,2,67.0,DL05018,nan,nan,5501,2772513
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Margaret,Gillespie,Wife,Wife,F,Married,English Only,Roman Catholic,37,ENGLISH,nan,10,nan,57.0,DL05018,nan,nan,5501,2772514
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Francey,Gillespie,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,28.0,DL05018,nan,nan,5501,2772515
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Agnes,Gillespie,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,5501,2772516
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Annie,Gillespie,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,5501,2772517
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Lizzie,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,5501,2772518
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Josephine,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,5501,2772519
+Aghlem_0508_0001_0005_0_00008.pdf,Donegal,Aghlem,Tullynaught,Teresa,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,5501,2772520
+Aghlem_0508_0001_0006_0_00010.pdf,Donegal,Aghlem,Tullynaught,Frank,Boyle,Head,Head,M,Married,English Only,Roman Catholic,05,ENGLISH,Donegal,2,2.,31.0,DL05018,nan,nan,5502,2772521
+Aghlem_0508_0001_0006_0_00010.pdf,Donegal,Aghlem,Tullynaught,Mary A,Boyle,Wife,Wife,F,Married,English Only,Roman Catholic,5,ENGLISH,Donegal,2.,nan,30.0,DL05018,nan,nan,5502,2772522
+Aghlem_0508_0001_0006_0_00010.pdf,Donegal,Aghlem,Tullynaught,Maureen,Boyle,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05018,nan,nan,5502,2772523
+Aghlem_0508_0001_0006_0_00010.pdf,Donegal,Aghlem,Tullynaught,John,Boyle,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05018,nan,nan,5502,2772524
+Aghlem_0508_0001_0007_0_00012.pdf,Donegal,Aghlem,Tullynaught,Michael,Gillespie,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,1,56.0,DL05018,nan,nan,5503,2772525
+Aghlem_0508_0001_0007_0_00012.pdf,Donegal,Aghlem,Tullynaught,Margaret Ellen,Gillespie,Daughter,Daughter,F,Mother is Dead,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,5503,2772526
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Andrew,Scott,Head,Head,M,Married,English Only,Church of Ireland,10  -,ENGLISH,Donegal,6 -,4,42.0,DL05018,nan,nan,16261,2772527
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Cassie,Scott,Wife,Wife,F,Married,English Only,nan,10,ENGLISH,Donegal,6.,nan,35.0,DL05018,nan,nan,16261,2772528
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Edward,Scott,Brother,Brother,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,45.0,DL05018,nan,nan,16261,2772529
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Thomas J,Scott,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,9.0,DL05018,nan,nan,16261,2772530
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Andrew,Scott,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,7.0,DL05018,nan,nan,16261,2772531
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,William G,Scott,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,4.0,DL05018,nan,nan,16261,2772532
+Ardnagassan_0508_0002_0004_0_00007.pdf,Donegal,Ardnagassan,Tullynaught,Ernest F,Scott,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,0.0,DL05018,nan,nan,16261,2772533
+Ardnagassan_0508_0002_0005_0_00009.pdf,Donegal,Ardnagassan,Tullynaught,Catherine,Wray,Head,Head,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,67.0,DL05018,nan,nan,16262,2772534
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Elizabeth,Graham,Head,Head,F,Widow,English Only,Presbyterian,nan,ENGLISH,Donegal,nan,nan,76.0,DL05018,nan,nan,16267,2772535
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Andrew,Graham,Son,Son,M,Married,English Only,nan,11 -,ENGLISH,Donegal,6,5,39.0,DL05018,nan,nan,16267,2772536
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Maggie,Graham,"Daughter law,",nan,F,Married,English Only,nan,11,ENGLISH,Donegal,6,nan,40.0,DL05018,nan,nan,16267,2772537
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Kate,Graham,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,35.0,DL05018,nan,nan,16267,2772538
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Samuel R,Graham,Grand Son,Grandson,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,9.0,DL05018,nan,nan,16267,2772539
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Mary E,Graham,Granddaughter,Granddaughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,8.0,DL05018,nan,nan,16267,2772540
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Andrew,Graham,Grandson,Grandson,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,7.0,DL05018,nan,nan,16267,2772541
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,James H,Graham,Grandson,Grandson,nan,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,5.0,DL05018,nan,nan,16267,2772542
+Ardnagassan_0508_0002_0010_0_00019.pdf,Donegal,Ardnagassan,Tullynaught,Katie,Graham,Granddaughter,Granddaughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,3.0,DL05018,nan,nan,16267,2772543
+Barnesneilly_0508_0018_0003_0_00005.pdf,Donegal,Barnesneilly,Tullynaught,Thomas,Gallagher,Head,Head,M,Widower,English Only,nan,nan,ENGLISH,nan,nan,2,38.0,DL05018,nan,nan,76425,2772544
+Barnesneilly_0508_0018_0003_0_00005.pdf,Donegal,Barnesneilly,Tullynaught,Bridget,Gallagher,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,76425,2772545
+Barnesneilly_0508_0018_0003_0_00005.pdf,Donegal,Barnesneilly,Tullynaught,Denis,Gallagher,Son,Son,M,Mother is Dead,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,76425,2772546
+Barnesneilly_0508_0018_0003_0_00005.pdf,Donegal,Barnesneilly,Tullynaught,Thomas,Gallagher,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,76425,2772547
+Copany_0508_0019_0002_0_00003.pdf,Donegal,Copany,Tullynaught,Mary,Walsh,Head,Head,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,75.0,DL05018,nan,nan,198505,2772548
+Copany_0508_0019_0003_0_00005.pdf,Donegal,Copany,Tullynaught,Robert,Scott,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,65.0,DL05018,nan,nan,198506,2772549
+Copany_0508_0019_0003_0_00005.pdf,Donegal,Copany,Tullynaught,Alex,Scott,Brother-,nan,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,55.0,DL05018,nan,nan,198506,2772550
+Copany_0508_0019_0004_0_00007.pdf,Donegal,Copany,Tullynaught,Margaret,Scott,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,48.0,DL05018,nan,nan,198507,2772551
+Copany_0508_0019_0004_0_00007.pdf,Donegal,Copany,Tullynaught,Thomas,Scott,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,198507,2772552
+Copany_0508_0019_0004_0_00007.pdf,Donegal,Copany,Tullynaught,Florence,Scott,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,17.0,DL05018,nan,nan,198507,2772553
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,James,Johnson,Head,Head,M,Married,English Only,nan,21  -,ENGLISH,Donegal,5 -,2,61.0,DL05018,nan,nan,198508,2772554
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,Annabella,Johnson,Wife,Wife,F,Married,English Only,nan,21,ENGLISH,Donegal,5,nan,51.0,DL05018,nan,nan,198508,2772555
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,Lizzie,Johnson,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,17.0,DL05018,nan,nan,198508,2772556
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,Annabelle,Johnson,W.W.,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,198508,2772557
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,Margaret,Johnson,W.W.,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,198508,2772558
+Copany_0508_0019_0005_0_00009.pdf,Donegal,Copany,Tullynaught,James,Johnson,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,198508,2772559
+Copany_0508_0019_0006_0_00011.pdf,Donegal,Copany,Tullynaught,David,Johnson,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,198509,2772560
+Copany_0508_0019_0006_0_00011.pdf,Donegal,Copany,Tullynaught,Margaret,Johnson,Sister,Sister,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,50.0,DL05018,nan,nan,198509,2772561
+Copany_0508_0019_0006_0_00011.pdf,Donegal,Copany,Tullynaught,Lizzie,Johnson,Sister,Sister,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,60.0,DL05018,nan,nan,198509,2772562
+Copany_0508_0019_0006_0_00011.pdf,Donegal,Copany,Tullynaught,Patrick,McGarrigle,Servant,Servant,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,198509,2772563
+Croaghnameal_0508_0021_0003_0_00005.pdf,Donegal,Croaghnameal,Tullynaught,Thomas,Mullen,Head,Head,M,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,7,68.0,DL05018,nan,nan,215158,2772564
+Croaghnameal_0508_0021_0003_0_00005.pdf,Donegal,Croaghnameal,Tullynaught,Mary A,Mullen,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,4,nan,50.0,DL05018,nan,nan,215158,2772565
+Croaghnameal_0508_0021_0003_0_00005.pdf,Donegal,Croaghnameal,Tullynaught,Ceila A,Mullen,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,14.0,DL05018,nan,nan,215158,2772566
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Patrick,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,09,ENGLISH,Donegal,5,5,50.0,DL05018,nan,nan,215160,2772567
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Mary A,Gallagher,Dife,nan,F,Married,English Only,Roman Catholic,9,ENGLISH,Donegal,5,nan,34.0,DL05018,nan,nan,215160,2772568
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Catheelin,Gallagher,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,8.0,DL05018,nan,nan,215160,2772569
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Patrick J,Gallagher,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,6.0,DL05018,nan,nan,215160,2772570
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Bridget C,Gallagher,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,5.0,DL05018,nan,nan,215160,2772571
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,James,Gallagher,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05018,nan,nan,215160,2772572
+Croaghnameal_0508_0021_0005_0_00009.pdf,Donegal,Croaghnameal,Tullynaught,Mary J,Gallagher,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,0.0,DL05018,nan,nan,215160,2772573
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,William,White,Head,Head,M,Married,English Only,Church of Ireland,27,ENGLISH,nan,8,1,54.0,DL05018,nan,nan,222957,2772574
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,Rebecca,White,Wife,Wife,F,Married,English Only,nan,27,ENGLISH,Donegal,8,nan,51.0,DL05018,nan,nan,222957,2772575
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,Alex,White,Son,Son,nan,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,222957,2772576
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,Bella M,White,Daughter,Daughter,nan,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,18.0,DL05018,nan,nan,222957,2772577
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,George,White,Sen.,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,222957,2772578
+Cully_0508_0022_0004_0_00007.pdf,Donegal,Cully,Tullynaught,William J,White,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,44.0,DL05018,nan,nan,222957,2772579
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,John,Morrow,Head,Head,M,Married,English Only,Methodist,YEAIS -,ENGLISH,Donegal,nan,6.,50.0,DL05018,nan,nan,222958,2772580
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Eileen K,Morrow,Daughter,Daughter,F,Single,English Only,Methodist,26,ENGLISH,Donegal,12.,nan,19.0,DL05018,nan,nan,222958,2772581
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Francis B,Morrow,Son,Son,M,Single,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,15.0,DL05018,nan,nan,222958,2772582
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Dorinda,Morrow,Daughter,Daughter,F,Both Parents Alive,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,12.0,DL05018,nan,nan,222958,2772583
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Maud J,Morrow,Daughter,Daughter,F,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,222958,2772584
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,George A,Morrow,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,10.0,DL05018,nan,nan,222958,2772585
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Robert S,Morrow,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,7.0,DL05018,nan,nan,222958,2772586
+Cully_0508_0022_0005_0_00009.pdf,Donegal,Cully,Tullynaught,Martha E,Morrow,Daughter,Daughter,F,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,222958,2772587
+Cully_0508_0022_0010_0_00019.pdf,Donegal,Cully,Tullynaught,Hannah,Kerrigan,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,63.0,DL05018,nan,nan,222963,2772588
+Cully_0508_0022_0010_0_00019.pdf,Donegal,Cully,Tullynaught,James,Kerrigan,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,42.0,DL05018,nan,nan,222963,2772589
+Drumadoney_0508_0003_0005_0_00009.pdf,Donegal,Drumadoney,Tullynaught,John,Cannon,Head,Head,M,Married,English Only,nan,X -,ENGLISH,Donegal,nan,none,73.0,DL05018,nan,nan,256399,2772590
+Drumadoney_0508_0003_0005_0_00009.pdf,Donegal,Drumadoney,Tullynaught,Mary,Cannon,Wife,Wife,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,none,nan,72.0,DL05018,nan,nan,256399,2772591
+Drumadoney_0508_0003_0006_0_00011.pdf,Donegal,Drumadoney,Tullynaught,Thomas,Travers,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,41.0,DL05018,nan,nan,256400,2772592
+Drumadoney_0508_0003_0007_0_00013.pdf,Donegal,Drumadoney,Tullynaught,Mary,Murphy,Head,Head,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,none,nan,74.0,DL05018,nan,nan,256401,2772593
+Drumadoney_0508_0003_0007_0_00013.pdf,Donegal,Drumadoney,Tullynaught,Patrick,Murphy,Son,Son,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,46.0,DL05018,nan,nan,256401,2772594
+Drumcroagh_0508_0004_0003_0_00005.pdf,Donegal,Drumcroagh,Tullynaught,William,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,none,none,nan,DL05018,nan,nan,260090,2772595
+Drumcroagh_0508_0004_0003_0_00005.pdf,Donegal,Drumcroagh,Tullynaught,Hannah,Cassidy,Wife,Wife,F,Single,English Only,Roman Catholic,30,ENGLISH,Donegal,none,nan,nan,DL05018,nan,nan,260090,2772596
+Drumcroagh_0508_0004_0003_0_00005.pdf,Donegal,Drumcroagh,Tullynaught,Patrick,Kennedy,Servant,Servant,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,79.0,DL05018,nan,nan,260090,2772597
+Drumcroagh_0508_0004_0004_0_00007.pdf,Donegal,Drumcroagh,Tullynaught,Patrick,Walsh,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,260091,2772598
+Drumcroagh_0508_0004_0004_0_00007.pdf,Donegal,Drumcroagh,Tullynaught,Annie,Walsh,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,73.0,DL05018,nan,nan,260091,2772599
+Drumcroagh_0508_0004_0004_0_00007.pdf,Donegal,Drumcroagh,Tullynaught,Mary J,Walsh,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,66.0,DL05018,nan,nan,260091,2772600
+Drumcroagh_0508_0004_0004_0_00007.pdf,Donegal,Drumcroagh,Tullynaught,John,Walsh,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,64.0,DL05018,nan,nan,260091,2772601
+Drumcroagh_0508_0004_0004_0_00007.pdf,Donegal,Drumcroagh,Tullynaught,John,Murphy,Cousin,Cousin,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,46.0,DL05018,nan,nan,260091,2772602
+Drumcroagh_0508_0004_0005_0_00009.pdf,Donegal,Drumcroagh,Tullynaught,Elizabeth F,Thompson,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,260092,2772603
+Druminardagh_0508_0005_0002_0_00003.pdf,Donegal,Druminardagh,Tullynaught,Edward,Gillespie,Head,Head,M,Married,English and Irish,Roman Catholic,21,ENGLISH,Donegal,0,none,65.0,DL05018,nan,nan,262650,2772604
+Druminardagh_0508_0005_0002_0_00003.pdf,Donegal,Druminardagh,Tullynaught,Lizzie,Gillespie,Wife,Wife,F,Married,English Only,Roman Catholic,21,ENGLISH,Donegal,nan,none,54.0,DL05018,nan,nan,262650,2772605
+Druminardagh_0508_0005_0003_0_00005.pdf,Donegal,Druminardagh,Tullynaught,William T,Corrigan,Head,Head,nan,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,33.0,DL05018,nan,nan,262651,2772606
+Druminardagh_0508_0005_0005_0_00009.pdf,Donegal,Druminardagh,Tullynaught,James,Perry,Head,Head,M,Married,English Only,nan,08,ENGLISH,Donegal,1,None 1,40.0,DL05018,nan,nan,262653,2772607
+Druminardagh_0508_0005_0005_0_00009.pdf,Donegal,Druminardagh,Tullynaught,Mary Ellen,Perry,Wife,Wife,F,Married,English Only,Presbyterian,8,ENGLISH,Donegal,/,none,30.0,DL05018,nan,nan,262653,2772608
+Druminardagh_0508_0005_0005_0_00009.pdf,Donegal,Druminardagh,Tullynaught,William Francis,Perry,Son,Son,M,nan,English Only,Presbyterian,nan,ENGLISH,Donegal,nan,nan,7.0,DL05018,nan,nan,262653,2772609
+Druminardagh_0508_0005_0006_0_00011.pdf,Donegal,Druminardagh,Tullynaught,George,Farrell,Head,Head,M,Single,English Only,Methodist,nan,ENGLISH,Donegal,nan,nan,39.0,DL05018,nan,nan,262654,2772610
+Druminardagh_0508_0005_0006_0_00011.pdf,Donegal,Druminardagh,Tullynaught,Thomas Johnston,Farrell,Visitor,Visitor,M,Widower,English Only,Methodist,nan,ENGLISH,Donegal,nan,- X,61.0,DL05018,nan,nan,262654,2772611
+Druminardagh_0508_0005_0008_0_00015.pdf,Donegal,Druminardagh,Tullynaught,Robert,Graham,Head,Head,M,Married,English Only,Church of Ireland,11 -,ENGLISH,Donegal,1,1.,nan,DL05018,nan,nan,262656,2772612
+Druminardagh_0508_0005_0008_0_00015.pdf,Donegal,Druminardagh,Tullynaught,Lizzie,Graham,Wife,Wife,F,Married,English Only,nan,11,ENGLISH,Donegal,1,nan,48.0,DL05018,nan,nan,262656,2772613
+Druminardagh_0508_0005_0008_0_00015.pdf,Donegal,Druminardagh,Tullynaught,Thomas,Graham,Son,Son,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,262656,2772614
+Druminardagh_0508_0005_0012_0_00023.pdf,Donegal,Druminardagh,Tullynaught,Edward,McGrath,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,55.0,DL05018,nan,nan,262660,2772615
+Drumlask_0508_0023_0002_0_00003.pdf,Donegal,Drumlask,Tullynaught,John,Graham,Head,Head,M,Married,English Only,Church of Ireland,X  -,ENGLISH,Donegal,nan,none,nan,DL05018,nan,nan,263339,2772616
+Drumlask_0508_0023_0002_0_00003.pdf,Donegal,Drumlask,Tullynaught,Jane,Graham,nan,nan,F,Married,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,263339,2772617
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,George,Graham,Head,Head,M,Married,English and Irish,Church of Ireland,JEURS 81 21,ENGLISH,Donegal,#,7,52.0,DL05018,nan,nan,263341,2772618
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Fanny Ann,Graham,wife,Wife,F,Married,English Only,nan,2,ENGLISH,Donegal,1,nan,41.0,DL05018,nan,nan,263341,2772619
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Lilly,Graham,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,263341,2772620
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Georgie,Graham,Son,Son,nan,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,263341,2772621
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Florence,Graham,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05018,nan,nan,263341,2772622
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Bella,Graham,Daughter,Daughter,F,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,263341,2772623
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Jack,Graham,Son,Son,M,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,263341,2772624
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Willie J,Graham,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,263341,2772625
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Maggie,Graham,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,263341,2772626
+Drumlask_0508_0023_0004_0_00007.pdf,Donegal,Drumlask,Tullynaught,Edith R,Graham,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,263341,2772627
+Drumlask_0508_0023_0005_0_00009.pdf,Donegal,Drumlask,Tullynaught,Fanny K,Graham,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,0.0,DL05018,nan,nan,263341,2772628
+Drumlask_0508_0023_0006_0_00011.pdf,Donegal,Drumlask,Tullynaught,Arthur,Graham,Head,Head,M,Married,English Only,Church of Ireland,JTARS 11,ENGLISH,nan,X,none,60.0,DL05018,nan,nan,263343,2772629
+Drumlask_0508_0023_0006_0_00011.pdf,Donegal,Drumlask,Tullynaught,Sarah,Graham,Wife,Wife,F,Married,English Only,nan,H,ENGLISH,Donegal,nan,nan,55.0,DL05018,nan,nan,263343,2772630
+Drumlask_0508_0023_0006_0_00011.pdf,Donegal,Drumlask,Tullynaught,Johnson,Graham,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,30.0,DL05018,nan,nan,263343,2772631
+Drumlask_0508_0023_0009_0_00017.pdf,Donegal,Drumlask,Tullynaught,Robert,Ellis,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,49.0,DL05018,nan,nan,263346,2772632
+Drumlask_0508_0023_0009_0_00017.pdf,Donegal,Drumlask,Tullynaught,Mary Jane,Ellis,Aunt,Aunt,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,79.0,DL05018,nan,nan,263346,2772633
+Drumlask_0508_0023_0010_0_00019.pdf,Donegal,Drumlask,Tullynaught,Francis,Farrell,Head,Head,M,Single,English Only,Presbyterian,nan,ENGLISH,Donegal,nan,nan,56.0,DL05018,nan,nan,263347,2772634
+Drumlask_0508_0023_0010_0_00019.pdf,Donegal,Drumlask,Tullynaught,Fanny,Farrell,Sister,Sister,F,Single,English Only,Presbyterian,nan,ENGLISH,Donegal,nan,nan,64.0,DL05018,nan,nan,263347,2772635
+Drummenny Lower_0508_0006_0004_0_00007.pdf,Donegal,Drummenny Lower,Tullynaught,Mary Jane,White,Head,Head,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,264198,2772636
+Drummenny Lower_0508_0006_0004_0_00007.pdf,Donegal,Drummenny Lower,Tullynaught,Arabella,White,Sister,Sister,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,40.0,DL05018,nan,nan,264198,2772637
+Drummenny Middle_0508_0007_0008_0_00015.pdf,Donegal,Drummenny Middle,Tullynaught,Sarah,Little,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,nan,nan,none,60.0,DL05018,nan,nan,264207,2772638
+Drummenny Middle_0508_0007_0008_0_00015.pdf,Donegal,Drummenny Middle,Tullynaught,Robert,Little,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,5,nan,28.0,DL05018,nan,nan,264207,2772639
+Drummenny Middle_0508_0007_0008_0_00015.pdf,Donegal,Drummenny Middle,Tullynaught,Sarah,Little,Daughter,Daughter,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,264207,2772640
+Drummenny Upper_0508_0008_0002_0_00003.pdf,Donegal,Drummenny Upper,Tullynaught,Margaret E,Irwin,Head,Head,F,Widow,English Only,Church of Ireland,L,ENGLISH,Donegal,nan,none,52.0,DL05018,nan,nan,264209,2772641
+Drummenny Upper_0508_0008_0002_0_00003.pdf,Donegal,Drummenny Upper,Tullynaught,Lizzie F,Irwin,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,26.0,DL05018,nan,nan,264209,2772642
+Drummenny Upper_0508_0008_0002_0_00003.pdf,Donegal,Drummenny Upper,Tullynaught,William John,Irwin,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,21.0,DL05018,nan,nan,264209,2772643
+Drummenny Upper_0508_0008_0002_0_00003.pdf,Donegal,Drummenny Upper,Tullynaught,Susan M,Irwin,Daughter son.,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,264209,2772644
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Joseph,Little,Head,Head,M,Married,English Only,Church of Ireland,19  -,ENGLISH,Donegal,6 -,4.,nan,DL05018,nan,nan,264210,2772645
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Margaret J,Little,Wife,Wife,F,Married,English Only,nan,19,ENGLISH,Donegal,6,nan,48.0,DL05018,nan,nan,264210,2772646
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Lizzie,Little,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,18.0,DL05018,nan,nan,264210,2772647
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Susan Maud,Little,nan,nan,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,264210,2772648
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Maggie A,Little,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,14.0,DL05018,nan,nan,264210,2772649
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Rebecca C,Little,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05018,nan,nan,264210,2772650
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Clara J,Little,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,264210,2772651
+Drummenny Upper_0508_0008_0003_0_00005.pdf,Donegal,Drummenny Upper,Tullynaught,Williamina,Little,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05018,nan,nan,264210,2772652
+Drummenny Upper_0508_0008_0006_0_00011.pdf,Donegal,Drummenny Upper,Tullynaught,Hugh,McGlynn,Head,Head,M,Single,English Only,Roman Catholic,J -,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,264213,2772653
+Drummenny Upper_0508_0008_0006_0_00011.pdf,Donegal,Drummenny Upper,Tullynaught,Michael,McGlynn,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,50.0,DL05018,nan,nan,264213,2772654
+Drumnahoul_0508_0009_0002_0_00003.pdf,Donegal,Drumnahoul,Tullynaught,Lawrence,Corr,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,265120,2772655
+Drumnahoul_0508_0009_0002_0_00003.pdf,Donegal,Drumnahoul,Tullynaught,Catherine,Corr,Mother,Mother,F,Widow,English Only,nan,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,265120,2772656
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,Timothy M,Mullen,Head,Head,M,Married,English Only,Roman Catholic,25  -,ENGLISH,Donegal,3 -,none,53.0,DL05018,nan,nan,265121,2772657
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,Bridget,McMullen,Wife,Wife,F,Married,English Only,Roman Catholic,25,ENGLISH,nan,3,nan,55.0,DL05018,nan,nan,265121,2772658
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,Catherine,McMullen,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,265121,2772659
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,Mary A M,Mullen,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,265121,2772660
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,John,McMullen,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,265121,2772661
+Drumnahoul_0508_0009_0003_0_00005.pdf,Donegal,Drumnahoul,Tullynaught,Ann,McDaid,Aunt.,Aunt,M,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,81.0,DL05018,nan,nan,265121,2772662
+Drumnahoul_0508_0009_0005_0_00009.pdf,Donegal,Drumnahoul,Tullynaught,Mary Jane,Bell,Head,Head,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,53.0,DL05018,nan,nan,265123,2772663
+Drumnahoul_0508_0009_0005_0_00009.pdf,Donegal,Drumnahoul,Tullynaught,Maggie Anne,Bell,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,36.0,DL05018,nan,nan,265123,2772664
+Finnadoose_0508_0010_0003_0_00005.pdf,Donegal,Finnadoose,Tullynaught,Michael,Ward,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,29.0,DL05018,nan,nan,291069,2772665
+Finnadoose_0508_0010_0003_0_00005.pdf,Donegal,Finnadoose,Tullynaught,Patrick,Ward,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,26.0,DL05018,nan,nan,291069,2772666
+Finnadoose_0508_0010_0003_0_00005.pdf,Donegal,Finnadoose,Tullynaught,Gracie,Ward,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,291069,2772667
+Finnadoose_0508_0010_0003_0_00005.pdf,Donegal,Finnadoose,Tullynaught,Mary A,Cassidy,Cousin,Cousin,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,291069,2772668
+Finnadoose_0508_0010_0004_0_00007.pdf,Donegal,Finnadoose,Tullynaught,John,Travers,Head,Head,M,Married,English Only,Roman Catholic,X,ENGLISH,Donegal,nan,none,58.0,DL05018,nan,nan,291070,2772669
+Finnadoose_0508_0010_0004_0_00007.pdf,Donegal,Finnadoose,Tullynaught,Ann,Travers,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,2,nan,59.0,DL05018,nan,nan,291070,2772670
+Finnadoose_0508_0010_0004_0_00007.pdf,Donegal,Finnadoose,Tullynaught,Charles,Travers,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,18.0,DL05018,nan,nan,291070,2772671
+Finnadoose_0508_0010_0004_0_00007.pdf,Donegal,Finnadoose,Tullynaught,John P,Travers,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,291070,2772672
+Finnadoose_0508_0010_0006_0_00011.pdf,Donegal,Finnadoose,Tullynaught,Frank,Thomas,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,30.0,DL05018,nan,nan,291072,2772673
+Finnadoose_0508_0010_0006_0_00011.pdf,Donegal,Finnadoose,Tullynaught,Sara A,Thomas,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,26.0,DL05018,nan,nan,291072,2772674
+Finnadoose_0508_0010_0006_0_00011.pdf,Donegal,Finnadoose,Tullynaught,Margaret,Thomas,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,291072,2775244
+Finnadoose_0508_0010_0007_0_00013.pdf,Donegal,Finnadoose,Tullynaught,Patrick,Thomas,Head,Head,M,Single,English Only,Roman Catholic,YEAIS,ENGLISH,Donegal,nan,nan,63.0,DL05018,nan,nan,291073,2775245
+Finnadoose_0508_0010_0007_0_00013.pdf,Donegal,Finnadoose,Tullynaught,Michael,Thomas,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,68.0,DL05018,nan,nan,291073,2775246
+Finnadoose_0508_0010_0007_0_00013.pdf,Donegal,Finnadoose,Tullynaught,Frances,Thomas,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,66.0,DL05018,nan,nan,291073,2775247
+Finnadoose_0508_0010_0009_0_00017.pdf,Donegal,Finnadoose,Tullynaught,Michael,Barren,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,46.0,DL05018,nan,nan,291075,2775248
+Finnadoose_0508_0010_0012_0_00023.pdf,Donegal,Finnadoose,Tullynaught,Edward,Travers,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,32.0,DL05018,nan,nan,291078,2775249
+Finnadoose_0508_0010_0012_0_00023.pdf,Donegal,Finnadoose,Tullynaught,Margaret,Travers,Mother,Mother,F,Widow,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,none,62.0,DL05018,nan,nan,291078,2775250
+Legacurry_0508_0024_0002_0_00003.pdf,Donegal,Legacurry,Tullynaught,William John,Graham,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,43.0,DL05018,nan,nan,420371,2775251
+Legacurry_0508_0024_0002_0_00003.pdf,Donegal,Legacurry,Tullynaught,Jane,Graham,Sister,Sister,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,48.0,DL05018,nan,nan,420371,2775252
+Legacurry_0508_0024_0003_0_00005.pdf,Donegal,Legacurry,Tullynaught,Louis,Graham,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,40.0,DL05018,nan,nan,420372,2775253
+Legacurry_0508_0024_0003_0_00005.pdf,Donegal,Legacurry,Tullynaught,Maggie,Graham,Sister,Sister,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420372,2775254
+Leghewny_0508_0011_0003_0_00005.pdf,Donegal,Leghewny,Tullynaught,Michael,Murphy,Head,Head,M,Married,English Only,Roman Catholic,37,ENGLISH,Donegal,8,none,65.0,DL05018,nan,nan,420675,2775255
+Leghewny_0508_0011_0003_0_00005.pdf,Donegal,Leghewny,Tullynaught,Hannah,Murphy,Wife,Wife,F,Married,English Only,Roman Catholic,37,ENGLISH,Donegal,8,nan,65.0,DL05018,nan,nan,420675,2775256
+Leghewny_0508_0011_0003_0_00005.pdf,Donegal,Leghewny,Tullynaught,Francis,Murphy,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,35.0,DL05018,nan,nan,420675,2775257
+Leghewny_0508_0011_0003_0_00005.pdf,Donegal,Leghewny,Tullynaught,Bridget,Murphy,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,30.0,DL05018,nan,nan,420675,2775258
+Leghewny_0508_0011_0003_0_00005.pdf,Donegal,Leghewny,Tullynaught,Lizzie,Murphy,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,420675,2775259
+Leghewny_0508_0011_0004_0_00007.pdf,Donegal,Leghewny,Tullynaught,Barney,Gallagher,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,52.0,DL05018,nan,nan,420676,2775260
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Edward,Murphy,Head,Head,M,Married,English Only,Roman Catholic,17,ENGLISH,Donegal,9,9.,62.0,DL05018,nan,nan,420678,2775261
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Cassie,Murphy,Wife,Wife,F,Married,English Only,Roman Catholic,17,ENGLISH,Donegal,9,nan,36.0,DL05018,nan,nan,420678,2775262
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,James A,Murphy,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,15.0,DL05018,nan,nan,420678,2775263
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Mary E,Murphy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,420678,2775264
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Philip J,Murphy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,420678,2775265
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Michael J,Murphy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,420678,2775266
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Patrick E,Murphy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,420678,2775267
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Hugh A,Murphy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,420678,2775268
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Margaret,Murphy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,420678,2775269
+Leghewny_0508_0011_0006_0_00011.pdf,Donegal,Leghewny,Tullynaught,Catheelin,Murphy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,420678,2775270
+Leghewny_0508_0011_0007_0_00013.pdf,Donegal,Leghewny,Tullynaught,Nora C,Murphy,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,420678,2775271
+Leghewny_0508_0011_0010_0_00019.pdf,Donegal,Leghewny,Tullynaught,John,Cassidy,Head,Head,M,Widower,English Only,nan,YEALS -,ENGLISH,nan,nan,X,71.0,DL05018,nan,nan,420682,2775272
+Leghewny_0508_0011_0010_0_00019.pdf,Donegal,Leghewny,Tullynaught,James,Cassidy,Son,Son,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,420682,2775273
+Loughcuill_0508_0012_0002_0_00003.pdf,Donegal,Loughcuill,Tullynaught,Bridget,Cassidy,Head,Head,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,58.0,DL05018,nan,nan,438221,2775274
+Loughkip_0508_0013_0003_0_00005.pdf,Donegal,Loughkip,Tullynaught,Patrick,Gallagher,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,51.0,DL05018,nan,nan,438616,2775275
+Meenadreen_0508_0014_0004_0_00007.pdf,Donegal,Meenadreen,Tullynaught,James,Murphy,Head,Head,M,Married,English Only,nan,04  -,ENGLISH,Donegal,0 -,none,nan,DL05018,nan,nan,464733,2775276
+Meenadreen_0508_0014_0004_0_00007.pdf,Donegal,Meenadreen,Tullynaught,Bridget,Murphy,Wife,Wife,F,Married,English Only,nan,4,ENGLISH,Donegal,nan,nan,30.0,DL05018,nan,nan,464733,2775277
+Meenadreen_0508_0014_0009_0_00017.pdf,Donegal,Meenadreen,Tullynaught,Lizzie,Gillespie,Head,Head,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,48.0,DL05018,nan,nan,464738,2775278
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Joseph,Gillespie,Head,Head,M,Married,English Only,Roman Catholic,14,ENGLISH,Donegal,nan,8,53.0,DL05018,nan,nan,464739,2775279
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Bridget,Gillespie,Wife,Wife,F,Married,English Only,Roman Catholic,KR,ENGLISH,Donegal,8,nan,41.0,DL05018,nan,nan,464739,2775280
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Mary K,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05018,nan,nan,464739,2775281
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Lizzie O,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05018,nan,nan,464739,2775282
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Annastatia,Gillespie,Daughter,Daughter,nan,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,11.0,DL05018,nan,nan,464739,2775283
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Felix,Gillespie,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05018,nan,nan,464739,2775284
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Ellen J,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,464739,2775285
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,James,Gillespie,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,464739,2775286
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,John P,Gillespie,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,464739,2775287
+Meenadreen_0508_0014_0010_0_00019.pdf,Donegal,Meenadreen,Tullynaught,Margaret,Gillespie,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,464739,2775288
+Meenadreen_0508_0014_0013_0_00025.pdf,Donegal,Meenadreen,Tullynaught,Michael,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,38  -,ENGLISH,Donegal,9,none,75.0,DL05018,nan,nan,464742,2775289
+Meenadreen_0508_0014_0013_0_00025.pdf,Donegal,Meenadreen,Tullynaught,Mary,Cassidy,Wife,Wife,F,nan,English Only,nan,38,ENGLISH,Donegal,9,nan,65.0,DL05018,nan,nan,464742,2775290
+Meenadreen_0508_0014_0013_0_00025.pdf,Donegal,Meenadreen,Tullynaught,Bernard,Cassidy,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,30.0,DL05018,nan,nan,464742,2775291
+Meenadreen_0508_0014_0013_0_00025.pdf,Donegal,Meenadreen,Tullynaught,Mary A,Cassidy,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,464742,2775292
+Meenadreen_0508_0014_0016_0_00031.pdf,Donegal,Meenadreen,Tullynaught,Ernest,Corrigan,Head,Head,M,Married,English Only,Church of Ireland,02  -,ENGLISH,Donegal,0 -,none,27.0,DL05018,nan,nan,464745,2775293
+Meenadreen_0508_0014_0016_0_00031.pdf,Donegal,Meenadreen,Tullynaught,Mary A,Corrigan,Wife,Wife,F,nan,English Only,nan,2,ENGLISH,Donegal,none,nan,39.0,DL05018,nan,nan,464745,2775294
+Meenadreen_0508_0014_0016_0_00031.pdf,Donegal,Meenadreen,Tullynaught,Ellen,Mahon,Aunt.,Aunt,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,71.0,DL05018,nan,nan,464745,2775295
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,James,Kee,Head,Head,M,Married,English Only,Church of Ireland,29  1,ENGLISH,Donegal,9,3,nan,DL05018,nan,nan,487616,2775296
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Maggie Ellen,Kee,Wife,Wife,F,Married,English Only,Church of Ireland,29,ENGLISH,Donegal,9,nan,53.0,DL05018,nan,nan,487616,2775297
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Robert,Kee,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,27.0,DL05018,nan,nan,487616,2775298
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,William,Kee,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,25.0,DL05018,nan,nan,487616,2775299
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Sarah,Kee,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,22.0,DL05018,nan,nan,487616,2775300
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,James,Kee,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,19.0,DL05018,nan,nan,487616,2775301
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Maggie Ellen,Kee,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,17.0,DL05018,nan,nan,487616,2775302
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Annie,Kee,Daughter,Daughter,F,Single,English and Irish,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,15.0,DL05018,nan,nan,487616,2775303
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Susan,Kee,Daughter,Daughter,F,Both Parents Alive,English and Irish,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,13.0,DL05018,nan,nan,487616,2775304
+Moyne_0508_0025_0002_0_00003.pdf,Donegal,Moyne,Tullynaught,Mary Jane,Kee,Daughter,Daughter,F,Both Parents Alive,English and Irish,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,12.0,DL05018,nan,nan,487616,2775305
+Moyne_0508_0025_0004_0_00007.pdf,Donegal,Moyne,Tullynaught,John,Graham,Head,Head,M,Married,English Only,Church of Ireland,4,ENGLISH,Donegal,7,none,77.0,DL05018,nan,nan,487618,2775306
+Moyne_0508_0025_0004_0_00007.pdf,Donegal,Moyne,Tullynaught,Sarah Jane,Graham,Wife,Wife,F,Married,English Only,Church of Ireland,42,ENGLISH,Donegal,7,nan,64.0,DL05018,nan,nan,487618,2775307
+Moyne_0508_0025_0004_0_00007.pdf,Donegal,Moyne,Tullynaught,Isabella,Graham,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,40.0,DL05018,nan,nan,487618,2775308
+Moyne_0508_0025_0004_0_00007.pdf,Donegal,Moyne,Tullynaught,Catherine,Graham,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,36.0,DL05018,nan,nan,487618,2775309
+Moyne_0508_0025_0004_0_00007.pdf,Donegal,Moyne,Tullynaught,Rebecca,Graham,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,29.0,DL05018,nan,nan,487618,2775310
+Moyne_0508_0025_0005_0_00009.pdf,Donegal,Moyne,Tullynaught,James,Johnston,Head,Head,M,Married,English Only,Church of Ireland,42,ENGLISH,Donegal,4,none,77.0,DL05018,nan,nan,487619,2775311
+Moyne_0508_0025_0005_0_00009.pdf,Donegal,Moyne,Tullynaught,Lizzie,Johnston,Wife,Wife,F,Married,English Only,Church of Ireland,42,ENGLISH,Donegal,4,nan,75.0,DL05018,nan,nan,487619,2775312
+Moyne_0508_0025_0005_0_00009.pdf,Donegal,Moyne,Tullynaught,John J,Johnston,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,36.0,DL05018,nan,nan,487619,2775313
+Moyne_0508_0025_0005_0_00009.pdf,Donegal,Moyne,Tullynaught,Robert M,Johnston,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,36.0,DL05018,nan,nan,487619,2775314
+Moyne_0508_0025_0005_0_00009.pdf,Donegal,Moyne,Tullynaught,Charles,Johnston,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,34.0,DL05018,nan,nan,487619,2775315
+Moyne_0508_0025_0006_0_00011.pdf,Donegal,Moyne,Tullynaught,William,White,Head,Head,M,Married,English Only,Church of Ireland,19  -,ENGLISH,Donegal,1 +,none,58.0,DL05018,nan,nan,487620,2775316
+Moyne_0508_0025_0006_0_00011.pdf,Donegal,Moyne,Tullynaught,Susan,White,Wife,Wife,F,Married,English Only,nan,19,ENGLISH,Donegal,1,nan,59.0,DL05018,nan,nan,487620,2775317
+Moyne_0508_0025_0007_0_00013.pdf,Donegal,Moyne,Tullynaught,Mary,Crawford,Head,Head,F,Single,English Only,Church of Ireland,JEAS -,ENGLISH,Donegal,nan,nan,88.0,DL05018,nan,nan,487621,2775318
+Moyne_0508_0025_0007_0_00013.pdf,Donegal,Moyne,Tullynaught,Hannah,Crawford,Sister,Sister,F,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,86.0,DL05018,nan,nan,487621,2775319
+Moyne_0508_0025_0008_0_00015.pdf,Donegal,Moyne,Tullynaught,Lizzie,Graham,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,nan,nan,2,50.0,DL05018,nan,nan,487622,2775320
+Moyne_0508_0025_0008_0_00015.pdf,Donegal,Moyne,Tullynaught,Alex,Graham,Son,Son,M,Father is Dead,English Only,nan,nan,ENGLISH,Donegal,nan,nan,11.0,DL05018,nan,nan,487622,2775321
+Moyne_0508_0025_0010_0_00019.pdf,Donegal,Moyne,Tullynaught,Alex,Scott,Head,Head,M,Single,English Only,Church of Ireland,F -,ENGLISH,Donegal,nan,nan,55.0,DL05018,nan,nan,487624,2775322
+Rossmore_0508_0027_0002_0_00003.pdf,Donegal,Rossmore,Tullynaught,Hannah,Graham,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,59.0,DL05018,nan,nan,560466,2775323
+Rossmore_0508_0027_0002_0_00003.pdf,Donegal,Rossmore,Tullynaught,Richard,Graham,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,23.0,DL05018,nan,nan,560466,2775324
+Rossmore_0508_0027_0004_0_00007.pdf,Donegal,Rossmore,Tullynaught,Patrick,Martin,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,70.0,DL05018,nan,nan,560468,2775325
+Rossmore_0508_0027_0005_0_00009.pdf,Donegal,Rossmore,Tullynaught,Letitia,Graham,Head,Head,F,Widow,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,none,51.0,DL05018,nan,nan,560469,2775326
+Skreen_0508_0028_0003_0_00005.pdf,Donegal,Skreen,Tullynaught,Robert,Elliot,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,58.0,DL05018,nan,nan,581207,2775327
+Skreen_0508_0028_0003_0_00005.pdf,Donegal,Skreen,Tullynaught,James,Elliot,Brother,Brother,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,46.0,DL05018,nan,nan,581207,2775328
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,Thomas,Elliot,Head,Head,M,Married,English Only,Church of Ireland,60  -,ENGLISH,nan,8 -,none,87.0,DL05018,nan,nan,581209,2775329
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,Fanny,Elliot,Wife,Wife,F,Married,English Only,nan,60,ENGLISH,Donegal,8,nan,77.0,DL05018,nan,nan,581209,2775330
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,William,Elliot,Son,Son,M,Married,English Only,nan,04,ENGLISH,Donegal,-2,2.,35.0,DL05018,nan,nan,581209,2775331
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,Greeta,Elliot,Daughter laws.,nan,F,Married,English Only,nan,4,ENGLISH,Donegal,2,nan,24.0,DL05018,nan,nan,581209,2775332
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,Thomas,Elliot,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,42.0,DL05018,nan,nan,581209,2775333
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,Thomas,Elliot,Grandson,Grandson,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,3.0,DL05018,nan,nan,581209,2775334
+Skreen_0508_0028_0005_0_00009.pdf,Donegal,Skreen,Tullynaught,William J,Elliot,Grandson,Grandson,M,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,1.0,DL05018,nan,nan,581209,2775335
+Skreen_0508_0028_0007_0_00013.pdf,Donegal,Skreen,Tullynaught,Anthony,Gallagher,Head,Head,M,Married,English Only,Roman Catholic,40  -,ENGLISH,Donegal,1 -,none,86.0,DL05018,nan,nan,581211,2775336
+Skreen_0508_0028_0007_0_00013.pdf,Donegal,Skreen,Tullynaught,Mary,Gallagher,Wife,Wife,F,Married,English Only,Roman Catholic,40,ENGLISH,Donegal,1,nan,71.0,DL05018,nan,nan,581211,2775337
+Skreen_0508_0028_0013_0_00025.pdf,Donegal,Skreen,Tullynaught,Henry,Graham,Head,Head,M,Married,English Only,Church of Ireland,30  30,ENGLISH,Donegal,3 3,none,nan,DL05018,nan,nan,581217,2775338
+Skreen_0508_0028_0013_0_00025.pdf,Donegal,Skreen,Tullynaught,Margret,Graham,Wife,Wife,F,Married,English Only,Church of Ireland,30,ENGLISH,Donegal,3,nan,58.0,DL05018,nan,nan,581217,2775339
+Skreen_0508_0028_0013_0_00025.pdf,Donegal,Skreen,Tullynaught,James,Graham,Son,Son,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,29.0,DL05018,nan,nan,581217,2775340
+Skreen_0508_0028_0013_0_00025.pdf,Donegal,Skreen,Tullynaught,Elizabeth,Graham,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,27.0,DL05018,nan,nan,581217,2775341
+Skreen_0508_0028_0013_0_00025.pdf,Donegal,Skreen,Tullynaught,Isabella J,Graham,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,20.0,DL05018,nan,nan,581217,2775342
+Straness_0508_0029_0004_0_00007.pdf,Donegal,Straness,Tullynaught,Charley,Quinn,Head,Head,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,30.0,DL05018,nan,nan,600578,2775343
+Straness_0508_0029_0004_0_00007.pdf,Donegal,Straness,Tullynaught,Mary,Quinn,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,32.0,DL05018,nan,nan,600578,2775344
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,Charley,Quinn,head. Married,nan,M,Married,English Only,nan,36 -,ENGLISH,Donegal,y,none,nan,DL05018,nan,nan,600579,2775345
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,Mary A,Quinn,wife Married,nan,F,nan,English Only,Roman Catholic,36,ENGLISH,Donegal,10,nan,55.0,DL05018,nan,nan,600579,2775346
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,Charley,Quinn,Culen.,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,23.0,DL05018,nan,nan,600579,2775347
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,Bridget,Quinn,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,21.0,DL05018,nan,nan,600579,2775348
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,John,Quinn,Len.,nan,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,19.0,DL05018,nan,nan,600579,2775349
+Straness_0508_0029_0005_0_00009.pdf,Donegal,Straness,Tullynaught,Rose A,Quin,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,17.0,DL05018,nan,nan,600579,2775350
+Straness_0508_0029_0006_0_00011.pdf,Donegal,Straness,Tullynaught,Maggie,Cassidy,Head,Head,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,30.0,DL05018,nan,nan,600580,2775351
+Straness_0508_0029_0006_0_00011.pdf,Donegal,Straness,Tullynaught,Ellen,Cassidy,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,600580,2775352
+Straness_0508_0029_0007_0_00013.pdf,Donegal,Straness,Tullynaught,Joseph,Quinn,Head,Head,M,Married,English Only,Roman Catholic,X E,ENGLISH,Donegal,nan,none,68.0,DL05018,nan,nan,600581,2775353
+Straness_0508_0029_0007_0_00013.pdf,Donegal,Straness,Tullynaught,Mary,Quinn,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,Donegal,none,nan,69.0,DL05018,nan,nan,600581,2775354
+Straness_0508_0029_0007_0_00013.pdf,Donegal,Straness,Tullynaught,Mary E,McGoldrick,Niece,Niece,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,26.0,DL05018,nan,nan,600581,2775355
+Straness_0508_0029_0008_0_00015.pdf,Donegal,Straness,Tullynaught,Patrick,Quinn,Head,Head,M,Married,English Only,nan,nan,ENGLISH,Donegal,nan,none,64.0,DL05018,nan,nan,600582,2775356
+Straness_0508_0029_0008_0_00015.pdf,Donegal,Straness,Tullynaught,Bridget,Quinn,Wife,Wife,F,Married,English Only,nan,nan,ENGLISH,Donegal,none,nan,nan,DL05018,nan,nan,600582,2775357
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Patrick,Rose,Head,Head,M,Married,English Only,Roman Catholic,19 YEURS,ENGLISH,nan,7,5,48.0,DL05018,nan,nan,623841,2775358
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Cassie,Rose,Wife,Wife,F,Married,English Only,Roman Catholic,19,ENGLISH,Donegal,7,nan,47.0,DL05018,nan,nan,623841,2775359
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Cassie,Rose,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,623841,2775360
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Patrick,Rose,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,',nan,15.0,DL05018,nan,nan,623841,2775361
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Hugh,Rose,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,t,nan,13.0,DL05018,nan,nan,623841,2775362
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Joseph,Rose,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05018,nan,nan,623841,2775363
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,John,Rose,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,nan,DL05018,nan,nan,623841,2775364
+Townagh_0508_0015_0003_0_00005.pdf,Donegal,Townagh,Tullynaught,Mary A,Rose,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05018,nan,nan,623841,2775365
+Townagh_0508_0015_0005_0_00009.pdf,Donegal,Townagh,Tullynaught,Thomas,Logue,Head,Head,M,Widower,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,1,68.0,DL05018,nan,nan,623843,2775366
+Townagh_0508_0015_0005_0_00009.pdf,Donegal,Townagh,Tullynaught,Joseph,Logue,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,21.0,DL05018,nan,nan,623843,2775367
+Townagh_0508_0015_0005_0_00009.pdf,Donegal,Townagh,Tullynaught,Kathleen,Logue,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,19.0,DL05018,nan,nan,623843,2775368
+Townagh_0508_0015_0005_0_00009.pdf,Donegal,Townagh,Tullynaught,Eileen,Logue,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,623843,2775369
+Townagh_0508_0015_0005_0_00009.pdf,Donegal,Townagh,Tullynaught,Samuel,Logue,Son,Son,M,Mother is Dead,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05018,nan,nan,623843,2775370
+Tullyearl_0508_0030_0002_0_00003.pdf,Donegal,Tullyearl,Tullynaught,Francis,Graham,Head,Head,M,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,46.0,DL05018,nan,nan,631966,2775371
+Tullyearl_0508_0030_0002_0_00003.pdf,Donegal,Tullyearl,Tullynaught,David,Graham,Brother,Brother,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,39.0,DL05018,nan,nan,631966,2775372
+Tullyearl_0508_0030_0003_0_00005.pdf,Donegal,Tullyearl,Tullynaught,Sarah,Graham,Head,Head,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,60.0,DL05018,nan,nan,631967,2775373
+Tullyearl_0508_0030_0003_0_00005.pdf,Donegal,Tullyearl,Tullynaught,Isabella,Graham,Sister,Sister,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,56.0,DL05018,nan,nan,631967,2775374
+Tullyearl_0508_0030_0004_0_00007.pdf,Donegal,Tullyearl,Tullynaught,Arthur,Gibson,Head,Head,M,Married,English Only,Church of Ireland,07,ENGLISH,nan,3,2,28.0,DL05018,nan,nan,631968,2775375
+Tullyearl_0508_0030_0004_0_00007.pdf,Donegal,Tullyearl,Tullynaught,Bella,Gibson,Wife,Wife,F,Married,English Only,Church of Ireland,7,ENGLISH,Donegal,3,nan,28.0,DL05018,nan,nan,631968,2775376
+Tullyearl_0508_0030_0004_0_00007.pdf,Donegal,Tullyearl,Tullynaught,Jane,Gibson,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,5.0,DL05018,nan,nan,631968,2775377
+Tullyearl_0508_0030_0004_0_00007.pdf,Donegal,Tullyearl,Tullynaught,Margaret,Gibson,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,Donegal,nan,nan,3.0,DL05018,nan,nan,631968,2775378
+Tullyearl_0508_0030_0005_0_00009.pdf,Donegal,Tullyearl,Tullynaught,Edward,Mulhern,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,80.0,DL05018,nan,nan,631969,2775379
+Tullyearl_0508_0030_0006_0_00011.pdf,Donegal,Tullyearl,Tullynaught,Hugh,Graham,Head,Head,M,Married,English Only,Church of Ireland,03 YEAS,ENGLISH,Donegal,nan,1,8.0,DL05018,nan,nan,631970,2775380
+Tullyearl_0508_0030_0006_0_00011.pdf,Donegal,Tullyearl,Tullynaught,Bella,Graham,Wife,Wife,F,Married,English Only,nan,3,ENGLISH,Donegal,1,nan,41.0,DL05018,nan,nan,631970,2775381
+Tullyearl_0508_0030_0006_0_00011.pdf,Donegal,Tullyearl,Tullynaught,Rebecca J,Graham,Daughter,Daughter,F,nan,English Only,nan,3,ENGLISH,Donegal,1,nan,1.0,DL05018,nan,nan,631970,2775382
+Tullyearl_0508_0030_0009_0_00017.pdf,Donegal,Tullyearl,Tullynaught,Margaret,Miller,Head,Head,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,74.0,DL05018,nan,nan,631973,2775383
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Charles J,Johnston,Head,Head,M,Married,English Only,Church of Ireland,17,ENGLISH,Donegal,6,Rm,45.0,DL05018,nan,nan,632239,2775384
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Lady A,Johnston,Wife,Wife,F,Married,English Only,Church of Ireland,17,ENGLISH,Donegal,6,nan,43.0,DL05018,nan,nan,632239,2775385
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Mary K,Johnston,Daughter,Daughter,F,Single,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,nan,13.0,DL05018,nan,nan,632239,2775386
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Constance A,Johnston,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,632239,2775387
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Willaim Edward G,Johnston,Son,Son,nan,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,632239,2775388
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Alfred Micahel D,Johnston,Son,Son,nan,Single,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,632239,2775389
+Tullyleague or Tullybrook_0508_0031_0003_0_00005.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Isabela,Stewart,Mathieu law,nan,F,Widower,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,- 0,73.0,DL05018,nan,nan,632239,2775390
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Daniel,Connolly,Head,Head,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,69.0,DL05018,nan,nan,632240,2775391
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Maggie,Connolly,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,61.0,DL05018,nan,nan,632240,2775392
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Ellen,Connolly,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,58.0,DL05018,nan,nan,632240,2775393
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Daniel,McHugh,Nephew,Nephew,M,Married,English Only,Roman Catholic,16,ENGLISH,Donegal,3,1,37.0,DL05018,nan,nan,632240,2775394
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Sarah,McHugh,Nephews Wife,Niece in Law,F,Married,English Only,Roman Catholic,11,ENGLISH,Donegal,2,nan,39.0,DL05018,nan,nan,632240,2775395
+Tullyleague or Tullybrook_0508_0031_0004_0_00007.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Agnes,McHugh,Nephew,Nephew,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,632240,2775396
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Edward,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,17  -,ENGLISH,nan,7 -,6,55.0,DL05018,nan,nan,632350,2775397
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Sarah,Cassidy,Wife,Wife,F,Married,English Only,Roman Catholic,17,ENGLISH,Donegal,7,nan,40.0,DL05018,nan,nan,632350,2775398
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Maggie,Cassidy,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,15.0,DL05018,nan,nan,632350,2775399
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Edward,Cassidy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05018,nan,nan,632350,2775400
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,William,Cassidy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,10.0,DL05018,nan,nan,632350,2775401
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Gracie,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,6.0,DL05018,nan,nan,632350,2775402
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Mary,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,4.0,DL05018,nan,nan,632350,2775403
+Tullylosken_0508_0016_0004_0_00007.pdf,Donegal,Tullylosken,Tullynaught,Francis J,Cassidy,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,2.0,DL05018,nan,nan,632350,2775404
+Tullylosken_0508_0016_0005_0_00009.pdf,Donegal,Tullylosken,Tullynaught,Francis,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,YEAS 23,ENGLISH,nan,4,"2,",58.0,DL05018,nan,nan,632351,2775405
+Tullylosken_0508_0016_0005_0_00009.pdf,Donegal,Tullylosken,Tullynaught,Sarah,Cassidy,Wife,Wife,F,Married,English Only,Roman Catholic,23,ENGLISH,Donegal,4.,nan,57.0,DL05018,nan,nan,632351,2775406
+Tullylosken_0508_0016_0005_0_00009.pdf,Donegal,Tullylosken,Tullynaught,Gracie,Cassidy,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,19.0,DL05018,nan,nan,632351,2775407
+Tullylosken_0508_0016_0005_0_00009.pdf,Donegal,Tullylosken,Tullynaught,Edward J,Cassidy,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,15.0,DL05018,nan,nan,632351,2775408
+Tullylosken_0508_0016_0005_0_00009.pdf,Donegal,Tullylosken,Tullynaught,Francis J,Cassidy,Son,Son,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,12.0,DL05018,nan,nan,632351,2775409
+Whitehill_0508_0017_0002_0_00003.pdf,Donegal,Whitehill,Tullynaught,Henry,Robinson,Head,Head,M,Widower,English Only,Church of Ireland,nan,ENGLISH,Donegal,nan,1,63.0,DL05018,nan,nan,645125,2775410
+Whitehill_0508_0017_0002_0_00003.pdf,Donegal,Whitehill,Tullynaught,Violet,Robinson,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,21.0,DL05018,nan,nan,645125,2775411
+Whitehill_0508_0017_0002_0_00003.pdf,Donegal,Whitehill,Tullynaught,Sarah,Robinson,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,645125,2775412
+Whitehill_0508_0017_0002_0_00003.pdf,Donegal,Whitehill,Tullynaught,James,Robinson,Son,Son,M,Single,English Only,nan,nan,ENGLISH,Donegal,nan,nan,16.0,DL05018,nan,nan,645125,2775413
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Charles,Phillips,Head,Head,M,Married,English Only,Roman Catholic,20,ENGLISH,Donegal,y,6,59.0,DL05018,nan,nan,645127,2775414
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Bridget,Phillips,wife,Wife,F,Married,English Only,Roman Catholic,20,ENGLISH,Donegal,10.,nan,44.0,DL05018,nan,nan,645127,2775415
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Sarah,Phillips,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,19.0,DL05018,nan,nan,645127,2775416
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Anthony,Phillips,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,17.0,DL05018,nan,nan,645127,2775417
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Charles J,Phillips,Son,Son,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,14.0,DL05018,nan,nan,645127,2775418
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Robert J,Phillips,Son,Son,nan,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,13.0,DL05018,nan,nan,645127,2775419
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Hannah,Phillips,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,11.0,DL05018,nan,nan,645127,2775420
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Michael,Phillips,Son,Son,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,9.0,DL05018,nan,nan,645127,2775421
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Mary,Phillips,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,8.0,DL05018,nan,nan,645127,2775422
+Whitehill_0508_0017_0004_0_00007.pdf,Donegal,Whitehill,Tullynaught,Bridget T,Phillips,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,Donegal,nan,nan,6.0,DL05018,nan,nan,645127,2775423
+Aghlem_0508_0001_0002_0_00003.pdf,Donegal,Aghlem,Tullynaught,Margaret E,Corrigan,Head,Head,F,nan,English Only,nan,Own account 15 Statue acres,ENGLISH,nan,UIONTIIS,8,64.0,DL05018,nan,nan,5498,2775424
+Aghlem_0508_0001_0002_0_00003.pdf,Donegal,Aghlem,Tullynaught,Henry,Corrigan,Son,Son,M,Single,English Only,nan,905,ENGLISH,nan,nan,nan,37.0,DL05018,nan,nan,5498,2775425
+Aghlem_0508_0001_0002_0_00003.pdf,Donegal,Aghlem,Tullynaught,Andrew Roy,Corrigan,Son,Son,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,5498,2775426
+Aghlem_0508_0001_0002_0_00003.pdf,Donegal,Aghlem,Tullynaught,Matilda Edith,Corrigan,Daughter,Daughter,F,Single,English Only,nan,M,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,5498,2775427
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,John,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,Own Account. 906 30 Statue,ENGLISH,nan,nan,8,59.0,DL05018,nan,nan,5499,2775428
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Bridget,Cassidy,Wife,Wife,F,Married,English and Irish,nan,y,ENGLISH,nan,nan,nan,51.0,DL05018,nan,nan,5499,2775429
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Francis M,Cassidy,Son,Son,M,Single,English Only,Roman Catholic,906 30. Statue acres,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,5499,2775430
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Sarah A,Cassidy,Daughter,Daughter,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,5499,2775431
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,John Patrick,Cassidy,Son,Son,M,Single,English Only,Roman Catholic,John Cassidy 30 Statue atres 906,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,5499,2775432
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,James,Cassidy,Son,Son,M,Single,English Only,Roman Catholic,John Cassidy 30 Statue atres 906,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,5499,2775433
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Emily Josephine,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,5499,2775434
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Bridget M,Cassidy,Daughter,Daughter,F,nan,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,5499,2775435
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Maggie,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,5499,2775436
+Aghlem_0508_0001_0003_0_00004.pdf,Donegal,Aghlem,Tullynaught,Elizabeth G,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,5499,2775437
+Aghlem_0508_0001_0008_0_00014.pdf,Donegal,Aghlem,Tullynaught,Owen,McCadden,26:00 Head,nan,M,Married,Irish and English,Roman Catholic,Own account 404 10 Statue acres.,ENGLISH,nan,NOUTTS -,y,75.0,DL05018,nan,nan,5504,2775438
+Aghlem_0508_0001_0008_0_00014.pdf,Donegal,Aghlem,Tullynaught,Mary,McCadden,Wife,Wife,F,Married,Irish and English,Roman Catholic,y,ENGLISH,nan,nan,10,67.0,DL05018,nan,nan,5504,2775439
+Aghlem_0508_0001_0008_0_00014.pdf,Donegal,Aghlem,Tullynaught,Charles,McCadden,Son,Son,M,Single,English Only,Roman Catholic,Olwen McGadden 10 Statue acres 904,ENGLISH,nan,nan,nan,38.0,DL05018,nan,nan,5504,2775440
+Aghlem_0508_0001_0008_0_00014.pdf,Donegal,Aghlem,Tullynaught,Joe,McCadden,Son,Son,M,Single,English Only,Roman Catholic,Olwen McGadden 10 Statue acres 904,ENGLISH,nan,nan,nan,35.0,DL05018,nan,nan,5504,2775441
+Aghlem_0508_0001_0008_0_00014.pdf,Donegal,Aghlem,Tullynaught,Teresa,McCadden,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,5504,2775442
+Aghlem_0508_0001_0009_0_00016.pdf,Donegal,Aghlem,Tullynaught,Patrick,McCadden,Head,Head,M,Married,English Only,nan,Own Account 50 Statue acres,ENGLISH,nan,nan,6 -,75.0,DL05018,nan,nan,5505,2775443
+Aghlem_0508_0001_0009_0_00016.pdf,Donegal,Aghlem,Tullynaught,Bridget,McCadden,Wife,Wife,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,6,75.0,DL05018,nan,nan,5505,2775444
+Aghlem_0508_0001_0009_0_00016.pdf,Donegal,Aghlem,Tullynaught,Andrew,McCadden,Son,Son,M,Single,English Only,Roman Catholic,Patrick so statue mGadden acres. -,ENGLISH,nan,nan,nan,38.0,DL05018,nan,nan,5505,2775445
+Aghlem_0508_0001_0009_0_00016.pdf,Donegal,Aghlem,Tullynaught,Patrick,Breslin,Grandson,Grandson,M,Single,English Only,Roman Catholic,907 Do,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,5505,2775446
+Aghlem_0508_0001_0010_0_00018.pdf,Donegal,Aghlem,Tullynaught,Ellen,McGlinn,Head,Head,F,Single,English Only,Roman Catholic,Own account 983,ENGLISH,nan,nan,00 None,69.0,DL05018,nan,nan,5506,2775447
+Ardnagassan_0508_0002_0002_0_00003.pdf,Donegal,Ardnagassan,Tullynaught,Hugh J,Wray,Head,Head,M,Widower,English Only,Presbyterian,Own account 14 & Statue acres,ENGLISH,nan,4ONTNS -,nan,41.0,DL05018,nan,nan,16259,2775448
+Ardnagassan_0508_0002_0002_0_00003.pdf,Donegal,Ardnagassan,Tullynaught,William J,Wray,Son,Son,nan,Single,English Only,nan,Hugh James Evray. 14% Statue acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,16259,2775449
+Ardnagassan_0508_0002_0002_0_00003.pdf,Donegal,Ardnagassan,Tullynaught,James A,Wray,Son,Son,M,Single,English Only,nan,Hugh James Evray. 14% Statue acres,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,16259,2775450
+Ardnagassan_0508_0002_0002_0_00003.pdf,Donegal,Ardnagassan,Tullynaught,Susan,Wray,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,16259,2775451
+Ardnagassan_0508_0002_0002_0_00003.pdf,Donegal,Ardnagassan,Tullynaught,Sarah F,Wray,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,16259,2775452
+Ardnagassan_0508_0002_0003_0_00005.pdf,Donegal,Ardnagassan,Tullynaught,Robert,Bustard,Head,Head,M,Married,English Only,Church of Ireland,Own Account 905 23 Statue acres,ENGLISH,nan,nan,P 3,44.0,DL05018,nan,nan,16260,2775453
+Ardnagassan_0508_0002_0003_0_00005.pdf,Donegal,Ardnagassan,Tullynaught,Jennie,Bustard,wife,Wife,nan,Married,English Only,Church of Ireland,y,ENGLISH,nan,9,3,31.0,DL05018,nan,nan,16260,2775454
+Ardnagassan_0508_0002_0003_0_00005.pdf,Donegal,Ardnagassan,Tullynaught,Maggie,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,At School,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,16260,2775455
+Ardnagassan_0508_0002_0003_0_00005.pdf,Donegal,Ardnagassan,Tullynaught,Mary,Bustard,Daughter,Daughter,F,Both Parents Alive,English Only,Church of Ireland,at School,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,16260,2775456
+Ardnagassan_0508_0002_0003_0_00005.pdf,Donegal,Ardnagassan,Tullynaught,Sadie,Bustard,Daughter,Daughter,F,Both Parents Alive,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,16260,2775457
+Ardnagassan_0508_0002_0006_0_00011.pdf,Donegal,Ardnagassan,Tullynaught,James,McGinty,Head,Head,M,Single,English Only,Roman Catholic,Own account. 905 19th State acres.,ENGLISH,nan,nan,nan,75.0,DL05018,nan,nan,16263,2775458
+Ardnagassan_0508_0002_0006_0_00011.pdf,Donegal,Ardnagassan,Tullynaught,Fanny,McGinty,Sister,Sister,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,70.0,DL05018,nan,nan,16263,2775459
+Ardnagassan_0508_0002_0006_0_00011.pdf,Donegal,Ardnagassan,Tullynaught,Edward,McGinty,Brother,Brother,M,Single,English Only,Roman Catholic,25 Very Statue account acres.905,ENGLISH,nan,nan,nan,68.0,DL05018,nan,nan,16263,2775460
+Ardnagassan_0508_0002_0007_0_00013.pdf,Donegal,Ardnagassan,Tullynaught,Elizabeth,Wray,Head,Head,F,Widow,English Only,Presbyterian,Farmer&Barn Account y Statue acres,ENGLISH,nan,11,7,70.0,DL05018,nan,nan,16264,2775461
+Ardnagassan_0508_0002_0007_0_00013.pdf,Donegal,Ardnagassan,Tullynaught,Robert,Wray,Son,Son,M,Single,English Only,Presbyterian,aworking farm for mother Elizabeth Dray T Statute acres,ENGLISH,nan,nan,nan,37.0,DL05018,nan,nan,16264,2775462
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,John J,Wray,Head,Head,M,Married,English Only,nan,Navin Account 005 20 State acres,ENGLISH,nan,TTS,8,44.0,DL05018,nan,nan,16265,2775463
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Bella,Wray,Wife,Wife,F,Married,English Only,nan,y,ENGLISH,nan,nan,8,40.0,DL05018,nan,nan,16265,2775464
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Robert,Wray,Son,Son,M,Single,English Only,nan,John J. Drays,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,16265,2775465
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Lilly,Wray,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,16265,2775466
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Violet May,Wray,Daughter,Daughter,F,nan,English Only,nan,- 905,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,16265,2775467
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,James,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,16265,2775468
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Andrew,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,16265,2775469
+Ardnagassan_0508_0002_0008_0_00015.pdf,Donegal,Ardnagassan,Tullynaught,Maggie,Wray,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,16265,2775470
+Ardnagassan_0508_0002_0009_0_00017.pdf,Donegal,Ardnagassan,Tullynaught,Gilbert,Wray,Head,Head,M,Married,English Only,Presbyterian,Own Account Gg y Mature acres,ENGLISH,nan,nan,nan,46.0,DL05018,nan,nan,16266,2775471
+Ardnagassan_0508_0002_0009_0_00017.pdf,Donegal,Ardnagassan,Tullynaught,Maggie,Wray,Sister,Sister,F,nan,English Only,Presbyterian,nan,ENGLISH,nan,nan,none,45.0,DL05018,nan,nan,16266,2775472
+Barnesneilly_0508_0018_0002_0_00003.pdf,Donegal,Barnesneilly,Tullynaught,Patrick,Gallagher,Head,Head,M,Widower,English Only,Roman Catholic,Own account 200 Statue acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,76424,2775473
+Barnesneilly_0508_0018_0002_0_00003.pdf,Donegal,Barnesneilly,Tullynaught,Francey,Gallagher,Son,Son,M,Single,English Only,Roman Catholic,200 Patrick Statul Gallagher. 200 State 909,ENGLISH,nan,nan,nan,27.0,DL05018,nan,nan,76424,2775474
+Barnesneilly_0508_0018_0002_0_00003.pdf,Donegal,Barnesneilly,Tullynaught,Cassie,Gallagher,Daughter,Daughter,F,Single,English Only,Roman Catholic,- y,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,76424,2775475
+Barnesneilly_0508_0018_0002_0_00003.pdf,Donegal,Barnesneilly,Tullynaught,Patrick,Gallagher,Son,Son,M,Single,English Only,Roman Catholic,Patrick Native Gallagher acres 909,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,76424,2775476
+Barnesneilly_0508_0018_0002_0_00003.pdf,Donegal,Barnesneilly,Tullynaught,Hugh,McGroary,Grand Len,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,76424,2775477
+Copany_0508_0019_0007_0_00013.pdf,Donegal,Copany,Tullynaught,Andrew,Kirkpatrick,Head,Head,M,Single,English Only,Church of Ireland,Own Account 2K. Statue 905,ENGLISH,nan,11ONTNS -,nan,39.0,DL05018,nan,nan,198510,2775478
+Copany_0508_0019_0008_0_00015.pdf,Donegal,Copany,Tullynaught,Joseph,Kirkpatrick,Head,Head,M,Single,English Only,Church of Ireland,20 Vyn Statue Account acres 905,ENGLISH,nan,nan,nan,29.0,DL05018,nan,nan,198511,2775479
+Copany_0508_0019_0008_0_00015.pdf,Donegal,Copany,Tullynaught,Mary A,Kirkpatrick,Mother,Mother,F,Widow,English Only,nan,- y,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,198511,2775480
+Copany_0508_0019_0009_0_00017.pdf,Donegal,Copany,Tullynaught,George,Pearson,Head,Head,M,Married,English Only,Church of Ireland,Own Account,ENGLISH,nan,nan,nan,60.0,DL05018,nan,nan,198512,2775481
+Copany_0508_0019_0009_0_00017.pdf,Donegal,Copany,Tullynaught,Annie,Pearson,Wife,Wife,F,nan,English Only,nan,y,ENGLISH,nan,nan,1,50.0,DL05018,nan,nan,198512,2775482
+Copany_0508_0019_0009_0_00017.pdf,Donegal,Copany,Tullynaught,Lizzie,Pearson,Daughter,Daughter,F,Single,English Only,nan,905,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,198512,2775483
+Croaghnameal_0508_0021_0002_0_00003.pdf,Donegal,Croaghnameal,Tullynaught,Bridget,Gallagher,Head,Head,F,Widow,English Only,Roman Catholic,Own Account. 30 Statue acres. 406,ENGLISH,nan,IOUTUS -,nan,75.0,DL05018,nan,nan,215157,2775484
+Croaghnameal_0508_0021_0002_0_00003.pdf,Donegal,Croaghnameal,Tullynaught,Teresa,Gallagher,aliece,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,215157,2775485
+Croaghnameal_0508_0021_0002_0_00003.pdf,Donegal,Croaghnameal,Tullynaught,Catheelin A,McGroary,Vice,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,215157,2775486
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Henry,McGroary,Head,Head,M,Married,English Only,nan,Own Account. 300 Statue acres,ENGLISH,nan,TUIS,7,43.0,DL05018,nan,nan,215159,2775487
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Annie,McGroary,Duff Daughter.,nan,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,7,30.0,DL05018,nan,nan,215159,2775488
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Joseph H,McGroary,Son,Son,nan,Single,English Only,Roman Catholic,300 Native Caesets-709,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,215159,2775489
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Sarah A,McGroary,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,215159,2775490
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Patrick F,McGroary,Son,Son,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,215159,2775491
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,Denis P,McGroary,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,215159,2775492
+Croaghnameal_0508_0021_0004_0_00007.pdf,Donegal,Croaghnameal,Tullynaught,John,McGroary,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,215159,2775493
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,Thomas,McElhenny,Head,Head,M,Married,English Only,nan,Olga Account. 1y Statue acres: 905,ENGLISH,nan,8,4 1,nan,DL05018,nan,nan,222955,2775494
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,Maggie,McElhenny,Wife,Wife,F,nan,English Only,nan,nan,ENGLISH,nan,8,4,37.0,DL05018,nan,nan,222955,2775495
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,Maggie J,McElhenny,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,222955,2775496
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,Robert,McElhenny,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,222955,2775497
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,George,McElhenny,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,222955,2775498
+Cully_0508_0022_0002_0_00003.pdf,Donegal,Cully,Tullynaught,Elizabeth,McElhenny,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,222955,2775499
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,William,Bustard,Head,Head,M,Married,English Only,Church of Ireland,Own Account. 907 $8 st acres.,ENGLISH,nan,nan,8,46.0,DL05018,nan,nan,222956,2775500
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Maggie,Bustard,Wife,Wife,F,Married,English Only,nan,nan,ENGLISH,nan,5,8,34.0,DL05018,nan,nan,222956,2775501
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Margaret,McNeely,Mother in Law,Mother in Law,F,Widow,English Only,nan,nan,ENGLISH,nan,nan,nan,73.0,DL05018,nan,nan,222956,2775502
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Maggie E,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,222956,2775503
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,William G,Bustard,Son,Son,M,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,222956,2775504
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Robert A,Bustard,Son,Son,nan,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,222956,2775505
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Mary J,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,222956,2775506
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Katheelin,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,222956,2775507
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Rebecca,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,222956,2775508
+Cully_0508_0022_0003_0_00005.pdf,Donegal,Cully,Tullynaught,Annabella,Bustard,Daughter,Daughter,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,222956,2775509
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Richard,Freeburn,Head,Head,M,nan,English Only,Church of Ireland,Own account. 28. State acres - 905,ENGLISH,nan,TS -,nan,84.0,DL05018,nan,nan,222959,2775510
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Robert,Perry,"Son ""Rant",nan,M,Married,English Only,nan,Richard Freeburn 20 Statut acres,ENGLISH,nan,nan,8,52.0,DL05018,nan,nan,222959,2775511
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Mary A,Perry,Daughter,Daughter,F,Married,English Only,nan,y,ENGLISH,nan,nan,8,48.0,DL05018,nan,nan,222959,2775512
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Elizabeth,Perry,Brand Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,222959,2775513
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Catherine J,Perry,Brand Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,222959,2775514
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Lucy,Perry,Der.,nan,F,Single,English Only,nan,905,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,222959,2775515
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Robert,Perry,Grand Son,Grandson,M,Single,English Only,nan,Richard Freebyman 20 State acres,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,222959,2775516
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Fanny,Rerry,Granddaughter,Granddaughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,222959,2775517
+Cully_0508_0022_0006_0_00011.pdf,Donegal,Cully,Tullynaught,Richard F,Perry,Grand Len.,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,222959,2775518
+Cully_0508_0022_0007_0_00013.pdf,Donegal,Cully,Tullynaught,William,McCollagh,Head,Head,M,nan,English Only,Methodist,Wes McCallagh 15 statue acres,ENGLISH,nan,nan,nan,82.0,DL05018,nan,nan,222960,2775519
+Cully_0508_0022_0007_0_00013.pdf,Donegal,Cully,Tullynaught,Robert J,McCollagh,Son,Son,M,nan,English Only,nan,905 W.T McCollagh 15 Statue acres,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,222960,2775520
+Cully_0508_0022_0008_0_00015.pdf,Donegal,Cully,Tullynaught,William,McElhinney,Head,Head,M,Married,English Only,nan,W. McChenney 904 Chron Account 12 st acres,ENGLISH,nan,nan,0 -,33.0,DL05018,nan,nan,222961,2775521
+Cully_0508_0022_0008_0_00015.pdf,Donegal,Cully,Tullynaught,Mabel,McElhinney,Wife,Wife,F,nan,English Only,nan,12N- y,ENGLISH,nan,nan,none,23.0,DL05018,nan,nan,222961,2775522
+Cully_0508_0022_0009_0_00017.pdf,Donegal,Cully,Tullynaught,Mary A,Lowrey,Head,Head,F,Widow,English Only,Methodist,Own account. 23 Statue acres,ENGLISH,nan,nan,nan,58.0,DL05018,nan,nan,222962,2775523
+Cully_0508_0022_0009_0_00017.pdf,Donegal,Cully,Tullynaught,William,Lowrey,Sen.,Son,M,Single,English Only,nan,Mary Statue A. Lawrey acres 905,ENGLISH,nan,nan,nan,35.0,DL05018,nan,nan,222962,2775524
+Cully_0508_0022_0009_0_00017.pdf,Donegal,Cully,Tullynaught,Thomas J,Lowrey,Son,Son,M,Single,English Only,nan,Mary Statue A. Lawrey acres 905,ENGLISH,nan,nan,nan,25.0,DL05018,nan,nan,222962,2775525
+Cully_0508_0022_0009_0_00017.pdf,Donegal,Cully,Tullynaught,Maria,Lowrey,Daughter,Daughter,F,nan,English Only,nan,y,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,222962,2775526
+Cully_0508_0022_0011_0_00021.pdf,Donegal,Cully,Tullynaught,John,Kirkpatrick,Head,Head,M,Married,English Only,Church of Ireland,Own Account. 905 19 Statue acres.,ENGLISH,nan,nan,4 -,47.0,DL05018,nan,nan,222964,2775527
+Cully_0508_0022_0011_0_00021.pdf,Donegal,Cully,Tullynaught,Rachael,Kirkpatrick,Wife,Wife,F,Married,English Only,nan,- y,ENGLISH,nan,1,4,48.0,DL05018,nan,nan,222964,2775528
+Cully_0508_0022_0011_0_00021.pdf,Donegal,Cully,Tullynaught,Andrew,Kirkpatrick,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,222964,2775529
+Cully_0508_0022_0011_0_00021.pdf,Donegal,Cully,Tullynaught,Lily,Kirkpatrick,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,222964,2775530
+Drumadoney_0508_0003_0002_0_00003.pdf,Donegal,Drumadoney,Tullynaught,Joe,Lawn,Head,Head,M,Single,English Only,nan,Own account. 905 20 Statue acres.,ENGLISH,nan,1ONTUS -,nan,35.0,DL05018,nan,nan,256396,2775531
+Drumadoney_0508_0003_0003_0_00005.pdf,Donegal,Drumadoney,Tullynaught,James,Lawn,Head,Head,M,Single,English Only,nan,Own payment. 985 15 Statue acres,ENGLISH,nan,INONTUS -,nan,36.0,DL05018,nan,nan,256397,2775532
+Drumadoney_0508_0003_0004_0_00007.pdf,Donegal,Drumadoney,Tullynaught,Edward,Flanaghan,Head,Head,M,Single,English Only,nan,Own account. 902 44 acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,256398,2775533
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,Mary,Hilly,Head,Head,F,Widower,English Only,Roman Catholic,Own account. 15 Statue acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,256402,2775534
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,Barney,Hilly,Son,Son,M,Married,English Only,Roman Catholic,Mary Hilly 905 15 Statue acres,ENGLISH,nan,nan,3,45.0,DL05018,nan,nan,256402,2775535
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,Bridget,Hilly,Daughter Law.,Daughter in Law,F,nan,English Only,nan,y,ENGLISH,nan,10,3,39.0,DL05018,nan,nan,256402,2775536
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,James,Hilly,Grandson,Grandson,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,256402,2775537
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,Bridget V,Hilly,Granddaughter,Granddaughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,256402,2775538
+Drumadoney_0508_0003_0008_0_00015.pdf,Donegal,Drumadoney,Tullynaught,Mary,Hilly,Diu,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,256402,2775539
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,James,Devlin,Head,Head,M,Married,English Only,Roman Catholic,Employer. 904 12 Statue acres.,ENGLISH,nan,nan,4,55.0,DL05018,nan,nan,260089,2775540
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Mary A,Devlin,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,1,4,54.0,DL05018,nan,nan,260089,2775541
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Bridget A,Hickey,Sten,nan,F,Married,English Only,Roman Catholic,Thomas Heckley Draper 636,ENGLISH,nan,2.,none,28.0,DL05018,nan,nan,260089,2775542
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Thomas,Hickey,Son in Law,Son in Law,M,Married,English Only,Roman Catholic,Employer,ENGLISH,nan,nan,0 -,27.0,DL05018,nan,nan,260089,2775543
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Mary,Devlin,nan,nan,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,260089,2775544
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Maggie,Devlin,nan,nan,F,Single,English Only,Roman Catholic,James Devlin Co acres statue,ENGLISH,nan,F,nan,nan,DL05018,nan,nan,260089,2775545
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Michael,Devlin,Son,Son,M,Single,English Only,Roman Catholic,James Devlin Co acres statue,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,260089,2775546
+Drumcroagh_0508_0004_0002_0_00003.pdf,Donegal,Drumcroagh,Tullynaught,Catheelin,Devlin,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,260089,2775547
+Drumcroagh_0508_0004_0006_0_00011.pdf,Donegal,Drumcroagh,Tullynaught,Francis,Graham,Head,Head,M,Widower,English Only,nan,Own Account,ENGLISH,nan,nan,nan,84.0,DL05018,nan,nan,260093,2775548
+Drumcroagh_0508_0004_0006_0_00011.pdf,Donegal,Drumcroagh,Tullynaught,Francis,Graham,Son,Son,M,nan,English Only,nan,Francis Graham farmer. 30 st acres,ENGLISH,nan,nan,nan,34.0,DL05018,nan,nan,260093,2775549
+Drumcroagh_0508_0004_0006_0_00011.pdf,Donegal,Drumcroagh,Tullynaught,Albert,Graham,Son,Son,M,nan,English Only,nan,Francis Graham,ENGLISH,nan,nan,/,28.0,DL05018,nan,nan,260093,2775550
+Drumcroagh_0508_0004_0006_0_00011.pdf,Donegal,Drumcroagh,Tullynaught,Mary J,Robinson,Niece,Niece,F,nan,English Only,nan,Private,ENGLISH,nan,nan,nan,30.0,DL05018,nan,nan,260093,2775551
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,John,Wray,Head,Head,M,Married,English Only,Presbyterian,nan,ENGLISH,nan,nan,9,nan,DL05018,nan,nan,260094,2775552
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Mary,Wray,Wife,Wife,F,Married,English Only,nan,y,ENGLISH,nan,1,9,32.0,DL05018,nan,nan,260094,2775553
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Sarah A,Wray,nan,nan,F,Single,English Only,nan,- y,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,260094,2775554
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,John,Wray,Son,Son,M,nan,English Only,nan,John Way. 14 Statue acres 904,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,260094,2775555
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Bella,Wray,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,260094,2775556
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Francis,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,260094,2775557
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Mary,Wray,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,260094,2775558
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,George,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,260094,2775559
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Maggie,Wray,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,260094,2775560
+Drumcroagh_0508_0004_0007_0_00013.pdf,Donegal,Drumcroagh,Tullynaught,Henry,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,260094,2775561
+Drumcroagh_0508_0004_0008_0_00015.pdf,Donegal,Drumcroagh,Tullynaught,Sarah,Walsh,Head,Head,F,Single,English Only,nan,Own account 904 12 State acres,ENGLISH,nan,nan,nan,74.0,DL05018,nan,nan,260095,2775562
+Drumcroagh_0508_0004_0009_0_00017.pdf,Donegal,Drumcroagh,Tullynaught,Jane,Wray,Head Widow,Head,F,Widow,English Only,Presbyterian,Employer 15 Statue acres 9:15,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,260096,2775563
+Drumcroagh_0508_0004_0009_0_00017.pdf,Donegal,Drumcroagh,Tullynaught,William,McCullagh,Single Brother,Brother,M,Single,English Only,Methodist,Jane 15 Statue Dray acres,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,260096,2775564
+Drumcroagh_0508_0004_0009_0_00017.pdf,Donegal,Drumcroagh,Tullynaught,William John,Wray,Son,Son,M,nan,English Only,Presbyterian,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,260096,2775565
+Drumcroagh_0508_0004_0009_0_00017.pdf,Donegal,Drumcroagh,Tullynaught,Ernest,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,260096,2775566
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Francis,White,Head,Head,M,Married,English Only,nan,Vyn. Account 905 18 Statue acres,ENGLISH,nan,NTONTUS,4,55.0,DL05018,nan,nan,262652,2775567
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Margaret Maria,White,Wife,Wife,F,Married,English Only,nan,- y,ENGLISH,nan,6,4,44.0,DL05018,nan,nan,262652,2775568
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Percy Hugh,White,Son,Son,M,Single,English Only,nan,Francis White 18 Statue acres.905,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,262652,2775569
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Thomas James,White,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,262652,2775570
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Cecil Robert,White,Son,Son,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,262652,2775571
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Alice,White,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,262652,2775572
+Druminardagh_0508_0005_0004_0_00007.pdf,Donegal,Druminardagh,Tullynaught,Dora Adelade,White,Daughter,Daughter,nan,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,262652,2775573
+Druminardagh_0508_0005_0007_0_00013.pdf,Donegal,Druminardagh,Tullynaught,Robert,Lawrey,Head,Head,M,Married,English Only,Church of Ireland,Very account 46 State acres,ENGLISH,nan,nan,4,75.0,DL05018,nan,nan,262655,2775574
+Druminardagh_0508_0005_0007_0_00013.pdf,Donegal,Druminardagh,Tullynaught,Annabella,Lawrey,Wife,Wife,F,Married,English Only,nan,y,ENGLISH,nan,nan,W,65.0,DL05018,nan,nan,262655,2775575
+Druminardagh_0508_0005_0007_0_00013.pdf,Donegal,Druminardagh,Tullynaught,Robert,Lawrey,Daughter,Daughter,M,Single,English Only,nan,Robert Rowrey 46 Statue acres 9%,ENGLISH,nan,nan,nan,41.0,DL05018,nan,nan,262655,2775576
+Druminardagh_0508_0005_0007_0_00013.pdf,Donegal,Druminardagh,Tullynaught,Jennie,Lawrey,alive.,nan,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,262655,2775577
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,John P,McGlinchey,Head,Head,M,Married,English Only,Roman Catholic,Own Account 906 14 & Statue acres,ENGLISH,nan,nan,7,58.0,DL05018,nan,nan,262657,2775578
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Maggie,McGlinchey,Wife,Wife,F,Married,English Only,nan,2/3,ENGLISH,nan,1,7,52.0,DL05018,nan,nan,262657,2775579
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Mary Josephine,McGlinchey,Daughter,Daughter,F,Single,English Only,nan,Monaghan Embriding Co.,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,262657,2775580
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Brigid Agatha,McGlinchey,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,262657,2775581
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Nora Gertrude,McGlinchey,Daughter,Daughter,F,Single,English Only,nan,301,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,262657,2775582
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Kathleen Elizabeth,McGlinchey,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,262657,2775583
+Druminardagh_0508_0005_0009_0_00017.pdf,Donegal,Druminardagh,Tullynaught,Hugh James,McGlinchey,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,262657,2775584
+Druminardagh_0508_0005_0010_0_00019.pdf,Donegal,Druminardagh,Tullynaught,Robert,Abraham,Head,Head,M,nan,English Only,Church of Ireland,lynn account 30 State acres.,ENGLISH,nan,TTIS -,nan,63.0,DL05018,nan,nan,262658,2775585
+Druminardagh_0508_0005_0010_0_00019.pdf,Donegal,Druminardagh,Tullynaught,Lizzie,Abraham,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,262658,2775586
+Druminardagh_0508_0005_0010_0_00019.pdf,Donegal,Druminardagh,Tullynaught,Jennie,Abraham,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,262658,2775587
+Druminardagh_0508_0005_0010_0_00019.pdf,Donegal,Druminardagh,Tullynaught,Robert,Abraham,Son,Son,M,Single,English Only,nan,Robert Abraham so status acres,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,262658,2775588
+Druminardagh_0508_0005_0011_0_00021.pdf,Donegal,Druminardagh,Tullynaught,Mary A,Coneaghan,Head,Head,F,Widow,English Only,nan,Burn Account 18 State acres.,ENGLISH,nan,nan,nan,73.0,DL05018,nan,nan,262659,2775589
+Druminardagh_0508_0005_0011_0_00021.pdf,Donegal,Druminardagh,Tullynaught,Michael,Coneaghan,Son,Son,M,Single,English Only,Roman Catholic,18 Mary State Donaghan acres 905,ENGLISH,nan,nan,NO,40.0,DL05018,nan,nan,262659,2775590
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Andrew,Wray,Head,Head,M,Single,English Only,Presbyterian,own Account. 905 Statue acres,ENGLISH,nan,nan,nan,74.0,DL05018,nan,nan,263340,2775591
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Mary A,Wray,Sister,Sister,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,72.0,DL05018,nan,nan,263340,2775592
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Maggie J,Wray,Sister,Sister,F,Single,English Only,nan,- y,ENGLISH,nan,nan,nan,62.0,DL05018,nan,nan,263340,2775593
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Lizzie E,Wray,Sister,Sister,F,Single,English Only,nan,2y,ENGLISH,nan,nan,nan,60.0,DL05018,nan,nan,263340,2775594
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,John,Wray,Brother,Brother,M,Single,English Only,nan,Andrea Wray 16 & Statute acres 905,ENGLISH,nan,nan,nan,59.0,DL05018,nan,nan,263340,2775595
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Samuel,Wray,Brother,Brother,M,Single,English Only,nan,Andrea Wray 16 & Statute acres 905,ENGLISH,nan,nan,nan,57.0,DL05018,nan,nan,263340,2775596
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,Fanney,Wray,Suister,nan,F,Single,English Only,nan,- V,ENGLISH,nan,nan,nan,53.0,DL05018,nan,nan,263340,2775597
+Drumlask_0508_0023_0003_0_00005.pdf,Donegal,Drumlask,Tullynaught,William,Wray,Nephew,Nephew,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,263340,2775598
+Drumlask_0508_0023_0007_0_00013.pdf,Donegal,Drumlask,Tullynaught,Sarah,Farrell,Head,Head,F,Single,English Only,Presbyterian,turn account 903 9 & acres.,ENGLISH,nan,MOUTTS -,nan,70.0,DL05018,nan,nan,263344,2775599
+Drumlask_0508_0023_0007_0_00013.pdf,Donegal,Drumlask,Tullynaught,Metha,McElhenny,Cousin,Cousin,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,263344,2775600
+Drumlask_0508_0023_0007_0_00013.pdf,Donegal,Drumlask,Tullynaught,Thomas J,McElhenny,Cousin,Cousin,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,263344,2775601
+Drumlask_0508_0023_0008_0_00015.pdf,Donegal,Drumlask,Tullynaught,James,McElhenny,Head,Head,M,Married,English Only,nan,own Account L10 8 acres/Alatne,ENGLISH,nan,NIONTUS,4,33.0,DL05018,nan,nan,263345,2775602
+Drumlask_0508_0023_0008_0_00015.pdf,Donegal,Drumlask,Tullynaught,Rebecca,McElhenny,Wife,Wife,F,Married,English Only,nan,M,ENGLISH,nan,nan,4,39.0,DL05018,nan,nan,263345,2775603
+Drumlask_0508_0023_0008_0_00015.pdf,Donegal,Drumlask,Tullynaught,Lizzie J,McElhenny,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,263345,2775604
+Drumlask_0508_0023_0008_0_00015.pdf,Donegal,Drumlask,Tullynaught,William O,McElhenny,0 Son.,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,263345,2775605
+Drummenny Lower_0508_0006_0002_0_00003.pdf,Donegal,Drummenny Lower,Tullynaught,Catherine J,Graham,Head,Head,F,Widow,English Only,Methodist,Employer 906 No Statue acres,ENGLISH,nan,TTIS -,nan,70.0,DL05018,nan,nan,264196,2775606
+Drummenny Lower_0508_0006_0002_0_00003.pdf,Donegal,Drummenny Lower,Tullynaught,Margaret J,Graham,Daughter,Daughter,F,nan,English Only,Methodist,y,ENGLISH,nan,nan,nan,50.0,DL05018,nan,nan,264196,2775607
+Drummenny Lower_0508_0006_0002_0_00003.pdf,Donegal,Drummenny Lower,Tullynaught,Frank Moffet,Graham,Son,Son,M,Single,English Only,Methodist,Robert Temple 270,ENGLISH,nan,nan,nan,31.0,DL05018,nan,nan,264196,2775608
+Drummenny Lower_0508_0006_0002_0_00003.pdf,Donegal,Drummenny Lower,Tullynaught,John,Edward,Servant,Servant,M,Single,English Only,Roman Catholic,Catherine Graham 3 1 statue acres. 9th,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,264196,2775609
+Drummenny Lower_0508_0006_0003_0_00005.pdf,Donegal,Drummenny Lower,Tullynaught,Ann,Stevenson,Head,Head,F,Widow,English Only,Church of Ireland,own 12 Statue acres. 904,ENGLISH,nan,nan,nan,48.0,DL05018,nan,nan,264197,2775610
+Drummenny Lower_0508_0006_0003_0_00005.pdf,Donegal,Drummenny Lower,Tullynaught,Maud,Stevenson,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,264197,2775611
+Drummenny Lower_0508_0006_0003_0_00005.pdf,Donegal,Drummenny Lower,Tullynaught,Mina,Stevenson,nan,nan,F,nan,English Only,Church of Ireland,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,264197,2775612
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,James,Hammond,Head,Head,M,Married,English Only,Church of Ireland,Employer 32St acres 906,ENGLISH,nan,nan,5 -,34.0,DL05018,nan,nan,264199,2775613
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,Mary,Hammond,nan,nan,F,Married,English Only,nan,y,ENGLISH,nan,9,5.,37.0,DL05018,nan,nan,264199,2775614
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,Hugh,Hammond,Father.,Father,M,Single,English Only,nan,James Statue Hammond 906,ENGLISH,nan,nan,nan,74.0,DL05018,nan,nan,264199,2775615
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,Mateldia,Hammond,Daughter,Daughter,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,264199,2775616
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,Mary,Hammond,Daughter,Daughter,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,264199,2775617
+Drummenny Lower_0508_0006_0005_0_00009.pdf,Donegal,Drummenny Lower,Tullynaught,Hugh,Hammond,Son,Son,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,264199,2775618
+Drummenny Lower_0508_0006_0006_0_00011.pdf,Donegal,Drummenny Lower,Tullynaught,William,Stevenson,Head,Head,M,Married,English Only,Church of Ireland,Hawn Account 906 45 Statue acres.,ENGLISH,nan,nan,3 -,46.0,DL05018,nan,nan,264200,2775619
+Drummenny Lower_0508_0006_0006_0_00011.pdf,Donegal,Drummenny Lower,Tullynaught,Annie,Stevenson,Wife,Wife,F,Married,English Only,nan,/ -,ENGLISH,nan,8.,3,41.0,DL05018,nan,nan,264200,2775620
+Drummenny Lower_0508_0006_0006_0_00011.pdf,Donegal,Drummenny Lower,Tullynaught,George,Stevenson,Son,Son,M,Single,English Only,nan,James Dunleavy. 645 Marianer Brook Seller,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264200,2775621
+Drummenny Lower_0508_0006_0006_0_00011.pdf,Donegal,Drummenny Lower,Tullynaught,Nina,Stevenson,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,264200,2775622
+Drummenny Lower_0508_0006_0006_0_00011.pdf,Donegal,Drummenny Lower,Tullynaught,Nancy,Stevenson,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,264200,2775623
+Drummenny Middle_0508_0007_0002_0_00003.pdf,Donegal,Drummenny Middle,Tullynaught,George,Irwin,Head,Head,M,Single,English Only,Methodist,Employer. 905 21 Statue acres.,ENGLISH,nan,nan,nan,51.0,DL05018,nan,nan,264201,2775624
+Drummenny Middle_0508_0007_0002_0_00003.pdf,Donegal,Drummenny Middle,Tullynaught,Margaret,Irwin,Mother,Mother,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264201,2775625
+Drummenny Middle_0508_0007_0002_0_00003.pdf,Donegal,Drummenny Middle,Tullynaught,Edith,Bustard,Niece,Niece,F,Single,English Only,Church of Ireland,- y,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,264201,2775626
+Drummenny Middle_0508_0007_0002_0_00003.pdf,Donegal,Drummenny Middle,Tullynaught,Con,Mulhern,Servant,Servant,M,nan,English Only,Roman Catholic,George Irwin. 905 Statue acres,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,264201,2775627
+Drummenny Middle_0508_0007_0003_0_00005.pdf,Donegal,Drummenny Middle,Tullynaught,Richard,[Freeborn],Head,Head,M,nan,English Only,nan,Own Account. 905 23 Statue acres.,ENGLISH,nan,nan,nan,50.0,DL05018,nan,nan,264202,2775628
+Drummenny Middle_0508_0007_0004_0_00007.pdf,Donegal,Drummenny Middle,Tullynaught,Charles,Stevenson,Head,Head,M,Single,English Only,Church of Ireland,own account 903 8 Statue,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264203,2775629
+Drummenny Middle_0508_0007_0005_0_00009.pdf,Donegal,Drummenny Middle,Tullynaught,Mary,Stevenson,Daughter,Daughter,F,nan,English Only,Presbyterian,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264203,2775630
+Drummenny Middle_0508_0007_0005_0_00009.pdf,Donegal,Drummenny Middle,Tullynaught,Lizzie,Stevenson,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,264203,2775631
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,George,Stevenson,Head,Head,M,nan,English Only,Presbyterian,Employer 906 42 State acres.,ENGLISH,nan,nan,y,nan,DL05018,nan,nan,264205,2775632
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Lizzie,Stevenson,nan,nan,F,nan,English Only,nan,- y,ENGLISH,nan,9,10,52.0,DL05018,nan,nan,264205,2775633
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Andrew,Stevenson,Son,Son,M,Single,English Only,nan,George Stevenson 906 acres,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,264205,2775634
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Jane,Stevenson,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,264205,2775635
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Rebecca,Stevenson,Daughter,Daughter,F,Single,English Only,nan,James Temple 636 Brayer,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,264205,2775636
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,George,Stevenson,Son,Son,M,Single,English Only,nan,George Stevenson acres. 906,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,264205,2775637
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,John,Stevenson,Son,Son,M,Single,English Only,nan,Was Kent Grocer 611,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,264205,2775638
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Robert,Stevenson,Son,Son,M,nan,English Only,nan,George Stevenson 906 42 acres,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,264205,2775639
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,Margaret,Stevenson,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,264205,2775640
+Drummenny Middle_0508_0007_0006_0_00011.pdf,Donegal,Drummenny Middle,Tullynaught,James,Stevenson,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,264205,2775641
+Drummenny Middle_0508_0007_0007_0_00013.pdf,Donegal,Drummenny Middle,Tullynaught,Thomas,Stevenson,Head,Head,M,nan,English Only,Church of Ireland,Wyn Account 904 10 Statue,ENGLISH,nan,nan,- t,72.0,DL05018,nan,nan,264206,2775642
+Drummenny Middle_0508_0007_0009_0_00017.pdf,Donegal,Drummenny Middle,Tullynaught,Joseph,Lyttle,Joseph Lytle Head,nan,M,nan,English Only,nan,Raven account 38 Employer does Count on the farm did not stop tonight,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264208,2775643
+Drummenny Middle_0508_0007_0009_0_00017.pdf,Donegal,Drummenny Middle,Tullynaught,Ellen,Lyttle,Sister,Sister,F,Single,English Only,Church of Ireland,- y,ENGLISH,nan,nan,nan,52.0,DL05018,nan,nan,264208,2775644
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,William,Travers,Head,Head,M,Married,English Only,Roman Catholic,Own account. 905 28 Statue acres,ENGLISH,nan,nan,6 -,41.0,DL05018,nan,nan,264211,2775645
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Mary,Travers,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,9,nan,36.0,DL05018,nan,nan,264211,2775646
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Edward,Travers,Sen.,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,264211,2775647
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Ellen,Travers,Mother,Mother,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,68.0,DL05018,nan,nan,264211,2775648
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Mary M,Travers,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,264211,2775649
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,William Thomas,Travers,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264211,2775650
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Patrick J,Travers,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,264211,2775651
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Bridget A,Travers,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,264211,2775652
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Hellen,Travers,nan,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264211,2775653
+Drummenny Upper_0508_0008_0004_0_00007.pdf,Donegal,Drummenny Upper,Tullynaught,Mary Ellen,Brogan,nan,nan,F,Single,English Only,Roman Catholic,Private,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,264211,2775654
+Drummenny Upper_0508_0008_0005_0_00009.pdf,Donegal,Drummenny Upper,Tullynaught,John,Lawn,Head,Head,M,Single,English Only,Roman Catholic,Own account 34 Statue acres 906,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,264212,2775655
+Drummenny Upper_0508_0008_0007_0_00013.pdf,Donegal,Drummenny Upper,Tullynaught,Patrick,McGinty,Head,Head,M,Single,English Only,nan,Employer Own account 19 Statue Sacres,ENGLISH,nan,nan,nan,48.0,DL05018,nan,nan,264214,2775656
+Drummenny Upper_0508_0008_0007_0_00013.pdf,Donegal,Drummenny Upper,Tullynaught,Con,McGinty,Brother,Brother,M,Single,English Only,Roman Catholic,Patrick McGinty 19 Statue works 905,ENGLISH,nan,nan,nan,45.0,DL05018,nan,nan,264214,2775657
+Drummenny Upper_0508_0008_0007_0_00013.pdf,Donegal,Drummenny Upper,Tullynaught,John,McGinty,Brother,Brother,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,53.0,DL05018,nan,nan,264214,2775658
+Drummenny Upper_0508_0008_0007_0_00013.pdf,Donegal,Drummenny Upper,Tullynaught,Mary A,McGinty,Sister,Sister,F,Single,English Only,Roman Catholic,- y,ENGLISH,nan,nan,nan,51.0,DL05018,nan,nan,264214,2775659
+Finnadoose_0508_0010_0002_0_00003.pdf,Donegal,Finnadoose,Tullynaught,Mary A,Travers,Head,Head,F,Single,English Only,nan,Own account. 10 Statue acres.,ENGLISH,nan,nan,nan,43.0,DL05018,nan,nan,291068,2775660
+Finnadoose_0508_0010_0002_0_00003.pdf,Donegal,Finnadoose,Tullynaught,Sarah,Travers,Sister,Sister,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,41.0,DL05018,nan,nan,291068,2775661
+Finnadoose_0508_0010_0005_0_00009.pdf,Donegal,Finnadoose,Tullynaught,Connell,Travers,Head,Head,M,Single,English Only,Roman Catholic,Barn Account. 904 13 Matut acres,ENGLISH,nan,NONTIS,nan,43.0,DL05018,nan,nan,291071,2775662
+Finnadoose_0508_0010_0005_0_00009.pdf,Donegal,Finnadoose,Tullynaught,Mary A,Travers,Sister,Sister,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,38.0,DL05018,nan,nan,291071,2775663
+Finnadoose_0508_0010_0008_0_00015.pdf,Donegal,Finnadoose,Tullynaught,Mary,Barren,Head,Head,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,MOITUS -,nan,66.0,DL05018,nan,nan,291074,2775664
+Finnadoose_0508_0010_0008_0_00015.pdf,Donegal,Finnadoose,Tullynaught,John,McGuire,Nephew,Nephew,M,Married,English Only,Roman Catholic,mining white. 907 55 Statue acres,ENGLISH,nan,nan,0,25.0,DL05018,nan,nan,291074,2775665
+Finnadoose_0508_0010_0008_0_00015.pdf,Donegal,Finnadoose,Tullynaught,Bella,McGuire,Veice,nan,F,Married,English Only,Roman Catholic,M,ENGLISH,nan,nan,none,25.0,DL05018,nan,nan,291074,2775666
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,Edward,Travers,Head,Head,M,nan,English Only,Roman Catholic,Own Account 905 15 Statue acres.,ENGLISH,nan,NOUTIS -,nan,80.0,DL05018,nan,nan,291076,2775667
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,Sarah,Travers,Daughter,Daughter,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,56.0,DL05018,nan,nan,291076,2775668
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,John,Travers,Son,Son,M,Single,English Only,Roman Catholic,Edward Travers 15 Statue acres,ENGLISH,nan,nan,nan,47.0,DL05018,nan,nan,291076,2775669
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,Joseph,Travers,Son,Son,M,Single,English Only,Roman Catholic,Edward Travers 15 Statue acres,ENGLISH,nan,nan,nan,45.0,DL05018,nan,nan,291076,2775670
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,Barney,Travers,Grandson,Grandson,M,Single,English Only,Roman Catholic,Edward Travers 15 Statue acres,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,291076,2775671
+Finnadoose_0508_0010_0010_0_00019.pdf,Donegal,Finnadoose,Tullynaught,Lawrence,Travers,Grandson,Grandson,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,291076,2775672
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,Neal,Meehan,Head,Head,M,Married,English Only,Roman Catholic,Own Account & Statue acres 903,ENGLISH,nan,nan,6 -,61.0,DL05018,nan,nan,291077,2775673
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,Cassie,Meehan,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,54.0,DL05018,nan,nan,291077,2775674
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,Maggie E,Meehan,Daughter,Daughter,F,Single,English Only,Roman Catholic,- y,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,291077,2775675
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,John,Meehan,Sen.,Son,M,nan,English Only,nan,Neal Mechan & Mata¿ acres. 903,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,291077,2775676
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,Patrick,Meehan,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,291077,2775677
+Finnadoose_0508_0010_0011_0_00021.pdf,Donegal,Finnadoose,Tullynaught,Maggie,McGinty,Sister Raw.,nan,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,291077,2775678
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Patrick,Barren,Head,Head,M,Widower,English Only,Roman Catholic,Union account 4 Y Statue acres,ENGLISH,nan,nan,nan,68.0,DL05018,nan,nan,291079,2775679
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Hugh,[Hore],Sam. in Raw,nan,M,Married,English Only,nan,Patrick Barren. 906 47 Statute acres,ENGLISH,nan,nan,6,36.0,DL05018,nan,nan,291079,2775680
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Bridget,[Hore],Daughter,Daughter,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,10,6,32.0,DL05018,nan,nan,291079,2775681
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Patrick,[Hore],Grapel,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,291079,2775682
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Hugh,[Hore],Grapel,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,291079,2775683
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Michael,[Hore],Grapel,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,291079,2775684
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,James,[Hore],Grapel,nan,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,291079,2775685
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,John,[Hore],Grapel,nan,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,291079,2775686
+Finnadoose_0508_0010_0013_0_00025.pdf,Donegal,Finnadoose,Tullynaught,Bridget A,[Hore],Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,291079,2775687
+Legacurry_0508_0024_0004_0_00007.pdf,Donegal,Legacurry,Tullynaught,John,Graham,Head,Head,M,Single,English Only,Church of Ireland,Own account. 1906 30. Staude'acres.,ENGLISH,nan,nan,nan,57.0,DL05018,nan,nan,420373,2775688
+Legacurry_0508_0024_0004_0_00007.pdf,Donegal,Legacurry,Tullynaught,James,Graham,Brother,Brother,M,Single,English Only,Church of Ireland,John Graham,ENGLISH,nan,nan,nan,59.0,DL05018,nan,nan,420373,2775689
+Legacurry_0508_0024_0004_0_00007.pdf,Donegal,Legacurry,Tullynaught,Ethel,Walker,Sister,Sister,F,Married,English Only,nan,M,ENGLISH,nan,10,7 Seven,49.0,DL05018,nan,nan,420373,2775690
+Legacurry_0508_0024_0004_0_00007.pdf,Donegal,Legacurry,Tullynaught,Joseph,Walker,Lephew,Nephew,M,Single,English Only,nan,John Graham. A No,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,420373,2775691
+Legacurry_0508_0024_0004_0_00007.pdf,Donegal,Legacurry,Tullynaught,Herbert,Walker,Lephew.,Nephew,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,420373,2775692
+Leghewny_0508_0011_0002_0_00003.pdf,Donegal,Leghewny,Tullynaught,John,Farrell,Head,Head,M,Married,English Only,Presbyterian,Own Account,ENGLISH,nan,nan,0 None,46.0,DL05018,nan,nan,420674,2775693
+Leghewny_0508_0011_0002_0_00003.pdf,Donegal,Leghewny,Tullynaught,Margaret,Farrell,Wife,Wife,F,Married,English Only,Presbyterian,Irish Free State 701,ENGLISH,nan,nan,nan,47.0,DL05018,nan,nan,420674,2775694
+Leghewny_0508_0011_0005_0_00009.pdf,Donegal,Leghewny,Tullynaught,Hugh,Curriston,Head,Head,M,Married,English Only,nan,Hugh Cassidy so it acres,ENGLISH,nan,ITUS,1,30.0,DL05018,nan,nan,420677,2775695
+Leghewny_0508_0011_0005_0_00009.pdf,Donegal,Leghewny,Tullynaught,Lizzie,Curriston,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,7,1,29.0,DL05018,nan,nan,420677,2775696
+Leghewny_0508_0011_0005_0_00009.pdf,Donegal,Leghewny,Tullynaught,Hugh James,Curriston,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,420677,2775697
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Michael,Travers,Head,Head,M,Married,English Only,Roman Catholic,Own account g 97 Statue acres,ENGLISH,nan,TTIS,7,60.0,DL05018,nan,nan,420680,2775698
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,John,Travers,Brother,Brother,M,Single,English Only,Roman Catholic,Michael Travers gy statue acres.,ENGLISH,nan,nan,nan,59.0,DL05018,nan,nan,420680,2775699
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Katie,Travers,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,3,7,40.0,DL05018,nan,nan,420680,2775700
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Hugh,Travers,Son,Son,nan,Single,English Only,Roman Catholic,"Michael 44 Travers. Maine -.,.....O.564 revers, 907",ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,420680,2775701
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,John,Travers,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,420680,2775702
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Mary E,Travers,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420680,2775703
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Sarah A,Travers,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,420680,2775704
+Leghewny_0508_0011_0008_0_00015.pdf,Donegal,Leghewny,Tullynaught,Bridget,Travers,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,420680,2775705
+Leghewny_0508_0011_0009_0_00017.pdf,Donegal,Leghewny,Tullynaught,Patrick,Cassidy,Head,Head,M,Married,English Only,Roman Catholic,UM Account 908 100 Nature acres.,ENGLISH,nan,nan,X,37.0,DL05018,nan,nan,420681,2775706
+Leghewny_0508_0011_0009_0_00017.pdf,Donegal,Leghewny,Tullynaught,Catherine,Cassidy,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,56.0,DL05018,nan,nan,420681,2775707
+Leghewny_0508_0011_0009_0_00017.pdf,Donegal,Leghewny,Tullynaught,Mary,McGroary,Chielan adopted,nan,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,420681,2775708
+Leghewny_0508_0011_0011_0_00021.pdf,Donegal,Leghewny,Tullynaught,Dan,Murphy,Head,Head,M,Married,English Only,Roman Catholic,Union account.905 25 Mathe acres,ENGLISH,nan,nan,2,45.0,DL05018,nan,nan,420683,2775709
+Leghewny_0508_0011_0011_0_00021.pdf,Donegal,Leghewny,Tullynaught,Mary,Murphy,Wife,Wife,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,nan,2,60.0,DL05018,nan,nan,420683,2775710
+Leghewny_0508_0011_0011_0_00021.pdf,Donegal,Leghewny,Tullynaught,Michael,Flanaghan,Father Rant.,nan,M,Widower,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,98.0,DL05018,nan,nan,420683,2775711
+Leghewny_0508_0011_0011_0_00021.pdf,Donegal,Leghewny,Tullynaught,Edward,Murphy,Son,Son,M,Single,English Only,Roman Catholic,Dan Murphy 905 25 Mathe acres,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,420683,2775712
+Leghewny_0508_0011_0011_0_00021.pdf,Donegal,Leghewny,Tullynaught,Maggie,Murphy,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420683,2775713
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,James,Cassidy,Head Wife,Head,M,nan,English Only,Roman Catholic,Own Account 906 3 If Mature acres. y,ENGLISH,nan,TTS,9 9,70.0,DL05018,nan,nan,420684,2775714
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,Bridget,Cassidy,Head Wife,Head,F,nan,English Only,Roman Catholic,Own Account 906 3 If Mature acres. y,ENGLISH,nan,TTS,9 9,70.0,DL05018,nan,nan,420684,2775715
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,Patrick,Cassidy,Head Wife,Head,M,nan,English Only,Roman Catholic,Own Account 906 3 If Mature acres. y,ENGLISH,nan,TTS,9 9,70.0,DL05018,nan,nan,420684,2775716
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,Anthony,Cassidy,Son,Son,M,nan,English Only,Roman Catholic,James Cassidy Statue acres 906,ENGLISH,nan,nan,9,30.0,DL05018,nan,nan,420684,2775717
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,Mary Ann,Cassidy,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,32.0,DL05018,nan,nan,420684,2775718
+Leghewny_0508_0011_0012_0_00023.pdf,Donegal,Leghewny,Tullynaught,Maggie,Cassidy,nan,nan,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420684,2775719
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Michael,Cassidy,Head,Head,M,Married,English Only,nan,Michael Loewdy 4g statue acres 706,ENGLISH,nan,nan,0,60.0,DL05018,nan,nan,420685,2775720
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Ann,Cassidy,Wife,Wife,F,Married,English Only,Roman Catholic,- y,ENGLISH,nan,6,none,50.0,DL05018,nan,nan,420685,2775721
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Denis,Cassidy,Brother,Brother,M,Single,English Only,Roman Catholic,Michael Cassidy 47 Statue acres 106,ENGLISH,nan,nan,nan,40.0,DL05018,nan,nan,420685,2775722
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Catheelin,Cassidy,Daughter,Daughter,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,420685,2775723
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Denis,Cassidy,Son,Son,M,Single,English Only,nan,Michael Cassidy 4y Statue acres/90,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,420685,2775724
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Maggie,Sleven,Niece,Niece,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,420685,2775725
+Leghewny_0508_0011_0013_0_00025.pdf,Donegal,Leghewny,Tullynaught,Susan,Sleven,Leice,Niece,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,420685,2775726
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Michael,Cassidy,Head,Head,M,Single,English Only,Roman Catholic,Own Account 24 Statue acres.,ENGLISH,nan,TTS,nan,68.0,DL05018,nan,nan,420686,2775727
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Philip,Cassidy,Brother,Brother,M,Widower,English Only,Roman Catholic,Tyrconville C. C. 729,ENGLISH,nan,nan,nan,65.0,DL05018,nan,nan,420686,2775728
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Mary Anne,Cassidy,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,57.0,DL05018,nan,nan,420686,2775729
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Peggy,Cassidy,Niece,Niece,F,Single,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,420686,2775730
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Peg,McGoldrick,Niece,Niece,F,Single,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,27.0,DL05018,nan,nan,420686,2775731
+Leghewny_0508_0011_0014_0_00027.pdf,Donegal,Leghewny,Tullynaught,Matthew James,Mack,Servant,Servant,nan,Single,English Only,Roman Catholic,Michael 24 Cassidy St acres Farmer,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,420686,2775732
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Hugh,Devlin,Highest,nan,M,Married,English Only,Roman Catholic,Own account: 907 73 statue acres,ENGLISH,nan,NONTTIS,7,60.0,DL05018,nan,nan,420686,2775733
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Rose,Devlin,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,33.0,DL05018,nan,nan,420686,2775734
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Andrew,Devlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,7,12.0,DL05018,nan,nan,420686,2775735
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,John P,Devlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,420686,2775736
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Hugh,Devlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,420686,2775737
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,[Eamonn],Devlin,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,420686,2775738
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Sarah,Devlin,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,420686,2775739
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Joseph,Devlin,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,420686,2775740
+Leghewny_0508_0011_0015_0_00029.pdf,Donegal,Leghewny,Tullynaught,Bernard,Devlin,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420686,2775741
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,Anthony,McCadden,Head,Head,M,nan,English Only,Roman Catholic,Own acres. 27 Statue acres 905,ENGLISH,nan,nan,nan,72.0,DL05018,nan,nan,420688,2775742
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,John,McCadden,Son,Son,M,Married,English Only,Roman Catholic,Anthony McCbadden 27 Maine acres,ENGLISH,nan,2,5,47.0,DL05018,nan,nan,420688,2775743
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,Bridget,McCadden,Daughter law.,Daughter in Law,F,Married,English Only,Roman Catholic,- 21,ENGLISH,nan,nan,nan,43.0,DL05018,nan,nan,420688,2775744
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,Catheelin,McCadden,Granddaughter,Granddaughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,420688,2775745
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,Anthony,McCadden,Grandson,Grandson,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,420688,2775746
+Leghewny_0508_0011_0016_0_00031.pdf,Donegal,Leghewny,Tullynaught,John,McCadden,Son. Grand,Grandson,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,420688,2775747
+Leghewny_0508_0011_0017_0_00033.pdf,Donegal,Leghewny,Tullynaught,Francis,Bustard,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,nan,TTS,nan,5.0,DL05018,nan,nan,420688,2775748
+Leghewny_0508_0011_0017_0_00033.pdf,Donegal,Leghewny,Tullynaught,Thomas B,Bustard,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,420688,2775749
+Leghewny_0508_0011_0017_0_00033.pdf,Donegal,Leghewny,Tullynaught,Joseph C,Bustard,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,420688,2775750
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Henry,Bustard,Head,Head,M,Married,English Only,nan,Own account 006 Statue,ENGLISH,nan,METHIS 6,75 y,44.0,DL05018,nan,nan,420690,2775751
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Lizzie,Bustard,Wife,Wife,F,Married,English Only,Methodist,y,ENGLISH,nan,6,15,40.0,DL05018,nan,nan,420690,2775752
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Sam,Bustard,Son,Son,M,Single,English Only,nan,Henry Boatard 906 Statue,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,420690,2775753
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,John,Bustard,Son,Son,M,Single,English Only,Methodist,Henry Boatard 906 Statue,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,420690,2775754
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Lily,Bustard,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,420690,2775755
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Annie,Bustard,Daughter,Daughter,F,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,420690,2775756
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Violet,Bustard,Daughter,Daughter,F,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,420690,2775757
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Maggie,Bustard,Daughter,Daughter,F,Both Parents Alive,English Only,Methodist,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,420690,2775758
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,Harry,Bustard,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,Cork,nan,nan,8.0,DL05018,nan,nan,420690,2775759
+Leghewny_0508_0011_0018_0_00035.pdf,Donegal,Leghewny,Tullynaught,William,Bustard,Son,Son,M,nan,English Only,Methodist,nan,ENGLISH,nan,nan,nan,6.0,DL05018,nan,nan,420690,2775760
+Loughcuill_0508_0012_0003_0_00005.pdf,Donegal,Loughcuill,Tullynaught,John,McCool,Head,Head,M,Single,English Only,nan,Own Account 3.5 Statue acres,ENGLISH,nan,MNONTTS -,nan,53.0,DL05018,nan,nan,438222,2775761
+Loughcuill_0508_0012_0003_0_00005.pdf,Donegal,Loughcuill,Tullynaught,Myles,McCool,Brother,Brother,M,Single,English Only,Roman Catholic,John McEvall 906 acres,ENGLISH,nan,nan,nan,48.0,DL05018,nan,nan,438222,2775762
+Loughcuill_0508_0012_0003_0_00005.pdf,Donegal,Loughcuill,Tullynaught,Maggie,McCool,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,36.0,DL05018,nan,nan,438222,2775763
+Loughkip_0508_0013_0002_0_00003.pdf,Donegal,Loughkip,Tullynaught,James,McCadden,Head,Head,M,Married,English Only,Roman Catholic,Own account 40 Statue acres 906,ENGLISH,nan,ITNS -,nan,54.0,DL05018,nan,nan,438615,2775764
+Loughkip_0508_0013_0002_0_00003.pdf,Donegal,Loughkip,Tullynaught,Bridget,McCadden,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,4,65.0,DL05018,nan,nan,438615,2775765
+Loughkip_0508_0013_0002_0_00003.pdf,Donegal,Loughkip,Tullynaught,Margaret,McNulty,lister law.,nan,F,Single,English Only,Roman Catholic,966,ENGLISH,nan,nan,nan,71.0,DL05018,nan,nan,438615,2775766
+Loughkip_0508_0013_0004_0_00007.pdf,Donegal,Loughkip,Tullynaught,Neal,Mulreany,Head,Head,M,nan,English Only,Roman Catholic,Unny account 906 40 State acres,ENGLISH,nan,nan,nan,65.0,DL05018,nan,nan,438617,2775767
+Meenadreen_0508_0014_0002_0_00003.pdf,Donegal,Meenadreen,Tullynaught,Mave R,McMullen,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,OIS -,nan,9.0,DL05018,nan,nan,464731,2775768
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Patrick,McMullin,Head,Head,M,nan,English Only,Roman Catholic,lyn account. 906 40 Statue acres,ENGLISH,nan,MNOUTUS,y,63.0,DL05018,nan,nan,464732,2775769
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Lizzie,McMullin,Wife,Wife,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,11,12,52.0,DL05018,nan,nan,464732,2775770
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Sara J,McMullin,Daughter,Daughter,F,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,28.0,DL05018,nan,nan,464732,2775771
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Maggie J,McMullin,Daughter,Daughter,F,Single,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,26.0,DL05018,nan,nan,464732,2775772
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Jim,McMullin,Son,Son,M,Single,English Only,Roman Catholic,Patrick McLuhlan 906 40 Native acres,ENGLISH,nan,nan,nan,25.0,DL05018,nan,nan,464732,2775773
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Francis,McMullin,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,464732,2775774
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Lillie A,McMullin,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,464732,2775775
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Patrick,McMullin,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,464732,2775776
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Gertie H,McMullin,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,464732,2775777
+Meenadreen_0508_0014_0003_0_00005.pdf,Donegal,Meenadreen,Tullynaught,Veronica J,McMullin,Daughter,Daughter,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,464732,2775778
+Meenadreen_0508_0014_0005_0_00009.pdf,Donegal,Meenadreen,Tullynaught,James,Gildea,Head,Head,M,Married,English Only,Roman Catholic,Barn account 905 22 Statue acres,ENGLISH,nan,1110NTIIS -,0 none,55.0,DL05018,nan,nan,464734,2775779
+Meenadreen_0508_0014_0005_0_00009.pdf,Donegal,Meenadreen,Tullynaught,Kate,Gildea,wife,Wife,F,Married,English Only,Roman Catholic,- y,ENGLISH,nan,nan,none,6.0,DL05018,nan,nan,464734,2775780
+Meenadreen_0508_0014_0006_0_00011.pdf,Donegal,Meenadreen,Tullynaught,Charles,Slaven,Head,Head,M,Married,English Only,Roman Catholic,Own Account. 16 Statut acres 905,ENGLISH,nan,TTS -,y -,59.0,DL05018,nan,nan,464735,2775781
+Meenadreen_0508_0014_0006_0_00011.pdf,Donegal,Meenadreen,Tullynaught,Mary A,Slaven,Wife,Wife,F,Married,English Only,Roman Catholic,- y,ENGLISH,nan,nan,7,65.0,DL05018,nan,nan,464735,2775782
+Meenadreen_0508_0014_0006_0_00011.pdf,Donegal,Meenadreen,Tullynaught,Cassie,Slaven,Daughter,Daughter,F,nan,English Only,Roman Catholic,- 905,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,464735,2775783
+Meenadreen_0508_0014_0007_0_00013.pdf,Donegal,Meenadreen,Tullynaught,Robert,Love,Head,Head,M,Married,English Only,Church of Ireland,turn account. 20 Statue acres. 905,ENGLISH,nan,nan,y,66.0,DL05018,nan,nan,464736,2775784
+Meenadreen_0508_0014_0007_0_00013.pdf,Donegal,Meenadreen,Tullynaught,Margaret,Love,Wife,Wife,F,Married,English Only,nan,- y,ENGLISH,nan,nan,11,50.0,DL05018,nan,nan,464736,2775785
+Meenadreen_0508_0014_0007_0_00013.pdf,Donegal,Meenadreen,Tullynaught,John,Love,Son,Son,M,Single,English Only,nan,Robert Love 20 Statue acres 905,ENGLISH,nan,nan,nan,29.0,DL05018,nan,nan,464736,2775786
+Meenadreen_0508_0014_0007_0_00013.pdf,Donegal,Meenadreen,Tullynaught,Violet,Love,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,464736,2775787
+Meenadreen_0508_0014_0008_0_00015.pdf,Donegal,Meenadreen,Tullynaught,John,Gallagher,Head,Head,M,Single,English Only,Roman Catholic,Vyn accounts 15 Statue acres. 905,ENGLISH,nan,IS -,nan,nan,DL05018,nan,nan,464737,2775788
+Meenadreen_0508_0014_0008_0_00015.pdf,Donegal,Meenadreen,Tullynaught,Mary A,Gallagher,Sister,Sister,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,73.0,DL05018,nan,nan,464737,2775789
+Meenadreen_0508_0014_0008_0_00015.pdf,Donegal,Meenadreen,Tullynaught,Mary,Gallagher,Sister in Law,Sister in Law,F,Widow,English Only,Roman Catholic,y,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,464737,2775790
+Meenadreen_0508_0014_0008_0_00015.pdf,Donegal,Meenadreen,Tullynaught,Cecilia P,Gallagher,Vice,nan,nan,nan,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,464737,2775791
+Meenadreen_0508_0014_0008_0_00015.pdf,Donegal,Meenadreen,Tullynaught,Mary Eileen,Gallagher,Niece,Niece,nan,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,464737,2775792
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Patrick,Gildea,Head,Head,M,Married,English Only,nan,Own account 905 18 & Statue acres,ENGLISH,nan,TTIS 3,4,48.0,DL05018,nan,nan,464740,2775793
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Joseph,Gildea,Son,Son,M,nan,English Only,Roman Catholic,Patrick Aileen. 1st Statue acres,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,464740,2775794
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Grace,Gildea,Daughter,Daughter,F,Single,English Only,Roman Catholic,- X,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,464740,2775795
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Roland,Gildea,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,464740,2775796
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Kathleen,Gildea,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,464740,2775797
+Meenadreen_0508_0014_0011_0_00021.pdf,Donegal,Meenadreen,Tullynaught,Susan,Gildea,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,3,4,48.0,DL05018,nan,nan,464740,2775798
+Meenadreen_0508_0014_0012_0_00023.pdf,Donegal,Meenadreen,Tullynaught,Michael,Gildea,Head,Head,M,Single,English Only,nan,lynn account. 904 12 Statue acres,ENGLISH,nan,MNONTIS -,nan,75.0,DL05018,nan,nan,464741,2775799
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Patrick,Gillespie,Head,Head,M,Married,English Only,nan,Own Account 907 64 Statue acres,ENGLISH,nan,NONTUS,-1,55.0,DL05018,nan,nan,464743,2775800
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Bridget,Gillespie,Wife,Wife,F,Married,English Only,Roman Catholic,- y,ENGLISH,nan,9,nan,42.0,DL05018,nan,nan,464743,2775801
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Kathleen,Mundy,Step Daughter,Stepdaughter,F,nan,English and Irish,nan,Sean P. OConnor. P.M Donegal Port Office 702,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,464743,2775802
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Bridget Angela,Mundy,Step Daughter,Stepdaughter,F,Single,English and Irish,nan,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,464743,2775803
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Edna May,Mundy,Step Daughter,Stepdaughter,F,nan,English and Irish,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,464743,2775804
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,Monica Elizabeth,Mundy,Step,nan,F,nan,English and Irish,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,464743,2775805
+Meenadreen_0508_0014_0014_0_00027.pdf,Donegal,Meenadreen,Tullynaught,John P,Gillespie,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,464743,2775806
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,John,McCadden,Head,Head,M,Married,English Only,Roman Catholic,Own account905 20 Statue acres,ENGLISH,nan,nan,8,44.0,DL05018,nan,nan,464744,2775807
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,Minnie,McCadden,Wife,Wife,F,nan,English Only,Roman Catholic,- y,ENGLISH,nan,3,8,36.0,DL05018,nan,nan,464744,2775808
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,Patrick,McCadden,Son,Son,M,nan,English Only,Roman Catholic,John McEadden 905,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,464744,2775809
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,Teresa,McCadden,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,464744,2775810
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,James F,McCadden,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,464744,2775811
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,Thomas F,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,464744,2775812
+Meenadreen_0508_0014_0015_0_00029.pdf,Donegal,Meenadreen,Tullynaught,Edward,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,464744,2775813
+Moyne_0508_0025_0003_0_00005.pdf,Donegal,Moyne,Tullynaught,Alexandra,McClay,Head,Head,M,Married,English Only,Church of Ireland,Barn account 905 19 Statue acres,ENGLISH,nan,111ONTIS -,4 -,39.0,DL05018,nan,nan,487617,2775814
+Moyne_0508_0025_0003_0_00005.pdf,Donegal,Moyne,Tullynaught,Mary J,McClay,wife,Wife,F,Married,English Only,Church of Ireland,y,ENGLISH,nan,nan,4,37.0,DL05018,nan,nan,487617,2775815
+Moyne_0508_0025_0003_0_00005.pdf,Donegal,Moyne,Tullynaught,Edith,McClay,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,487617,2775816
+Moyne_0508_0025_0003_0_00005.pdf,Donegal,Moyne,Tullynaught,Sadey C,McClay,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,487617,2775817
+Moyne_0508_0025_0003_0_00005.pdf,Donegal,Moyne,Tullynaught,Alexandra,McClay,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,487617,2775818
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Samuel,Kee,Head,Head,M,Married,English Only,Church of Ireland,Samuel Lee Lynacourt 15 Statue acres. 905,ENGLISH,nan,TIIS -,5,60.0,DL05018,nan,nan,487623,2775819
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Jane,Kee,Wife,Wife,F,Married,English Only,nan,y,ENGLISH,nan,3,5,45.0,DL05018,nan,nan,487623,2775820
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Susan,Kee,Mother,Mother,F,Widow,English Only,nan,Samuel Keer is Statue asab,ENGLISH,nan,nan,nan,88.0,DL05018,nan,nan,487623,2775821
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Margaret,Kee,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,487623,2775822
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,William D,Kee,Son,Son,M,Single,English Only,nan,Samuel Kee 15 Status acres 905,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,487623,2775823
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Thomas G,Kee,Son,Son,M,nan,English Only,nan,Samuel Kee 15 Status acres 905,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,487623,2775824
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Annie,Kee,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,487623,2775825
+Moyne_0508_0025_0009_0_00017.pdf,Donegal,Moyne,Tullynaught,Susan J,Kee,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,487623,2775826
+Moyne_0508_0025_0011_0_00021.pdf,Donegal,Moyne,Tullynaught,Michael,McGlynn,Head,Head,M,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,4,nan,DL05018,nan,nan,487625,2775827
+Moyne_0508_0025_0011_0_00021.pdf,Donegal,Moyne,Tullynaught,Mary,McGlynn,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,4,55.0,DL05018,nan,nan,487625,2775828
+Moyne_0508_0025_0011_0_00021.pdf,Donegal,Moyne,Tullynaught,Michael,McGlynn,Son,Son,M,Single,English Only,Roman Catholic,Michael Mclynn road contractor 462,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,487625,2775829
+Moyne_0508_0025_0011_0_00021.pdf,Donegal,Moyne,Tullynaught,Patrick Joseph,McGlynn,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,487625,2775830
+Moyne_0508_0025_0011_0_00021.pdf,Donegal,Moyne,Tullynaught,Mary Anne,McGlynn,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,487625,2775831
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Ellen J,Graham,Head,Head,F,Widow,English Only,Church of Ireland,Own Account. 12Mature acres,ENGLISH,nan,nan,nan,49.0,DL05018,nan,nan,491245,2775832
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Thomas J,Graham,Son,Son,M,Single,English Only,nan,12 & Ellen & Graham 12 Statue acres,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,491245,2775833
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Bella,Graham,Daughter,Daughter,F,Single,English Only,nan,904,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,491245,2775834
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,James,Graham,Son,Son,M,nan,English Only,nan,904,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,491245,2775835
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,May E,Graham,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,491245,2775836
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Archey,Graham,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,491245,2775837
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Sarah A,Graham,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,9.0,DL05018,nan,nan,491245,2775838
+Mullans_0508_0026_0002_0_00003.pdf,Donegal,Mullans,Tullynaught,Thomas,Freebarn,Father,Father,M,Widower,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,491245,2775839
+Mullans_0508_0026_0003_0_00005.pdf,Donegal,Mullans,Tullynaught,George,Spence,Head,Head,M,Married,English Only,Church of Ireland,Union Account 906 31 Statist acres-,ENGLISH,nan,nan,2 -,45.0,DL05018,nan,nan,491246,2775840
+Mullans_0508_0026_0003_0_00005.pdf,Donegal,Mullans,Tullynaught,Margaret,Spence,Wife,Wife,F,Married,English Only,nan,- y,ENGLISH,nan,11,2.,46.0,DL05018,nan,nan,491246,2775841
+Mullans_0508_0026_0003_0_00005.pdf,Donegal,Mullans,Tullynaught,Robert A,Spence,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,491246,2775842
+Rossmore_0508_0027_0003_0_00005.pdf,Donegal,Rossmore,Tullynaught,James,Magee,Head,Head,M,Widower,English Only,Church of Ireland,Own Account. 905 193 Matut acres,ENGLISH,nan,nan,nan,80.0,DL05018,nan,nan,560467,2775843
+Rossmore_0508_0027_0003_0_00005.pdf,Donegal,Rossmore,Tullynaught,Charles,Magee,Son,Son,M,Single,English Only,Church of Ireland,Assisting on Father Farm James Mileye 193 st/,ENGLISH,nan,nan,nan,46.0,DL05018,nan,nan,560467,2775844
+Rossmore_0508_0027_0003_0_00005.pdf,Donegal,Rossmore,Tullynaught,Lizzie,Magee,Daughter,Daughter,F,Single,English Only,Church of Ireland,y,ENGLISH,nan,nan,nan,48.0,DL05018,nan,nan,560467,2775845
+Rossmore_0508_0027_0003_0_00005.pdf,Donegal,Rossmore,Tullynaught,Francis,Curriston,Servant,Servant,M,Single,English Only,nan,Private 905 James McGee 19:butt acres,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,560467,2775846
+Rossmore_0508_0027_0006_0_00011.pdf,Donegal,Rossmore,Tullynaught,Margaret,Hilly,Head,Head,F,Single,English Only,nan,own account 11E Matne acres 904,ENGLISH,nan,TTIS -,nan,74.0,DL05018,nan,nan,560470,2775847
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,Bryan,McGlinchey,Head,Head,M,Married,English Only,nan,lynn account. Statue acres905,ENGLISH,nan,NONTIIS -,nan,86.0,DL05018,nan,nan,581206,2775848
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,Joseph,McGlinchey,Sen.,Son,M,Single,English Only,Roman Catholic,Bryan Wiltinchey Statute acids,ENGLISH,nan,nan,3,28.0,DL05018,nan,nan,581206,2775849
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,Sarah,McGlinchey,Daughter,Daughter,F,Single,English Only,Roman Catholic,- y,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,581206,2775850
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,James,McGlinchey,Son,Son,M,Single,English Only,Roman Catholic,Bryan Statue M Gheichey,ENGLISH,nan,nan,nan,23.0,DL05018,nan,nan,581206,2775851
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,Bernard,McGlinchey,Daughter,Daughter,M,Single,English Only,Roman Catholic,905,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,581206,2775852
+Skreen_0508_0028_0002_0_00003.pdf,Donegal,Skreen,Tullynaught,Maggie,McGlinchey,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,65.0,DL05018,nan,nan,581206,2775853
+Skreen_0508_0028_0004_0_00007.pdf,Donegal,Skreen,Tullynaught,Patrick,McGlinchey,Head,Head,M,Single,English Only,Roman Catholic,Own Account 462,ENGLISH,nan,nan,nan,55.0,DL05018,nan,nan,581208,2775854
+Skreen_0508_0028_0006_0_00011.pdf,Donegal,Skreen,Tullynaught,Bridget,McCaffrey,Head,Head,F,nan,English Only,nan,Unn account 904 10 Statue,ENGLISH,nan,nan,*,65.0,DL05018,nan,nan,581210,2775855
+Skreen_0508_0028_0006_0_00011.pdf,Donegal,Skreen,Tullynaught,Mary,McCaffrey,Sister in Raw,Sister in Law,F,Single,English Only,Roman Catholic,Bridget Mobaffrey.,ENGLISH,nan,nan,nan,85.0,DL05018,nan,nan,581210,2775856
+Skreen_0508_0028_0006_0_00011.pdf,Donegal,Skreen,Tullynaught,Thomas,McCaffrey,Son,Son,M,Single,English Only,Roman Catholic,Bridget Mobuffrey 904 10 Maine acres 1,ENGLISH,nan,nan,nan,28.0,DL05018,nan,nan,581210,2775857
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Edward,Mulreany,Head,Head,M,Married,English Only,Roman Catholic,Own Account 906 36 statue,ENGLISH,nan,TTS,8,68.0,DL05018,nan,nan,581212,2775858
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Rose,Mulreany,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,2,8,48.0,DL05018,nan,nan,581212,2775859
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,John,Mulreany,Son,Son,M,Single,English Only,Roman Catholic,"E. Mulreany, Farmer, 36 St. acres",ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,581212,2775860
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Francis,Mulreany,Son,Son,M,Single,English Only,Roman Catholic,"E. Mulreany Farmer, 36 St. acres. 906",ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,581212,2775861
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Edward,Mulreany,Son,Son,M,Single,English Only,Roman Catholic,"E Mulreany Farmer,",ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,581212,2775862
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Eileen,Mulreany,Daughter,Daughter,F,Single,English Only,Roman Catholic,"E. Mulreany, Farmer, 36 St. acres",ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,581212,2775863
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Lizzie,Mulremy,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,581212,2775864
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Kathleen,Mulreany,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,581212,2775865
+Skreen_0508_0028_0008_0_00015.pdf,Donegal,Skreen,Tullynaught,Hugh A,Mulreany,Son,Son,M,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,581212,2775866
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Hugh,Curristin,Head,Head,M,Married,English Only,Roman Catholic,Own Account 33 Statue acres. 906,ENGLISH,nan,nan,y,nan,DL05018,nan,nan,581213,2775867
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Mary A,Curristin,wife,Wife,F,Married,English Only,nan,8 21,ENGLISH,nan,nan,14,55.0,DL05018,nan,nan,581213,2775868
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Bernard,Curristin,Son,Son,M,Single,English Only,Roman Catholic,Hugh State Burrestin 906,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,581213,2775869
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Bridget,Curristin,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,581213,2775870
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Rosaleen,Curristin,Daughter,Daughter,F,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,581213,2775871
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Lizzie Josephine,Curristin,Daughter,Daughter,F,Both Parents Alive,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,581213,2775872
+Skreen_0508_0028_0009_0_00017.pdf,Donegal,Skreen,Tullynaught,Joseph,Curristin,Son,Son,M,Both Parents Alive,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,581213,2775873
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,James,Carlin,Head,Head,M,Married,English Only,Roman Catholic,35 State acres 906,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,581214,2775874
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Margaret,Carlin,Wife,Wife,F,nan,English Only,Roman Catholic,y,ENGLISH,nan,8,8,37.0,DL05018,nan,nan,581214,2775875
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Ann,Carlin,Aunt.,Aunt,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,78.0,DL05018,nan,nan,581214,2775876
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Thomas J,Carlin,Sen.,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,581214,2775877
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Mary A,Carlin,Daughter,Daughter,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,0.0,DL05018,nan,nan,581214,2775878
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,James,Carlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,581214,2775879
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Michael,Carlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,5.0,DL05018,nan,nan,581214,2775880
+Skreen_0508_0028_0010_0_00019.pdf,Donegal,Skreen,Tullynaught,Edward,Carlin,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,581214,2775881
+Skreen_0508_0028_0011_0_00021.pdf,Donegal,Skreen,Tullynaught,Elizabeth,Carbine,Head,Head,F,Single,English Only,nan,Upon account 904 10 Statue,ENGLISH,nan,TTIS,nan,55.0,DL05018,nan,nan,581215,2775882
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Charles,McCaffrey,Head,Head,M,Married,English Only,Roman Catholic,turn account. 1y Statute acres. 905,ENGLISH,nan,nan,2,67.0,DL05018,nan,nan,581216,2775883
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Mary,McCaffrey,Wife,Wife,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,6,2,58.0,DL05018,nan,nan,581216,2775884
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Thomas,McCaffrey,Son,Son,M,Single,English Only,Roman Catholic,Charles McGaffrey 17 Statue acres 905,ENGLISH,nan,nan,nan,22.0,DL05018,nan,nan,581216,2775885
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Mary A,McCaffrey,Daughter,Daughter,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,581216,2775886
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Mary D,McCaffrey,Niece,Niece,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,581216,2775887
+Skreen_0508_0028_0012_0_00023.pdf,Donegal,Skreen,Tullynaught,Annie C,McCaffrey,Niece,Niece,F,Single,English Only,Roman Catholic,- y,ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,581216,2775888
+Skreen_0508_0028_0014_0_00027.pdf,Donegal,Skreen,Tullynaught,Adam,Bustard,Head,Head,M,Married,English Only,Church of Ireland,Chris Account 905 25 Statue acres.,ENGLISH,nan,HONTLIS,0,52.0,DL05018,nan,nan,581218,2775889
+Skreen_0508_0028_0014_0_00027.pdf,Donegal,Skreen,Tullynaught,Kathrine,Bustard,Wife,Wife,F,Married,English Only,nan,2,ENGLISH,nan,8,none,53.0,DL05018,nan,nan,581218,2775890
+Skreen_0508_0028_0014_0_00027.pdf,Donegal,Skreen,Tullynaught,Adam Alexander,Bustard,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,581218,2775891
+Skreen_0508_0028_0014_0_00027.pdf,Donegal,Skreen,Tullynaught,Mary Katherine,Bustard,Daughter,Daughter,F,Mother is Dead,English Only,nan,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,581218,2775892
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,John,McCadden,Head,Head,M,Married,English Only,Roman Catholic,Own Account 909 400 Mathe acres,ENGLISH,nan,INONTUS -,11,69.0,DL05018,nan,nan,600576,2775893
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,Catherine,McCadden,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,3,4,53.0,DL05018,nan,nan,600576,2775894
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,Andrew,McCadden,Son,Son,M,nan,English Only,Roman Catholic,John Mcleadden 909 acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,600576,2775895
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,James J,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,13.0,DL05018,nan,nan,600576,2775896
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,Connell,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,600576,2775897
+Straness_0508_0029_0002_0_00003.pdf,Donegal,Straness,Tullynaught,Anthony,McCadden,Son,Son,M,Single,English Only,Roman Catholic,John McBaddenzie,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,600576,2775898
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Patrick,McCadden,Head,Head,M,Married,English Only,nan,Own account 907 acres,ENGLISH,nan,nan,nan,66.0,DL05018,nan,nan,600577,2775899
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Ellen,McCadden,Wife,Wife,F,nan,English Only,Roman Catholic,4-30 P Monaghan Embroidery Co.,ENGLISH,nan,nan,13,49.0,DL05018,nan,nan,600577,2775900
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Rose E,McCadden,Daughter,Daughter,F,Single,English Only,Roman Catholic,been agent. 30,ENGLISH,nan,nan,nan,19.0,DL05018,nan,nan,600577,2775901
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Joseph D,McCadden,Son,Son,M,Single,English Only,Roman Catholic,Patrick in Baddeze 48 Mature acres/06,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,600577,2775902
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Frances H,McCadden,Son,Son,nan,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,15.0,DL05018,nan,nan,600577,2775903
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Alice T,McCadden,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,11.0,DL05018,nan,nan,600577,2775904
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,John J,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,600577,2775905
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Nora,McCadden,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,600577,2775906
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Anthony,McCadden,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,600577,2775907
+Straness_0508_0029_0003_0_00005.pdf,Donegal,Straness,Tullynaught,Margaret R,McCadden,MbaddenDaughter.,nan,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,600577,2775908
+Townagh_0508_0015_0002_0_00003.pdf,Donegal,Townagh,Tullynaught,James,Logue,Head,Head,M,Married,English Only,Roman Catholic,Very account. 904 14 Statue acres.,ENGLISH,nan,2,0 none,72.0,DL05018,nan,nan,623840,2775909
+Townagh_0508_0015_0002_0_00003.pdf,Donegal,Townagh,Tullynaught,Agnes,Logue,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,2,none,70.0,DL05018,nan,nan,623840,2775910
+Townagh_0508_0015_0004_0_00007.pdf,Donegal,Townagh,Tullynaught,William,Wray,Head,Head,M,Single,English Only,Presbyterian,own account. 904 12.Statue acres.,ENGLISH,nan,N1ONTUS,nan,35.0,DL05018,nan,nan,623842,2775911
+Townagh_0508_0015_0004_0_00007.pdf,Donegal,Townagh,Tullynaught,Martha,Wray,Sister,Sister,F,Single,English Only,Presbyterian,y,ENGLISH,nan,nan,nan,40.0,DL05018,nan,nan,623842,2775912
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Edward,Logue,Head,Head,M,Married,English Only,nan,Own Account 905 20 Statue acres,ENGLISH,nan,nan,4,68.0,DL05018,nan,nan,623844,2775913
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Mary,Logue,Sister,Sister,F,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,623844,2775914
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Patrick,Logue,Brother,Brother,M,Mother is Dead,English Only,Roman Catholic,Edward Logan 905 20 Statue acres,ENGLISH,nan,nan,nan,66.0,DL05018,nan,nan,623844,2775915
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Mary,Logue,Wife,Wife,F,Married,English Only,Roman Catholic,nan,ENGLISH,nan,2.,4,49.0,DL05018,nan,nan,623844,2775916
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,James J,Logue,Son,Son,M,Single,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,623844,2775917
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Margaret J,Logue,Daughter,Daughter,F,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,623844,2775918
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,John,Logue,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,14.0,DL05018,nan,nan,623844,2775919
+Townagh_0508_0015_0006_0_00011.pdf,Donegal,Townagh,Tullynaught,Patrick A,Logue,Son,Son,nan,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,623844,2775920
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Henry,Wray,Head,Head,M,Married,English Only,Church of Ireland,Own Account 005 Altane acres,ENGLISH,nan,MNONTUS -,6 -,44.0,DL05018,nan,nan,623845,2775921
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Mary,Wray,Wife,Wife,F,nan,English Only,nan,y,ENGLISH,nan,6,6,47.0,DL05018,nan,nan,623845,2775922
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Henry,Wray,Son,Son,M,Single,English Only,nan,Henry Wray 905 22 Istatue acres,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,623845,2775923
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Sarah,Wray,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,P,?,21.0,DL05018,nan,nan,623845,2775924
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Leafa,Wray,Daughter,Daughter,F,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,4.0,DL05018,nan,nan,623845,2775925
+Townagh_0508_0015_0007_0_00013.pdf,Donegal,Townagh,Tullynaught,Earl,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,3.0,DL05018,nan,nan,623845,2775926
+Townagh_0508_0015_0008_0_00015.pdf,Donegal,Townagh,Tullynaught,Joe,Wray,Head,Head,M,Married,English Only,Presbyterian,Account. 904,ENGLISH,nan,nan,2 -,42.0,DL05018,nan,nan,623846,2775927
+Townagh_0508_0015_0008_0_00015.pdf,Donegal,Townagh,Tullynaught,Mary,Wray,Wife,Wife,F,Married,English Only,nan,y,ENGLISH,nan,nan,nan,37.0,DL05018,nan,nan,623846,2775928
+Townagh_0508_0015_0008_0_00015.pdf,Donegal,Townagh,Tullynaught,Richard,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,2.0,DL05018,nan,nan,623846,2775929
+Townagh_0508_0015_0008_0_00015.pdf,Donegal,Townagh,Tullynaught,William,Wray,Son,Son,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,1.0,DL05018,nan,nan,623846,2775930
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Anthony,Mulhern,Head,Head,M,Married,English Only,Roman Catholic,Employer 905 19 Statue acres,ENGLISH,nan,3,3,51.0,DL05018,nan,nan,631971,2775931
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Margaret,Mulhern,Wife,Wife,F,Married,English Only,Roman Catholic,Unraccount. 732,ENGLISH,nan,3,3,47.0,DL05018,nan,nan,631971,2775932
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,John Joseph,Mulhern,Son,Son,M,nan,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,631971,2775933
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Thomas James,Mulhern,Son,Son,M,nan,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,631971,2775934
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Elizabeth Veronica,Mulhern,Daughter,Daughter,F,nan,English and Irish,Roman Catholic,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,631971,2775935
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Bridget,Harkin,Servant,Servant,F,Single,Irish and English,Roman Catholic,Private,ENGLISH,nan,nan,nan,71.0,DL05018,nan,nan,631971,2775936
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Lizzie,Mulhern,Mother,Mother,F,Widow,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,82.0,DL05018,nan,nan,631971,2775937
+Tullyearl_0508_0030_0007_0_00013.pdf,Donegal,Tullyearl,Tullynaught,Andrew,Morrow,Servant1610,nan,M,Single,English Only,nan,Farm & Stanies¿o Anthony MaRheem 19 905,ENGLISH,nan,nan,nan,nan,DL05018,nan,nan,631971,2775938
+Tullyearl_0508_0030_0008_0_00015.pdf,Donegal,Tullyearl,Tullynaught,Margaret J,Mulhern,Head,Head,F,Widow,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,68.0,DL05018,nan,nan,631972,2775939
+Tullyearl_0508_0030_0008_0_00015.pdf,Donegal,Tullyearl,Tullynaught,Francis,Mulhern,Son,Son,M,Single,English Only,Roman Catholic,Margaret J. Mulhern Farmer. 19 acres,ENGLISH,nan,nan,nan,25.0,DL05018,nan,nan,631972,2775940
+Tullyearl_0508_0030_0008_0_00015.pdf,Donegal,Tullyearl,Tullynaught,Phoebe E,Mulhern,Daughter,Daughter,F,Single,English Only,Roman Catholic,James Dunlevy 731 Dolicitor Donegal,ENGLISH,nan,nan,nan,27.0,DL05018,nan,nan,631972,2775941
+Tullyearl_0508_0030_0008_0_00015.pdf,Donegal,Tullyearl,Tullynaught,Patrick,McGolrick,Servant,Servant,M,Single,English Only,Roman Catholic,"Margaret & Snulhern Harmer, 19 acres. 905",ENGLISH,nan,nan,nan,17.0,DL05018,nan,nan,631972,2775942
+Tullyearl_0508_0030_0010_0_00019.pdf,Donegal,Tullyearl,Tullynaught,Samuel,Torrens,Aryd,nan,M,Married,Irish and English,nan,own Account 902 3 & Statue acres,ENGLISH,nan,nan,nan,54.0,DL05018,nan,nan,631974,2775943
+Tullyearl_0508_0030_0010_0_00019.pdf,Donegal,Tullyearl,Tullynaught,Margaret,Torrens,AN Ve,nan,F,Married,English and Irish,nan,own Account M,ENGLISH,nan,nan,none.,52.0,DL05018,nan,nan,631974,2775944
+Tullyleague or Tullybrook_0508_0031_0002_0_00003.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Kezia,Harrow,Head,Head,F,nan,English Only,Church of Ireland,Upon account 2 Statue acres. 902,ENGLISH,nan,nan,nan,66.0,DL05018,nan,nan,632238,2775945
+Tullyleague or Tullybrook_0508_0031_0002_0_00003.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Merven,Harrow,Son,Son,M,Single,English Only,nan,Kegea Harron 2 Statue acres.,ENGLISH,nan,nan,nan,29.0,DL05018,nan,nan,632238,2775946
+Tullyleague or Tullybrook_0508_0031_0002_0_00003.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Josephine,Harrow,Daughter,Daughter,F,Single,English Only,nan,Mrs Donegal Donaghan,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,632238,2775947
+Tullyleague or Tullybrook_0508_0031_0002_0_00003.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,Anne,Harrow,Daughter,Daughter,F,Single,English Only,nan,Do 307,ENGLISH,nan,nan,nan,21.0,DL05018,nan,nan,632238,2775948
+Tullyleague or Tullybrook_0508_0031_0002_0_00003.pdf,Donegal,Tullyleague or Tullybrook,Tullynaught,[Elsie],Harrow,Daughter,Daughter,F,Single,English Only,nan,Do 307,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,632238,2775949
+Tullylosken_0508_0016_0002_0_00003.pdf,Donegal,Tullylosken,Tullynaught,Matilda,McElhinney,Head,Head,F,Widow,English Only,nan,Own account 902 2 acres,ENGLISH,nan,IS -,nan,82.0,DL05018,nan,nan,632348,2775950
+Tullylosken_0508_0016_0002_0_00003.pdf,Donegal,Tullylosken,Tullynaught,Elizabeth,McElhinney,Daughter,Daughter,F,Single,English Only,nan,y,ENGLISH,nan,nan,nan,20.0,DL05018,nan,nan,632348,2775951
+Tullylosken_0508_0016_0002_0_00003.pdf,Donegal,Tullylosken,Tullynaught,Annie,McElhinney,Daughter,Daughter,F,Single,English Only,nan,902,ENGLISH,nan,nan,nan,48.0,DL05018,nan,nan,632348,2775952
+Tullylosken_0508_0016_0003_0_00005.pdf,Donegal,Tullylosken,Tullynaught,Ellen,Killpatrick,Head,Head,F,Widow,English Only,Roman Catholic,y,ENGLISH,nan,TTIS,nan,65.0,DL05018,nan,nan,632349,2775953
+Tullylosken_0508_0016_0003_0_00005.pdf,Donegal,Tullylosken,Tullynaught,Charles,Killpatrick,Son,Son,M,Single,English Only,nan,Joseph Statue Little. acres. 1906,ENGLISH,nan,nan,nan,27.0,DL05018,nan,nan,632349,2775954
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Patrick,Ward,Head,Head,M,Married,English Only,Roman Catholic,Unr Account Employer 81 Native acres,ENGLISH,nan,MOITIIS,.7,62.0,DL05018,nan,nan,632352,2775955
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Mary,Ward,Wife,Wife,F,Married,English Only,Roman Catholic,y,ENGLISH,nan,nan,7,48.0,DL05018,nan,nan,632352,2775956
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Mary K,Ward,Daughter,Daughter,F,Single,English Only,Roman Catholic,John Gallen General 775 Grocer & Publican,ENGLISH,nan,nan,',nan,DL05018,nan,nan,632352,2775957
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Patrick,Ward,Son,Son,M,Single,English Only,Roman Catholic,Patrick 81 Ward. State acres. 907,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,632352,2775958
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Una E,Ward,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,632352,2775959
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Bridget,Ward,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,10.0,DL05018,nan,nan,632352,2775960
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Edward F,Ward,Son,Son,M,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,8.0,DL05018,nan,nan,632352,2775961
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Philomina,Ward,Daughter,Daughter,F,nan,English Only,Roman Catholic,nan,ENGLISH,nan,nan,nan,16.0,DL05018,nan,nan,632352,2775962
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Elizabeth,McDermot,Aunt,Aunt,F,Single,English Only,Roman Catholic,Own Account,ENGLISH,nan,nan,nan,80.0,DL05018,nan,nan,632352,2775963
+Tullylosken_0508_0016_0006_0_00011.pdf,Donegal,Tullylosken,Tullynaught,Thomas,Rose,Servant,Servant,M,Single,English Only,Roman Catholic,Patrick Ward. 907 81 Statue acres,ENGLISH,nan,nan,nan,18.0,DL05018,nan,nan,632352,2775964
+Tullylosken_0508_0016_0007_0_00013.pdf,Donegal,Tullylosken,Tullynaught,Peter,Meehan,Head,Head,M,Married,English Only,Roman Catholic,Patrick Liver. 462 Contractor.,ENGLISH,nan,TTS,9,43.0,DL05018,nan,nan,632353,2775965
+Tullylosken_0508_0016_0007_0_00013.pdf,Donegal,Tullylosken,Tullynaught,Mary,Meehan,Wife,Wife,F,Married,English Only,nan,- y,ENGLISH,nan,nan,9,37.0,DL05018,nan,nan,632353,2775966
+Tullylosken_0508_0016_0007_0_00013.pdf,Donegal,Tullylosken,Tullynaught,John,Meehan,Son,Son,M,Single,English Only,nan,nan,ENGLISH,nan,nan,nan,7.0,DL05018,nan,nan,632353,2775967
+Tullymornan_0508_0032_0002_0_00003.pdf,Donegal,Tullymornan,Tullynaught,Margaret Jane,Graham,Head,Head,F,Single,English Only,Church of Ireland,Own Account 49 State acres 906-,ENGLISH,nan,nan,nan,58.0,DL05018,nan,nan,632478,2775968
+Tullymornan_0508_0032_0002_0_00003.pdf,Donegal,Tullymornan,Tullynaught,Andrew,Gorrell,Servant,Servant,M,Single,English Only,Roman Catholic,Margaret F. Graham 49 Statue acres.,ENGLISH,nan,nan,nan,28.0,DL05018,nan,nan,632478,2775969
+Tullymornan_0508_0032_0002_0_00003.pdf,Donegal,Tullymornan,Tullynaught,Annabella,Gorrell,Servant,Servant,F,Single,English Only,nan,Private,ENGLISH,nan,nan,nan,24.0,DL05018,nan,nan,632478,2775970
+Whitehill_0508_0017_0003_0_00005.pdf,Donegal,Whitehill,Tullynaught,Margaret,Wray,Head,Head,F,Widow,English Only,Presbyterian,y,ENGLISH,nan,nan,nan,81.0,DL05018,nan,nan,645126,2775971
+Whitehill_0508_0017_0003_0_00005.pdf,Donegal,Whitehill,Tullynaught,Mathew,Bustard,Grandson,Grandson,M,nan,English Only,nan,nan,ENGLISH,nan,nan,nan,12.0,DL05018,nan,nan,645126,2775972
