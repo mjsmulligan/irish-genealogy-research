@@ -4,6 +4,8 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, and Irish genealogical domain knowledge codified as a dedicated constraint layer. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
+**New here? → [`ONBOARDING.md`](ONBOARDING.md)** routes you to the right doc whether you're writing code or doing research/QA.
+
 Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
 Implementation: Complete — all four layers (foundation, evidence, conclusion, review)  
