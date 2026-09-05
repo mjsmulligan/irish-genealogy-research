@@ -27,7 +27,9 @@ irish-genealogy-research/
 │   ├── session_changelog_2026-07-01.md
 │   └── *.md                          # Prior session summaries
 │
-├── data/                              # Downloaded census CSVs (not in git)
+├── data/                              # Census CSVs (tracked in git; census data only —
+│                                       #   never commit Historic Graves/headstone extracts here,
+│                                       #   CC BY-NC-ND source not cleared for redistribution)
 │
 ├── docs/                              # Schema and system documentation
 │   ├── conceptual_model.md            # Data model overview
@@ -48,10 +50,13 @@ irish-genealogy-research/
 │   │   ├── postgres_repo.py           # PostgreSQL connection wrapper
 │   │   ├── schema.sql                 # Complete DDL (v4.3, PostgreSQL)
 │   │   ├── seed.sql                   # Repository and source seed data
+│   │   └── migrations/                # Schema migrations (001–007)
+│   │
+│   ├── ingest/                        # External data acquisition (CSV in, DB/CSV out)
 │   │   ├── fetch_places.py            # logainm API fetcher → DB or CSV
 │   │   ├── fetch_census.py            # NAI census API fetcher → CSV (with townland_clean/ded_clean)
 │   │   ├── seed_places.py             # CSV → place_authority loader
-│   │   └── migrations/                # Schema migrations (001–005)
+│   │   └── bulk_ingest.py             # Ingest + add-evidence for every CSV in data/
 │   │
 │   ├── evidence/                      # Evidence layer steps 1–5
 │   │   ├── census.py                  # [1/5] ingest_census — NAI CSV → record + recorded_person
@@ -70,8 +75,9 @@ irish-genealogy-research/
 │   │   ├── household_utils.py         # Shared helpers: get_household_members, create_relationships
 │   │   ├── event_resolution.py        # [4/6] Census + birth + marriage Event conclusions
 │   │   ├── validation_cleanup.py      # [5/6] Genealogical constraint sweep
-│   │   ├── audit.py                   # Audit logging for all conclusion mutations
-│   │   └── merger.py                  # Utilities for Person merging (household_continuity conflicts)
+│   │   └── audit.py                   # Audit logging for all conclusion mutations
+│   │       # Person-merge utilities (household_continuity conflicts) live in
+│   │       # dal/person_repo.py::merge_persons(), not a separate module
 │   │
 │   ├── genealogy/                     # Genealogical domain knowledge
 │   │   ├── names.py                   # Name variants, gender classification
@@ -108,12 +114,12 @@ irish-genealogy-research/
 │       ├── event_repo.py
 │       └── conclusion_log_repo.py
 │
-├── reports/                           # Review report output (gitignored; .gitkeep tracks dir)
+├── reports/                           # Review report output (tracked in git; .gitkeep + sample reports)
 │
 ├── ROADMAP.md                         # Project roadmap and version history
 │
 └── tests/
-    ├── test_pipeline.py               # Integration test harness (59 tests, 100% pass)
+    ├── test_pipeline.py               # Integration test harness (68 tests, 100% pass)
     ├── benchmark_tullynaught.py       # Baseline benchmark script
     ├── tullynaught_1901.csv           # Test fixture data
     ├── tullynaught_1911.csv
@@ -169,6 +175,9 @@ python -m src.cli validate-linkages    # Check for age/name/household errors
 # Clear and re-run
 python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority
 python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves evidence
+python -m src.cli restart-scoring     # clears similarity scores + conclusions, reruns from scoring
+python -m src.cli bulk-ingest         # ingest + add-evidence for every CSV in data/
+python -m src.cli web                 # launch the Flask browsing UI (see Testing section below)
 
 # View reports
 # Generated reports are written to reports/ with JSON + Markdown formats
@@ -234,3 +243,19 @@ rapidfuzz>=3.0
 pandas>=2.0
 pytest>=8.0
 ```
+
+______________________________________________________________________
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) — covers both code contributions
+and research/QA review workflows.
+
+______________________________________________________________________
+
+## License
+
+Code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE) —
+free for any noncommercial use. Data files have separate, per-source terms;
+see [`CONTRIBUTING.md`](CONTRIBUTING.md#data-licensing--read-before-adding-any-data-file)
+before adding anything to `data/`.
