@@ -46,9 +46,12 @@ top. Rough map:
   in-flight work.
 - [`changelog/`](changelog/) — session-by-session history. Useful for
   "why does this code look like this" archaeology; not required reading.
-- [`analysis/`](analysis/) — investigative deep-dives (threshold tuning,
-  specific linkage cases). Reference material, not a reading list — search
-  it when you hit a specific question, don't read it front to back.
+- [`analysis/`](analysis/) — investigative deep-dives. Reference material,
+  not a reading list — search it when you hit a specific question.
+- [`archive/`](archive/) — superseded working documents kept only for
+  traceability. Each subfolder has its own README explaining what happened
+  to the ideas in it and where the durable outcome actually lives. You
+  should essentially never need to open this.
 
 If you're unsure where something belongs, ask rather than guessing —
 the evidence/conclusion boundary in particular has bitten people before.

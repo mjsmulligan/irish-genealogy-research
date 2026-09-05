@@ -24,6 +24,11 @@ ______________________________________________________________________
 ```text
 irish-genealogy-research/
 │
+├── analysis/                           # Investigative deep-dives, read on demand (see analysis/README.md)
+│
+├── archive/                            # Superseded working documents, kept for traceability only —
+│                                       #   see archive/*/README.md, not meant as reading material
+│
 ├── changelog/                         # Session and version history
 │   ├── session_changelog_2026-07-01_household_continuity.md
 │   ├── session_changelog_2026-07-01.md

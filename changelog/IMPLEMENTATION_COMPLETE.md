@@ -211,11 +211,14 @@ NULL (no penalty):
 ## Documentation
 
 ### Reports Created
-1. `reports/phase3_role_consistency_implementation.md` — Implementation details
-2. `reports/phase3_measurement_plan.md` — Testing strategy
-3. `reports/phase3_measurement_results.md` — Test results
-4. `PHASE3_SUMMARY.md` — Quick reference
-5. `IMPLEMENTATION_COMPLETE.md` — This file
+1. `PHASE3_SUMMARY.md` — Quick reference
+2. `IMPLEMENTATION_COMPLETE.md` — This file
+
+(The `phase3_role_consistency_implementation.md`, `phase3_measurement_plan.md`,
+and `phase3_measurement_results.md` reports referenced here in earlier
+drafts of this file duplicated content already covered above and in
+`PHASE3_SUMMARY.md`; removed as duplicates during the September 2026
+onboarding pass — see `ROADMAP.md` §8.)
 
 ### Commits Made
 ```
