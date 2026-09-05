@@ -22,6 +22,12 @@ Start here:
 
 ## For developers
 
+**If you're an AI coding agent** (Claude Code, Codex, Cursor, or similar):
+read [`AGENTS.md`](AGENTS.md) first — it's guardrails, not explanation, and
+takes precedence over general instincts about what's "helpful." The rest of
+this section still applies to you; `AGENTS.md` is additive, not a
+replacement.
+
 **Setup**
 1. Clone the repo, `pip install -r requirements.txt`.
 2. Copy `.env.example` → `.env` (ask the maintainer if this doesn't exist

@@ -4,7 +4,7 @@
 
 A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, and Irish genealogical domain knowledge codified as a dedicated constraint layer. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-**New here? → [`ONBOARDING.md`](ONBOARDING.md)** routes you to the right doc whether you're writing code or doing research/QA.
+**New here? → [`ONBOARDING.md`](ONBOARDING.md)** routes you to the right doc whether you're writing code or doing research/QA. **Using an AI coding agent (Claude Code, Codex, Cursor, etc.)? → [`AGENTS.md`](AGENTS.md)** has the guardrails it needs to read first.
 
 Schema version: 4.3 (June 2026)  
 **Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
@@ -23,6 +23,9 @@ ______________________________________________________________________
 
 ```text
 irish-genealogy-research/
+│
+├── AGENTS.md                           # Guardrails for AI coding agents (Claude Code, Codex, Cursor, etc.)
+├── CLAUDE.md                           # Claude-Code-specific notes; redirects to AGENTS.md
 │
 ├── analysis/                           # Investigative deep-dives, read on demand (see analysis/README.md)
 │

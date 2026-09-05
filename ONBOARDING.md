@@ -41,6 +41,9 @@ top. Rough map:
 
 ## Everything else
 
+- [`AGENTS.md`](AGENTS.md) — guardrails for AI coding agents. If you're
+  pairing with one on this repo, point it here explicitly even if it
+  claims to have already read it.
 - [`ROADMAP.md`](ROADMAP.md) — current priorities, open work queue, version
   history. Check this before starting anything so you're not duplicating
   in-flight work.
