@@ -1,4 +1,6 @@
-jellyfish>=1.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+rapidfuzz
 jsonschema>=4.0
 pytest>=8.0
 black

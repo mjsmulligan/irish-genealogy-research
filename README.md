@@ -2,165 +2,270 @@
 
 *grá — Irish for love*
 
-A probabilistic genealogy research platform combining a SQLite knowledge base, authoritative place data from logainm.ie, record linkage scoring, genealogical domain reasoning, and comprehensive validation. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
+A probabilistic genealogy research platform combining a PostgreSQL knowledge base, authoritative place data from logainm.ie, record linkage scoring, and Irish genealogical domain knowledge codified as a dedicated constraint layer. Evidence and conclusion layers strictly separated. Designed for Irish genealogy research at townland scale.
 
-Schema version: **2.8** (June 2026)
+**New here? → [`ONBOARDING.md`](ONBOARDING.md)** routes you to the right doc whether you're writing code or doing research/QA. **Using an AI coding agent (Claude Code, Codex, Cursor, etc.)? → [`AGENTS.md`](AGENTS.md)** has the guardrails it needs to read first.
 
----
+Schema version: 4.3 (June 2026)  
+**Threshold version**: 3.0 — Person resolution at 0.45 (optimized for genealogical coverage)  
+Implementation: Complete — all four layers (foundation, evidence, conclusion, review)  
+**Latest:** Household continuity conflict resolution implemented. Automatic Person merge consolidates split records when confirmed household pairs have heads linked to different Persons. Case: Patrick Boyle (meenacorwick) now single Person across 1901/1911/1926 with proper age progression. Web UI detail panel displays evidence for identity with hyperlinked household members. ([1 July 2026](changelog/session_changelog_2026-07-01_household_continuity.md))
+
+______________________________________________________________________
 
 ## Project Status
 
-> **→ See [`ROADMAP.md`](ROADMAP.md) for current work queue, open decisions, and what to focus on next.**
+> → See [`ROADMAP.md`](ROADMAP.md) for current work queue and version history.
 
----
-
-## Documentation
-
-| File | Status | Description |
-|---|---|---|
-| `docs/conceptual_model.md` | ✅ v2.4 | Three-layer architecture; event fields inline on Record |
-| `docs/data_dictionary.md` | ✅ v2.6 | Field-level definitions; flat PlaceAuthority schema; full NAI census role mapping |
-| `docs/repositories.md` | ✅ v1.5 | 13 sources across 8 repositories; logainm.ie added |
-| `docs/validation_rules.md` | ✅ v2.6 | 46 rules (R01–R46) |
-| `docs/database_schema.md` | ✅ v2.8 | SQLite DDL; RecordedEvent merged into Record; 5 junction tables |
-| `docs/reconstruction_algorithms.md` | ✅ v1.2 | Record linkage scoring; role-pair rules; sibling inference; updated for v2.8 |
-| `docs/genealogical_constraints.md` | ✅ v1.2 | 22 domain constraints (GC01–GC22) |
-| `docs/service_api.md` | ✅ v1.0 | Service layer API |
-| `docs/session_bootstrap.md` | ✅ v1.0 | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | ✅ v1.5 | Work queue, open decisions, project roadmap |
-
----
+______________________________________________________________________
 
 ## Repository Structure
 
-```
+```text
 irish-genealogy-research/
 │
-├── docs/                              # Schema and system documentation
+├── AGENTS.md                           # Guardrails for AI coding agents (Claude Code, Codex, Cursor, etc.)
+├── CLAUDE.md                           # Claude-Code-specific notes; redirects to AGENTS.md
 │
-├── src/                               # Implementation
-│   ├── db/
-│   │   ├── schema.sql                 # Complete DDL (v2.8)
+├── analysis/                           # Investigative deep-dives, read on demand (see analysis/README.md)
+│
+├── archive/                            # Superseded working documents, kept for traceability only —
+│                                       #   see archive/*/README.md, not meant as reading material
+│
+├── changelog/                         # Session and version history
+│   ├── session_changelog_2026-07-01_household_continuity.md
+│   ├── session_changelog_2026-07-01.md
+│   └── *.md                          # Prior session summaries
+│
+├── data/                              # Census CSVs (tracked in git; census data only —
+│                                       #   never commit Historic Graves/headstone extracts here,
+│                                       #   CC BY-NC-ND source not cleared for redistribution)
+│
+├── docs/                              # Schema and system documentation
+│   ├── conceptual_model.md            # Data model overview
+│   ├── data_dictionary.md             # All tables and columns
+│   ├── database_schema.md             # DDL and schema design
+│   ├── genealogical_constraints.md    # Constraint rules and person resolution
+│   ├── reconstruction_algorithms.md   # Linkage and household algorithms
+│   ├── repositories.md                # Repository pattern design
+│   ├── review_layer.md                # Researcher report findings framework
+│   └── RESEARCHER_VALIDATION.md       # Domain validation checklist
+│
+├── src/
+│   ├── cli.py                         # Sole entry point — argparse + dispatch only
+│   ├── constants.py                   # Centralised constants (thresholds, score versions, source IDs)
+│   │
+│   ├── db/                            # Schema lifecycle and utilities
+│   │   ├── repository.py              # Repository base class (Repository pattern)
+│   │   ├── postgres_repo.py           # PostgreSQL connection wrapper
+│   │   ├── schema.sql                 # Complete DDL (v4.3, PostgreSQL)
 │   │   ├── seed.sql                   # Repository and source seed data
-│   │   └── migrations/
-│   │       ├── migrate_25_to_26.sql
-│   │       ├── migrate_26_to_27.sql   # place → place_authority
-│   │       └── migrate_27_to_28.sql   # recorded_event merged into record
-│   ├── reconstruction/
-│   │   ├── __init__.py
-│   │   ├── place_resolution.py        # Stage 2: authority-based place matching
-│   │   ├── household_inference.py     # Stage 3: household structure → conclusions
-│   │   ├── linkage.py                 # Stage 4: cross-census Splink person linkage
+│   │   └── migrations/                # Schema migrations (001–007)
+│   │
+│   ├── ingest/                        # External data acquisition (CSV in, DB/CSV out)
+│   │   ├── fetch_places.py            # logainm API fetcher → DB or CSV
+│   │   ├── fetch_census.py            # NAI census API fetcher → CSV (with townland_clean/ded_clean)
+│   │   ├── seed_places.py             # CSV → place_authority loader
+│   │   └── bulk_ingest.py             # Ingest + add-evidence for every CSV in data/
+│   │
+│   ├── evidence/                      # Evidence layer steps 1–5
+│   │   ├── census.py                  # [1/5] ingest_census — NAI CSV → record + recorded_person
+│   │   ├── role_relationships.py      # [2/5] Role-pair → RecordedRelationship
+│   │   ├── place_resolution.py        # [3/5] Place string → place_authority linkage
+│   │   ├── similarity.py              # [4/5] + [5/5] Splink record + person similarity
 │   │   └── features/
-│   │       └── census.py              # Splink feature extractor (name, age, place, relationships)
-│   ├── db.py                          # Database layer and CLI
-│   ├── fetch_places.py                # logainm API fetcher → DB or CSV
-│   ├── seed_places.py                 # CSV → place_authority loader
-│   └── validator.py                   # Genealogical constraint rules R40–R46
+│   │       ├── census.py              # Splink household feature extractor
+│   │       └── census_person.py       # Splink person feature extractor
+│   │
+│   ├── conclusion/                    # Conclusion layer steps [0/6]–[5/6]
+│   │   ├── household_continuity.py    # [0/6] Household continuity linking (before Splink)
+│   │   ├── person_resolution.py       # [1/6] Cluster RecordedPersons → Person conclusions
+│   │   ├── relationship_resolution.py # [2/6] Household matching → Relationship conclusions
+│   │   ├── household_resolution.py    # [3/6] Anchor-extension for unlinked household members
+│   │   ├── household_utils.py         # Shared helpers: get_household_members, create_relationships
+│   │   ├── event_resolution.py        # [4/6] Census + birth + marriage Event conclusions
+│   │   ├── validation_cleanup.py      # [5/6] Genealogical constraint sweep
+│   │   └── audit.py                   # Audit logging for all conclusion mutations
+│   │       # Person-merge utilities (household_continuity conflicts) live in
+│   │       # dal/person_repo.py::merge_persons(), not a separate module
+│   │
+│   ├── genealogy/                     # Genealogical domain knowledge
+│   │   ├── names.py                   # Name variants, gender classification
+│   │   ├── ages.py                    # Age tolerance, progression validation
+│   │   ├── constraints.py             # Genealogical constraint evaluation
+│   │   └── __init__.py                # Public interface
+│   │
+│   ├── review/                        # Review layer — researcher report module
+│   │   ├── report.py                  # ReportItem + Report dataclasses
+│   │   ├── findings.py                # Finding functions: merge errors, age issues, anomalies
+│   │   ├── priority.py                # Priority scoring: tier × multiplier
+│   │   └── runner.py                  # run_review(), write_report() → reports/
+│   │
+│   ├── metrics/                       # Performance tracking
+│   │   └── tracker.py                 # Pipeline timing instrumentation
+│   │
+│   ├── web/                           # Web UI (Flask)
+│   │   ├── app.py                     # Routes: browse, detail, audit, review
+│   │   └── templates/                 # Jinja2 templates
+│   │       ├── base.html
+│   │       ├── browse.html            # Person list view
+│   │       ├── detail.html            # Person detail with conclusions panel
+│   │       ├── audit.html             # Audit log viewer
+│   │       └── review.html            # Review findings with conclusions
+│   │
+│   └── dal/                           # Data access layer
+│       ├── source_repo.py
+│       ├── record_repo.py
+│       ├── recorded_relationship_repo.py
+│       ├── record_similarity_repo.py
+│       ├── place_repo.py
+│       ├── person_repo.py             # merge_persons() function
+│       ├── relationship_repo.py
+│       ├── event_repo.py
+│       └── conclusion_log_repo.py
+│
+├── reports/                           # Review report output (tracked in git; .gitkeep + sample reports)
+│
+├── ROADMAP.md                         # Project roadmap and version history
 │
 └── tests/
-    └── test_place_authority.py        # 33 tests: schema, CSV, resolution, hierarchy
+    ├── test_pipeline.py               # Integration test harness (68 tests, 100% pass)
+    ├── benchmark_tullynaught.py       # Baseline benchmark script
+    ├── tullynaught_1901.csv           # Test fixture data
+    ├── tullynaught_1911.csv
+    └── tullynaught_1926.csv
 ```
 
----
+______________________________________________________________________
 
-## System Architecture
-
-### Three-Layer Data Model
-
-**Foundational Layer** — Repository, Source, PlaceAuthority
-Institutional, bibliographic, and geographical reference data. PlaceAuthority entries are seeded from logainm.ie before research begins — they are facts, not conclusions.
-
-**Evidence Layer** — Record, RecordedPerson
-Verbatim assertions from historical sources. Each Record carries its event fields inline (`event_type`, `date`, `place_as_recorded`). Never points to conclusions.
-
-**Conclusion Layer** — Person, Relationship, Event
-Researcher assertions, mutable and supported by evidence.
-
-### Reconstruction Pipeline
-
-```
-0. Place seeding  → place_authority populated from logainm.ie        ✅ implemented
-1. Ingest         → Evidence layer populated                          ✅ implemented
-2. Place          → Evidence strings matched to place_authority       ✅ implemented
-3. Household      → Census structure → Person/Relationship/Event      ✅ implemented
-4. Linkage        → Cross-census Splink person linkage                ✅ implemented
-5. Analysis       → Community queries, graph traversal, GEDCOM        🔜 future
-```
-
-### Linkage Features
-
-The Splink linkage model compares persons across census years on:
-- Surname and forename (Jaro-Winkler)
-- Estimated birth year (absolute difference ±2/5/10 years)
-- Resolved townland (`place_id` exact match)
-- Concluded spouse name (Jaro-Winkler — high discriminating power)
-- Concluded child name set (Jaccard overlap)
-- Concluded sibling name set (Jaccard overlap)
-
-Relationship features are drawn from the conclusion layer and require household inference to have run first. They are null — not zero — for persons with no concluded relationships, so Splink's NullLevel correctly treats absence of information differently from confirmed non-overlap.
-
----
-
-## Getting Started
+## CLI Usage
 
 ```bash
-pip install -r requirements.txt
-
-# Initialise database
-python -m src.db init
+# Initialise database (Supabase/PostgreSQL — DATABASE_URL must be set)
+python -m src.cli init
 
 # Seed place authority from logainm.ie (requires LOGAINM_API_KEY)
-python -m src.fetch_places --logainm-id 111482 --db genealogy.db
+python -m src.cli fetch-places --logainm-id 111482 --api-key YOUR_KEY
 
-# Or seed from a pre-fetched CSV
-python -m src.db seed-places --file tullynaught_places.csv
+# Or fetch census data directly (downloads + seeds places + optionally ingests)
+python -m src.cli fetch-census --logainm-id 111482 --api-key YOUR_KEY --add-evidence
 
-# Ingest census records
-python -m src.db ingest --source 3 --file tests/1901_Tullynaught.csv
-python -m src.db ingest --source 4 --file tests/1911_Tullynaught.csv
-python -m src.db ingest --source 5 --file tests/1926_Tullynaught.csv
+# Or seed places from a pre-fetched CSV
+python -m src.cli seed-places --file tullynaught_places.csv
 
-# Reconstruct per source (place resolution + household inference)
-python -m src.db reconstruct --source 3
-python -m src.db reconstruct --source 4
-python -m src.db reconstruct --source 5
+# Add evidence: 5-step pipeline runs automatically per CSV
+# [1/5] Ingest CSV → record + recorded_person
+# [2/5] Assign role-pair RecordedRelationships
+# [3/5] Run place resolution (links records to place_authority)
+# [4/5] Run Splink record similarity (cross-census household matching)
+# [5/5] Run Splink person similarity (cross-census person matching)
+python -m src.cli add-evidence --source 3 --file data/tullynaught_1901.csv
+python -m src.cli add-evidence --source 4 --file data/tullynaught_1911.csv
+python -m src.cli add-evidence --source 5 --file data/tullynaught_1926.csv
 
-# Cross-census linkage (run once all sources are reconstructed)
-python -m src.db link
+# Build conclusions from evidence
+# [0/6] Household continuity   — link RecordedPersons across adjacent census years (1901↔1911, 1911↔1926)
+# [1/6] Person resolution      — cluster RecordedPersons into Person conclusions (threshold 0.45)
+# [2/6] Relationship resolution — create Relationships from household structure
+# [3/6] Household resolution   — anchor-extension for unlinked household members
+# [4/6] Event resolution       — create census, birth, and marriage Events
+# [5/6] Validation cleanup     — remove linkages failing genealogical constraints
+python -m src.cli conclude
 
 # Inspect
-python -m src.db summary
+python -m src.cli summary
+python -m src.cli timing-report        # Show pipeline execution times by step
+
+# Run research review — produces prioritised findings report (JSON + Markdown)
+python -m src.cli review
+
+# Validate linkages
+python -m src.cli validate-linkages    # Check for age/name/household errors
+
+# Clear and re-run
+python -m src.cli clear-evidence      # wipes evidence + conclusions; preserves place_authority
+python -m src.cli clear-conclusions   # wipes conclusion layer only; preserves evidence
+python -m src.cli restart-scoring     # clears similarity scores + conclusions, reruns from scoring
+python -m src.cli bulk-ingest         # ingest + add-evidence for every CSV in data/
+python -m src.cli web                 # launch the Flask browsing UI (see Testing section below)
+
+# View reports
+# Generated reports are written to reports/ with JSON + Markdown formats
+# Example: reports/report_20260628_022035.{json,md}
 ```
 
-### Explicit Pipeline Stages
+**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5).
 
-For finer control, each reconstruction stage can be run independently:
+**Environment:** Set `DATABASE_URL` in `.env` before running any command. Format: `postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres`
+
+______________________________________________________________________
+
+## Testing
+
+Run the end-to-end integration test suite (59 tests covering all layers):
 
 ```bash
-python -m src.db place-resolve           # stage 2: resolve all unresolved place strings
-python -m src.db household --source 4   # stage 3: household inference for one source
-python -m src.db link                    # stage 4: cross-census linkage across all persons
+# Via pytest (CLI)
+pytest tests/test_pipeline.py -v
+
+# Run a single test
+pytest tests/test_pipeline.py::test_schema_version -v
+
+# Run tests by pattern
+pytest -k "evidence" -v
 ```
 
-**Supported ingest sources:** Census 1901 (source 3), Census 1911 (source 4), Census 1926 (source 5). Additional sources planned for Release 2.
+**VSCode:** Open Testing tab (beaker icon) and click play to run tests or individual test functions. Press F5 to launch via debugger.
 
-**Logainm API key:** Required for `fetch_places`. Set via `LOGAINM_API_KEY` environment variable or `--api-key` argument.
+**Setup:** Tests require:
+1. PostgreSQL running locally (`localhost:5432/gra_test`)
+2. Database initialized: `python -m src.cli init`
+3. Place authority seeded: `python -m src.cli fetch-places --logainm-id 111482 --api-key YOUR_KEY`
 
----
+**Database switching:** Edit `.env` to switch between local and cloud:
+```
+DATABASE_ENVIRONMENT=local    # local PostgreSQL on localhost:5432
+DATABASE_ENVIRONMENT=cloud    # Supabase (requires network access)
+```
 
-## requirements.txt
+**Web UI:** Start Flask app for interactive browsing and audit log inspection:
+
+```bash
+# Launch development server (port 5000)
+python -m src.web.app
+
+# Open browser to http://localhost:5000
+# - /browse: Person list with filters (townland, status, score band, census coverage)
+# - /person/<id>: Detail view with evidence panel, household grid, pairwise scores
+# - /review: Researcher findings report with conclusions
+# - /audit?entity_type=person&entity_id=<id>: Conclusion mutations audit trail
+```
+
+______________________________________________________________________
+
+## Requirements
 
 ```
+psycopg2-binary
+python-dotenv
 splink>=4.0
-jellyfish>=1.0
+rapidfuzz>=3.0
 pandas>=2.0
-jsonschema>=4.0
 pytest>=8.0
-requests>=2.31
-black
 ```
 
----
+______________________________________________________________________
 
-*Designed for Irish genealogy research at townland scale. Evidence from civil registrations (1864+), census returns (1901, 1911, 1926), land records (Griffith's Valuation, Tithe Applotment), parish registers, and military/folklore sources. Place authority from logainm.ie.*
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) — covers both code contributions
+and research/QA review workflows.
+
+______________________________________________________________________
+
+## License
+
+Code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE) —
+free for any noncommercial use. Data files have separate, per-source terms;
+see [`CONTRIBUTING.md`](CONTRIBUTING.md#data-licensing--read-before-adding-any-data-file)
+before adding anything to `data/`.

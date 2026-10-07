@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Browse - grá Person Browser{% endblock %}
+
+{% block content %}
+<div class="filters">
+    <form method="GET" style="display: flex; gap: 20px; width: 100%; flex-wrap: wrap; align-items: flex-end;">
+        <div class="filter-group">
+            <label>Townland</label>
+            <input type="text" name="townland" placeholder="Search townland..." value="{{ townland }}" style="padding: 8px; border: 1px solid #35353d; background: #242429; color: #e8e8ec; border-radius: 3px; font-family: 'Inter', sans-serif;">
+        </div>
+
+        <div class="filter-group">
+            <label>Status</label>
+            <div class="filter-buttons">
+                <button type="submit" name="status" value="" class="filter-btn {% if not status %}active{% endif %}">All</button>
+                <button type="submit" name="status" value="proposed" class="filter-btn {% if status == 'proposed' %}active{% endif %}">Proposed</button>
+                <button type="submit" name="status" value="confirmed" class="filter-btn {% if status == 'confirmed' %}active{% endif %}">Confirmed</button>
+                <button type="submit" name="status" value="flagged" class="filter-btn {% if status == 'flagged' %}active{% endif %}">Flagged</button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Score Band</label>
+            <div class="filter-buttons">
+                <button type="submit" name="score_band" value="" class="filter-btn {% if not score_band %}active{% endif %}">All</button>
+                <button type="submit" name="score_band" value="amber" class="filter-btn {% if score_band == 'amber' %}active{% endif %}">Amber (&lt;0.80)</button>
+                <button type="submit" name="score_band" value="red" class="filter-btn {% if score_band == 'red' %}active{% endif %}">Red (&lt;0.60)</button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Census Coverage</label>
+            <div class="filter-buttons">
+                <button type="submit" name="coverage" value="" class="filter-btn {% if not coverage %}active{% endif %}">All</button>
+                <button type="submit" name="coverage" value="3" class="filter-btn {% if coverage == '3' %}active{% endif %}">3 years</button>
+                <button type="submit" name="coverage" value="2" class="filter-btn {% if coverage == '2' %}active{% endif %}">2 years</button>
+                <button type="submit" name="coverage" value="1" class="filter-btn {% if coverage == '1' %}active{% endif %}">1 year</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div style="margin-bottom: 20px; color: #8a8a99; font-size: 13px;">
+    Showing {{ (page - 1) * per_page + 1 }}–{{ min(page * per_page, total) }} of {{ total }} clusters
+</div>
+
+{% if persons %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 35%;">Name</th>
+                <th style="width: 20%;">Census Coverage</th>
+                <th style="width: 20%;">Weakest Link</th>
+                <th style="width: 15%;">Status</th>
+                <th style="width: 10%;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in persons %}
+            <tr class="person-row" onclick="window.location.href='/person/{{ person.person_id }}';">
+                <td>
+                    <div style="font-weight: 600; color: #e8e8ec;">{{ person.label }}</div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #52525e; margin-top: 4px;">{{ person.person_id }}</div>
+                </td>
+                <td>
+                    <div class="census-badges">
+                        <div class="census-badge {% if '1901' in person.censuses %}present{% else %}absent{% endif %}">1901</div>
+                        <div class="timeline-connector"></div>
+                        <div class="census-badge {% if '1911' in person.censuses %}present{% else %}absent{% endif %}">1911</div>
+                        <div class="timeline-connector"></div>
+                        <div class="census-badge {% if '1926' in person.censuses %}present{% else %}absent{% endif %}">1926</div>
+                    </div>
+                    <div style="font-size: 12px; color: #8a8a99; margin-top: 6px;">{{ person.census_count }}/3</div>
+                </td>
+                <td>
+                    {% if person.weakest_link_score is not none %}
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                            {{ "%.2f" | format(person.weakest_link_score) }}
+                        </div>
+                        {% if person.weakest_link_score >= 0.80 %}
+                            <span class="score-band green">Green</span>
+                        {% elif person.weakest_link_score >= 0.60 %}
+                            <span class="score-band amber">Amber</span>
+                        {% else %}
+                            <span class="score-band red">Red</span>
+                        {% endif %}
+                    {% else %}
+                        <div style="color: #52525e; font-size: 12px;">No score</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status {{ person.status }}">{{ person.status }}</span>
+                </td>
+                <td style="text-align: right;">
+                    <a href="/person/{{ person.person_id }}" onclick="event.stopPropagation();" style="color: #4a7c6f;">→</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="/?page=1{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">« First</a>
+        <a href="/?page={{ page - 1 }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">‹ Prev</a>
+    {% endif %}
+
+    {% set start = max(1, page - 2) %}
+    {% set end = min(total_pages, page + 2) %}
+
+    {% if start > 1 %}
+        <span>…</span>
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+        {% if p == page %}
+            <span class="current">{{ p }}</span>
+        {% else %}
+            <a href="/?page={{ p }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if end < total_pages %}
+        <span>…</span>
+    {% endif %}
+
+    {% if page < total_pages %}
+        <a href="/?page={{ page + 1 }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Next ›</a>
+        <a href="/?page={{ total_pages }}{% if townland %}&townland={{ townland }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if score_band %}&score_band={{ score_band }}{% endif %}{% if coverage %}&coverage={{ coverage }}{% endif %}">Last »</a>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <p>No clusters match these filters. Try widening the score band or status.</p>
+</div>
+{% endif %}
+{% endblock %}

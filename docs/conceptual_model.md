@@ -1,9 +1,9 @@
 # Irish Genealogy Research — Conceptual Data Model
 
-*Version 2.4 — June 2026*
+*Version 2.9 — 4 July 2026*
 *Audience: All roles. This document defines the what and why of the data model. It contains no implementation detail.*
 
----
+______________________________________________________________________
 
 ## 1. Design Principles
 
@@ -15,13 +15,19 @@ This system is built around a strict separation between what historical sources 
 
 **Convergent evidence drives confidence.** A conclusion supported by a single record is a hypothesis. A conclusion supported by multiple independent records converging on the same assertion is a finding. The model is designed to accumulate evidence against conclusions over time.
 
-**Symmetry between layers.** The evidence layer and conclusion layer mirror each other structurally. RecordedPerson corresponds to Person. Event field data (type, date, place) is captured verbatim on the Record itself, keeping the evidence unit cohesive and query paths simple.
+**Symmetry between layers.** The evidence layer and conclusion layer mirror each other structurally. RecordedPerson corresponds to Person; RecordedRelationship corresponds to Relationship. Event field data (type, date, place) is captured verbatim on the Record itself, keeping the evidence unit cohesive and query paths simple. RecordSimilarity is the one evidence-layer object with no conclusion-layer counterpart by design — it records a comparison, not an assertion about the world, so there is nothing for it to mirror.
 
 **Place is authoritative, not concluded.** Places are seeded from an external authority (logainm.ie) before research begins. The linkage from a recorded place string to an authoritative place identity is a conclusion — but the place identity itself is not. This gives Splink a stable, high-quality place anchor rather than a researcher-derived cluster centroid.
 
+**Relationships are evidence too.** A census role pairing (head/spouse, head/son) or a civil or parish register's named parties (groom and bride, father of bride) asserts a relationship between two individuals as directly as a Record asserts an occurrence. That assertion requires no Person to exist on either side first — RecordedRelationship captures a relationship between two RecordedPerson rows in the evidence layer, the same way Record captures an occurrence, independent of any Person conclusion. A household's relational structure can be fully evidenced before a single Person exists.
+
+**Comparison is evidence, not conclusion.** An algorithmic similarity score between two pieces of evidence — two Records that might describe the same household, or two RecordedPersons who might be the same individual — is itself a fact worth recording, distinct from a decision to act on it. RecordSimilarity (between Records) and the `similarity` type on RecordedRelationship (between RecordedPersons) hold these scores without asserting that a match is real, keeping measurement and judgment separate.
+
+**Conflicting evidence can yield conflicting conclusions.** Where evidence genuinely disagrees — two Records giving a person different birth years — the model permits more than one Event of the same type to coexist as competing conclusions, with exactly one marked `is_primary` as the current best estimate (see Rule 9). This applies only to event types that are singular per lifetime: birth, death, baptism, and burial. Marriage is scoped to a Relationship rather than a Person, since one person may be party to more than one marriage. Recurring event types (census, residence, valuation, tithe, military_service, pension, folklore, emigration) carry no cardinality constraint at all: each occurrence is a distinct real-world fact rather than a competing conclusion about the same moment, so there is nothing to arbitrate. Person has no equivalent to this mechanism, because it is the anchor every other conclusion and linkage hangs from — forking it would fork the model. Relationship does not currently use it either, by pragmatic judgment that conflicting relationship-type evidence is rare.
+
 **GEDCOMx alignment.** Where GEDCOMx vocabulary and concepts apply, they are adopted. Custom types for Irish-specific concepts use the namespace `http://irishgenealogy.local/gedcomx/{TypeName}`.
 
----
+______________________________________________________________________
 
 ## 2. Three-Layer Architecture
 
@@ -33,27 +39,27 @@ Standalone infrastructure entities providing institutional, bibliographic, and g
 
 ### Evidence Layer
 
-Verbatim assertions extracted directly from historical sources. This layer documents exactly what a source says — preserving raw data, original spellings, and contemporary context without interpretation. Nothing in this layer is a researcher assertion.
+Verbatim assertions extracted directly from historical sources, together with the relationships and comparisons that can be drawn directly between those assertions. This layer documents exactly what a source says — preserving raw data, original spellings, and contemporary context without interpretation — and extends to relationships a source states directly between two recorded individuals (RecordedRelationship), and to algorithmic comparisons between evidence units (RecordSimilarity). Nothing in this layer is a researcher assertion; a stated household role and a Splink similarity score are both facts about the evidence, not facts about the world.
 
 ### Conclusion Layer
 
 The analytical layer where historical reality is synthesised by the researcher. Conclusions are evaluated, mutable assertions supported by evidence. They are subject to revision as new evidence emerges.
 
----
+______________________________________________________________________
 
 ## 3. Object Summary
 
-The model has eleven first-class objects across three layers.
+The model has ten first-class objects across three layers.
 
 ```
 Foundational:   Repository     Source     PlaceAuthority
-Evidence:       Record         RecordedPerson
+Evidence:       Record         RecordedPerson    RecordedRelationship    RecordSimilarity
 Conclusion:     Person         Relationship       Event
 ```
 
-PlaceMembership was considered and rejected in favour of a flat denormalised hierarchy on PlaceAuthority — see §4.3.
+Two paths were considered, built, and rejected. PlaceMembership — a junction table for place hierarchy — was rejected in favour of the flat denormalised hierarchy on PlaceAuthority; see §4.3. `training_labels` — a table for Person-merge proposals awaiting researcher review — was implemented, used, and then retired as a dead end. The gap it leaves (recording a candidate match before committing to it) is now reached for differently: as a `similarity` type on RecordedRelationship, evidence-side rather than conclusion-side.
 
----
+______________________________________________________________________
 
 ## 4. Object Definitions
 
@@ -63,7 +69,7 @@ The physical or digital institution, archive, or library that holds historical s
 
 Examples: National Library of Ireland, General Register Office Ireland, National Archives of Ireland, Ancestry.com, logainm.ie.
 
----
+______________________________________________________________________
 
 ### 4.2 Source — Foundational
 
@@ -71,7 +77,7 @@ A specific document collection, register volume, or digital asset held by a Repo
 
 Source type `place_authority` is used for the logainm.ie source. This source type does not produce Records in the normal sense — PlaceAuthority entries are seeded directly into the foundational layer rather than processed through the evidence pipeline.
 
----
+______________________________________________________________________
 
 ### 4.3 PlaceAuthority — Foundational
 
@@ -96,78 +102,111 @@ Straness (townland)
 **The primary key** is a synthetic `place_id`. `logainm_id` is a unique nullable attribute — present for logainm-sourced entries, null for manually-added entries.
 
 **Seeding workflow:**
-1. Use `python -m src.fetch_places --logainm-id <DED_ID> --db genealogy.db` to fetch a DED and its townlands from the logainm API and write directly to the database.
-2. Alternatively, use `python -m src.fetch_places --logainm-id <DED_ID> --csv places.csv` to export for inspection, then `python -m src.db seed-places --file places.csv` to load.
-3. For manual entries (church parishes), add rows to the CSV with `logainm_id` blank and import via seed-places.
+
+1. Use `python -m src.cli fetch-places --logainm-id <DED_ID> --db genealogy.db` to fetch a DED and its townlands from the logainm API and write directly to the database.
+1. Alternatively, use `python -m src.cli fetch-places --logainm-id <DED_ID> --csv places.csv` to export for inspection, then `python -m src.cli seed-places --file places.csv` to load.
+1. For manual entries (church parishes), add rows to the CSV with `logainm_id` blank and import via seed-places.
 
 Place seeding must precede record ingest and reconstruction. Place resolution (stage 2 of reconstruction) matches `place_as_recorded` strings against the authority table — if the table is empty, resolution cannot run.
 
----
+______________________________________________________________________
 
 ### 4.4 Record — Evidence
 
 The core administrative and contextual boundary for data extraction. A Record represents a single entry in a source — one row of a register, one line of a valuation, one census household. It is the unit on which all evidence extraction operates and the unit to which all conclusions point as their justifying evidence.
 
----
+______________________________________________________________________
 
 ### 4.5 Record event fields — Evidence
 
 Each Record carries the event attributes of the occurrence it documents directly as columns: `event_type`, `date_as_recorded`, `date`, `date_qualifier`, and `place_as_recorded`. These are verbatim or normalised from the source without interpretation — the same semantics that RecordedEvent previously provided, now inline on the Record itself. Because every Record documents exactly one event (a design invariant), the separate RecordedEvent table added a mandatory join without adding information. Merging these fields into Record eliminates that join from every query in the reconstruction pipeline.
 
----
+For most source types `event_type` is used instantially — the Record's fields describe a single dated occurrence in full. Some source types use it categorically instead: a headstone Record carries `event_type='burial'` to classify the Record as a memorial rather than to assert a single dated burial event, because the genealogically useful, person-specific dates (a birth year and a death year for each individual commemorated) are not properties of the Record as a whole. In that case the specific event instances are evidenced one level down, on the RecordedPerson rows the Record contains (§4.6).
+
+______________________________________________________________________
 
 ### 4.6 RecordedPerson — Evidence
 
 One or more individuals documented within a parent Record. RecordedPerson captures the verbatim name spelling, stated age, and raw role exactly as the record states them.
 
----
+For source types where the parent Record's own event fields are categorical rather than instantial (§4.5) — a headstone being the first case — RecordedPerson additionally carries a mirrored event pair of its own: `event_type`/`date_as_recorded`/`date`/`date_qualifier`, plus a `secondary_event_type`/`secondary_date_as_recorded`/`secondary_date`/`secondary_date_qualifier` pair for a second event the same evidence documents (typically death as primary and birth as secondary). This is a fixed pair rather than a generalised date array: real headstone data has not yet produced a person with more than two dated events on the same stone, and a more general child-table solution is deferred until it does.
 
-### 4.7 Person — Conclusion
+______________________________________________________________________
 
-A concluded identity representing a real-world individual as asserted by the researcher. Constituted by associated Events and Relationships, supported by linked Records.
+### 4.7 RecordedRelationship — Evidence
 
----
+A relationship between two RecordedPerson rows, asserted either directly by a source or computed by an algorithm. The two RecordedPersons may belong to the same Record — a stated census household role pairing — or to different Records entirely, such as a cross-census comparison ahead of any merge decision. RecordedRelationship uses the same type vocabulary as the conclusion-layer Relationship (`couple`, `parent_child`, `sibling`) for source-stated relationships, plus a `similarity` type carrying an algorithmic score for candidate person-matching (the RecordedPerson-pair equivalent of RecordSimilarity below).
 
-### 4.8 Relationship — Conclusion
+Unlike Relationship, RecordedRelationship requires no Person to exist on either side: recording that a source states "X is recorded as wife of Y", or that two RecordedPersons score 0.91 on a Splink comparison, is evidence in its own right, independent of whether X or Y has yet been concluded to be a real-world individual.
 
-A concluded assertion about a connection between two specific Persons. Independent of any single Event — accumulates evidence from multiple Records over time.
+______________________________________________________________________
 
----
+### 4.8 RecordSimilarity — Evidence
 
-### 4.9 Event — Conclusion
+An algorithmic comparison between two Records — for example, a Splink score suggesting the same household's return appears in two different census years, ahead of any household-level conclusion. RecordSimilarity has no conclusion-layer counterpart by design: it records a measurement, not an assertion about the world. It is the Record-pair complement to the `similarity` type on RecordedRelationship, which serves the equivalent purpose between two RecordedPersons.
+
+______________________________________________________________________
+
+### 4.9 Person — Conclusion
+
+A concluded identity representing a real-world individual as asserted by the researcher. Constituted by associated Events and Relationships, supported by linked RecordedPerson rows — the same evidentiary correspondence Relationship has to RecordedRelationship (Rule 2).
+
+Person has no primary/alternate variant — unlike Event, exactly one Person represents a given concluded identity. Every other conclusion and linkage in the model is anchored to a `person_id`, so allowing competing Person conclusions would fork everything downstream of it. Uncertainty about identity must be resolved before a Person is concluded, not represented afterward.
+
+______________________________________________________________________
+
+### 4.10 Relationship — Conclusion
+
+A concluded assertion about a connection between two specific Persons. Independent of any single Event — accumulates evidence from multiple RecordedRelationship rows over time.
+
+Like Person, Relationship does not currently support primary/alternate variants. This is a scope decision rather than a structural necessity: conflicting relationship-type evidence (a source implying both `sibling` and `cousin` for the same pair) is judged rare enough not to warrant the added complexity, unlike Person, where a single identity is structurally load-bearing.
+
+______________________________________________________________________
+
+### 4.11 Event — Conclusion
 
 A concluded assertion about a discrete real-world occurrence, representing the researcher's synthesis of what happened, when, and where. `Event.place_id` references `PlaceAuthority` directly — not a concluded place, but an authoritative place identity.
 
----
+Unlike Person and Relationship, Event uses `is_primary` to identify the current best conclusion — but the arbitration logic depends on the event type. The full taxonomy is in Rule 9 in §6; in brief:
+
+*Singular-per-lifetime types* (birth, death, baptism, burial) anchor to a Person: exactly one Event per `(Person, event_type)` is `is_primary`, determined by record-vote count. *Marriage* anchors to a Relationship via `event.relationship_id`: exactly one marriage Event per `(Relationship, event_type)` is `is_primary`, since one person may be party to more than one marriage. *Recurring types* (census, residence, valuation, tithe, military_service, pension, folklore, emigration) carry no cardinality constraint: each occurrence is a distinct real-world fact, not a competing conclusion, so every linked Event defaults `is_primary = true` with no voting.
+
+______________________________________________________________________
 
 ## 5. Data Flow
 
 ```
-Repository
-  └── Source
-        └── Record  ─────────────────────────────────────┐
-              └── RecordedPerson                           │ linkage
-                                                           │
-              ┌──────────────────────────────────────────── ┘
-              │
-              ├──► Person           (this Record is about this Person)
-              ├──► Event            (this Record documents this Event)
-              ├──► Relationship     (this Record evidences this Relationship)
-              └──► PlaceAuthority   (this Record's place string refers to this authority)
+FOUNDATIONAL
+  Repository ── Source
+
+EVIDENCE
+  Source ── Record ── RecordedPerson
+  RecordedPerson ◄──► RecordedPerson    via RecordedRelationship
+                                           (semantic: couple / parent_child / sibling
+                                            algorithmic: similarity — person-matching score)
+  Record         ◄──► Record            via RecordSimilarity
+                                           (algorithmic: similarity — record-matching score;
+                                            no conclusion-layer counterpart)
+
+CONCLUSION
+  RecordedPerson         ──► Person            (this RecordedPerson is about this Person)
+  Record                 ──► Event              (this Record documents this Event)
+  RecordedRelationship   ──► Relationship       (this RecordedRelationship evidences this Relationship)
+  Record                 ──► PlaceAuthority     (this Record's place string refers to this authority)
 
 PlaceAuthority  ←── logainm.ie API / manual CSV
   (hierarchy expressed as flat columns: ded_id, county_id, barony_id, civil_parish_id)
 ```
 
-The Record is the pivot point of the entire model. Everything above it is provenance. Everything to the right is conclusion. Evidence never points to conclusions — only conclusions point to evidence. PlaceAuthority is foundational and sits outside this flow — it is seeded before ingest begins.
+The Record/RecordedPerson pair remains the pivot of the evidence layer: everything above is provenance, everything below is conclusion. RecordedRelationship and RecordSimilarity sit beside that pivot as evidence-to-evidence facts — a relationship between two RecordedPersons, or a similarity score between two Records — neither requiring a conclusion to exist. As with every other linkage in the model, the underlying foreign keys run from conclusion to evidence, never the reverse (Rule 5); the arrows above describe what each evidence object supports, not which table owns the foreign key. PlaceAuthority is foundational and sits outside this flow entirely — it is seeded before ingest begins.
 
----
+______________________________________________________________________
 
 ## 6. Core Operational Rules
 
-**Rule 1 — Evidence cohesion.** Event fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier`, `place_as_recorded`) and RecordedPerson rows are the structured evidence content of a Record. Event fields live directly on the Record; RecordedPersons are child rows keyed to the Record. Neither contains foreign keys to conclusion-layer objects.
+**Rule 1 — Evidence cohesion.** Event fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier`, `place_as_recorded`) and RecordedPerson rows are the structured evidence content of a Record. Event fields live directly on the Record, describing the occurrence the Record as a whole documents; RecordedPersons are child rows keyed to the Record. For most source types this is the whole picture. For some source types, however, a single Record's event fields describe the Record only categorically, while the person-level events actually of interest are evidenced individually on the RecordedPerson rows beneath it — RecordedPerson carries its own mirrored `event_type`/`date_as_recorded`/`date`/`date_qualifier` pair (plus a secondary pair) for exactly this case (see §4.6). RecordedRelationship (between RecordedPersons) and RecordSimilarity (between Records) are likewise evidence-layer content. None of these carry foreign keys to conclusion-layer objects.
 
-**Rule 2 — Record as evidence unit.** All conclusion-layer objects point to Records as their justifying evidence.
+**Rule 2 — Evidence correspondence.** Each conclusion-layer object points to the evidence object that most specifically corresponds to it: Person to RecordedPerson, Relationship to RecordedRelationship. Event points to Record directly, since event fields are captured on the Record itself (Rule 1, Rule 3) rather than on a separate per-event evidence row — there is no more specific object to point to.
 
 **Rule 3 — One event per Record.** Each Record documents exactly one event. The event fields on the Record express this directly. A physical source entry documenting two discrete events is modelled as two Records.
 
@@ -175,13 +214,81 @@ The Record is the pivot point of the entire model. Everything above it is proven
 
 **Rule 5 — Conclusions point to evidence; evidence never points to conclusions.**
 
-**Rule 6 — Convergent evidence drives confidence.**
+**Rule 6 — Convergent evidence drives confidence.** Where convergent evidence is not unanimous, see Rule 9.
 
 **Rule 7 — Mutability of conclusions.** All conclusion-layer linkages are researcher assertions and remain mutable.
 
 **Rule 8 — Place authority is foundational, not concluded.** PlaceAuthority entries are facts from an external reference authority. The linkage from a recorded place string to a PlaceAuthority entry (`place_record`) is a scored conclusion, but the PlaceAuthority identity itself is not. A researcher cannot create a PlaceAuthority entry through the normal conclusion pipeline — entries are loaded via `fetch_places` or `seed-places`.
 
----
+**Rule 9 — Event consensus arbitration.** The `is_primary` flag on Event is governed by a three-way taxonomy based on the real-world cardinality of the event type.
+
+*Singular-per-lifetime* (birth, death, baptism, burial): multiple competing Events of the same type may coexist for one Person, representing alternative conclusions drawn from conflicting evidence. Exactly one Event per `(Person, event_type)` is marked `is_primary`, the current best estimate, determined by the volume of supporting Records and re-derived idempotently as new evidence arrives — not fixed permanently by an earlier decision. This is the full arbitration case.
+
+*Marriage*: anchored to a Relationship rather than a Person, via `event.relationship_id`, consistent with GC06. Exactly one marriage Event per `(Relationship, event_type)` is `is_primary`. The `(Person, event_type)` scope would be wrong here, since one person may be party to more than one marriage. The addition of `event.relationship_id` is a committed schema-phase consequence of this rule.
+
+*Recurring* (census, residence, valuation, tithe, military_service, pension, folklore, emigration): no cardinality constraint. Each occurrence is a distinct real-world fact — a different census year, a different residence at a different time — not a competing conclusion about the same moment in a person's life. Every linked Event of these types defaults `is_primary = true`; rebuild-consensus skips them entirely.
+
+Person and Relationship do not use this mechanism: Person because it is the anchor every other conclusion and linkage depends on, so competing Person conclusions would fork the entire model beneath it; Relationship by current scope decision, since conflicting relationship-type evidence is judged rare.
+
+**Rule 10 — Relationship evidence precedes identity.** A relationship between two individuals can be evidenced — and recorded as RecordedRelationship — before either individual is concluded to be a real-world Person. A census household's role structure, or a marriage record's named parties, asserts relationships directly from the source; it does not require Person conclusions to exist first.
+
+**Rule 11 — Comparison is not conclusion.** A similarity score between two evidence units — two Records, or two RecordedPersons — is itself evidence, not a conclusion. RecordSimilarity (between Records) and the `similarity` type on RecordedRelationship (between RecordedPersons) record these algorithmic comparisons without asserting a match is real; turning that comparison into a conclusion still requires the Person or Relationship machinery to act on it.
+
+______________________________________________________________________
+
+## 7. Review Layer
+
+### 7.1 The Reviewer
+
+A **Reviewer** is any agent that creates or modifies conclusion-layer objects. The model defines three types:
+
+- **pipeline** — an automated pipeline run (person_resolution, relationship_resolution, event_resolution). The first and most prolific author of conclusions.
+- **human** — a named researcher interacting via CLI, web interface, or any other modality.
+- **ai** — a Claude session or MCP-connected agent operating on behalf of a researcher.
+
+The Reviewer is a first-class entity in the data model, not merely a string in a log. This is what makes concurrent reviewers, conflict attribution, and future voting or arbitration mechanisms tractable. The modality of review — CLI, web, MCP, concurrent sessions — is not encoded in the Reviewer type; it is captured in `session_ref` on each log entry.
+
+### 7.2 The Conclusion Log
+
+Every creation, modification, or deletion of a conclusion-layer object is recorded in an append-only **conclusion log**. The log is the authoritative audit trail for the entire conclusion layer. Conclusion rows themselves hold current state; the log holds history.
+
+Key properties:
+
+- **Append-only.** Log entries are never updated or deleted. Once written, a log entry is permanent.
+- **Granular.** Each field change on a conclusion object produces its own log entry, with `old_value` and `new_value` recorded as text. A compound researcher action (e.g. reassigning a RecordedPerson from one Person to another) produces multiple log entries sharing a `change_group_id`.
+- **Change grouping.** A `change_group_id` (UUID) groups all log entries that belong to a single logical researcher action. This is what ties together the delete-link / create-link pair when a RecordedPerson is moved between Persons, or the chain of mutations when a Person is flagged for deletion.
+- **Covers all conclusion objects.** Logged entity types are: `person`, `relationship`, `event`, and the four primary linkage junction tables (`person_recorded_person`, `relationship_recorded_relationship`, `event_record`, `place_record`).
+- **Named actions.** The `action` field uses a controlled vocabulary: `create`, `update`, `delete`, `verify`, `flag`. `verify` and `flag` are named explicitly because they are the two most common review-specific operations — confirming a linkage (`verified=1`) and flagging something for attention — and deserve distinct log entries rather than being encoded as generic field updates.
+
+The pipeline uses two seeded Reviewers: `pipeline:system` (reviewer_id=1) for all automated conclusion creation, and `human:unknown` (reviewer_id=2) as a fallback for any edit without explicit attribution.
+
+### 7.3 Conclusion Lifecycle
+
+Conclusion-layer objects (`person`, `relationship`, `event`) carry a `status` field governing their lifecycle:
+
+```
+active          →  pending_delete  →  (physical deletion)
+```
+
+- **`active`** — the normal operational state. All pipeline operations, reports, and health checks filter to `active` only.
+- **`pending_delete`** — the object has been flagged for deletion by a reviewer. It is excluded from all pipeline operations and health reports but remains physically present, visible in the bin view. A `pending_delete_at` timestamp records when the flag was set, enabling a configurable auto-deletion window (target: 90 days).
+
+Physical deletion is the intended endpoint, not a soft-deleted permanent state. The `conclusion_log` preserves the full history of what existed and why it was removed; the data row itself does not need to be retained for audit purposes. A bin-review step allows a reviewer to confirm deletion before it executes, or to restore an object to `active` if the deletion was in error.
+
+**Cascading pending_delete:** When a Person is flagged `pending_delete`, any Relationships and Events that become orphaned as a result are also flagged `pending_delete` as part of the same change group. The researcher reviews the full set before physical deletion executes.
+
+### 7.4 The Reporting Surface
+
+The review layer's second responsibility is surfacing areas of the conclusion database that warrant researcher attention. This is distinct from the audit trail — it is prospective rather than retrospective.
+
+Two categories of finding:
+
+- **Health findings** — things that are anomalous or inconsistent in existing conclusions: genealogical constraint violations (birth singularity, lifespan boundary, parent age plausibility), probable merge errors, orphaned conclusions.
+- **Research prompts** — things the system has noticed that have not yet become conclusions: strong evidence pairs just below the auto-commit threshold, unresolved birth-year conflicts, Persons appearing in only one census, unlinked RecordedPersons, unresolved place strings.
+
+The reporting surface produces **structured data first** — a `Report` with typed `ReportItem` entries — and renders second. This ensures that CLI, web, MCP, and AI consumers all receive the same information in a queryable form, regardless of how they choose to present it.
+
+______________________________________________________________________
 
 ## Changelog
 
@@ -191,3 +298,8 @@ The Record is the pivot point of the entire model. Everything above it is proven
 | 2.2 | May 2026 | Updated §4.2 (Source) and §4.3 (Record) for two-level deep link parameter system |
 | 2.3 | May 2026 | Replaced Place conclusion with PlaceAuthority foundational object. Added §4.3 PlaceAuthority with flat hierarchy design rationale. Removed PlaceMembership (flat schema adopted). Updated §3 object summary, §5 data flow, §6 Rule 8. Added logainm.ie seeding workflow. Event.place_id now references PlaceAuthority. |
 | 2.4 | June 2026 | Merged RecordedEvent into Record (schema v2.8). RecordedEvent removed as a first-class object. §1 symmetry principle updated. §3 object summary updated. §4.5 rewritten to describe inline event fields. §5 data flow updated. §6 Rules 1 and 3 updated. |
+| 2.5 | 17 June 2026 | Added RecordedRelationship and RecordSimilarity as new Evidence-layer objects, recording relationships and algorithmic similarity between evidence units without requiring a conclusion to exist (§1, §2, §3, §4.7, §4.8). Added Event consensus arbitration as Rule 9 — competing Events of the same type may coexist per Person, with exactly one marked `is_primary`; Person and Relationship explicitly excluded from this mechanism, for different reasons (§1, §4.9, §4.10, §4.11, §6). Added Rule 10 (relationship evidence precedes identity) and Rule 11 (comparison is not conclusion). Retired `training_labels` as a considered-and-built-then-rejected path, alongside the existing PlaceMembership note (§3). Corrected object count from eleven (stale, did not match the actual object list) to ten. Updated §1 Symmetry between layers to include the RecordedRelationship/Relationship mirror and the deliberate RecordSimilarity asymmetry. Updated §2 Evidence Layer description. Updated §5 data flow diagram and explanatory paragraph. Fixed stale CLI invocation examples in §4.3 seeding workflow (`python -m src.cli fetch-places` / `seed-places`, previously incorrectly given as `src.fetch_places` / `src.db seed-places`). |
+| 2.6 | 17 June 2026 (session 3) | Generalised Rule 2 from "Records as evidence unit" to an evidence-correspondence principle: Person points to RecordedPerson, Relationship to RecordedRelationship, Event continues to point to Record directly since event fields are inline on the Record (Rule 1, Rule 3). This resolves the Relationship evidence-FK item left open at the end of the v2.5 session — settled in favour of RecordedRelationship — and, on the same principle, corrects Person's evidence target from Record to RecordedPerson, which §1's symmetry principle had already implied but §5/§6 had not carried through. Updated §5 data flow diagram (`Record──►Person` → `RecordedPerson──►Person`), §4.9 Person and §4.10 Relationship wording to match; removed the now-resolved "Records (or, more precisely, RecordedRelationship rows)" hedge from §4.10. |
+| 2.7 | 18 June 2026 | Rule 9 scoping amendment: replaced the flat `(Person, event_type)` constraint with a three-way event-type taxonomy. Singular-per-lifetime types (birth, death, baptism, burial) retain `(Person, event_type)` arbitration with record-vote consensus. Marriage is scoped to `(Relationship, event_type)` via `event.relationship_id` — consistent with GC06; `relationship_id` is a committed schema-phase addition. Recurring types (census, residence, valuation, tithe, military_service, pension, folklore, emigration) carry no cardinality constraint; each occurrence is a distinct real-world fact, `is_primary` defaults `true`, rebuild-consensus skips these types. Updated §1 "Conflicting evidence" principle, §4.11 Event description, and Rule 9. |
+| 2.8 | 23 June 2026 | Added §7 Review Layer. Introduces the Reviewer as a first-class entity (§7.1: three types — pipeline, human, ai); the conclusion log as an append-only audit trail covering all conclusion-layer mutations (§7.2: change grouping via `change_group_id`, named actions create/update/delete/verify/flag); the conclusion lifecycle with `status` and `pending_delete_at` on Person, Relationship, and Event (§7.3: active → pending_delete → physical deletion, 90-day auto-deletion target, cascading pending_delete on orphan detection); and the reporting surface producing structured ReportItems for health findings and research prompts (§7.4). These additions correspond to schema v4.0. |
+| 2.9 | 4 July 2026 | Schema v4.5 additions (R4: headstone inscriptions). Rule 1 rewritten to acknowledge that RecordedPerson can itself carry event-shaped data for source types where the parent Record's event fields are categorical rather than instantial. §4.5 (Record event fields) gained a clarifying paragraph distinguishing instantial vs categorical use of `event_type`, using the headstone `event_type='burial'` case as the example. §4.6 (RecordedPerson) gained a symmetric paragraph describing the new mirrored primary/secondary event-date field pair, with the fixed-pair-over-array rationale. |

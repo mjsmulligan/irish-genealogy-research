@@ -1,150 +1,277 @@
 # Genealogy Research Assistant (GRA) — Project Roadmap
 
-*June 2026 — v1.5*
+*Last updated: 4 July 2026*
 
 ---
 
-## 1. Current State
+## 1. Latest Update (4 July 2026)
+
+**R4: Headstone Inscriptions (Historic Graves) — discovery and design complete.**
+
+New evidence source type designed: Historic Graves community graveyard surveys, starting with St. Agatha's, Donegal (923 memorials). Fills a death/memorial record gap distinct from both census and R3 parish registers. Repository 9 / Source 14 mapping confirmed with no foundational-layer changes. Record models the gravestone categorically (`event_type='burial'`, no date — extends the existing census precedent rather than changing Rule 3). RecordedPerson gains 8 new nullable fields carrying per-person primary/secondary event dates. CSV ingest schema finalised. Doc updates and migration 006 not yet written — see items 48–53.
+
+**Follow-up scoping pass:** item 48 refined to specify the actual `conceptual_model.md` rule-text changes required (Rule 1, §4.5, §4.6 — not just an addendum note). Separately discovered `database_schema.md` is significantly stale — still written against SQLite despite the live stack being PostgreSQL/Supabase for months; unrelated to R4, tracked as new item 54.
+
+Full detail: [`changelog/session_changelog_2026-07-04.md`](changelog/session_changelog_2026-07-04.md)
+
+---
+
+## 1a. Previous Update (3 July 2026 — BMD Exploratory Design)
+
+**BMD (Birth/Marriage/Death) exploratory design completed — cross-townland person linking via civil registration.**
+
+Completed comprehensive design for integrating civil registration records to bridge gaps that census-only data cannot resolve. Test case validates John McCadden + Mary Logue marriage (1909-12-30) can link persons across separate 1901 townlands (Aghlem + Townlough) to joint 1911 appearance (Meenadreen).
+
+**Key findings:**
+- **No schema changes required:** Database already supports BMD sources (marriage_registration, birth_registration, death_registration) and event types (marriage, birth, death)
+- **Linkage strategy:** Confidence-scored person merging (0.95 base for civil registration; reduced by birth-year conflicts; boosted by co-census appearances)
+- **Ingest format:** CSV following census pattern (one Record per event, multiple RecordedPersons with role-based pairing)
+- **Pipeline integration:** New `add-bmd-evidence` CLI command + `link_persons_via_bmd()` stage after relationship_resolution
+
+**Design document:** [`docs/bmd_exploratory_design.md`](docs/bmd_exploratory_design.md) — detailed specification for Phases 1–5 implementation
+
+**Roadmap impact:**
+- **Item 36 (BMD data layer):** Deferred to Phase 2–3 (now has concrete design)
+- **Item 56 (Cross-townland linking):** Now has clear solution path; John + Mary case identified as validation test
+
+---
+
+## 1b. Testing & Enhancement (1 July 2026 — Post-Implementation)
+
+**Name variant discovery via test cases — Mary/Minnie variant added.**
+
+Tested household continuity conflict resolution using real family case (John McCadden, Person #321958). Discovered Mary/Minnie is a common rural Irish name variant not in the system's approved variants dictionary. Also identified that spouse name changes weren't being flagged when variants were unrecognized.
+
+**Key improvements:**
+- Added Mary ↔ Minnie to APPROVED_NAME_VARIANTS (`src/genealogy/names.py`)
+- Enhanced spouse consistency detection in detail page (`src/web/app.py`) to normalize forenames before comparing across censuses
+- Now flags spouse name variations with: "⚠ Spouse name variation detected. Verify if these are name variants or indicate remarriage."
+- Researcher can now see the actual spouse names and decide if it's a variant or remarriage
+
+**Roadmap addition:**
+- Item 55: Child age progression coherence validation (low priority — identified via John McCadden case, flagged for future consideration after core rules stabilize)
+
+---
+
+## 1c. Previous Update (1 July 2026)
+
+**Person-level forename normalization completed + audit log integrity fixed.**
+
+Implemented forename normalization for person-level Splink similarity (Pat ↔ Patrick matching). Fixed critical bug where individual-level features weren't normalizing Irish name variants, preventing proper cross-census person matching despite strong household matches. Also fixed data integrity issue where audit logs weren't being cleared when conclusions were reset.
+
+**Key fixes:**
+- Forename normalization now applied at person level (`census_person.py`): "pat mccadden" and "patrick mccadden" both normalize to "patrick mccadden"
+- Person #118106 Patrick McCadden now has scores for ALL census pairs (previously 1901 had no person-level similarity with 1911/1926)
+- Audit log now properly cleared in `clear-conclusions`, `clear-evidence`, and `restart-scoring` commands (data integrity fix)
+- Web UI audit log page fixed: removed Jinja2 template filter conflicts, fixed None handling for entity_id filter
+- CLI restart-scoring command fixed: corrected attribute names and stage logging
+
+Full detail: [`changelog/session_changelog_2026-07-01.md`](changelog/session_changelog_2026-07-01.md)
+
+---
+
+## 1d. Previous Update (29 June 2026)
+
+Roadmap low-hanging-fruit pass (items 7, 14, 26, 43, 47) plus systematic foundation and evidence layer review.
+
+**Roadmap items closed:** Item 7 (stale doc footers — `database_schema.md` and `reconstruction_algorithms.md` updated); Item 14 (`place_resolution.py` sqlite3 type hints — all three fixed, psycopg2.extensions import added); Item 47 (`find_link_conflicts_resolved` removed from `run_all_findings()`). Items 26 and 43 de-scoped (design intent confirmed).
+
+**Bugs fixed in evidence/genealogy layer review:**
+
+- **B1 — `jean` in `IRISH_MALE_NAMES` (wrong):** Jean as a written name in Irish census records is female (French female name). Removed from MALE set, added to FEMALE set. Also removed `jean` from `john`\'s variant set in `APPROVED_NAME_VARIANTS` — Seán/Jean phonetic similarity does not make written Jean a John variant for Splink matching.
+- **B2 — `pat` and `fran` in both gender sets:** `infer_gender` checks MALE first, so `Pat Smith` and `Fran Kelly` always returned `'M'`. This caused false gender-flip violations for valid Patricia/Pat and Frances/Fran cross-census pairs. Both removed from both sets — ambiguous names now correctly return `None` (conservative; no false flip triggered).
+- **B3 — `constraints.py` used explicit `DictCursor` override:** Both DB-sweeping functions overrode the connection\'s default `RealDictCursor` with `DictCursor` unnecessarily. Removed the overrides; `psycopg2.extras` import cleaned up.
+- **B4 — `record_repo.py` docstring stale path:** Said `src/ingest/` (doesn\'t exist); corrected to `src/evidence/census.py`.
+
+Full detail: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
+
+---
+
+## 2. Current State
 
 ### Documentation
 
-| Document | Version | Status | Notes |
-|---|---|---|---|
-| `docs/conceptual_model.md` | v2.4 | ✅ Complete | RecordedEvent merged into Record |
-| `docs/data_dictionary.md` | v2.6 | ✅ Complete | RecordedEvent removed; event fields inline on Record |
-| `docs/repositories.md` | v1.5 | ✅ Complete | Repository 8 (logainm.ie) and Source 13 (place_authority) added |
-| `docs/validation_rules.md` | v2.6 | ✅ Complete | R40–R46 implemented; retired rules updated for schema v2.8 |
-| `docs/database_schema.md` | v2.8 | ✅ Complete | RecordedEvent merged into Record; junction table count 9→5; migration v2.7→v2.8 |
-| `docs/reconstruction_algorithms.md` | v1.2 | ✅ Complete | Updated for schema v2.8; event linkage simplified |
-| `docs/genealogical_constraints.md` | v1.2 | ✅ Complete | 22 GC-coded constraints |
-| `docs/service_api.md` | v1.0 | ✅ Complete | Service layer API; flag/lead tables still needed in schema |
-| `docs/session_bootstrap.md` | v1.0 | ✅ Complete | Ingest and update knowledge session protocols |
-| `ROADMAP.md` | v1.5 | ✅ This document | — |
+| Document | Version | Status |
+|---|---|---|
+| `docs/conceptual_model.md` | v2.8 | ⚠️ Pending — R4 note on RecordedPerson-level dates (item 48) |
+| `docs/data_dictionary.md` | v2.7 | ⚠️ Pending — RecordedPerson fields + `headstone_inscription` vocab (items 48–49) |
+| `docs/database_schema.md` | v3.2 | ⚠️ Stale — still SQLite, live stack is PostgreSQL (item 54); also pending migration 006 (item 48) |
+| `docs/repositories.md` | v1.6 | ⚠️ Pending — Repository 9 / Source 14 (item 50) |
+| `docs/genealogical_constraints.md` | v1.3 | ✅ Current — sole authority for constraint rules and GC codes |
+| `docs/reconstruction_algorithms.md` | v1.3 | ✅ Current |
+| `docs/review_layer.md` | v1.0 | ✅ Current |
+| `ROADMAP.md` | — | ✅ Current |
 
 ### Implementation
 
-| Module | File(s) | Status | Notes |
-|---|---|---|---|
-| Database layer | `src/db.py` | ✅ Complete | Schema v2.8; explicit `place-resolve`, `household`, `link` CLI commands added; `reconstruct` retained as convenience |
-| Schema DDL | `src/db/schema.sql` | ✅ Complete | v2.8 — RecordedEvent merged; junction tables reduced to 5 |
-| Seed data | `src/db/seed.sql` | ✅ Complete | 12 sources, 8 repositories |
-| Migration | `src/db/migrations/migrate_27_to_28.sql` | ✅ Complete | Merges recorded_event into record; drops redundant junction tables |
-| Place fetcher | `src/fetch_places.py` | ✅ Complete | logainm API → DB direct write or CSV export |
-| Place seeder | `src/seed_places.py` | ✅ Complete | CSV → place_authority; idempotent |
-| Place resolution | `src/reconstruction/place_resolution.py` | ✅ Complete | v2.0 — authority-based Jaro-Winkler matching |
-| Household inference | `src/reconstruction/household_inference.py` | ✅ Complete | Census role-pair rules → Person/Relationship/Event conclusions |
-| Census feature extractor | `src/reconstruction/features/census.py` | ✅ Complete | Name, birth year, place_id, **spouse name, child names, sibling names** (relationship features added) |
-| Cross-census linkage | `src/reconstruction/linkage.py` | ✅ Complete | Splink DuckDBAPI; merge contract; **spouse/child/sibling comparisons added**; first test run completed |
-| Validator | `src/validator.py` | ✅ Complete | R40–R46 genealogical constraint rules implemented |
-| Service layer | `src/service.py` | 🔜 Pending | `service_api.md` v1.0 complete; flag/lead tables needed first |
-| Test suite | `tests/test_place_authority.py` | ✅ 33/33 passing | Place authority: normalisation, CSV, DB, resolution, hierarchy |
-
-**Verified against real data (Tullynaught DED):**
-- Tullynaught DED: 1 DED + 33 townlands loaded; 17 townlands correctly store NULL barony/civil_parish
-- Census 1901, 1911, and 1926 NAI downloads ingest correctly
-- Place resolution matches "Straniss" → "Straness" via Jaro-Winkler
-- Cross-census linkage first test run: 3881 persons across 3 sources; 264 auto-committed at mean score 0.918; 3291 proposals queued
-- 16 merged pairs with birth year delta > 5 identified in first run (test DB wiped; will retest with relationship features)
-
-**Development environment:** VSCode with GitHub integration. Repository: https://github.com/mjsmulligan/irish-genealogy-research
-
-**Housekeeping:** `genealogy.db` should be removed from git tracking — run `git rm --cached genealogy.db`.
-
----
-
-## 2. Workflow
-
-```bash
-# 1. Initialise fresh database
-python -m src.db init
-
-# 2. Seed place authority for target area (logainm API)
-python -m src.fetch_places --logainm-id 111482 --db genealogy.db
-
-# 3. Ingest census records (repeat per source)
-python -m src.db ingest --source 3 --file 1901_Tullynaught.csv
-python -m src.db ingest --source 4 --file 1911_Tullynaught.csv
-python -m src.db ingest --source 5 --file 1926_Tullynaught.csv
-
-# 4. Per-source reconstruction (place resolution + household inference)
-python -m src.db reconstruct --source 3   # convenience: stages 2+3
-python -m src.db reconstruct --source 4
-python -m src.db reconstruct --source 5
-
-# Or explicit stages:
-python -m src.db place-resolve            # stage 2 — all unresolved strings
-python -m src.db household --source 4    # stage 3 — one source at a time
-
-# 5. Cross-census linkage (run once all sources are reconstructed)
-python -m src.db link
-
-# 6. Inspect
-python -m src.db summary
-```
-
----
-
-## 3. Release Plan
-
-### Release 1 — Full census pipeline (1901, 1911, 1926)
-
-| # | Milestone | Status |
+| Layer | Status | Notes |
 |---|---|---|
-| R1-0 | Place authority seeding (logainm API + CSV) | ✅ Complete |
-| R1-1 | Place resolution + household inference | ✅ Complete |
-| R1-2 | Cross-census Splink person linkage (1901↔1911↔1926) | ✅ Complete — first test run done; relationship features added |
-| R1-3 | Validator (R40–R46 genealogical constraint rules) | ✅ Complete |
-| R1-4 | Person Browser basics (source coverage, merge error flags) | 🔜 Next — depends on service layer |
+| Foundation | ✅ Complete (v4.3) | Schema v4.3: PostgreSQL 15+, audit logging, pipeline_run instrumentation |
+| Evidence | ✅ Complete | `add-evidence` CLI: steps [1/5]–[5/5]. Splink record + person similarity |
+| Conclusion | ✅ Complete (v3.0) | `conclude` CLI: steps [0/6]–[5/6]. New: household_continuity [0/6] before person_resolution |
+| Genealogy | ✅ Complete | `src/genealogy/`: names, ages, constraints. Irish name variants + gender inference |
+| Testing | ✅ Complete | 59 tests passing (100%), integration harness with fixed fixtures |
+| Review | ✅ Complete (v2.0) | `report.py`, `findings.py`, `priority.py`, `runner.py`. Researcher findings reports |
+| Web UI | ✅ Complete | Flask app: browse, detail (with evidence panel), audit, review. Dark theme. |
 
-### Release 2 — Civil registration and parish registers
+---
 
-Civil registration sources (birth, marriage, death) and Catholic parish registers. Planned modules:
-- `src/reconstruction/core.py` — shared Person/Relationship/Event commit logic extracted from `household_inference.py`
-- `src/reconstruction/registration_inference.py`
-- `src/reconstruction/parish_inference.py`
+## 3. Implementation
 
-### Release 3 and beyond
+### 3.1 Foundation & Database Management ✅
 
-Land records, military sources, folklore, service layer, consumer front ends.
+### 3.2 Evidence Layer ✅
+
+Five-step pipeline via `python -m src.cli add-evidence`:
+
+1. Ingest CSV → Record + RecordedPerson (`src/evidence/census.py`)
+2. Assign role relationships from household role pairs (`src/evidence/role_relationships.py`)
+3. Place resolution → `place_record` linkage (`src/evidence/place_resolution.py`)
+4. Splink record similarity, household-level (`src/evidence/similarity.py`)
+5. Splink person similarity, person-level (`src/evidence/similarity.py`)
+
+### 3.3 Conclusion Layer ✅
+
+Five-step pipeline via `python -m src.cli conclude`:
+
+1. **Person Resolution** — Union-Find clustering on person similarity ≥ 0.45 (`src/conclusion/person_resolution.py`)
+2. **Relationship Resolution** — household matching → Person creation + Relationship conclusions (`src/conclusion/relationship_resolution.py`)
+3. **Household Resolution** — anchor-extension for unlinked household members (`src/conclusion/household_resolution.py`)
+4. **Event Resolution** — census, calculated birth, and marriage Events (`src/conclusion/event_resolution.py`)
+5. **Validation Cleanup** — genealogical constraint sweep via `src/genealogy/` (`src/conclusion/validation_cleanup.py`)
+
+### 3.4 Integration Test Harness ✅
+
+`tests/test_pipeline.py` — 59 tests. See §5 for exact counts.
 
 ---
 
 ## 4. Work Queue
 
-### Tier 3 — Reconstruction pipeline ← current
+Active and open items only. Completed items are in §8 (Version History).
 
-**Linkage quality iteration** 🔜 — following first test run:
-- Term-frequency adjustment for `surname_norm` — deferred until 3–4 DEDs ingested for a representative frequency distribution. High-frequency surnames at Tullynaught scale (Graham 284, Cassidy 206) are unrepresentative of the broader dataset.
-- Review 190 near-commit proposals (score 0.80–0.85) after relationship features run — if ≥80% correct, consider lowering AUTO_COMMIT_THRESHOLD to 0.82
-- Monitor birth year delta violations — R1 test had 16 merges with delta > 5; relationship features should reduce this
-
-**flag and lead tables** 🔜 — needed before service layer. DDL specified in `service_api.md` §10.3.
-
-### Tier 4 — Service layer
-
-`src/service.py` — ResearchService class. Depends on flag/lead tables being added to schema.
-
-### Tier 5 — Consumers
-
-Claude consumer, Lovable UI, MCP server.
+| # | Item | Priority | Notes |
+|---|---|---|---|
+| 15 | **Pin floor counts in test harness.** Five TODO-marked constants: `FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS` — pin after first confirmed clean run. | High | ✅ Done 1 July 2026 — Repository pattern migration + multi-DED test run |
+| 20 | **Manual ID management in DAL.** `record_repo.py`, `person_repo.py`, `relationship_repo.py`, `event_repo.py` pre-calculate `MAX(...) + 1` IDs and use `OVERRIDING SYSTEM VALUE` inserts. Migrate all writes to RETURNING throughout. | Medium | |
+| 26 | **`event_resolution.py` marriage event `date_qualifier`.** De-scoped: `NULL` is intentional — it signals true absence (census doesn't record marriage date), not inference. Module header at line 29 documents this. | Low | ✅ De-scoped |
+| 34 | **Test harness: schema v4.3 updates.** Add tests covering: (a) `reviewer` seeded rows present after init; (b) `conclusion_log` populated after `conclude` run; (c) `status='active'` default on all three conclusion tables; (d) migration 002 idempotency. Update `SCHEMA_VERSION` assertion from 32 → 43. | High | ✅ Done 1 July 2026 — Repository pattern, audit logging, orphaned person deletion |
+| 7 | **Stale schema-version footers.** `database_schema.md` footer referenced `PRAGMA user_version` and v3.0; `reconstruction_algorithms.md` footer said "v3.1 target" and referenced non-existent `session_bootstrap.md`. Both corrected. | Low | ✅ Done 29 June 2026 |
+| 11 | **Remove `training_labels`** from `schema.sql` and `training_repo.py`. Conceptually retired (v2.5). `training_repo.py` not imported anywhere in `src/`; `cli.py` only references table name in reset/truncate lists. Requires a schema migration bump to remove. | Low | ✅ Done 1 July 2026 — Migration 004, schema v4.4 |
+| 14 | **`place_resolution.py` stale type hints** — `sqlite3.Connection` at three locations (lines 112, 137 inline comment, 194). Added `import psycopg2.extensions`; all three corrected. | Low | ✅ Done 29 June 2026 |
+| 36 | **Parish ingest pipeline.** Implement `src/evidence/parish.py`: baptism CSV → Record + RecordedPersons (child, father, mother, sponsors) + RecordedRelationships; marriage CSV → Record + RecordedPersons (groom, bride, witnesses) + RecordedRelationships. Blocked on item 37 (data dictionary) and item 39 (transcription repo CSV output). | High (R3) | |
+| 37 | **Data dictionary update for parish records.** Add `sponsor` to RecordedPerson role vocabulary. Add `sponsor` and `witness` to RecordedRelationship type vocabulary. Document three-state transcription field convention: empty (absent), `[?]` (illegible), value (as written). | Medium (R3) | Before item 36 |
+| 38 | **`export-vocab` CLI command.** Aggregate census name/place distributions by parish and export to `{parish_id}_vocab.json` for the transcription pipeline's confidence scoring module. Blocked on vocabulary file contract — dedicated session required. See §6.2. | Medium (R3) | After vocabulary contract session |
+| 39 | **Spawn transcription repo.** Create new GitHub repository for the NLI Catholic parish register transcription pipeline. The three CSV schemas (register index, parish baptism, parish marriage) plus bounding box envelope fields are the formal interface contract with GRA. | High (R3) | Prerequisite for item 36 |
+| 40 | **Test harness: household_resolution coverage.** Add tests for `src/conclusion/household_resolution.py` and `src/conclusion/household_utils.py`. Cases to cover: (a) anchor-extension creates Person for unlinked spouse/child; (b) anchor as non-head (Case B/C); (c) no RecordedRelationship to anchor — member skipped; (d) score inherited from RecordedRelationship prior; (e) idempotency (re-run adds no duplicate Persons or Relationships). Update step-counter assertions from [4/4] to [5/5]. | High | ✅ Done 1 July 2026 — 9 tests added to `tests/test_pipeline.py` |
+| 41 | **Household contradiction validation (review layer).** After `household_resolution` is proven in production, add a validation finding that flags Relationship conclusions contradicted by intra-census household evidence — e.g. two Persons concluded as `couple` whose RecordedPersons appear in the same household as `head` and `son`. Warning-level only at v1; auto-action to be decided after first review run. | Medium | After item 40 |
+| 42 | **`validation_rules.md` → `genealogical_constraints.md` consolidation.** Two documents cover overlapping content with two numbering schemes (R-codes and GC-codes). `genealogical_constraints.md` v1.4 is the sole authority; code references GC codes only. Merge remaining `validation_rules.md` content; retire the file or reduce it to a pointer. Update `review_layer.md` §6.1 reference. | Medium | ✅ Done — `validation_rules.md` deleted, no stray references remain |
+| 43 | **`is_primary = 1` → `is_primary = TRUE` sweep in `findings.py`.** De-scoped: `event.is_primary` is `INTEGER CHECK (is_primary IN (0, 1))` — not BOOLEAN. `= 1` is the correct SQL predicate now. Revisit if column type migrates to BOOLEAN. | Low | ✅ De-scoped |
+| 44 | **Sequence check should prefer `is_primary` dates (`find_life_event_sequence_violations()`).** Currently uses `earliest_year()` across all events of a type — a non-primary event with a bad date can trigger a spurious violation. Use `_derive_birth_year()` / `_derive_death_year()` helpers instead. | Medium | |
+| 45 | **Marriage singularity (GC06) not in findings layer.** Birth (GC04) and death (GC05) have singularity findings; marriage does not. Add `find_marriage_singularity_violation()`. See `genealogical_constraints.md` GC06. | Medium | |
+| 46 | **N+1 birth/death year queries in `findings.py`.** `_derive_birth_year()` / `_derive_death_year()` issue 2–3 queries per person in per-person loops. Pre-fetch all birth/death years for active persons in a single query at `run_all_findings()` start. | High | Before Donegal-scale data |
+| 47 | **`find_link_conflicts_resolved()` permanent placeholder.** Removed from `run_all_findings()`. Function and taxonomy entry retained with deferred-status note for when `conclusion_log` audit trail persistence is implemented. | Low | ✅ Done 29 June 2026 |
+| 48 | **Migration 006 / schema v4.5 — RecordedPerson date fields.** Add 8 new nullable fields (`event_type`, `date_as_recorded`, `date`, `date_qualifier` + `secondary_` variants of each) to `RecordedPerson`, for headstone and future multi-date sources. Update `data_dictionary.md` §3.3. **`conceptual_model.md` requires actual rule-text changes, not an addendum:** Rule 1 (Evidence cohesion) currently states event fields "live directly on the Record" and describes RecordedPerson only as a child row — needs rewriting to acknowledge RecordedPerson can itself carry event-shaped data for some source types. §4.5 (Record event fields) needs a clarifying line that Record's own event fields can serve a purely categorical role (e.g. `burial`) while specific event instances are evidenced at RecordedPerson level. §4.6 (RecordedPerson) needs the new fields described, symmetrically with §4.5. | High (R4) | ✅ Done 4 July 2026 — conceptual_model.md (v2.9) Rule 1 + §4.5/§4.6 rewritten; data_dictionary.md (v2.9) §3.3 expanded with 8 new fields + primary/secondary pair rationale |
+| 49 | **`headstone_inscription` source type vocab.** Add to `data_dictionary.md` §6.1 Source Types. | High (R4) | ✅ Done 4 July 2026 — data_dictionary.md (v2.9) §6.1 |
+| 50 | **Repository 9 (Historic Graves) + Source 14 (St. Agatha's) in `repositories.md`.** Follow the per-volume Source pattern established for Catholic Parish Registers (Source 9) — one Source per graveyard. No structural changes needed, data only. | High (R4) | ✅ Done 4 July 2026 — repositories.md (v1.6) added Repository 9 and Source 14 |
+| 51 | **Scrape St. Agatha's headstone data to CSV.** Build scraper against `historicgraves.com/graveyard/st-agatha-s/dg-saga` (36 pages, 923 memorials). Output CSV matching the 14-column schema defined in `session_changelog_2026-07-04.md`. Note: structured "People commemorated" index field is not exhaustive — extraction must parse the freetext epitaph, not just the index. | High (R4) | ✅ Done 11 July 2026 — 2,170 person rows, 832 graves. QA complete (case-normalisation fix, 588 field values recovered; 7 Irish-language inscriptions resisted full resolution). Master extraction kept local only — Historic Graves source is CC BY-NC-ND, not cleared for redistribution; never commit to this repo. |
+| 52 | **`src/evidence/headstone.py` ingest pipeline.** CSV → Record + RecordedPerson + RecordedRelationship. | High (R4) | Unblocked — items 49–51 complete. Next implementation target. |
+| 53 | **`event_resolution.py` Pass 4 — Death/Burial Event derivation.** Derive Death/Burial Events from `RecordedPerson` date evidence, mirroring existing Pass 2 (birth-event-from-age) bucket/vote logic. Note: inscribed birth years (`date_qualifier=exact`) should generally outrank existing census-derived birth Events (`date_qualifier=calculated`) once implemented. | Medium (R4) | Ready for implementation |
+| 54 | **`database_schema.md` is stale — still SQLite, not PostgreSQL.** Discovered while scoping item 48: the document is written entirely against SQLite (`PRAGMA user_version`, `sqlite3.Connection`, SQLite DDL) despite the live stack having migrated to PostgreSQL/Supabase (`psycopg2`, `DATABASE_URL`) months ago. Listed as "✅ Current" at v3.2 in the doc status table, but does not reflect the live schema at all. Unrelated to R4 — full rewrite against actual `psycopg2`/Postgres DDL and `SCHEMA_VERSION` conventions needed. | High | Discovered 4 July 2026; not a blocker for items 48–53 |
+| 55 | **Child age progression coherence validation.** Flag implausible child age progressions within households across censuses (e.g., child age 5 in 1911 but age 30 in 1926 = 15 years only elapsed). Check: `expected_age_y2 = age_y1 + (year2 - year1)`, flag if actual age deviates beyond tolerance. **Note:** Low priority — many edge cases (children leaving home, name changes post-marriage, etc.) make this noisy. Consider after core validation rules are stabilized in production. Identified via John McCadden case (1 July 2026). | Low (R3) | Future |
+| 56 | **Cross-townland person linking via BMD evidence.** Test case: John McCadden (RP 25110 in 1901, age 18, son in aghlem place_id=2) marries Minnie Logue (RP 25657 in 1901, age ?, daughter in Logue household place_id=16) → both move to meenadreen (place_id=15): John (RP 26774 in 1911, age 30, head) + Minnie (spouse, McCadden). **Constraint:** Cannot link across place_id (blocks false-positive cousins) or unrecognized surnames (Logue→McCadden). Solution: Marriage BMD record bridges townland + surname boundary with definitive evidence. Census alone is insufficient — household context (different households, different surnames) prevents cross-townland resolution. Implement BMD-triggered person-linking layer. **Note:** Deferred to BMD pipeline (item 36). Census Splink maintains strict place_id blocking to minimize false positives. | Medium (R3) | Before item 36 |
 
 ---
 
-## 5. Open Decisions
+## 5. Test Harness Reference
 
-### OD-02 — Derived confidence function
+**Exact Tullynaught counts (fixed fixtures, 21 June 2026):**
 
-Provisional placeholder (record count → low/medium/high) in place. Real multi-source scored linkages now available after R1-2. Revisit after reviewing linkage quality with relationship features.
-
----
-
-## 6. Version History
-
-| Version | Date | Change |
+| Metric | Value | Derivation |
 |---|---|---|
-| 1.0 | May 2026 | Initial ROADMAP |
-| 1.1 | May 2026 | Tier 1 and 2 complete; Tullynaught 1911 tested |
-| 1.2 | May 2026 | R1-1 complete; Release Plan added; R1-2 as next milestone |
-| 1.3 | May 2026 | Schema v2.6 (OD-01 resolved); census date fixes; 1926 normaliser corrected; migration added |
-| 1.4 | May 2026 | Place authority redesign complete. PlaceAuthority added to foundational layer (flat schema, logainm.ie source). `src/fetch_places.py` and updated `src/seed_places.py` implemented. `src/reconstruction/place_resolution.py` v2.0. Schema v2.7. 33 tests passing. |
-| 1.5 | June 2026 | Schema v2.8: RecordedEvent merged into Record; junction tables reduced from 9 to 5. R1-2 and R1-3 complete. Linkage first test run completed (3881 persons, 264 merged). Relationship features added to census feature extractor (spouse name, child names, sibling names via conclusion layer). Explicit `place-resolve`, `household`, `link` CLI commands added to `db.py`; `reconstruct` retained as convenience. OD-04 resolved (DuckDBAPI). TF adjustment deferred to multi-DED scale. |
+| Records — 1901 | 263 | CSV unique `image_group` values |
+| Records — 1911 | 240 | CSV unique `image_group` values |
+| Records — 1926 | 212 | CSV unique `image_group` values |
+| Records — total | 715 | Sum |
+| Recorded persons — 1901 | 1,193 | CSV row count |
+| Recorded persons — 1911 | 1,080 | CSV row count |
+| Recorded persons — 1926 | 894 | CSV row count |
+| Recorded persons — total | 3,167 | Sum |
+| Role rels — couple | 347 | Role-pair rule simulation |
+| Role rels — parent_child | 2,624 | Role-pair rule simulation |
+| Role rels — sibling | 2,952 | Role-pair rule simulation |
+| Role rels — total | 5,923 | Sum |
+| Place links | 715 | 100% match rate — all 31 inhabited townlands pass JW ≥ 0.88 |
+| Birth year plausibility | 1807–1928 | Max age 92 in 1901 → 1807; age 0 in 1926 → 1928 |
+
+**Authoritative place data (logainm, 23 June 2026):**
+- 33 townlands total; `Croaghnakern` and `Rooney's Island` uninhabited
+- `Drummenny Upper` is logainm canonical (double-m); normalization handles consonant variants
+- Compound names like "Tullyleague or Tullybrook" normalized to primary name (first part)
+
+**Floor counts (item 15 — pin after first clean run):**
+`FLOOR_RECORD_SIMS`, `FLOOR_PERSON_SIMS`, `FLOOR_PERSONS`, `FLOOR_RELATIONSHIPS`, `FLOOR_EVENTS`
+
+---
+
+## 6. Design Notes
+
+### 6.1 Review Layer
+
+Spec: [`docs/review_layer.md`](docs/review_layer.md)
+
+`ReportItem`/`Report` data structures, finding taxonomy (v1.0 implemented + deferred), priority scoring, and output format are all defined there. The retired `src/review/validator.py` has been superseded by the `src/review/` finding module, which implements findings mapped to `genealogical_constraints.md` GC codes.
+
+---
+
+### 6.2 Vocabulary File Contract (open — dedicated session required)
+
+GRA will export a parish-level name/place vocabulary file consumed by the transcription pipeline's confidence scoring module. This is the primary interface between GRA's evidence layer and the transcription repo beyond the CSV schemas.
+
+**Design principles agreed (26 June 2026):**
+- File existence check only in the transcription pipeline — no hard dependency. If absent, confidence scoring is skipped.
+- Confidence adjustment is a signal, not a correction — transcription value never changes.
+- Census data used post-transcription only (preserves recorded-as-is contract).
+- Raw counts preferred over normalised frequencies.
+- Gendered forename sets for accurate confidence matching.
+- Townlands as a separate set from surnames (different semantic role, stronger signal).
+
+**GRA-side implementation:** `python -m src.cli export-vocab --parish <parish_id> --output <path>`
+
+**File naming convention:** `{parish_id}_vocab.json`
+
+**Format and field structure:** not yet decided. Dedicated session required before either repo implements against this contract. See item 38.
+
+---
+
+## 7. Release Targets
+
+- **v1.x (Current):** Foundation, evidence, and conclusion layers complete. Integration test harness complete. Priority next steps: item 15 (pin test counts), item 34 (test harness v4.0 updates), item 40 (household_resolution test coverage), item 41 (household contradiction validation).
+- **v2.0 (Target):** Review layer complete ✅. First run + training session against Supabase. Full-scale Irish Census ingestion.
+- **v3.0 (Long-term):** Parish and civil BMD ingest. Depends on transcription repo (item 39) producing CSV output and parish ingest pipeline (item 36) consuming it.
+
+---
+
+## 8. Version History
+
+Full session history with links to detailed changelog files: [`changelog/changelog_summary.md`](changelog/changelog_summary.md)
+
+| Date | Milestone |
+|---|---|
+| September 2026 | **Onboarding pass** (repo audit for opening to collaborators): (1) Removed `data/st_agathas_extracted.csv` from git history — Historic Graves CC BY-NC-ND source not cleared for redistribution, was committed 11 July in error. Added LICENSE (PolyForm Noncommercial 1.0.0), CONTRIBUTING.md, ONBOARDING.md. (2) Pruned `analysis/`: 7 files deleted as exact-duplicate investigate→correct chains (e.g. an initial "root cause" doc fully superseded by a later "corrected analysis" doc covering the same bug); 33 remaining files archived to `archive/2026-06-27-threshold-tuning/` (see that folder's README for what became of each). `analysis/THRESHOLD_DECISION_REPORT.md` kept in place as the sole durable record. (3) Two findings discovered resolved-but-never-logged during the archive review: `AGE_REGRESSION_ANALYSIS.md`'s birth-year-derivation question (decided 28 June, verified against current `_derive_birth_year()` — primary birth Event now correctly takes priority over census-age backfill) and `AUDIT_LOGGING_GAPS.md` (steps 2–5 of conclusion pipeline now all import/use `AuditLog`). Neither needs an open work-queue item. (4) Item 51 marked done (was still showing "Next session" despite completing 11 July) and item 52 unblocked. |
+| 4 July 2026 | R4 discovery: Headstone Inscriptions (Historic Graves) designed. Repository 9 / Source 14 (St. Agatha's). RecordedPerson gains 8 new date fields. CSV ingest schema finalised. Items 48–53 added. Item 48 scope refined (specific conceptual_model.md rule-text changes identified). Item 54 added: `database_schema.md` discovered stale (still SQLite, live stack is PostgreSQL). |
+| 28 June 2026 | `src/validation/` retired. `src/genealogy/` created as materialisation of `genealogical_constraints.md`. Seven bugs fixed: age tolerances (±2 flat → ±3/±4 per census pair), deletion of both sides of flagged pairs, `classify_forename()` `'exact'` return, `household_same_census_errors` always zero, five duplicate inline source-year dicts, deferred import in `relationship_resolution.py`, duplicate dict key in `APPROVED_NAME_VARIANTS`. Six callers updated. `genealogical_constraints.md` v1.4: `[→ Validation rule candidate]` pattern retired; §10 implementation table rewritten against actual code. |
+| 28 June 2026 | Household resolution new conclusion step [3/5]. Anchor-extension for unlinked household members via RecordedRelationship paths. `household_utils.py` extracted. Conclusion pipeline 3-step → 5-step. |
+| 26 June 2026 | R3 transcription pipeline discovery. Spawned as independent repo. Hybrid HTR pipeline designed. Bounding box fields added to CSV schemas. Vocabulary file contract drafted. |
+| 25 June 2026 | R3 parish records early discovery. Recorded-as-is contract. Three-file register structure. `sponsor` and `witness` vocabulary added. |
+| 24 June 2026 | Review layer design (session 18) and implementation (session 19) complete. `validator.py` replaced by four-module report system. |
+| 23 June 2026 | Schema v4.0: `reviewer` table, `conclusion_log`, `status`/`pending_delete_at` on conclusion tables. Test suite 100% (59/59). Schema v3.2. |
+| 22 June 2026 | Dead code removal. `src/evidence/features/` package created. `NOT EXISTS` query fix. Stale `sqlite3` imports removed. |
+| 21 June 2026 | Critical conclusion layer bug fixes (items 21–25). Integration test harness (59 tests). Conclusion layer complete. Evidence layer complete with PostgreSQL. |
+| 20 June 2026 | Foundation complete (v3.1). SQLite → PostgreSQL / Supabase migration. Evidence layer implementation. |
+| 17–19 June 2026 | Conceptual model v2.5. RecordedRelationship, RecordSimilarity. `database_schema.md` v3.2. Doc audit. |
+| 16 June 2026 | Schema v3.0: `event.is_primary`, nullable roles. |
+| Early June 2026 | Schema v2.8: RecordedEvent merged into Record; junction tables 9→5. First full linkage test. |
+| 24 May 2026 | Foundation & R1-1. Initial GRA roadmap. Place resolution and household inference. |
+</file>
+

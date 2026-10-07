@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gra-web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "src.web.app"],
+      "port": 5000,
+      "autoPort": true
+    }
+  ]
+}
