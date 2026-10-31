@@ -1,7 +1,6 @@
 # Shared Assistant Collaboration Protocol
 
-**This file must be kept byte-for-byte identical in both repositories.**
-Canonical path in each repository: `docs/SHARED_ASSISTANT_PROTOCOL.md`.
+**Sections 1 to 8 and 10 are the shared core.** Each repository keeps its own copy at `docs/SHARED_ASSISTANT_PROTOCOL.md`. The copies need not be byte-for-byte identical (see section 9), but neither may weaken the core.
 
 This protocol governs collaboration between AI assistants working with Mike across the Donegal Townlands and Grá repositories. It supplements, and never overrides, each repository's `AGENTS.md`, project documentation, source licences, privacy rules, or Mike's explicit instructions.
 
@@ -83,13 +82,13 @@ Keep durable project facts in repository documentation, not only in chat or assi
 - A push is a transfer of work, not proof of review or acceptance. Include a handover with every push intended for another assistant.
 - Never assume assistants can see one another's conversations, private workspaces, or unpushed changes.
 
-## 9. Keep this protocol identical
+## 9. Keep the shared core consistent
 
-- The canonical relative path is `docs/SHARED_ASSISTANT_PROTOCOL.md` in both repositories.
-- When changing it, edit one copy first, then copy the exact same content to the other repository in the same change cycle.
-- Verify identity with a byte-for-byte comparison or matching SHA-256 hashes before considering the update complete.
-- Update each `AGENTS.md` only to link to this protocol and explain that it supplements repository-specific rules. Do not fork or paraphrase the shared protocol in either file.
-- If one repository cannot be updated at the same time, record the temporary mismatch and do not claim the copies are synchronised.
+- Each repository keeps a copy at `docs/SHARED_ASSISTANT_PROTOCOL.md`. The copies do not have to be identical, and no hash comparison is required.
+- A repository may add project-specific wording to its copy, provided it supplements the shared core and does not contradict or weaken it, or the order of authority in section 10.
+- When the shared core itself changes, make the same change in the other repository as a follow-up, in its own pull request and in its own time. Say in the pull request that the other copy still needs updating.
+- Update each `AGENTS.md` only to link to this protocol and explain that it supplements repository-specific rules. Do not paraphrase the protocol in either `AGENTS.md`.
+- If the two copies differ in a way that matters to the task, follow the copy in the repository you are working in, and tell Mike about the difference.
 
 ## 10. Authority and escalation
 
