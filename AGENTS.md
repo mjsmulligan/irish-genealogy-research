@@ -48,6 +48,12 @@ explanation — for the reasoning behind any of these, see
    `python -m src.cli timing-report` and report any material shift in
    match rates.
 
+## Sister repo: donegal-townlands
+
+`mjsmulligan/donegal-townlands` publishes family-centred townland studies (immersive web pages) from GRA's data. GRA does not depend on it. A one-way export from GRA is proposed in that repo's `docs/EXPORT_CONTRACT.md` (draft, not yet agreed). Do not build it without design sign-off (rule 4).
+
+Known data gap: `data/Clogher_1926.csv` here lacks about 500 researcher-filled `updated_relationship_to_head` values (for example "Mary Martin") that exist in the researcher's own 1926 file, held in that repo at `data/census/1926_Clogher.csv`. Reconcile before relying on 1926 relationships.
+
 ## Before touching linkage, matching, or validation logic
 
 Read [`docs/genealogical_constraints.md`](docs/genealogical_constraints.md)
