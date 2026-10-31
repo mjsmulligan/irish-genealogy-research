@@ -6,6 +6,10 @@ explanation — for the reasoning behind any of these, see
 [`ONBOARDING.md`](ONBOARDING.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and
 [`docs/conceptual_model.md`](docs/conceptual_model.md).
 
+## Working with other assistants
+
+Read [`docs/SHARED_ASSISTANT_PROTOCOL.md`](docs/SHARED_ASSISTANT_PROTOCOL.md) as well as these project-specific instructions. The shared protocol governs cross-assistant collaboration; this file remains authoritative for Grá's evidence/conclusion boundary, licensing, data access, architecture, and testing rules.
+
 ## Non-negotiable rules
 
 1. **Evidence layer never references conclusions.** `Record`,
@@ -50,7 +54,7 @@ explanation — for the reasoning behind any of these, see
 
 ## Sister repo: donegal-townlands
 
-`mjsmulligan/donegal-townlands` publishes family-centred townland studies (immersive web pages) from GRA's data. GRA does not depend on it. A one-way export from GRA is proposed in that repo's `docs/EXPORT_CONTRACT.md` (draft, not yet agreed). Do not build it without design sign-off (rule 4).
+`mjsmulligan/donegal-townlands` is a downstream publishing project for family-centred townland studies. GRA does not depend on it, but it is an important real-world use case that can inform research priorities and expose gaps in data or export capability. Data flow remains one-way, from GRA to Donegal Townlands, through an explicitly agreed export contract. The contract is currently only a draft proposal in that repo's `docs/EXPORT_CONTRACT.md`, not yet agreed, and is not authorised for implementation until design sign-off under the rules above (rule 4). Do not introduce a dependency from GRA to the publishing repository.
 
 Known data gap: `data/Clogher_1926.csv` here lacks about 500 researcher-filled `updated_relationship_to_head` values (for example "Mary Martin") that exist in the researcher's own 1926 file, held in that repo at `data/census/1926_Clogher.csv`. Reconcile before relying on 1926 relationships.
 
